@@ -43,7 +43,6 @@ import {
   Pencil,
   BookOpen,
   Search,
-  Search,
   Plus,
   ChevronRight,
   ChevronDown,
