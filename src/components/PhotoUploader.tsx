@@ -63,6 +63,13 @@ export function PhotoUploader({ obraId, photos, onChange, compact }: Props) {
           type="file"
           accept="image/*,video/*"
           multiple
+          className="hidden"
+          onChange={(e) => handleFiles(e.target.files)}
+        />
+        <input
+          ref={cameraRef}
+          type="file"
+          accept="image/*,video/*"
           capture="environment"
           className="hidden"
           onChange={(e) => handleFiles(e.target.files)}
