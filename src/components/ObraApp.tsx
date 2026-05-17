@@ -766,10 +766,16 @@ function ServiceRow({
 
   return (
     <tr className="border-t hover:bg-muted/30">
-      <td className="px-3 py-2 font-mono whitespace-nowrap">{row.item}</td>
+      <td
+        className="px-3 py-2 font-mono whitespace-nowrap"
+        style={{ paddingLeft: 12 + indent }}
+      >
+        {row.item}
+      </td>
       <td className="px-3 py-2 max-w-md">{row.descricao}</td>
       <td className="px-3 py-2">{row.und}</td>
       <td className="px-3 py-2 text-right font-medium">{fmtNum(row.quantidade)}</td>
+      <td className="px-3 py-2 text-right">{fmtBRL(row.valorUnitBDI || row.valorUnit)}</td>
       <td className="px-3 py-2 text-right">{fmtBRL(row.total)}</td>
       <td className="px-3 py-2 text-right">
         <Input
