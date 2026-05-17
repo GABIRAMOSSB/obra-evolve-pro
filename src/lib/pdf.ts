@@ -318,11 +318,19 @@ export async function exportDiarioPdf(entries: DiaryEntry[], titulo = "Diário d
             align: "center",
           });
           doc.setFont("helvetica", "normal");
+          // Link "Baixar vídeo" logo abaixo
+          doc.setFontSize(8);
+          doc.setTextColor(37, 99, 235);
+          const dlUrl = f.url + (f.url.includes("?") ? "&" : "?") + "download=1";
+          doc.textWithLink("⬇  Baixar vídeo", rowX + cellW / 2, btnY + btnH + 4, {
+            url: dlUrl,
+            align: "center",
+          });
           doc.setTextColor(0, 0, 0);
         }
         doc.setFontSize(10);
         col++;
-        const rowExtra = isVideo ? 22 : 14;
+        const rowExtra = isVideo ? 28 : 14;
         if (col >= cols) {
           col = 0;
           y += cellH + rowExtra;
@@ -330,7 +338,7 @@ export async function exportDiarioPdf(entries: DiaryEntry[], titulo = "Diário d
           rowX += cellW + gap;
         }
       }
-      if (col !== 0) y += cellH + (items.some((f) => f.tipo === "video") ? 22 : 14);
+      if (col !== 0) y += cellH + (items.some((f) => f.tipo === "video") ? 28 : 14);
     }
 
     ensureSpace(8);
