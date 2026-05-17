@@ -1496,7 +1496,7 @@ function DiaryCard({
         <div>
           <div className="font-semibold text-foreground">{entry.etapa}</div>
           <div className="text-xs text-muted-foreground">
-            {entry.data} · Item {entry.itemKey} · {entry.atividade}
+            {fmtDate(entry.data)} · Item {entry.itemKey} · {entry.atividade}
           </div>
         </div>
         <div className="flex gap-1">
