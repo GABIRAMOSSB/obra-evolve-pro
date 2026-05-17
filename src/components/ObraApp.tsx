@@ -220,8 +220,14 @@ export function ObraApp() {
               </Button>
             </label>
             <p className="text-xs text-muted-foreground">
-              Os dados ficam salvos localmente no seu computador.
+              Seus dados ficam sincronizados na nuvem.
             </p>
+            <div className="flex items-center justify-between text-xs text-muted-foreground border-t pt-4">
+              <span className="truncate">{user?.email}</span>
+              <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                <LogOut className="w-3.5 h-3.5 mr-1" /> Sair
+              </Button>
+            </div>
           </Card>
         </div>
         <ImportPreviewDialog
