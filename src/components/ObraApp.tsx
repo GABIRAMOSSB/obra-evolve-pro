@@ -45,6 +45,8 @@ import {
   Search,
   RotateCcw,
   Plus,
+  ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 
 function statusVariant(status: string): "default" | "secondary" | "outline" {
@@ -348,6 +350,17 @@ function Dashboard({
   const [filterItem, setFilterItem] = useState("");
   const [filterDesc, setFilterDesc] = useState("");
   const [filterPercMin, setFilterPercMin] = useState("");
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const toggleCollapse = (item: string) =>
+    setCollapsed((c) => ({ ...c, [item]: !c[item] }));
+  const expandAll = () => setCollapsed({});
+  const collapseAll = () => {
+    const next: Record<string, boolean> = {};
+    data.rows.forEach((r) => {
+      if (r.isGroup) next[r.item] = true;
+    });
+    setCollapsed(next);
+  };
 
   const visibleRows = useMemo(() => {
     return data.rows.filter((r) => {
@@ -364,9 +377,13 @@ function Dashboard({
       } else if (filterStatus !== "all" || filterPercMin) {
         return false;
       }
+      // Hide rows whose ancestor group is collapsed
+      for (const ancestor of Object.keys(collapsed)) {
+        if (collapsed[ancestor] && isChildOf(r.item, ancestor)) return false;
+      }
       return true;
     });
-  }, [data, filterEtapa, filterItem, filterDesc, filterStatus, filterPercMin]);
+  }, [data, filterEtapa, filterItem, filterDesc, filterStatus, filterPercMin, collapsed]);
 
   const updateEvolution = (item: string, evo: Evolution) => {
     const next = { ...data.evolutions, [item]: evo };
@@ -661,7 +678,15 @@ function Dashboard({
                 {data.rows.filter((r) => !r.isGroup).length} serviços ·{" "}
                 {data.rows.filter((r) => r.isGroup && r.level === 1).length} etapas
               </div>
-              <AddItemDialog etapas={etapas} onAdd={addCustomItem} />
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" onClick={expandAll}>
+                  <ChevronDown className="w-3.5 h-3.5 mr-1" /> Expandir tudo
+                </Button>
+                <Button size="sm" variant="outline" onClick={collapseAll}>
+                  <ChevronRight className="w-3.5 h-3.5 mr-1" /> Colapsar tudo
+                </Button>
+                <AddItemDialog etapas={etapas} onAdd={addCustomItem} />
+              </div>
             </div>
 
             <ActivitiesTable
@@ -671,6 +696,8 @@ function Dashboard({
               onUpdate={updateEvolution}
               onAddDiary={addDiary}
               onRemove={removeCustomItem}
+              collapsed={collapsed}
+              onToggleCollapse={toggleCollapse}
             />
           </TabsContent>
 
@@ -713,6 +740,8 @@ function ActivitiesTable({
   onUpdate,
   onAddDiary,
   onRemove,
+  collapsed = {},
+  onToggleCollapse,
 }: {
   rows: BudgetRow[];
   allRows: BudgetRow[];
@@ -720,6 +749,8 @@ function ActivitiesTable({
   onUpdate: (item: string, evo: Evolution) => void;
   onAddDiary: (e: DiaryEntry) => void;
   onRemove: (item: string) => void;
+  collapsed?: Record<string, boolean>;
+  onToggleCollapse?: (item: string) => void;
 }) {
   if (rows.length === 0) {
     return (
@@ -790,7 +821,19 @@ function ActivitiesTable({
                       className={`px-2 py-1.5 font-mono ${isEtapa ? "text-primary" : ""}`}
                       style={{ paddingLeft: 8 + indent }}
                     >
-                      {r.item}
+                      <button
+                        type="button"
+                        onClick={() => onToggleCollapse?.(r.item)}
+                        className="inline-flex items-center gap-1 hover:opacity-70 transition"
+                        title={collapsed[r.item] ? "Expandir" : "Colapsar"}
+                      >
+                        {collapsed[r.item] ? (
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        ) : (
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        )}
+                        <span>{r.item}</span>
+                      </button>
                     </td>
                     <td className="px-2 py-1.5">{r.codigo}</td>
                     <td className="px-2 py-1.5">{r.banco}</td>
