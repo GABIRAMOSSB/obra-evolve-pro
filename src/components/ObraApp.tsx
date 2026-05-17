@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import type { ProjectData, BudgetRow, Evolution, DiaryEntry } from "@/lib/types";
-import { loadProject, saveProject, clearProject } from "@/lib/storage";
+import type { ProjectData, BudgetRow, Evolution, DiaryEntry, Workspace } from "@/lib/types";
+import { loadWorkspace, saveWorkspace, newObraId } from "@/lib/storage";
 import { parseExcel, type ParseResult } from "@/lib/excel";
 import {
   activityMetrics,
@@ -47,7 +47,9 @@ import {
   Plus,
   ChevronRight,
   ChevronDown,
+  Building2,
 } from "lucide-react";
+
 
 function statusVariant(status: string): "default" | "secondary" | "outline" {
   if (status === "Concluída") return "default";
