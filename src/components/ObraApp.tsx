@@ -740,6 +740,8 @@ function ActivitiesTable({
   onUpdate,
   onAddDiary,
   onRemove,
+  collapsed = {},
+  onToggleCollapse,
 }: {
   rows: BudgetRow[];
   allRows: BudgetRow[];
@@ -747,6 +749,8 @@ function ActivitiesTable({
   onUpdate: (item: string, evo: Evolution) => void;
   onAddDiary: (e: DiaryEntry) => void;
   onRemove: (item: string) => void;
+  collapsed?: Record<string, boolean>;
+  onToggleCollapse?: (item: string) => void;
 }) {
   if (rows.length === 0) {
     return (
