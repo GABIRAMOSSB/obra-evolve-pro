@@ -840,7 +840,7 @@ function Dashboard({
           </TabsContent>
 
           <TabsContent value="diario">
-            <DiaryPanel diaries={data.diaries} onUpdate={updateDiary} onRemove={removeDiary} />
+            <DiaryPanel obraId={data.id} diaries={data.diaries} onUpdate={updateDiary} onRemove={removeDiary} />
           </TabsContent>
         </Tabs>
       </main>
