@@ -117,6 +117,9 @@ export function ObraApp() {
       markMigrated();
       skipNextSave.current = true;
       setWs(local);
+      toast.success(
+        `Migração concluída: ${plan.obrasCount} obra(s), ${plan.diariesCount} diário(s), ${plan.fotosCount} foto(s).`,
+      );
       setMigration({ stage: "done", plan });
     } catch (e) {
       console.error(e);
