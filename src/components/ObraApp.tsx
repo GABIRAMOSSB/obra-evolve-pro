@@ -44,6 +44,7 @@ import {
   BookOpen,
   Search,
   RotateCcw,
+  Plus,
 } from "lucide-react";
 
 function statusVariant(status: string): "default" | "secondary" | "outline" {
