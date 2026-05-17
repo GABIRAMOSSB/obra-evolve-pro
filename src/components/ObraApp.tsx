@@ -678,7 +678,15 @@ function Dashboard({
                 {data.rows.filter((r) => !r.isGroup).length} serviços ·{" "}
                 {data.rows.filter((r) => r.isGroup && r.level === 1).length} etapas
               </div>
-              <AddItemDialog etapas={etapas} onAdd={addCustomItem} />
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" onClick={expandAll}>
+                  <ChevronDown className="w-3.5 h-3.5 mr-1" /> Expandir tudo
+                </Button>
+                <Button size="sm" variant="outline" onClick={collapseAll}>
+                  <ChevronRight className="w-3.5 h-3.5 mr-1" /> Colapsar tudo
+                </Button>
+                <AddItemDialog etapas={etapas} onAdd={addCustomItem} />
+              </div>
             </div>
 
             <ActivitiesTable
@@ -688,6 +696,8 @@ function Dashboard({
               onUpdate={updateEvolution}
               onAddDiary={addDiary}
               onRemove={removeCustomItem}
+              collapsed={collapsed}
+              onToggleCollapse={toggleCollapse}
             />
           </TabsContent>
 
