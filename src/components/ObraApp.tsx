@@ -5,6 +5,7 @@ import { parseExcel, type ParseResult } from "@/lib/excel";
 import {
   activityMetrics,
   fmtBRL,
+  fmtDate,
   fmtNum,
   groupMetrics,
   isChildOf,
