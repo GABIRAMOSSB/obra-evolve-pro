@@ -1288,3 +1288,140 @@ function DiaryCard({
     </Card>
   );
 }
+
+function AddItemDialog({
+  etapas,
+  onAdd,
+}: {
+  etapas: BudgetRow[];
+  onAdd: (
+    parentItem: string | null,
+    descricao: string,
+    opts: { und?: string; quantidade?: number; valorUnit?: number },
+  ) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [tipo, setTipo] = useState<"etapa" | "servico">("servico");
+  const [parent, setParent] = useState<string>(etapas[0]?.item ?? "");
+  const [descricao, setDescricao] = useState("");
+  const [und, setUnd] = useState("un");
+  const [quant, setQuant] = useState("");
+  const [vu, setVu] = useState("");
+
+  useEffect(() => {
+    if (open) {
+      setTipo("servico");
+      setParent(etapas[0]?.item ?? "");
+      setDescricao("");
+      setUnd("un");
+      setQuant("");
+      setVu("");
+    }
+  }, [open, etapas]);
+
+  function save() {
+    if (!descricao.trim()) {
+      toast.error("Informe a descrição.");
+      return;
+    }
+    if (tipo === "servico" && !parent) {
+      toast.error("Selecione a etapa.");
+      return;
+    }
+    onAdd(tipo === "etapa" ? null : parent, descricao.trim(), {
+      und: und.trim() || "un",
+      quantidade: parseFloat(quant.replace(",", ".")) || 0,
+      valorUnit: parseFloat(vu.replace(",", ".")) || 0,
+    });
+    setOpen(false);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm">
+          <Plus className="w-4 h-4 mr-1" /> Adicionar etapa/serviço
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Adicionar item manual</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label>Tipo</Label>
+            <Select value={tipo} onValueChange={(v) => setTipo(v as "etapa" | "servico")}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="etapa">Nova etapa</SelectItem>
+                <SelectItem value="servico">Novo serviço (em uma etapa)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {tipo === "servico" && (
+            <div>
+              <Label>Etapa</Label>
+              <Select value={parent} onValueChange={setParent}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a etapa" />
+                </SelectTrigger>
+                <SelectContent>
+                  {etapas.map((e) => (
+                    <SelectItem key={e.item} value={e.item}>
+                      {e.item} — {e.descricao}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div>
+            <Label>Descrição</Label>
+            <Input
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+              placeholder={tipo === "etapa" ? "Ex: SERVIÇOS COMPLEMENTARES" : "Ex: Pintura externa"}
+            />
+          </div>
+
+          {tipo === "servico" && (
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Label>Unidade</Label>
+                <Input value={und} onChange={(e) => setUnd(e.target.value)} placeholder="m², un, kg..." />
+              </div>
+              <div>
+                <Label>Qtd. planejada</Label>
+                <Input
+                  value={quant}
+                  onChange={(e) => setQuant(e.target.value)}
+                  inputMode="decimal"
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <Label>V. unit. (R$)</Label>
+                <Input
+                  value={vu}
+                  onChange={(e) => setVu(e.target.value)}
+                  inputMode="decimal"
+                  placeholder="0,00"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={save}>Adicionar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
