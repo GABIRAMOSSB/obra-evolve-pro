@@ -1026,6 +1026,7 @@ function ActivitiesTable({
                   onRemove={onRemove}
                   indent={indent}
                   peso={pesoOf(r)}
+                  obraId={obraId}
                 />
               );
             })}
