@@ -729,23 +729,45 @@ function ActivitiesTable({
     );
   }
 
+  const projectTotal = allRows
+    .filter((r) => !r.isGroup)
+    .reduce((s, r) => s + (r.total || 0), 0);
+  const pesoOf = (r: BudgetRow, computedTotal?: number) => {
+    if (r.peso) return r.peso;
+    if (!projectTotal) return 0;
+    const t = computedTotal ?? r.total ?? 0;
+    return (t / projectTotal) * 100;
+  };
+
   return (
     <Card className="overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full text-sm border-collapse">
-          <thead className="bg-muted text-muted-foreground text-xs uppercase sticky top-0">
+        <table className="w-full text-xs border-collapse">
+          <thead className="bg-muted text-muted-foreground uppercase sticky top-0 z-10">
+            <tr className="text-[10px]">
+              <th colSpan={10} className="px-3 py-1 text-center border-b bg-muted/80 font-semibold tracking-wider">
+                Planejamento (planilha orçamentária)
+              </th>
+              <th colSpan={5} className="px-3 py-1 text-center border-b bg-primary/10 text-primary font-semibold tracking-wider">
+                Execução
+              </th>
+            </tr>
             <tr>
-              <th className="px-3 py-2 text-left w-28 border-b">Item</th>
-              <th className="px-3 py-2 text-left border-b">Descrição</th>
-              <th className="px-3 py-2 text-left w-16 border-b">Und</th>
-              <th className="px-3 py-2 text-right w-28 border-b">Qtd. planejada</th>
-              <th className="px-3 py-2 text-right w-28 border-b">V. unit (BDI)</th>
-              <th className="px-3 py-2 text-right w-32 border-b">V. total</th>
-              <th className="px-3 py-2 text-right w-28 border-b">Qtd. exec.</th>
-              <th className="px-3 py-2 text-right w-24 border-b">% Exec.</th>
-              <th className="px-3 py-2 text-right w-32 border-b">V. executado</th>
-              <th className="px-3 py-2 text-center w-32 border-b">Status</th>
-              <th className="px-3 py-2 text-center w-16 border-b">Diário</th>
+              <th className="px-2 py-2 text-left w-20 border-b">Item</th>
+              <th className="px-2 py-2 text-left w-20 border-b">Código</th>
+              <th className="px-2 py-2 text-left w-20 border-b">Banco</th>
+              <th className="px-2 py-2 text-left border-b">Descrição</th>
+              <th className="px-2 py-2 text-left w-14 border-b">Und</th>
+              <th className="px-2 py-2 text-right w-20 border-b">Quant.</th>
+              <th className="px-2 py-2 text-right w-24 border-b">Valor Unit</th>
+              <th className="px-2 py-2 text-right w-28 border-b">V. Unit c/ BDI</th>
+              <th className="px-2 py-2 text-right w-28 border-b">Total</th>
+              <th className="px-2 py-2 text-right w-20 border-b">Peso (%)</th>
+              <th className="px-2 py-2 text-right w-24 border-b bg-primary/5">Qtd exec.</th>
+              <th className="px-2 py-2 text-right w-20 border-b bg-primary/5">% Exec.</th>
+              <th className="px-2 py-2 text-right w-28 border-b bg-primary/5">V. executado</th>
+              <th className="px-2 py-2 text-center w-28 border-b bg-primary/5">Status</th>
+              <th className="px-2 py-2 text-center w-16 border-b bg-primary/5">Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -754,40 +776,47 @@ function ActivitiesTable({
                 const g = groupMetrics(r, allRows, evolutions);
                 const isEtapa = r.level === 1;
                 const indent = Math.max(0, r.level - 1) * 14;
+                const peso = pesoOf(r, g.total);
                 return (
                   <tr
                     key={r.item}
                     className={
                       isEtapa
-                        ? "bg-primary/15 border-y-2 border-primary/30"
-                        : "bg-primary/5 border-t"
+                        ? "bg-primary/15 border-y-2 border-primary/30 font-bold"
+                        : "bg-primary/5 border-t font-semibold"
                     }
                   >
                     <td
-                      className={`px-3 py-2 font-mono ${isEtapa ? "font-bold text-primary" : "font-semibold"}`}
-                      style={{ paddingLeft: 12 + indent }}
+                      className={`px-2 py-1.5 font-mono ${isEtapa ? "text-primary" : ""}`}
+                      style={{ paddingLeft: 8 + indent }}
                     >
                       {r.item}
                     </td>
+                    <td className="px-2 py-1.5">{r.codigo}</td>
+                    <td className="px-2 py-1.5">{r.banco}</td>
                     <td
-                      className={`px-3 py-2 ${isEtapa ? "font-bold uppercase tracking-wide" : "font-semibold"}`}
-                      colSpan={4}
-                      style={{ paddingLeft: 12 + indent }}
+                      className={`px-2 py-1.5 ${isEtapa ? "uppercase tracking-wide" : ""}`}
+                      style={{ paddingLeft: 8 + indent }}
                     >
                       {r.descricao}
                     </td>
-                    <td className="px-3 py-2 text-right font-semibold">{fmtBRL(g.total)}</td>
-                    <td className="px-3 py-2"></td>
-                    <td className="px-3 py-2 text-right font-semibold">{fmtNum(g.percent)}%</td>
-                    <td className="px-3 py-2 text-right font-semibold text-[var(--success)]">
+                    <td className="px-2 py-1.5"></td>
+                    <td className="px-2 py-1.5"></td>
+                    <td className="px-2 py-1.5"></td>
+                    <td className="px-2 py-1.5"></td>
+                    <td className="px-2 py-1.5 text-right">{fmtBRL(g.total)}</td>
+                    <td className="px-2 py-1.5 text-right">{fmtNum(peso)} %</td>
+                    <td className="px-2 py-1.5"></td>
+                    <td className="px-2 py-1.5 text-right">{fmtNum(g.percent)}%</td>
+                    <td className="px-2 py-1.5 text-right text-[var(--success)]">
                       {fmtBRL(g.exec)}
                     </td>
-                    <td className="px-3 py-2 text-center">
-                      <Badge variant={r.banco === "MANUAL" ? "secondary" : "outline"}>
+                    <td className="px-2 py-1.5 text-center">
+                      <Badge variant={r.banco === "MANUAL" ? "secondary" : "outline"} className="text-[10px]">
                         {r.banco === "MANUAL" ? "MANUAL" : isEtapa ? "ETAPA" : "SUB"}
                       </Badge>
                     </td>
-                    <td className="px-3 py-2 text-center">
+                    <td className="px-2 py-1.5 text-center">
                       {r.banco === "MANUAL" && (
                         <Button
                           size="sm"
@@ -813,6 +842,7 @@ function ActivitiesTable({
                   onAddDiary={onAddDiary}
                   onRemove={onRemove}
                   indent={indent}
+                  peso={pesoOf(r)}
                 />
               );
             })}
