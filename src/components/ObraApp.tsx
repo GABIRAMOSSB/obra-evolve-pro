@@ -772,6 +772,7 @@ function ActivitiesTable({
                     <td
                       className={`px-3 py-2 ${isEtapa ? "font-bold uppercase tracking-wide" : "font-semibold"}`}
                       colSpan={4}
+                      style={{ paddingLeft: 12 + indent }}
                     >
                       {r.descricao}
                     </td>
