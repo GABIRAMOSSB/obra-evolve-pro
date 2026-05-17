@@ -1,0 +1,801 @@
+import { useEffect, useMemo, useState } from "react";
+import type { ProjectData, BudgetRow, Evolution, DiaryEntry } from "@/lib/types";
+import { loadProject, saveProject, clearProject } from "@/lib/storage";
+import { parseExcel } from "@/lib/excel";
+import {
+  activityMetrics,
+  fmtBRL,
+  fmtNum,
+  groupMetrics,
+  isChildOf,
+  projectMetrics,
+} from "@/lib/calc";
+import {
+  exportAcompanhamentoXlsx,
+  exportDiarioPdf,
+  exportRelatorioPdf,
+  gerarTextoDiario,
+} from "@/lib/pdf";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
+import {
+  Upload,
+  HardHat,
+  FileSpreadsheet,
+  FileText,
+  Trash2,
+  Pencil,
+  BookOpen,
+  Search,
+  RotateCcw,
+} from "lucide-react";
+
+function statusVariant(status: string): "default" | "secondary" | "outline" {
+  if (status === "Concluída") return "default";
+  if (status === "Em andamento") return "secondary";
+  return "outline";
+}
+
+export function ObraApp() {
+  const [data, setData] = useState<ProjectData | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    setData(loadProject());
+    setLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (data && loaded) saveProject(data);
+  }, [data, loaded]);
+
+  async function handleFile(file: File) {
+    try {
+      const rows = await parseExcel(file);
+      setData({
+        fileName: file.name,
+        importedAt: new Date().toISOString(),
+        rows,
+        evolutions: {},
+        diaries: [],
+      });
+      toast.success(`Planilha importada: ${rows.length} linhas`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  }
+
+  if (!loaded) return null;
+
+  if (!data) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <Card className="max-w-xl w-full p-10 text-center space-y-6">
+          <div className="mx-auto w-16 h-16 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center">
+            <HardHat className="w-8 h-8" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Acompanhamento de Obras</h1>
+            <p className="text-muted-foreground mt-2">
+              Importe sua planilha orçamentária para começar. O sistema lê apenas a 1ª aba.
+            </p>
+          </div>
+          <label className="block">
+            <input
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+            />
+            <Button asChild size="lg" className="w-full">
+              <span>
+                <Upload className="mr-2 w-4 h-4" />
+                Importar planilha Excel
+              </span>
+            </Button>
+          </label>
+          <p className="text-xs text-muted-foreground">
+            Os dados ficam salvos localmente no seu computador.
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
+  return <Dashboard data={data} setData={setData} />;
+}
+
+function Dashboard({
+  data,
+  setData,
+}: {
+  data: ProjectData;
+  setData: (d: ProjectData) => void;
+}) {
+  const m = useMemo(() => projectMetrics(data.rows, data.evolutions), [data]);
+
+  const etapas = useMemo(() => data.rows.filter((r) => r.isGroup && r.level === 1), [data.rows]);
+
+  const [filterEtapa, setFilterEtapa] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterItem, setFilterItem] = useState("");
+  const [filterDesc, setFilterDesc] = useState("");
+  const [filterPercMin, setFilterPercMin] = useState("");
+
+  const visibleRows = useMemo(() => {
+    return data.rows.filter((r) => {
+      if (filterEtapa !== "all") {
+        if (r.item !== filterEtapa && !isChildOf(r.item, filterEtapa)) return false;
+      }
+      if (filterItem && !r.item.includes(filterItem)) return false;
+      if (filterDesc && !r.descricao.toLowerCase().includes(filterDesc.toLowerCase()))
+        return false;
+      if (!r.isGroup) {
+        const a = activityMetrics(r, data.evolutions[r.item]);
+        if (filterStatus !== "all" && a.status !== filterStatus) return false;
+        if (filterPercMin && a.percent < parseFloat(filterPercMin)) return false;
+      } else if (filterStatus !== "all" || filterPercMin) {
+        return false;
+      }
+      return true;
+    });
+  }, [data, filterEtapa, filterItem, filterDesc, filterStatus, filterPercMin]);
+
+  const updateEvolution = (item: string, evo: Evolution) => {
+    const next = { ...data.evolutions, [item]: evo };
+    if (!evo.quantExec && !evo.dataExec && !evo.observacoes) delete next[item];
+    setData({ ...data, evolutions: next });
+  };
+
+  const addDiary = (entry: DiaryEntry) => {
+    setData({ ...data, diaries: [entry, ...data.diaries] });
+  };
+
+  const updateDiary = (entry: DiaryEntry) => {
+    setData({
+      ...data,
+      diaries: data.diaries.map((d) => (d.id === entry.id ? entry : d)),
+    });
+  };
+
+  const removeDiary = (id: string) => {
+    setData({ ...data, diaries: data.diaries.filter((d) => d.id !== id) });
+  };
+
+  function reset() {
+    if (confirm("Limpar todos os dados e remover a planilha importada?")) {
+      clearProject();
+      window.location.reload();
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-muted/40">
+      <header className="bg-card border-b sticky top-0 z-30">
+        <div className="max-w-[1600px] mx-auto px-6 py-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center">
+              <HardHat className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="font-bold text-foreground leading-tight">
+                Acompanhamento de Obras
+              </h1>
+              <p className="text-xs text-muted-foreground">{data.fileName}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => exportAcompanhamentoXlsx(data.rows, data.evolutions)}
+            >
+              <FileSpreadsheet className="w-4 h-4 mr-1" /> Excel
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => exportRelatorioPdf(data.rows, data.evolutions, data.fileName)}
+            >
+              <FileText className="w-4 h-4 mr-1" /> PDF
+            </Button>
+            <Button variant="ghost" size="sm" onClick={reset}>
+              <RotateCcw className="w-4 h-4 mr-1" /> Nova obra
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-[1600px] mx-auto px-6 py-6 space-y-6">
+        {/* Resumo */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <SummaryCard label="Valor total" value={fmtBRL(m.total)} />
+          <SummaryCard label="Valor executado" value={fmtBRL(m.exec)} tone="success" />
+          <SummaryCard label="Valor restante" value={fmtBRL(m.restante)} />
+          <SummaryCard label="% Geral executado" value={`${fmtNum(m.percent)}%`} tone="primary" />
+        </div>
+
+        <Card className="p-5">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-foreground">Progresso geral da obra</span>
+            <span className="text-sm text-muted-foreground">{fmtNum(m.percent)}%</span>
+          </div>
+          <Progress value={m.percent} className="h-3" />
+          <div className="flex gap-4 mt-4 text-sm">
+            <span className="text-foreground">
+              ✅ Concluídas: <strong>{m.concluidas}</strong>
+            </span>
+            <span className="text-foreground">
+              🔧 Em andamento: <strong>{m.andamento}</strong>
+            </span>
+            <span className="text-muted-foreground">
+              ⏳ Não iniciadas: <strong>{m.naoIniciadas}</strong>
+            </span>
+          </div>
+        </Card>
+
+        <Tabs defaultValue="atividades">
+          <TabsList>
+            <TabsTrigger value="atividades">Atividades</TabsTrigger>
+            <TabsTrigger value="diario">
+              Diário de obra ({data.diaries.length})
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="atividades" className="space-y-4">
+            <Card className="p-4">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                <div>
+                  <Label className="text-xs">Etapa</Label>
+                  <Select value={filterEtapa} onValueChange={setFilterEtapa}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas as etapas</SelectItem>
+                      {etapas.map((e) => (
+                        <SelectItem key={e.item} value={e.item}>
+                          {e.item} — {e.descricao}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Status</Label>
+                  <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="Não iniciada">Não iniciada</SelectItem>
+                      <SelectItem value="Em andamento">Em andamento</SelectItem>
+                      <SelectItem value="Concluída">Concluída</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Item</Label>
+                  <Input value={filterItem} onChange={(e) => setFilterItem(e.target.value)} placeholder="1.1" />
+                </div>
+                <div>
+                  <Label className="text-xs">Descrição</Label>
+                  <div className="relative">
+                    <Search className="absolute left-2 top-2.5 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      className="pl-8"
+                      value={filterDesc}
+                      onChange={(e) => setFilterDesc(e.target.value)}
+                      placeholder="Buscar..."
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs">% Executado mín.</Label>
+                  <Input
+                    type="number"
+                    value={filterPercMin}
+                    onChange={(e) => setFilterPercMin(e.target.value)}
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+            </Card>
+
+            <ActivitiesTable
+              rows={visibleRows}
+              allRows={data.rows}
+              evolutions={data.evolutions}
+              onUpdate={updateEvolution}
+              onAddDiary={addDiary}
+            />
+          </TabsContent>
+
+          <TabsContent value="diario">
+            <DiaryPanel diaries={data.diaries} onUpdate={updateDiary} onRemove={removeDiary} />
+          </TabsContent>
+        </Tabs>
+      </main>
+    </div>
+  );
+}
+
+function SummaryCard({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: "primary" | "success";
+}) {
+  const toneClass =
+    tone === "primary"
+      ? "text-primary"
+      : tone === "success"
+        ? "text-[var(--success)]"
+        : "text-foreground";
+  return (
+    <Card className="p-5">
+      <div className="text-xs text-muted-foreground uppercase tracking-wide">{label}</div>
+      <div className={`text-2xl font-bold mt-2 ${toneClass}`}>{value}</div>
+    </Card>
+  );
+}
+
+function ActivitiesTable({
+  rows,
+  allRows,
+  evolutions,
+  onUpdate,
+  onAddDiary,
+}: {
+  rows: BudgetRow[];
+  allRows: BudgetRow[];
+  evolutions: Record<string, Evolution>;
+  onUpdate: (item: string, evo: Evolution) => void;
+  onAddDiary: (e: DiaryEntry) => void;
+}) {
+  return (
+    <Card className="overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-muted text-muted-foreground text-xs uppercase">
+            <tr>
+              <th className="px-3 py-2 text-left">Item</th>
+              <th className="px-3 py-2 text-left">Descrição</th>
+              <th className="px-3 py-2 text-left">Und</th>
+              <th className="px-3 py-2 text-right">Quant.</th>
+              <th className="px-3 py-2 text-right">V. Unit (BDI)</th>
+              <th className="px-3 py-2 text-right">V. Total</th>
+              <th className="px-3 py-2 text-right">Peso %</th>
+              <th className="px-3 py-2 text-right">Qtd Exec.</th>
+              <th className="px-3 py-2 text-right">% Exec.</th>
+              <th className="px-3 py-2 text-right">V. Exec.</th>
+              <th className="px-3 py-2 text-center">Status</th>
+              <th className="px-3 py-2 text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => {
+              if (r.isGroup) {
+                const g = groupMetrics(r, allRows, evolutions);
+                return (
+                  <tr key={r.item} className="bg-primary/5 font-semibold border-t">
+                    <td className="px-3 py-2">{r.item}</td>
+                    <td className="px-3 py-2" colSpan={4}>
+                      {r.descricao}
+                    </td>
+                    <td className="px-3 py-2 text-right">{fmtBRL(g.total)}</td>
+                    <td className="px-3 py-2"></td>
+                    <td className="px-3 py-2"></td>
+                    <td className="px-3 py-2 text-right">{fmtNum(g.percent)}%</td>
+                    <td className="px-3 py-2 text-right">{fmtBRL(g.exec)}</td>
+                    <td className="px-3 py-2 text-center">
+                      <Badge variant="outline">ETAPA</Badge>
+                    </td>
+                    <td></td>
+                  </tr>
+                );
+              }
+              const a = activityMetrics(r, evolutions[r.item]);
+              return (
+                <tr key={r.item} className="border-t hover:bg-muted/40">
+                  <td className="px-3 py-2 whitespace-nowrap">{r.item}</td>
+                  <td className="px-3 py-2 max-w-md">{r.descricao}</td>
+                  <td className="px-3 py-2">{r.und}</td>
+                  <td className="px-3 py-2 text-right">{fmtNum(r.quantidade)}</td>
+                  <td className="px-3 py-2 text-right">{fmtBRL(r.valorUnitBDI || r.valorUnit)}</td>
+                  <td className="px-3 py-2 text-right">{fmtBRL(r.total)}</td>
+                  <td className="px-3 py-2 text-right">{fmtNum(r.peso)}</td>
+                  <td className="px-3 py-2 text-right">{fmtNum(a.quantExec)}</td>
+                  <td className="px-3 py-2 text-right">{fmtNum(a.percent)}%</td>
+                  <td className="px-3 py-2 text-right">{fmtBRL(a.valorExec)}</td>
+                  <td className="px-3 py-2 text-center">
+                    <Badge variant={statusVariant(a.status)}>{a.status}</Badge>
+                  </td>
+                  <td className="px-3 py-2 text-center">
+                    <EvolutionDialog
+                      row={r}
+                      allRows={allRows}
+                      evolution={evolutions[r.item]}
+                      onSave={(e) => onUpdate(r.item, e)}
+                      onAddDiary={onAddDiary}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={12} className="text-center py-10 text-muted-foreground">
+                  Nenhum item encontrado com os filtros aplicados.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  );
+}
+
+function EvolutionDialog({
+  row,
+  allRows,
+  evolution,
+  onSave,
+  onAddDiary,
+}: {
+  row: BudgetRow;
+  allRows: BudgetRow[];
+  evolution?: Evolution;
+  onSave: (e: Evolution) => void;
+  onAddDiary: (e: DiaryEntry) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [quantExec, setQuantExec] = useState<string>(evolution?.quantExec?.toString() ?? "");
+  const [percentInput, setPercentInput] = useState<string>("");
+  const [dataExec, setDataExec] = useState(
+    evolution?.dataExec ?? new Date().toISOString().slice(0, 10),
+  );
+  const [obs, setObs] = useState(evolution?.observacoes ?? "");
+
+  // diary
+  const [criarDiario, setCriarDiario] = useState(true);
+  const [clima, setClima] = useState("Bom");
+  const [equipe, setEquipe] = useState("");
+  const [equipamentos, setEquipamentos] = useState("");
+  const [diarioObs, setDiarioObs] = useState("");
+
+  useEffect(() => {
+    if (open) {
+      setQuantExec(evolution?.quantExec?.toString() ?? "");
+      setPercentInput("");
+      setDataExec(evolution?.dataExec ?? new Date().toISOString().slice(0, 10));
+      setObs(evolution?.observacoes ?? "");
+    }
+  }, [open, evolution]);
+
+  function handleQuant(v: string) {
+    setQuantExec(v);
+    const n = parseFloat(v.replace(",", "."));
+    if (!isNaN(n) && row.quantidade > 0) {
+      setPercentInput(((n / row.quantidade) * 100).toFixed(2));
+    }
+  }
+  function handlePercent(v: string) {
+    setPercentInput(v);
+    const n = parseFloat(v.replace(",", "."));
+    if (!isNaN(n)) setQuantExec(((n / 100) * row.quantidade).toFixed(4));
+  }
+
+  function save() {
+    const q = parseFloat(quantExec.replace(",", ".")) || 0;
+    onSave({ quantExec: q, dataExec, observacoes: obs });
+
+    if (criarDiario && q > 0) {
+      const etapa = (() => {
+        const top = row.item.split(".")[0];
+        const g = allRows.find((r) => r.item === top && r.isGroup);
+        return g ? `${g.item} — ${g.descricao}` : row.item;
+      })();
+      const texto = gerarTextoDiario({
+        etapa,
+        descricao: row.descricao,
+        quantExec: q - (evolution?.quantExec ?? 0) || q,
+        unidade: row.und,
+      });
+      onAddDiary({
+        id: crypto.randomUUID(),
+        itemKey: row.item,
+        data: dataExec,
+        clima,
+        equipe,
+        equipamentos,
+        observacoes: diarioObs,
+        quantExec: q,
+        etapa,
+        atividade: row.descricao,
+        texto,
+        createdAt: new Date().toISOString(),
+      });
+      toast.success("Evolução e diário registrados");
+    } else {
+      toast.success("Evolução registrada");
+    }
+    setOpen(false);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline">
+          <Pencil className="w-3 h-3 mr-1" /> Lançar
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {row.item} — {row.descricao}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-3 text-sm bg-muted/50 p-3 rounded-md">
+            <div>
+              <div className="text-muted-foreground text-xs">Quant. total</div>
+              <div className="font-medium">
+                {fmtNum(row.quantidade)} {row.und}
+              </div>
+            </div>
+            <div>
+              <div className="text-muted-foreground text-xs">Valor total</div>
+              <div className="font-medium">{fmtBRL(row.total)}</div>
+            </div>
+            <div>
+              <div className="text-muted-foreground text-xs">V. Unit. c/ BDI</div>
+              <div className="font-medium">{fmtBRL(row.valorUnitBDI || row.valorUnit)}</div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Quantidade executada</Label>
+              <Input value={quantExec} onChange={(e) => handleQuant(e.target.value)} />
+            </div>
+            <div>
+              <Label>% Executado</Label>
+              <Input value={percentInput} onChange={(e) => handlePercent(e.target.value)} />
+            </div>
+            <div>
+              <Label>Data da execução</Label>
+              <Input type="date" value={dataExec} onChange={(e) => setDataExec(e.target.value)} />
+            </div>
+          </div>
+          <div>
+            <Label>Observações</Label>
+            <Textarea value={obs} onChange={(e) => setObs(e.target.value)} />
+          </div>
+
+          <div className="border-t pt-4">
+            <label className="flex items-center gap-2 mb-3">
+              <input
+                type="checkbox"
+                checked={criarDiario}
+                onChange={(e) => setCriarDiario(e.target.checked)}
+              />
+              <span className="font-medium">Registrar entrada no diário de obra</span>
+            </label>
+            {criarDiario && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Clima</Label>
+                  <Input value={clima} onChange={(e) => setClima(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Equipe</Label>
+                  <Input value={equipe} onChange={(e) => setEquipe(e.target.value)} />
+                </div>
+                <div className="col-span-2">
+                  <Label>Equipamentos utilizados</Label>
+                  <Input
+                    value={equipamentos}
+                    onChange={(e) => setEquipamentos(e.target.value)}
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Label>Observações do diário</Label>
+                  <Textarea value={diarioObs} onChange={(e) => setDiarioObs(e.target.value)} />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={save}>Salvar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DiaryPanel({
+  diaries,
+  onUpdate,
+  onRemove,
+}: {
+  diaries: DiaryEntry[];
+  onUpdate: (e: DiaryEntry) => void;
+  onRemove: (id: string) => void;
+}) {
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+
+  const filtered = useMemo(() => {
+    return diaries.filter((d) => {
+      if (from && d.data < from) return false;
+      if (to && d.data > to) return false;
+      return true;
+    });
+  }, [diaries, from, to]);
+
+  return (
+    <div className="space-y-4">
+      <Card className="p-4 flex flex-wrap items-end gap-3">
+        <div>
+          <Label className="text-xs">De</Label>
+          <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+        </div>
+        <div>
+          <Label className="text-xs">Até</Label>
+          <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+        </div>
+        <Button
+          variant="outline"
+          onClick={() => exportDiarioPdf(filtered, "Relatório de Diário de Obra")}
+          disabled={filtered.length === 0}
+        >
+          <FileText className="w-4 h-4 mr-1" /> Exportar PDF do período
+        </Button>
+        <div className="ml-auto text-sm text-muted-foreground">
+          {filtered.length} registro(s)
+        </div>
+      </Card>
+
+      {filtered.length === 0 ? (
+        <Card className="p-10 text-center text-muted-foreground">
+          <BookOpen className="w-10 h-10 mx-auto mb-3 opacity-50" />
+          Nenhum registro de diário ainda. Lance evolução em uma atividade para gerar.
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((d) => (
+            <DiaryCard key={d.id} entry={d} onUpdate={onUpdate} onRemove={onRemove} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DiaryCard({
+  entry,
+  onUpdate,
+  onRemove,
+}: {
+  entry: DiaryEntry;
+  onUpdate: (e: DiaryEntry) => void;
+  onRemove: (id: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [e, setE] = useState(entry);
+
+  function save() {
+    onUpdate(e);
+    setEditing(false);
+    toast.success("Diário atualizado");
+  }
+
+  return (
+    <Card className="p-5">
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div>
+          <div className="font-semibold text-foreground">{entry.etapa}</div>
+          <div className="text-xs text-muted-foreground">
+            {entry.data} · Item {entry.itemKey} · {entry.atividade}
+          </div>
+        </div>
+        <div className="flex gap-1">
+          <Button size="sm" variant="ghost" onClick={() => setEditing(!editing)}>
+            <Pencil className="w-4 h-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => exportDiarioPdf([entry], `Diário ${entry.data}`)}
+          >
+            <FileText className="w-4 h-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              if (confirm("Excluir este diário?")) onRemove(entry.id);
+            }}
+          >
+            <Trash2 className="w-4 h-4 text-destructive" />
+          </Button>
+        </div>
+      </div>
+
+      {editing ? (
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Data</Label>
+              <Input type="date" value={e.data} onChange={(ev) => setE({ ...e, data: ev.target.value })} />
+            </div>
+            <div>
+              <Label>Clima</Label>
+              <Input value={e.clima} onChange={(ev) => setE({ ...e, clima: ev.target.value })} />
+            </div>
+            <div>
+              <Label>Equipe</Label>
+              <Input value={e.equipe} onChange={(ev) => setE({ ...e, equipe: ev.target.value })} />
+            </div>
+            <div>
+              <Label>Equipamentos</Label>
+              <Input
+                value={e.equipamentos}
+                onChange={(ev) => setE({ ...e, equipamentos: ev.target.value })}
+              />
+            </div>
+          </div>
+          <div>
+            <Label>Texto do diário</Label>
+            <Textarea
+              rows={5}
+              value={e.texto}
+              onChange={(ev) => setE({ ...e, texto: ev.target.value })}
+            />
+          </div>
+          <div>
+            <Label>Observações</Label>
+            <Textarea
+              value={e.observacoes}
+              onChange={(ev) => setE({ ...e, observacoes: ev.target.value })}
+            />
+          </div>
+          <Button onClick={save}>Salvar alterações</Button>
+        </div>
+      ) : (
+        <>
+          <div className="text-xs text-muted-foreground mb-2">
+            Clima: {entry.clima || "-"} · Equipe: {entry.equipe || "-"} · Equipamentos:{" "}
+            {entry.equipamentos || "-"}
+          </div>
+          <p className="text-sm text-foreground leading-relaxed">{entry.texto}</p>
+          {entry.observacoes && (
+            <p className="text-sm italic text-muted-foreground mt-2">Obs: {entry.observacoes}</p>
+          )}
+        </>
+      )}
+    </Card>
+  );
+}
