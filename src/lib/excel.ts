@@ -76,9 +76,10 @@ export async function parseExcel(file: File): Promise<ParseResult> {
         map.quantidade === undefined
       )
         map.quantidade = idx;
-      else if (cell.includes("valorunitario") && cell.includes("bdi")) map.valorUnitBDI = idx;
+      else if (cell.includes("valorunit") && cell.includes("bdi")) map.valorUnitBDI = idx;
+      else if (cell.includes("vunit") && cell.includes("bdi")) map.valorUnitBDI = idx;
       else if (
-        (cell.includes("valorunit") || cell === "preunit" || cell === "precounitario") &&
+        (cell.includes("valorunit") || cell.includes("vunit") || cell === "preunit" || cell === "precounitario") &&
         map.valorUnit === undefined
       )
         map.valorUnit = idx;
