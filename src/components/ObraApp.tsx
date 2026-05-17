@@ -1177,7 +1177,7 @@ function ServiceRow({
         <td className="px-2 py-1.5">{row.codigo}</td>
         <td className="px-2 py-1.5">{row.banco}</td>
         <td className="px-2 py-1.5 max-w-md font-medium" style={{ paddingLeft: 8 + indent }}>
-          ⚠ EXCESSO — {row.descricao}
+          ⚠ EXCESSO ({row.quantidade > 0 ? fmtNum((excesso / row.quantidade) * 100) : "0,00"}% acima do previsto) — {row.descricao}
         </td>
         <td className="px-2 py-1.5">{row.und}</td>
         <td className="px-2 py-1.5 text-right font-semibold">{fmtNum(excesso)}</td>
