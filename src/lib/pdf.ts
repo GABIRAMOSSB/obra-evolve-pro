@@ -256,38 +256,67 @@ export async function exportDiarioPdf(entries: DiaryEntry[], titulo = "Diário d
       doc.text(`Registro fotográfico (${e.fotos.length})`, 14, y);
       doc.setFont("helvetica", "normal");
       y += 5;
-      const imgs = e.fotos.filter((f) => f.tipo !== "video");
+      const items = e.fotos;
       const cols = 2;
       const gap = 4;
       const cellW = (pageW - 28 - gap) / cols;
       const cellH = cellW * 0.75;
       let col = 0;
       let rowX = 14;
-      for (const f of imgs) {
-        const data = await loadImageAsDataUrl(f.url);
-        if (!data) continue;
+      for (const f of items) {
+        const isVideo = f.tipo === "video";
+        const data = isVideo ? await loadVideoThumbnail(f.url) : await loadImageAsDataUrl(f.url);
         if (col === 0) {
-          ensureSpace(cellH + 12);
+          ensureSpace(cellH + 14);
           rowX = 14;
         }
-        try {
-          doc.addImage(data.dataUrl, "JPEG", rowX, y, cellW, cellH, undefined, "FAST");
-        } catch {
-          // skip if invalid
+        if (data) {
+          try {
+            doc.addImage(data.dataUrl, "JPEG", rowX, y, cellW, cellH, undefined, "FAST");
+          } catch {
+            /* ignore */
+          }
+        } else {
+          // Placeholder
+          doc.setDrawColor(180);
+          doc.setFillColor(240, 240, 240);
+          doc.rect(rowX, y, cellW, cellH, "FD");
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "bold");
+          doc.text(isVideo ? "▶  VÍDEO" : "Imagem indisponível", rowX + cellW / 2, y + cellH / 2, {
+            align: "center",
+          });
+          doc.setFont("helvetica", "normal");
         }
-        const caption = `${f.hora || ""}${f.legenda ? " — " + f.legenda : ""}${f.tipo && f.tipo !== "geral" ? ` [${f.tipo}]` : ""}`;
+        if (isVideo) {
+          // Clickable link over the cell
+          try {
+            doc.link(rowX, y, cellW, cellH, { url: f.url });
+          } catch {
+            /* ignore */
+          }
+        }
+        const tag = isVideo ? " [vídeo]" : f.tipo && f.tipo !== "geral" ? ` [${f.tipo}]` : "";
+        const caption = `${f.hora || ""}${f.legenda ? " — " + f.legenda : ""}${tag}`;
         doc.setFontSize(8);
-        doc.text(doc.splitTextToSize(caption, cellW), rowX, y + cellH + 4);
+        const capLines = doc.splitTextToSize(caption, cellW);
+        doc.text(capLines, rowX, y + cellH + 4);
+        if (isVideo) {
+          const linkLine = doc.splitTextToSize(f.url, cellW);
+          doc.setTextColor(37, 99, 235);
+          doc.textWithLink(linkLine[0] ?? "Abrir vídeo", rowX, y + cellH + 9, { url: f.url });
+          doc.setTextColor(0, 0, 0);
+        }
         doc.setFontSize(10);
         col++;
         if (col >= cols) {
           col = 0;
-          y += cellH + 12;
+          y += cellH + 14;
         } else {
           rowX += cellW + gap;
         }
       }
-      if (col !== 0) y += cellH + 12;
+      if (col !== 0) y += cellH + 14;
     }
 
     ensureSpace(8);
