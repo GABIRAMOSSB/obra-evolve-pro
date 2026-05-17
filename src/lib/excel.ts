@@ -49,13 +49,13 @@ export async function parseExcel(file: File): Promise<ParseResult> {
   const ws = wb.Sheets[sheetName];
   const matrix: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
 
-  // Find header row
+  // Find header row (try single row, then merged with next row for 2-line headers)
   let headerRow = -1;
   let headerMap: Record<string, number> = {};
-  for (let i = 0; i < matrix.length; i++) {
-    const row = matrix[i];
-    if (!row || row.length < 4) continue;
-    const normalized = row.map(norm);
+  let headerRowsConsumed = 1;
+
+  const buildMap = (cells: string[]) => {
+    const normalized = cells.map(norm);
     const map: Record<string, number> = {};
     normalized.forEach((cell, idx) => {
       if (cell.startsWith("item") && map.item === undefined) map.item = idx;
@@ -63,22 +63,17 @@ export async function parseExcel(file: File): Promise<ParseResult> {
       else if (cell === "banco" || cell === "fonte") map.banco = idx;
       else if (cell.startsWith("descric") || cell === "servico" || cell === "discriminacao")
         map.descricao = idx;
-      else if (
-        cell === "und" ||
-        cell === "un" ||
-        cell === "unid" ||
-        cell === "unidade" ||
-        cell === "u"
-      )
+      else if (cell === "und" || cell === "un" || cell === "unid" || cell === "unidade" || cell === "u")
         map.und = idx;
       else if (
         (cell.startsWith("quant") || cell === "qtd" || cell === "qte" || cell === "qtde") &&
         map.quantidade === undefined
       )
         map.quantidade = idx;
-      else if (cell.includes("valorunitario") && cell.includes("bdi")) map.valorUnitBDI = idx;
+      else if (cell.includes("valorunit") && cell.includes("bdi")) map.valorUnitBDI = idx;
+      else if (cell.includes("vunit") && cell.includes("bdi")) map.valorUnitBDI = idx;
       else if (
-        (cell.includes("valorunit") || cell === "preunit" || cell === "precounitario") &&
+        (cell.includes("valorunit") || cell.includes("vunit") || cell === "preunit" || cell === "precounitario") &&
         map.valorUnit === undefined
       )
         map.valorUnit = idx;
@@ -86,9 +81,33 @@ export async function parseExcel(file: File): Promise<ParseResult> {
         map.total = idx;
       else if (cell.includes("peso")) map.peso = idx;
     });
+    return map;
+  };
+
+  for (let i = 0; i < matrix.length; i++) {
+    const row = matrix[i];
+    if (!row || row.length < 4) continue;
+    const cells = row.map((c) => String(c ?? ""));
+    let map = buildMap(cells);
+    let consumed = 1;
+    // Try merging with next row if not all required headers found
+    if (!REQUIRED_HEADERS.every((h) => map[h] !== undefined) && matrix[i + 1]) {
+      const next = matrix[i + 1].map((c) => String(c ?? ""));
+      const maxLen = Math.max(cells.length, next.length);
+      const merged: string[] = [];
+      for (let k = 0; k < maxLen; k++) {
+        merged.push(`${cells[k] ?? ""} ${next[k] ?? ""}`.trim());
+      }
+      const mergedMap = buildMap(merged);
+      if (REQUIRED_HEADERS.every((h) => mergedMap[h] !== undefined)) {
+        map = mergedMap;
+        consumed = 2;
+      }
+    }
     if (REQUIRED_HEADERS.every((h) => map[h] !== undefined)) {
       headerRow = i;
       headerMap = map;
+      headerRowsConsumed = consumed;
       break;
     }
   }
@@ -114,7 +133,7 @@ export async function parseExcel(file: File): Promise<ParseResult> {
   const rowToStrings = (row: unknown[]) =>
     (row ?? []).map((c) => String(c ?? "").trim());
 
-  for (let i = headerRow + 1; i < matrix.length; i++) {
+  for (let i = headerRow + headerRowsConsumed; i < matrix.length; i++) {
     const row = matrix[i];
     const excelRowIndex = i + 1;
     if (!row) continue;
