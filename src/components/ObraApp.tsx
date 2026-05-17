@@ -377,9 +377,13 @@ function Dashboard({
       } else if (filterStatus !== "all" || filterPercMin) {
         return false;
       }
+      // Hide rows whose ancestor group is collapsed
+      for (const ancestor of Object.keys(collapsed)) {
+        if (collapsed[ancestor] && isChildOf(r.item, ancestor)) return false;
+      }
       return true;
     });
-  }, [data, filterEtapa, filterItem, filterDesc, filterStatus, filterPercMin]);
+  }, [data, filterEtapa, filterItem, filterDesc, filterStatus, filterPercMin, collapsed]);
 
   const updateEvolution = (item: string, evo: Evolution) => {
     const next = { ...data.evolutions, [item]: evo };
