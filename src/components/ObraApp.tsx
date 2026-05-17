@@ -1213,12 +1213,14 @@ function EvolutionDialog({
   evolution,
   onSave,
   onAddDiary,
+  obraId,
 }: {
   row: BudgetRow;
   allRows: BudgetRow[];
   evolution?: Evolution;
   onSave: (e: Evolution) => void;
   onAddDiary: (e: DiaryEntry) => void;
+  obraId: string;
 }) {
   const [open, setOpen] = useState(false);
   const [quantExec, setQuantExec] = useState<string>(evolution?.quantExec?.toString() ?? "");
@@ -1234,6 +1236,11 @@ function EvolutionDialog({
   const [equipe, setEquipe] = useState("");
   const [equipamentos, setEquipamentos] = useState("");
   const [diarioObs, setDiarioObs] = useState("");
+  const [horaInicio, setHoraInicio] = useState("07:00");
+  const [horaFim, setHoraFim] = useState("17:00");
+  const [statusDia, setStatusDia] = useState<DiaryEntry["statusDia"]>("Normal");
+  const [pendencias, setPendencias] = useState("");
+  const [fotos, setFotos] = useState<DiaryPhoto[]>([]);
 
   useEffect(() => {
     if (open) {
@@ -1244,6 +1251,9 @@ function EvolutionDialog({
       );
       setDataExec(evolution?.dataExec ?? new Date().toISOString().slice(0, 10));
       setObs(evolution?.observacoes ?? "");
+      setFotos([]);
+      setPendencias("");
+      setStatusDia("Normal");
     }
   }, [open, evolution, row.quantidade]);
 
@@ -1287,14 +1297,19 @@ function EvolutionDialog({
         id: crypto.randomUUID(),
         itemKey: row.item,
         data: dataExec,
+        horaInicio,
+        horaFim,
+        statusDia,
         clima,
         equipe,
         equipamentos,
+        pendencias,
         observacoes: diarioObs,
         quantExec: q,
         etapa,
         atividade: row.descricao,
         texto,
+        fotos,
         createdAt: new Date().toISOString(),
       });
       toast.success("Evolução e diário registrados");
