@@ -147,6 +147,15 @@ export function gerarTextoDiario(p: {
   descricao: string;
   quantExec: number;
   unidade: string;
+  quantTotal?: number;
+  percentTotal?: number;
 }) {
-  return `Na presente data, foram executados serviços referentes à etapa ${p.etapa}, compreendendo ${p.descricao}, com execução de ${fmtNum(p.quantExec)} ${p.unidade}, correspondente ao avanço físico da atividade. Os serviços ocorreram conforme planejamento da obra, mantendo-se o acompanhamento físico-financeiro do contrato.`;
+  const pct =
+    p.percentTotal !== undefined
+      ? p.percentTotal
+      : p.quantTotal && p.quantTotal > 0
+        ? (p.quantExec / p.quantTotal) * 100
+        : null;
+  const pctStr = pct !== null ? ` (${fmtNum(pct)}% do total previsto)` : "";
+  return `Na presente data, foram executados serviços referentes à etapa ${p.etapa}, compreendendo ${p.descricao}, com execução de ${fmtNum(p.quantExec)} ${p.unidade}${pctStr}, correspondente ao avanço físico da atividade. Os serviços ocorreram conforme planejamento da obra, mantendo-se o acompanhamento físico-financeiro do contrato.`;
 }
