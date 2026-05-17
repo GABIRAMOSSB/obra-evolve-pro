@@ -764,6 +764,12 @@ function Dashboard({
             <Button variant="ghost" size="sm" onClick={removeObra} title="Excluir esta obra">
               <Trash2 className="w-4 h-4 mr-1 text-destructive" /> Excluir
             </Button>
+            {saving && (
+              <span className="text-xs text-muted-foreground px-2">Salvando...</span>
+            )}
+            <Button variant="ghost" size="sm" onClick={onSignOut} title={`Sair (${userEmail})`}>
+              <LogOut className="w-4 h-4 mr-1" /> Sair
+            </Button>
           </div>
         </div>
       </header>
