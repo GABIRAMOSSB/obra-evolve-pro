@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Camera, Trash2, Loader2, Play } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 
 interface Props {
@@ -18,6 +19,7 @@ export function PhotoUploader({ obraId, photos, onChange, compact }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
 
   function isSupportedMedia(file: File) {
     if (file.type.startsWith("image/") || file.type.startsWith("video/")) return true;
@@ -39,15 +41,18 @@ export function PhotoUploader({ obraId, photos, onChange, compact }: Props) {
     }
 
     setUploading(true);
+    setProgress({ current: 0, total: validFiles.length });
     try {
       const uploaded: DiaryPhoto[] = [];
-      for (const f of validFiles) {
+      for (let i = 0; i < validFiles.length; i++) {
+        const f = validFiles[i];
         try {
           const p = await uploadDiaryPhoto(obraId, f);
           uploaded.push(p);
         } catch (e) {
           toast.error(`Falha ao enviar ${f.name}: ${(e as Error).message}`);
         }
+        setProgress({ current: i + 1, total: validFiles.length });
       }
       if (uploaded.length) {
         onChange([...photos, ...uploaded]);
@@ -58,6 +63,7 @@ export function PhotoUploader({ obraId, photos, onChange, compact }: Props) {
       }
     } finally {
       setUploading(false);
+      setProgress({ current: 0, total: 0 });
       if (fileRef.current) fileRef.current.value = "";
       if (cameraRef.current) cameraRef.current.value = "";
     }
@@ -103,7 +109,11 @@ export function PhotoUploader({ obraId, photos, onChange, compact }: Props) {
           disabled={uploading}
         >
           {uploading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Camera className="w-4 h-4 mr-1" />}
-          {uploading ? "Enviando..." : "Escolher arquivos"}
+          {uploading
+            ? progress.total > 0
+              ? `Enviando ${progress.current}/${progress.total}...`
+              : "Enviando..."
+            : "Escolher arquivos"}
         </Button>
         <Button
           type="button"
@@ -112,12 +122,22 @@ export function PhotoUploader({ obraId, photos, onChange, compact }: Props) {
           onClick={() => cameraRef.current?.click()}
           disabled={uploading}
         >
-          <Camera className="w-4 h-4 mr-1" /> Câmera
+          {uploading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Camera className="w-4 h-4 mr-1" />}
+          Câmera
         </Button>
         <span className="text-xs text-muted-foreground">
           {photos.length} arquivo(s)
         </span>
       </div>
+      {uploading && progress.total > 0 && (
+        <div className="space-y-1">
+          <Progress value={(progress.current / progress.total) * 100} />
+          <p className="text-xs text-muted-foreground">
+            Enviando arquivo {Math.min(progress.current + 1, progress.total)} de {progress.total}... O botão fica desabilitado até concluir.
+          </p>
+        </div>
+      )}
+
 
       {photos.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
