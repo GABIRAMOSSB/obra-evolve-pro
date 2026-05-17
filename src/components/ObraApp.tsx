@@ -426,6 +426,7 @@ function Dashboard({
   const [filterItem, setFilterItem] = useState("");
   const [filterDesc, setFilterDesc] = useState("");
   const [filterPercMin, setFilterPercMin] = useState("");
+  const [filterExcedido, setFilterExcedido] = useState<string>("all");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const toggleCollapse = (item: string) =>
     setCollapsed((c) => ({ ...c, [item]: !c[item] }));
@@ -450,7 +451,12 @@ function Dashboard({
         const a = activityMetrics(r, data.evolutions[r.item]);
         if (filterStatus !== "all" && a.status !== filterStatus) return false;
         if (filterPercMin && a.percent < parseFloat(filterPercMin)) return false;
-      } else if (filterStatus !== "all" || filterPercMin) {
+        if (filterExcedido !== "all") {
+          const excedido = r.quantidade > 0 && a.quantExec - r.quantidade > 0.0001;
+          if (filterExcedido === "yes" && !excedido) return false;
+          if (filterExcedido === "no" && excedido) return false;
+        }
+      } else if (filterStatus !== "all" || filterPercMin || filterExcedido !== "all") {
         return false;
       }
       // Hide rows whose ancestor group is collapsed
@@ -459,7 +465,7 @@ function Dashboard({
       }
       return true;
     });
-  }, [data, filterEtapa, filterItem, filterDesc, filterStatus, filterPercMin, collapsed]);
+  }, [data, filterEtapa, filterItem, filterDesc, filterStatus, filterPercMin, filterExcedido, collapsed]);
 
   const updateEvolution = (item: string, evo: Evolution) => {
     const next = { ...data.evolutions, [item]: evo };
@@ -738,7 +744,7 @@ function Dashboard({
 
           <TabsContent value="atividades" className="space-y-4">
             <Card className="p-4">
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
                 <div>
                   <Label className="text-xs">Etapa</Label>
                   <Select value={filterEtapa} onValueChange={setFilterEtapa}>
@@ -789,6 +795,17 @@ function Dashboard({
                     onChange={(e) => setFilterPercMin(e.target.value)}
                     placeholder="0"
                   />
+                </div>
+                <div>
+                  <Label className="text-xs">Excedido</Label>
+                  <Select value={filterExcedido} onValueChange={setFilterExcedido}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="yes">Apenas excedidos</SelectItem>
+                      <SelectItem value="no">Sem excesso</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </Card>
@@ -1157,22 +1174,24 @@ function ServiceRow({
         <td className="px-2 py-1.5 font-mono whitespace-nowrap" style={{ paddingLeft: 8 + indent }}>
           {row.item}
         </td>
-        <td className="px-2 py-1.5"></td>
-        <td className="px-2 py-1.5"></td>
-        <td className="px-2 py-1.5 font-medium" style={{ paddingLeft: 8 + indent }}>
-          ⚠ EXCESSO — quantidade executada acima do previsto
+        <td className="px-2 py-1.5">{row.codigo}</td>
+        <td className="px-2 py-1.5">{row.banco}</td>
+        <td className="px-2 py-1.5 max-w-md font-medium" style={{ paddingLeft: 8 + indent }}>
+          ⚠ EXCESSO — {row.descricao}
         </td>
         <td className="px-2 py-1.5">{row.und}</td>
         <td className="px-2 py-1.5 text-right font-semibold">{fmtNum(excesso)}</td>
-        <td className="px-2 py-1.5"></td>
-        <td className="px-2 py-1.5"></td>
+        <td className="px-2 py-1.5 text-right">{row.valorUnit ? fmtBRL(row.valorUnit) : ""}</td>
+        <td className="px-2 py-1.5 text-right">{row.valorUnitBDI ? fmtBRL(row.valorUnitBDI) : ""}</td>
         <td className="px-2 py-1.5 text-right font-semibold">{fmtBRL(valorExcesso)}</td>
-        <td className="px-2 py-1.5"></td>
-        <td className="px-2 py-1.5"></td>
-        <td className="px-2 py-1.5"></td>
+        <td className="px-2 py-1.5 text-right">{peso ? `${fmtNum(peso)} %` : ""}</td>
+        <td className="px-2 py-1.5 text-right font-semibold">{fmtNum(excesso)}</td>
+        <td className="px-2 py-1.5 text-right font-semibold">
+          {row.quantidade > 0 ? `${fmtNum((excesso / row.quantidade) * 100)} %` : ""}
+        </td>
         <td className="px-2 py-1.5 text-right font-semibold">{fmtBRL(valorExcesso)}</td>
         <td className="px-2 py-1.5 text-center">
-          <Badge variant="destructive" className="text-[10px]">EXCESSO</Badge>
+          <Badge variant="destructive" className="text-[10px]">EXCEDIDO</Badge>
         </td>
         <td className="px-2 py-1.5"></td>
       </tr>
