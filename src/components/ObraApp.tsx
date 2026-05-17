@@ -219,6 +219,57 @@ export function ObraApp() {
 
   if (!loaded) return null;
 
+  if (migration && migration.stage !== "done") {
+    const { plan, stage } = migration;
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <Card className="max-w-lg w-full p-8 space-y-6">
+          <div className="mx-auto w-14 h-14 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center">
+            <CloudUpload className="w-7 h-7" />
+          </div>
+          <div className="text-center space-y-2">
+            <h2 className="text-xl font-bold">Encontramos dados salvos neste dispositivo</h2>
+            <p className="text-sm text-muted-foreground">
+              Podemos enviá-los para a nuvem agora, assim você acessa tudo de qualquer aparelho.
+            </p>
+          </div>
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="rounded-md border p-3">
+              <div className="text-2xl font-bold text-primary">{plan.obrasCount}</div>
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Obras</div>
+            </div>
+            <div className="rounded-md border p-3">
+              <div className="text-2xl font-bold">{plan.diariesCount}</div>
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Diários</div>
+            </div>
+            <div className="rounded-md border p-3">
+              <div className="text-2xl font-bold">{plan.fotosCount}</div>
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Fotos</div>
+            </div>
+          </div>
+          {stage === "running" ? (
+            <div className="space-y-2">
+              <Progress value={70} className="h-2" />
+              <p className="text-xs text-center text-muted-foreground">Enviando dados para a nuvem...</p>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={skipMigration}>
+                Ignorar
+              </Button>
+              <Button className="flex-1" onClick={runMigration}>
+                <CloudUpload className="w-4 h-4 mr-1" /> Enviar para a nuvem
+              </Button>
+            </div>
+          )}
+          <p className="text-[11px] text-muted-foreground text-center">
+            Logado como {user?.email}
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
   if (!activeObra) {
     return (
       <>
