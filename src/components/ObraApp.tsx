@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ProjectData, BudgetRow, Evolution, DiaryEntry } from "@/lib/types";
 import { loadProject, saveProject, clearProject } from "@/lib/storage";
-import { parseExcel } from "@/lib/excel";
+import { parseExcel, type ParseResult } from "@/lib/excel";
 import {
   activityMetrics,
   fmtBRL,
@@ -55,6 +55,7 @@ function statusVariant(status: string): "default" | "secondary" | "outline" {
 export function ObraApp() {
   const [data, setData] = useState<ProjectData | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [preview, setPreview] = useState<{ result: ParseResult; fileName: string } | null>(null);
 
   useEffect(() => {
     setData(loadProject());
@@ -67,58 +68,250 @@ export function ObraApp() {
 
   async function handleFile(file: File) {
     try {
-      const rows = await parseExcel(file);
-      setData({
-        fileName: file.name,
-        importedAt: new Date().toISOString(),
-        rows,
-        evolutions: {},
-        diaries: [],
-      });
-      toast.success(`Planilha importada: ${rows.length} linhas`);
+      const result = await parseExcel(file);
+      setPreview({ result, fileName: file.name });
     } catch (e) {
       toast.error((e as Error).message);
     }
+  }
+
+  function confirmImport() {
+    if (!preview) return;
+    setData({
+      fileName: preview.fileName,
+      importedAt: new Date().toISOString(),
+      rows: preview.result.rows,
+      evolutions: {},
+      diaries: [],
+    });
+    toast.success(`Planilha importada: ${preview.result.rows.length} linhas`);
+    setPreview(null);
   }
 
   if (!loaded) return null;
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
-        <Card className="max-w-xl w-full p-10 text-center space-y-6">
-          <div className="mx-auto w-16 h-16 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center">
-            <HardHat className="w-8 h-8" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Acompanhamento de Obras</h1>
-            <p className="text-muted-foreground mt-2">
-              Importe sua planilha orçamentária para começar. O sistema lê apenas a 1ª aba.
+      <>
+        <div className="min-h-screen bg-background flex items-center justify-center p-6">
+          <Card className="max-w-xl w-full p-10 text-center space-y-6">
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center">
+              <HardHat className="w-8 h-8" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Acompanhamento de Obras</h1>
+              <p className="text-muted-foreground mt-2">
+                Importe sua planilha orçamentária para começar. O sistema lê apenas a 1ª aba.
+              </p>
+            </div>
+            <label className="block">
+              <input
+                type="file"
+                accept=".xlsx,.xls"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files?.[0]) handleFile(e.target.files[0]);
+                  e.target.value = "";
+                }}
+              />
+              <Button asChild size="lg" className="w-full">
+                <span>
+                  <Upload className="mr-2 w-4 h-4" />
+                  Importar planilha Excel
+                </span>
+              </Button>
+            </label>
+            <p className="text-xs text-muted-foreground">
+              Os dados ficam salvos localmente no seu computador.
             </p>
-          </div>
-          <label className="block">
-            <input
-              type="file"
-              accept=".xlsx,.xls"
-              className="hidden"
-              onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
-            />
-            <Button asChild size="lg" className="w-full">
-              <span>
-                <Upload className="mr-2 w-4 h-4" />
-                Importar planilha Excel
-              </span>
-            </Button>
-          </label>
-          <p className="text-xs text-muted-foreground">
-            Os dados ficam salvos localmente no seu computador.
-          </p>
-        </Card>
-      </div>
+          </Card>
+        </div>
+        <ImportPreviewDialog
+          preview={preview}
+          onCancel={() => setPreview(null)}
+          onConfirm={confirmImport}
+        />
+      </>
     );
   }
 
   return <Dashboard data={data} setData={setData} />;
+}
+
+function ImportPreviewDialog({
+  preview,
+  onCancel,
+  onConfirm,
+}: {
+  preview: { result: ParseResult; fileName: string } | null;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  if (!preview) return null;
+  const { result, fileName } = preview;
+  const groupCount = result.rows.filter((r) => r.isGroup).length;
+  const activityCount = result.rows.length - groupCount;
+  const previewLimit = 100;
+  const skippedLimit = 50;
+
+  // ordered header columns
+  const headerCols = Object.entries(result.headerMap).sort((a, b) => a[1] - b[1]);
+
+  return (
+    <Dialog open={!!preview} onOpenChange={(o) => !o && onCancel()}>
+      <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle>Pré-visualização da importação</DialogTitle>
+          <p className="text-sm text-muted-foreground">
+            {fileName} — aba <strong>{result.sheetName}</strong> • cabeçalho na linha{" "}
+            <strong>{result.headerRowIndex}</strong>
+          </p>
+        </DialogHeader>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <PreviewStat label="Linhas válidas" value={result.rows.length} tone="success" />
+          <PreviewStat label="Etapas" value={groupCount} />
+          <PreviewStat label="Atividades" value={activityCount} />
+          <PreviewStat label="Linhas ignoradas" value={result.skipped.length} tone="warn" />
+        </div>
+
+        <div className="space-y-2">
+          <div className="text-sm font-medium">Cabeçalhos detectados</div>
+          <div className="flex flex-wrap gap-2">
+            {headerCols.map(([key, idx]) => (
+              <Badge key={key} variant="secondary" className="font-mono text-xs">
+                {key}: col {idx + 1} ({result.headerLabels[headerCols.findIndex(([k]) => k === key)] || "—"})
+              </Badge>
+            ))}
+          </div>
+        </div>
+
+        <Tabs defaultValue="incluidas" className="flex-1 min-h-0 flex flex-col">
+          <TabsList>
+            <TabsTrigger value="incluidas">
+              Incluídas ({result.rows.length})
+            </TabsTrigger>
+            <TabsTrigger value="ignoradas">
+              Ignoradas ({result.skipped.length})
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="incluidas" className="flex-1 min-h-0 overflow-auto border rounded-md">
+            <table className="w-full text-xs">
+              <thead className="bg-muted text-muted-foreground sticky top-0">
+                <tr>
+                  <th className="px-2 py-1.5 text-left">Linha</th>
+                  <th className="px-2 py-1.5 text-left">Tipo</th>
+                  <th className="px-2 py-1.5 text-left">Item</th>
+                  <th className="px-2 py-1.5 text-left">Descrição</th>
+                  <th className="px-2 py-1.5 text-left">Und</th>
+                  <th className="px-2 py-1.5 text-right">Quant.</th>
+                  <th className="px-2 py-1.5 text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {result.parsed.slice(0, previewLimit).map(({ rowIndex, row }) => (
+                  <tr
+                    key={rowIndex}
+                    className={`border-t ${row.isGroup ? "bg-primary/5 font-semibold" : ""}`}
+                  >
+                    <td className="px-2 py-1 text-muted-foreground font-mono">{rowIndex}</td>
+                    <td className="px-2 py-1">
+                      <Badge variant={row.isGroup ? "default" : "outline"} className="text-[10px]">
+                        {row.isGroup ? "ETAPA" : "ATIV."}
+                      </Badge>
+                    </td>
+                    <td className="px-2 py-1 font-mono">{row.item}</td>
+                    <td className="px-2 py-1 max-w-md truncate">{row.descricao}</td>
+                    <td className="px-2 py-1">{row.und}</td>
+                    <td className="px-2 py-1 text-right">{row.quantidade || ""}</td>
+                    <td className="px-2 py-1 text-right">{row.total || ""}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {result.parsed.length > previewLimit && (
+              <div className="text-xs text-muted-foreground p-2 text-center border-t">
+                Exibindo {previewLimit} de {result.parsed.length} linhas. Todas serão importadas.
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="ignoradas" className="flex-1 min-h-0 overflow-auto border rounded-md">
+            {result.skipped.length === 0 ? (
+              <div className="p-6 text-center text-sm text-muted-foreground">
+                Nenhuma linha foi ignorada.
+              </div>
+            ) : (
+              <table className="w-full text-xs">
+                <thead className="bg-muted text-muted-foreground sticky top-0">
+                  <tr>
+                    <th className="px-2 py-1.5 text-left">Linha</th>
+                    <th className="px-2 py-1.5 text-left">Motivo</th>
+                    <th className="px-2 py-1.5 text-left">Conteúdo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.skipped.slice(0, skippedLimit).map((s) => (
+                    <tr key={s.rowIndex} className="border-t bg-amber-50/40 dark:bg-amber-950/10">
+                      <td className="px-2 py-1 text-muted-foreground font-mono align-top">
+                        {s.rowIndex}
+                      </td>
+                      <td className="px-2 py-1 align-top">
+                        <Badge variant="outline" className="text-[10px]">
+                          {s.reason}
+                        </Badge>
+                      </td>
+                      <td className="px-2 py-1 text-muted-foreground truncate max-w-xl">
+                        {s.cells.filter(Boolean).join(" | ") || <em>(linha vazia)</em>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            {result.skipped.length > skippedLimit && (
+              <div className="text-xs text-muted-foreground p-2 text-center border-t">
+                Exibindo {skippedLimit} de {result.skipped.length} linhas ignoradas.
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onCancel}>
+            Cancelar
+          </Button>
+          <Button onClick={onConfirm}>
+            Confirmar importação ({result.rows.length} linhas)
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function PreviewStat({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone?: "success" | "warn";
+}) {
+  const cls =
+    tone === "success"
+      ? "text-[var(--success)]"
+      : tone === "warn"
+        ? "text-amber-600"
+        : "text-foreground";
+  return (
+    <div className="rounded-md border p-3">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className={`text-xl font-bold ${cls}`}>{value}</div>
+    </div>
+  );
 }
 
 function Dashboard({

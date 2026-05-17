@@ -20,10 +20,33 @@ function toNumber(v: unknown): number {
 
 const REQUIRED_HEADERS = ["item", "descricao", "und", "total"];
 
-export async function parseExcel(file: File): Promise<BudgetRow[]> {
+export interface SkippedRow {
+  rowIndex: number; // 1-based as in Excel
+  cells: string[];
+  reason: string;
+}
+
+export interface ParsedRow {
+  rowIndex: number; // 1-based as in Excel
+  row: BudgetRow;
+}
+
+export interface ParseResult {
+  rows: BudgetRow[];
+  parsed: ParsedRow[];
+  skipped: SkippedRow[];
+  headerRowIndex: number; // 1-based
+  headerLabels: string[]; // labels actually picked, in column order present
+  headerMap: Record<string, number>; // logical key -> column index
+  sheetName: string;
+  totalRows: number;
+}
+
+export async function parseExcel(file: File): Promise<ParseResult> {
   const buf = await file.arrayBuffer();
   const wb = XLSX.read(buf, { type: "array" });
-  const ws = wb.Sheets[wb.SheetNames[0]];
+  const sheetName = wb.SheetNames[0];
+  const ws = wb.Sheets[sheetName];
   const matrix: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
 
   // Find header row
@@ -59,24 +82,59 @@ export async function parseExcel(file: File): Promise<BudgetRow[]> {
     );
   }
 
+  const headerLabels: string[] = [];
+  const headerRowVals = matrix[headerRow] ?? [];
+  Object.entries(headerMap)
+    .sort((a, b) => a[1] - b[1])
+    .forEach(([, idx]) => {
+      headerLabels.push(String(headerRowVals[idx] ?? "").trim());
+    });
+
   const rows: BudgetRow[] = [];
+  const parsed: ParsedRow[] = [];
+  const skipped: SkippedRow[] = [];
+
+  const rowToStrings = (row: unknown[]) =>
+    (row ?? []).map((c) => String(c ?? "").trim());
+
   for (let i = headerRow + 1; i < matrix.length; i++) {
     const row = matrix[i];
+    const excelRowIndex = i + 1;
     if (!row) continue;
+    const cells = rowToStrings(row);
+
     const item = String(row[headerMap.item] ?? "").trim();
     const descricao = String(row[headerMap.descricao] ?? "").trim();
-    if (!item || !descricao) continue;
-    // skip repeated headers
-    if (norm(item) === "item" && norm(descricao).startsWith("descric")) continue;
-    // require item to look like 1, 1.1, 1.1.1
-    if (!/^\d+(\.\d+)*$/.test(item)) continue;
+
+    if (!item && !descricao && cells.every((c) => !c)) continue; // truly blank
+
+    if (!item || !descricao) {
+      skipped.push({
+        rowIndex: excelRowIndex,
+        cells,
+        reason: !item && !descricao ? "Item e Descrição vazios" : !item ? "Item vazio" : "Descrição vazia",
+      });
+      continue;
+    }
+    if (norm(item) === "item" && norm(descricao).startsWith("descric")) {
+      skipped.push({ rowIndex: excelRowIndex, cells, reason: "Cabeçalho repetido" });
+      continue;
+    }
+    if (!/^\d+(\.\d+)*$/.test(item)) {
+      skipped.push({
+        rowIndex: excelRowIndex,
+        cells,
+        reason: `Item em formato inválido ("${item}")`,
+      });
+      continue;
+    }
 
     const und = String(row[headerMap.und] ?? "").trim();
     const quantidade = toNumber(row[headerMap.quantidade]);
     const total = toNumber(row[headerMap.total]);
     const isGroup = !und && !quantidade && !total;
 
-    rows.push({
+    const budgetRow: BudgetRow = {
       item,
       codigo: String(row[headerMap.codigo] ?? "").trim(),
       banco: String(row[headerMap.banco] ?? "").trim(),
@@ -89,12 +147,23 @@ export async function parseExcel(file: File): Promise<BudgetRow[]> {
       peso: toNumber(row[headerMap.peso]),
       isGroup,
       level: item.split(".").length,
-    });
+    };
+    rows.push(budgetRow);
+    parsed.push({ rowIndex: excelRowIndex, row: budgetRow });
   }
 
   if (rows.length === 0) {
     throw new Error("Nenhum item válido encontrado na planilha.");
   }
 
-  return rows;
+  return {
+    rows,
+    parsed,
+    skipped,
+    headerRowIndex: headerRow + 1,
+    headerLabels,
+    headerMap,
+    sheetName,
+    totalRows: matrix.length,
+  };
 }
