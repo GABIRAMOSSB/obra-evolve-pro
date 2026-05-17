@@ -396,9 +396,21 @@ function PreviewStat({
 function Dashboard({
   data,
   setData,
+  obras,
+  activeId,
+  onSelectObra,
+  onRenameObra,
+  onDeleteObra,
+  onImportFile,
 }: {
   data: ProjectData;
   setData: (d: ProjectData) => void;
+  obras: ProjectData[];
+  activeId: string;
+  onSelectObra: (id: string) => void;
+  onRenameObra: (id: string, nome: string) => void;
+  onDeleteObra: (id: string) => void;
+  onImportFile: (file: File) => void;
 }) {
   const m = useMemo(() => projectMetrics(data.rows, data.evolutions), [data]);
 
