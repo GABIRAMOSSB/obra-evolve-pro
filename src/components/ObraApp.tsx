@@ -1589,7 +1589,10 @@ function DiaryCard({
           </div>
           <p className="text-sm text-foreground leading-relaxed">{entry.texto}</p>
           {entry.observacoes && (
-            <p className="text-sm italic text-muted-foreground mt-2">Obs: {entry.observacoes}</p>
+            <div className="flex items-start gap-2 mt-3 p-2 rounded-md bg-muted/40 border border-border/50">
+              <StickyNote className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+              <p className="text-sm italic text-muted-foreground">{entry.observacoes}</p>
+            </div>
           )}
         </>
       )}
