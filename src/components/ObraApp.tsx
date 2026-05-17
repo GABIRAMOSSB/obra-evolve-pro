@@ -1155,6 +1155,7 @@ function ServiceRow({
             evolution={evolution}
             onSave={(e) => onUpdate(row.item, e)}
             onAddDiary={onAddDiary}
+            obraId={obraId}
           />
           {row.banco === "MANUAL" && onRemove && (
             <Button
