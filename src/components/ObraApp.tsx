@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ProjectData, BudgetRow, Evolution, DiaryEntry, Workspace, ObraInfo, DiaryPhoto } from "@/lib/types";
-import { loadWorkspaceCloud, saveWorkspaceCloud, newObraId } from "@/lib/storage";
+import { loadWorkspaceCloud, saveWorkspaceCloud, newObraId, detectMigration, markMigrated, type MigrationPlan } from "@/lib/storage";
 import { useAuth } from "@/hooks/use-auth";
 import { useNavigate } from "@tanstack/react-router";
-import { LogOut } from "lucide-react";
+import { LogOut, CloudUpload, CheckCircle2 } from "lucide-react";
 import { ObraInfoDialog } from "@/components/ObraInfoDialog";
 import { PhotoUploader } from "@/components/PhotoUploader";
 import { parseExcel, type ParseResult } from "@/lib/excel";
@@ -74,6 +74,12 @@ export function ObraApp() {
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState<{ result: ParseResult; fileName: string } | null>(null);
+  const [migration, setMigration] = useState<
+    | { stage: "prompt"; plan: MigrationPlan }
+    | { stage: "running"; plan: MigrationPlan }
+    | { stage: "done"; plan: MigrationPlan }
+    | null
+  >(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipNextSave = useRef(true);
 
@@ -83,11 +89,13 @@ export function ObraApp() {
     (async () => {
       try {
         const remote = await loadWorkspaceCloud(user.id);
-        if (!cancelled) {
-          skipNextSave.current = true;
-          setWs(remote);
-          setLoaded(true);
-        }
+        if (cancelled) return;
+        const plan = detectMigration();
+        const shouldPrompt = plan.needed && remote.obras.length === 0;
+        skipNextSave.current = true;
+        setWs(remote);
+        setLoaded(true);
+        if (shouldPrompt) setMigration({ stage: "prompt", plan });
       } catch (e) {
         console.error(e);
         toast.error("Falha ao carregar dados da nuvem");
@@ -98,6 +106,32 @@ export function ObraApp() {
       cancelled = true;
     };
   }, [user]);
+
+  async function runMigration() {
+    if (!user || !migration || !migration.plan.local) return;
+    const plan = migration.plan;
+    const local = migration.plan.local!;
+    setMigration({ stage: "running", plan });
+    try {
+      await saveWorkspaceCloud(user.id, local);
+      markMigrated();
+      skipNextSave.current = true;
+      setWs(local);
+      toast.success(
+        `Migração concluída: ${plan.obrasCount} obra(s), ${plan.diariesCount} diário(s), ${plan.fotosCount} foto(s).`,
+      );
+      setMigration({ stage: "done", plan });
+    } catch (e) {
+      console.error(e);
+      toast.error("Falha ao migrar dados. Tente novamente.");
+      setMigration({ stage: "prompt", plan });
+    }
+  }
+
+  function skipMigration() {
+    markMigrated();
+    setMigration(null);
+  }
 
   useEffect(() => {
     if (!loaded || !user) return;
@@ -187,6 +221,57 @@ export function ObraApp() {
   }
 
   if (!loaded) return null;
+
+  if (migration && migration.stage !== "done") {
+    const { plan, stage } = migration;
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <Card className="max-w-lg w-full p-8 space-y-6">
+          <div className="mx-auto w-14 h-14 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center">
+            <CloudUpload className="w-7 h-7" />
+          </div>
+          <div className="text-center space-y-2">
+            <h2 className="text-xl font-bold">Encontramos dados salvos neste dispositivo</h2>
+            <p className="text-sm text-muted-foreground">
+              Podemos enviá-los para a nuvem agora, assim você acessa tudo de qualquer aparelho.
+            </p>
+          </div>
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="rounded-md border p-3">
+              <div className="text-2xl font-bold text-primary">{plan.obrasCount}</div>
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Obras</div>
+            </div>
+            <div className="rounded-md border p-3">
+              <div className="text-2xl font-bold">{plan.diariesCount}</div>
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Diários</div>
+            </div>
+            <div className="rounded-md border p-3">
+              <div className="text-2xl font-bold">{plan.fotosCount}</div>
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Fotos</div>
+            </div>
+          </div>
+          {stage === "running" ? (
+            <div className="space-y-2">
+              <Progress value={70} className="h-2" />
+              <p className="text-xs text-center text-muted-foreground">Enviando dados para a nuvem...</p>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={skipMigration}>
+                Ignorar
+              </Button>
+              <Button className="flex-1" onClick={runMigration}>
+                <CloudUpload className="w-4 h-4 mr-1" /> Enviar para a nuvem
+              </Button>
+            </div>
+          )}
+          <p className="text-[11px] text-muted-foreground text-center">
+            Logado como {user?.email}
+          </p>
+        </Card>
+      </div>
+    );
+  }
 
   if (!activeObra) {
     return (

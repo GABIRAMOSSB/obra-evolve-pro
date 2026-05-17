@@ -45,6 +45,35 @@ function readLocal(): Workspace | null {
   return null;
 }
 
+export interface MigrationPlan {
+  needed: boolean;
+  obrasCount: number;
+  diariesCount: number;
+  fotosCount: number;
+  local: Workspace | null;
+}
+
+export function detectMigration(): MigrationPlan {
+  if (typeof window === "undefined" || localStorage.getItem(MIGRATED_KEY)) {
+    return { needed: false, obrasCount: 0, diariesCount: 0, fotosCount: 0, local: null };
+  }
+  const local = readLocal();
+  if (!local || local.obras.length === 0) {
+    return { needed: false, obrasCount: 0, diariesCount: 0, fotosCount: 0, local: null };
+  }
+  let diaries = 0;
+  let fotos = 0;
+  for (const o of local.obras) {
+    diaries += o.diaries?.length ?? 0;
+    for (const d of o.diaries ?? []) fotos += d.fotos?.length ?? 0;
+  }
+  return { needed: true, obrasCount: local.obras.length, diariesCount: diaries, fotosCount: fotos, local };
+}
+
+export function markMigrated() {
+  if (typeof window !== "undefined") localStorage.setItem(MIGRATED_KEY, "1");
+}
+
 export async function loadWorkspaceCloud(userId: string): Promise<Workspace> {
   const { data, error } = await supabase
     .from("user_workspaces")
@@ -55,21 +84,6 @@ export async function loadWorkspaceCloud(userId: string): Promise<Workspace> {
     console.error("loadWorkspaceCloud", error);
   }
   const remote = (data?.workspace as Workspace | undefined) ?? null;
-
-  // Migration: if no cloud data and we have local data, push it once.
-  if (
-    (!remote || remote.obras.length === 0) &&
-    typeof window !== "undefined" &&
-    !localStorage.getItem(MIGRATED_KEY)
-  ) {
-    const local = readLocal();
-    if (local && local.obras.length > 0) {
-      await saveWorkspaceCloud(userId, local);
-      localStorage.setItem(MIGRATED_KEY, "1");
-      return local;
-    }
-  }
-
   return remote ?? emptyWs();
 }
 
