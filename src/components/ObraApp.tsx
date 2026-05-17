@@ -51,6 +51,8 @@ import {
   CloudSun,
   Users,
   Wrench,
+  Calendar,
+  StickyNote,
 } from "lucide-react";
 
 
@@ -1499,8 +1501,10 @@ function DiaryCard({
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
           <div className="font-semibold text-foreground">{entry.etapa}</div>
-          <div className="text-xs text-muted-foreground">
-            {fmtDate(entry.data)} · Item {entry.itemKey} · {entry.atividade}
+          <div className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
+            <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
+            <span>{fmtDate(entry.data)}</span>
+            <span>· Item {entry.itemKey} · {entry.atividade}</span>
           </div>
         </div>
         <div className="flex gap-1">
@@ -1587,7 +1591,10 @@ function DiaryCard({
           </div>
           <p className="text-sm text-foreground leading-relaxed">{entry.texto}</p>
           {entry.observacoes && (
-            <p className="text-sm italic text-muted-foreground mt-2">Obs: {entry.observacoes}</p>
+            <div className="flex items-start gap-2 mt-3 p-2 rounded-md bg-muted/40 border border-border/50">
+              <StickyNote className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+              <p className="text-sm italic text-muted-foreground">{entry.observacoes}</p>
+            </div>
           )}
         </>
       )}
