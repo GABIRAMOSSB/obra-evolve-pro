@@ -84,7 +84,16 @@ export function PhotoUploader({ obraId, photos, onChange, compact }: Props) {
           disabled={uploading}
         >
           {uploading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Camera className="w-4 h-4 mr-1" />}
-          {uploading ? "Enviando..." : "Adicionar fotos / vídeo"}
+          {uploading ? "Enviando..." : "Escolher arquivos"}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size={compact ? "sm" : "default"}
+          onClick={() => cameraRef.current?.click()}
+          disabled={uploading}
+        >
+          <Camera className="w-4 h-4 mr-1" /> Câmera
         </Button>
         <span className="text-xs text-muted-foreground">
           {photos.length} arquivo(s)
