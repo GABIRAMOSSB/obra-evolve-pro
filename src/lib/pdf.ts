@@ -130,6 +130,78 @@ async function loadImageAsDataUrl(url: string): Promise<{ dataUrl: string; w: nu
   }
 }
 
+async function loadVideoThumbnail(url: string): Promise<{ dataUrl: string } | null> {
+  return new Promise((resolve) => {
+    try {
+      const video = document.createElement("video");
+      video.crossOrigin = "anonymous";
+      video.muted = true;
+      video.playsInline = true;
+      video.preload = "metadata";
+      video.src = url;
+      const cleanup = () => {
+        video.removeAttribute("src");
+        video.load();
+      };
+      const timeout = setTimeout(() => {
+        cleanup();
+        resolve(null);
+      }, 8000);
+      video.onloadeddata = () => {
+        try {
+          video.currentTime = Math.min(0.5, (video.duration || 1) / 2);
+        } catch {
+          /* ignore */
+        }
+      };
+      video.onseeked = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = video.videoWidth || 640;
+          canvas.height = video.videoHeight || 480;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            clearTimeout(timeout);
+            cleanup();
+            return resolve(null);
+          }
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          // Overlay play icon
+          const cx = canvas.width / 2;
+          const cy = canvas.height / 2;
+          const r = Math.min(canvas.width, canvas.height) * 0.12;
+          ctx.fillStyle = "rgba(0,0,0,0.55)";
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#fff";
+          ctx.beginPath();
+          ctx.moveTo(cx - r * 0.35, cy - r * 0.5);
+          ctx.lineTo(cx + r * 0.55, cy);
+          ctx.lineTo(cx - r * 0.35, cy + r * 0.5);
+          ctx.closePath();
+          ctx.fill();
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+          clearTimeout(timeout);
+          cleanup();
+          resolve({ dataUrl });
+        } catch {
+          clearTimeout(timeout);
+          cleanup();
+          resolve(null);
+        }
+      };
+      video.onerror = () => {
+        clearTimeout(timeout);
+        cleanup();
+        resolve(null);
+      };
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
 export async function exportDiarioPdf(entries: DiaryEntry[], titulo = "Diário de Obra") {
   const doc = new jsPDF();
   const pageW = doc.internal.pageSize.getWidth();
@@ -184,38 +256,67 @@ export async function exportDiarioPdf(entries: DiaryEntry[], titulo = "Diário d
       doc.text(`Registro fotográfico (${e.fotos.length})`, 14, y);
       doc.setFont("helvetica", "normal");
       y += 5;
-      const imgs = e.fotos.filter((f) => f.tipo !== "video");
+      const items = e.fotos;
       const cols = 2;
       const gap = 4;
       const cellW = (pageW - 28 - gap) / cols;
       const cellH = cellW * 0.75;
       let col = 0;
       let rowX = 14;
-      for (const f of imgs) {
-        const data = await loadImageAsDataUrl(f.url);
-        if (!data) continue;
+      for (const f of items) {
+        const isVideo = f.tipo === "video";
+        const data = isVideo ? await loadVideoThumbnail(f.url) : await loadImageAsDataUrl(f.url);
         if (col === 0) {
-          ensureSpace(cellH + 12);
+          ensureSpace(cellH + 14);
           rowX = 14;
         }
-        try {
-          doc.addImage(data.dataUrl, "JPEG", rowX, y, cellW, cellH, undefined, "FAST");
-        } catch {
-          // skip if invalid
+        if (data) {
+          try {
+            doc.addImage(data.dataUrl, "JPEG", rowX, y, cellW, cellH, undefined, "FAST");
+          } catch {
+            /* ignore */
+          }
+        } else {
+          // Placeholder
+          doc.setDrawColor(180);
+          doc.setFillColor(240, 240, 240);
+          doc.rect(rowX, y, cellW, cellH, "FD");
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "bold");
+          doc.text(isVideo ? "▶  VÍDEO" : "Imagem indisponível", rowX + cellW / 2, y + cellH / 2, {
+            align: "center",
+          });
+          doc.setFont("helvetica", "normal");
         }
-        const caption = `${f.hora || ""}${f.legenda ? " — " + f.legenda : ""}${f.tipo && f.tipo !== "geral" ? ` [${f.tipo}]` : ""}`;
+        if (isVideo) {
+          // Clickable link over the cell
+          try {
+            doc.link(rowX, y, cellW, cellH, { url: f.url });
+          } catch {
+            /* ignore */
+          }
+        }
+        const tag = isVideo ? " [vídeo]" : f.tipo && f.tipo !== "geral" ? ` [${f.tipo}]` : "";
+        const caption = `${f.hora || ""}${f.legenda ? " — " + f.legenda : ""}${tag}`;
         doc.setFontSize(8);
-        doc.text(doc.splitTextToSize(caption, cellW), rowX, y + cellH + 4);
+        const capLines = doc.splitTextToSize(caption, cellW);
+        doc.text(capLines, rowX, y + cellH + 4);
+        if (isVideo) {
+          const linkLine = doc.splitTextToSize(f.url, cellW);
+          doc.setTextColor(37, 99, 235);
+          doc.textWithLink(linkLine[0] ?? "Abrir vídeo", rowX, y + cellH + 9, { url: f.url });
+          doc.setTextColor(0, 0, 0);
+        }
         doc.setFontSize(10);
         col++;
         if (col >= cols) {
           col = 0;
-          y += cellH + 12;
+          y += cellH + 14;
         } else {
           rowX += cellW + gap;
         }
       }
-      if (col !== 0) y += cellH + 12;
+      if (col !== 0) y += cellH + 14;
     }
 
     ensureSpace(8);
