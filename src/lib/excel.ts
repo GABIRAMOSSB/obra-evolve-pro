@@ -169,6 +169,17 @@ export async function parseExcel(file: File): Promise<ParseResult> {
     parsed.push({ rowIndex: excelRowIndex, row: budgetRow });
   }
 
+  // Structural re-classification: an item is a group if any other parsed
+  // item starts with `${item}.` — this preserves the spreadsheet hierarchy
+  // even when intermediate groups carry totals/quantities.
+  const itemSet = new Set(rows.map((r) => r.item));
+  for (const r of rows) {
+    const hasChild = rows.some((o) => o.item !== r.item && o.item.startsWith(r.item + "."));
+    if (hasChild) r.isGroup = true;
+  }
+  // Avoid unused warning
+  void itemSet;
+
   if (rows.length === 0) {
     throw new Error("Nenhum item válido encontrado na planilha.");
   }
