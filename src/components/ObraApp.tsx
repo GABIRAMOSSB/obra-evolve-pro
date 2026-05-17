@@ -579,7 +579,7 @@ function Dashboard({
   return (
     <div className="min-h-screen bg-muted/40">
       <header className="bg-card border-b sticky top-0 z-30">
-        <div className="max-w-[1600px] mx-auto px-6 py-4 flex items-center justify-between gap-4">
+        <div className="max-w-[1600px] mx-auto px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center">
               <HardHat className="w-5 h-5" />
@@ -591,7 +591,45 @@ function Dashboard({
               <p className="text-xs text-muted-foreground">{data.fileName}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 bg-muted/50 rounded-md px-2 py-1">
+              <Building2 className="w-4 h-4 text-muted-foreground" />
+              <Select value={activeId} onValueChange={onSelectObra}>
+                <SelectTrigger className="h-8 min-w-[200px] border-0 bg-transparent focus:ring-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {obras.map((o) => (
+                    <SelectItem key={o.id} value={o.id}>
+                      {o.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="ghost" size="sm" onClick={handleRename} title="Renomear obra">
+                <Pencil className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+
+            <label>
+              <input
+                type="file"
+                accept=".xlsx,.xls"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  e.target.value = "";
+                  if (f) onImportFile(f);
+                }}
+              />
+              <Button asChild variant="default" size="sm">
+                <span className="cursor-pointer">
+                  <Plus className="w-4 h-4 mr-1" /> Nova obra
+                </span>
+              </Button>
+            </label>
+
             <label>
               <input
                 type="file"
@@ -634,6 +672,7 @@ function Dashboard({
                 </span>
               </Button>
             </label>
+
             <Button
               variant="outline"
               size="sm"
@@ -648,12 +687,13 @@ function Dashboard({
             >
               <FileText className="w-4 h-4 mr-1" /> PDF
             </Button>
-            <Button variant="ghost" size="sm" onClick={reset}>
-              <RotateCcw className="w-4 h-4 mr-1" /> Nova obra
+            <Button variant="ghost" size="sm" onClick={removeObra} title="Excluir esta obra">
+              <Trash2 className="w-4 h-4 mr-1 text-destructive" /> Excluir
             </Button>
           </div>
         </div>
       </header>
+
 
       <main className="max-w-[1600px] mx-auto px-6 py-6 space-y-6">
         {/* Resumo */}
