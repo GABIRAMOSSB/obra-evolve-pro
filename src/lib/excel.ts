@@ -59,14 +59,31 @@ export async function parseExcel(file: File): Promise<ParseResult> {
     const map: Record<string, number> = {};
     normalized.forEach((cell, idx) => {
       if (cell.startsWith("item") && map.item === undefined) map.item = idx;
-      else if (cell === "codigo") map.codigo = idx;
-      else if (cell === "banco") map.banco = idx;
-      else if (cell.startsWith("descric")) map.descricao = idx;
-      else if (cell === "und" || cell === "unidade") map.und = idx;
-      else if (cell.startsWith("quant")) map.quantidade = idx;
+      else if (cell === "codigo" || cell === "cod") map.codigo = idx;
+      else if (cell === "banco" || cell === "fonte") map.banco = idx;
+      else if (cell.startsWith("descric") || cell === "servico" || cell === "discriminacao")
+        map.descricao = idx;
+      else if (
+        cell === "und" ||
+        cell === "un" ||
+        cell === "unid" ||
+        cell === "unidade" ||
+        cell === "u"
+      )
+        map.und = idx;
+      else if (
+        (cell.startsWith("quant") || cell === "qtd" || cell === "qte" || cell === "qtde") &&
+        map.quantidade === undefined
+      )
+        map.quantidade = idx;
       else if (cell.includes("valorunitario") && cell.includes("bdi")) map.valorUnitBDI = idx;
-      else if (cell.includes("valorunit") && map.valorUnit === undefined) map.valorUnit = idx;
-      else if (cell === "total" || cell.includes("valortotal")) map.total = idx;
+      else if (
+        (cell.includes("valorunit") || cell === "preunit" || cell === "precounitario") &&
+        map.valorUnit === undefined
+      )
+        map.valorUnit = idx;
+      else if (cell === "total" || cell.includes("valortotal") || cell === "precototal")
+        map.total = idx;
       else if (cell.includes("peso")) map.peso = idx;
     });
     if (REQUIRED_HEADERS.every((h) => map[h] !== undefined)) {
