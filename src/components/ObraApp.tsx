@@ -1174,24 +1174,33 @@ function EvolutionDialog({
 
   useEffect(() => {
     if (open) {
-      setQuantExec(evolution?.quantExec?.toString() ?? "");
-      setPercentInput("");
+      const q = evolution?.quantExec ?? 0;
+      setQuantExec(q ? String(q) : "");
+      setPercentInput(
+        q && row.quantidade > 0 ? ((q / row.quantidade) * 100).toFixed(2) : "",
+      );
       setDataExec(evolution?.dataExec ?? new Date().toISOString().slice(0, 10));
       setObs(evolution?.observacoes ?? "");
     }
-  }, [open, evolution]);
+  }, [open, evolution, row.quantidade]);
 
   function handleQuant(v: string) {
     setQuantExec(v);
     const n = parseFloat(v.replace(",", "."));
-    if (!isNaN(n) && row.quantidade > 0) {
+    if (isNaN(n) || !v.trim()) {
+      setPercentInput("");
+    } else if (row.quantidade > 0) {
       setPercentInput(((n / row.quantidade) * 100).toFixed(2));
     }
   }
   function handlePercent(v: string) {
     setPercentInput(v);
     const n = parseFloat(v.replace(",", "."));
-    if (!isNaN(n)) setQuantExec(((n / 100) * row.quantidade).toFixed(4));
+    if (isNaN(n) || !v.trim()) {
+      setQuantExec("");
+    } else {
+      setQuantExec(((n / 100) * row.quantidade).toFixed(4));
+    }
   }
 
   function save() {
