@@ -1187,14 +1187,20 @@ function EvolutionDialog({
   function handleQuant(v: string) {
     setQuantExec(v);
     const n = parseFloat(v.replace(",", "."));
-    if (!isNaN(n) && row.quantidade > 0) {
+    if (isNaN(n) || !v.trim()) {
+      setPercentInput("");
+    } else if (row.quantidade > 0) {
       setPercentInput(((n / row.quantidade) * 100).toFixed(2));
     }
   }
   function handlePercent(v: string) {
     setPercentInput(v);
     const n = parseFloat(v.replace(",", "."));
-    if (!isNaN(n)) setQuantExec(((n / 100) * row.quantidade).toFixed(4));
+    if (isNaN(n) || !v.trim()) {
+      setQuantExec("");
+    } else {
+      setQuantExec(((n / 100) * row.quantidade).toFixed(4));
+    }
   }
 
   function save() {
