@@ -821,7 +821,19 @@ function ActivitiesTable({
                       className={`px-2 py-1.5 font-mono ${isEtapa ? "text-primary" : ""}`}
                       style={{ paddingLeft: 8 + indent }}
                     >
-                      {r.item}
+                      <button
+                        type="button"
+                        onClick={() => onToggleCollapse?.(r.item)}
+                        className="inline-flex items-center gap-1 hover:opacity-70 transition"
+                        title={collapsed[r.item] ? "Expandir" : "Colapsar"}
+                      >
+                        {collapsed[r.item] ? (
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        ) : (
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        )}
+                        <span>{r.item}</span>
+                      </button>
                     </td>
                     <td className="px-2 py-1.5">{r.codigo}</td>
                     <td className="px-2 py-1.5">{r.banco}</td>
