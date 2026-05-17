@@ -1467,6 +1467,30 @@ function EvolutionDialog({
                   placeholder="Ex: 1 betoneira, 2 andaimes"
                 />
 
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div>
+                    <Label className="text-xs">Hora início</Label>
+                    <Input type="time" value={horaInicio} onChange={(e) => setHoraInicio(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Hora término</Label>
+                    <Input type="time" value={horaFim} onChange={(e) => setHoraFim(e.target.value)} />
+                  </div>
+                  <div className="col-span-2">
+                    <Label className="text-xs">Status do dia</Label>
+                    <Select value={statusDia} onValueChange={(v) => setStatusDia(v as DiaryEntry["statusDia"])}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Normal">Normal</SelectItem>
+                        <SelectItem value="Chuva">Chuva</SelectItem>
+                        <SelectItem value="Paralisação">Paralisação</SelectItem>
+                        <SelectItem value="Atraso">Atraso</SelectItem>
+                        <SelectItem value="Feriado">Feriado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
                 <div>
                   <Label className="text-xs">Observações do diário</Label>
                   <Textarea
@@ -1475,6 +1499,20 @@ function EvolutionDialog({
                     placeholder="Ocorrências, paralisações, visitas, entregas..."
                     rows={3}
                   />
+                </div>
+                <div>
+                  <Label className="text-xs">Pendências</Label>
+                  <Textarea
+                    value={pendencias}
+                    onChange={(e) => setPendencias(e.target.value)}
+                    placeholder="Pendências para o próximo dia..."
+                    rows={2}
+                  />
+                </div>
+
+                <div className="border-t pt-3">
+                  <Label className="text-xs mb-2 block">Fotos e vídeos do serviço</Label>
+                  <PhotoUploader obraId={obraId} photos={fotos} onChange={setFotos} compact />
                 </div>
               </div>
             )}
