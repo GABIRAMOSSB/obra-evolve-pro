@@ -1157,22 +1157,24 @@ function ServiceRow({
         <td className="px-2 py-1.5 font-mono whitespace-nowrap" style={{ paddingLeft: 8 + indent }}>
           {row.item}
         </td>
-        <td className="px-2 py-1.5"></td>
-        <td className="px-2 py-1.5"></td>
-        <td className="px-2 py-1.5 font-medium" style={{ paddingLeft: 8 + indent }}>
-          ⚠ EXCESSO — quantidade executada acima do previsto
+        <td className="px-2 py-1.5">{row.codigo}</td>
+        <td className="px-2 py-1.5">{row.banco}</td>
+        <td className="px-2 py-1.5 max-w-md font-medium" style={{ paddingLeft: 8 + indent }}>
+          ⚠ EXCESSO — {row.descricao}
         </td>
         <td className="px-2 py-1.5">{row.und}</td>
         <td className="px-2 py-1.5 text-right font-semibold">{fmtNum(excesso)}</td>
-        <td className="px-2 py-1.5"></td>
-        <td className="px-2 py-1.5"></td>
+        <td className="px-2 py-1.5 text-right">{row.valorUnit ? fmtBRL(row.valorUnit) : ""}</td>
+        <td className="px-2 py-1.5 text-right">{row.valorUnitBDI ? fmtBRL(row.valorUnitBDI) : ""}</td>
         <td className="px-2 py-1.5 text-right font-semibold">{fmtBRL(valorExcesso)}</td>
-        <td className="px-2 py-1.5"></td>
-        <td className="px-2 py-1.5"></td>
-        <td className="px-2 py-1.5"></td>
+        <td className="px-2 py-1.5 text-right">{peso ? `${fmtNum(peso)} %` : ""}</td>
+        <td className="px-2 py-1.5 text-right font-semibold">{fmtNum(excesso)}</td>
+        <td className="px-2 py-1.5 text-right font-semibold">
+          {row.quantidade > 0 ? `${fmtNum((excesso / row.quantidade) * 100)} %` : ""}
+        </td>
         <td className="px-2 py-1.5 text-right font-semibold">{fmtBRL(valorExcesso)}</td>
         <td className="px-2 py-1.5 text-center">
-          <Badge variant="destructive" className="text-[10px]">EXCESSO</Badge>
+          <Badge variant="destructive" className="text-[10px]">EXCEDIDO</Badge>
         </td>
         <td className="px-2 py-1.5"></td>
       </tr>
