@@ -302,21 +302,35 @@ export async function exportDiarioPdf(entries: DiaryEntry[], titulo = "Diário d
         const capLines = doc.splitTextToSize(caption, cellW);
         doc.text(capLines, rowX, y + cellH + 4);
         if (isVideo) {
-          const linkLine = doc.splitTextToSize(f.url, cellW);
-          doc.setTextColor(37, 99, 235);
-          doc.textWithLink(linkLine[0] ?? "Abrir vídeo", rowX, y + cellH + 9, { url: f.url });
+          // Botão "Abrir vídeo" destacado
+          const btnW = 32;
+          const btnH = 7;
+          const btnX = rowX + (cellW - btnW) / 2;
+          const btnY = y + cellH + 7;
+          doc.setFillColor(37, 99, 235);
+          doc.setDrawColor(37, 99, 235);
+          doc.roundedRect(btnX, btnY, btnW, btnH, 1.5, 1.5, "F");
+          doc.setTextColor(255, 255, 255);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(9);
+          doc.textWithLink("▶  Abrir vídeo", btnX + btnW / 2, btnY + btnH / 2 + 1.5, {
+            url: f.url,
+            align: "center",
+          });
+          doc.setFont("helvetica", "normal");
           doc.setTextColor(0, 0, 0);
         }
         doc.setFontSize(10);
         col++;
+        const rowExtra = isVideo ? 22 : 14;
         if (col >= cols) {
           col = 0;
-          y += cellH + 14;
+          y += cellH + rowExtra;
         } else {
           rowX += cellW + gap;
         }
       }
-      if (col !== 0) y += cellH + 14;
+      if (col !== 0) y += cellH + (items.some((f) => f.tipo === "video") ? 22 : 14);
     }
 
     ensureSpace(8);
