@@ -1565,9 +1565,22 @@ function DiaryCard({
         </div>
       ) : (
         <>
-          <div className="text-xs text-muted-foreground mb-2">
-            Clima: {entry.clima || "-"} · Equipe: {entry.equipe || "-"} · Equipamentos:{" "}
-            {entry.equipamentos || "-"}
+          <div className="flex flex-col gap-1.5 mb-3 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <CloudSun className="h-3.5 w-3.5 text-primary shrink-0" />
+              <span className="font-medium text-foreground">Clima:</span>
+              <span>{entry.clima || "-"}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Users className="h-3.5 w-3.5 text-primary shrink-0" />
+              <span className="font-medium text-foreground">Equipe:</span>
+              <span>{entry.equipe || "-"}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Wrench className="h-3.5 w-3.5 text-primary shrink-0" />
+              <span className="font-medium text-foreground">Equipamentos:</span>
+              <span>{entry.equipamentos || "-"}</span>
+            </div>
           </div>
           <p className="text-sm text-foreground leading-relaxed">{entry.texto}</p>
           {entry.observacoes && (
