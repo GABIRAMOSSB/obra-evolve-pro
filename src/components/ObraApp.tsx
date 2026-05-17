@@ -45,6 +45,8 @@ import {
   Search,
   RotateCcw,
   Plus,
+  ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 
 function statusVariant(status: string): "default" | "secondary" | "outline" {
