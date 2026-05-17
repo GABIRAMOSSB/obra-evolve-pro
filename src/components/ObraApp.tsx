@@ -1,6 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ProjectData, BudgetRow, Evolution, DiaryEntry, Workspace, ObraInfo, DiaryPhoto } from "@/lib/types";
-import { loadWorkspace, saveWorkspace, newObraId } from "@/lib/storage";
+import { loadWorkspaceCloud, saveWorkspaceCloud, newObraId } from "@/lib/storage";
+import { useAuth } from "@/hooks/use-auth";
+import { useNavigate } from "@tanstack/react-router";
+import { LogOut } from "lucide-react";
 import { ObraInfoDialog } from "@/components/ObraInfoDialog";
 import { PhotoUploader } from "@/components/PhotoUploader";
 import { parseExcel, type ParseResult } from "@/lib/excel";
@@ -65,18 +68,63 @@ function statusVariant(status: string): "default" | "secondary" | "outline" {
 }
 
 export function ObraApp() {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [ws, setWs] = useState<Workspace>({ obras: [], activeId: null });
   const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState<{ result: ParseResult; fileName: string } | null>(null);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const skipNextSave = useRef(true);
 
   useEffect(() => {
-    setWs(loadWorkspace());
-    setLoaded(true);
-  }, []);
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const remote = await loadWorkspaceCloud(user.id);
+        if (!cancelled) {
+          skipNextSave.current = true;
+          setWs(remote);
+          setLoaded(true);
+        }
+      } catch (e) {
+        console.error(e);
+        toast.error("Falha ao carregar dados da nuvem");
+        if (!cancelled) setLoaded(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   useEffect(() => {
-    if (loaded) saveWorkspace(ws);
-  }, [ws, loaded]);
+    if (!loaded || !user) return;
+    if (skipNextSave.current) {
+      skipNextSave.current = false;
+      return;
+    }
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    setSaving(true);
+    saveTimer.current = setTimeout(async () => {
+      try {
+        await saveWorkspaceCloud(user.id, ws);
+      } catch {
+        toast.error("Falha ao salvar na nuvem");
+      } finally {
+        setSaving(false);
+      }
+    }, 600);
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+  }, [ws, loaded, user]);
+
+  async function handleSignOut() {
+    await signOut();
+    navigate({ to: "/login" });
+  }
 
   const activeObra = ws.obras.find((o) => o.id === ws.activeId) ?? null;
 
@@ -172,8 +220,14 @@ export function ObraApp() {
               </Button>
             </label>
             <p className="text-xs text-muted-foreground">
-              Os dados ficam salvos localmente no seu computador.
+              Seus dados ficam sincronizados na nuvem.
             </p>
+            <div className="flex items-center justify-between text-xs text-muted-foreground border-t pt-4">
+              <span className="truncate">{user?.email}</span>
+              <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                <LogOut className="w-3.5 h-3.5 mr-1" /> Sair
+              </Button>
+            </div>
           </Card>
         </div>
         <ImportPreviewDialog
@@ -196,6 +250,9 @@ export function ObraApp() {
         onRenameObra={renameObra}
         onDeleteObra={deleteObra}
         onImportFile={handleFile}
+        saving={saving}
+        userEmail={user?.email ?? ""}
+        onSignOut={handleSignOut}
       />
       <ImportPreviewDialog
         preview={preview}
@@ -409,6 +466,9 @@ function Dashboard({
   onRenameObra,
   onDeleteObra,
   onImportFile,
+  saving,
+  userEmail,
+  onSignOut,
 }: {
   data: ProjectData;
   setData: (d: ProjectData) => void;
@@ -418,6 +478,9 @@ function Dashboard({
   onRenameObra: (id: string, nome: string) => void;
   onDeleteObra: (id: string) => void;
   onImportFile: (file: File) => void;
+  saving: boolean;
+  userEmail: string;
+  onSignOut: () => void;
 }) {
   const m = useMemo(() => projectMetrics(data.rows, data.evolutions), [data]);
 
@@ -700,6 +763,12 @@ function Dashboard({
             </Button>
             <Button variant="ghost" size="sm" onClick={removeObra} title="Excluir esta obra">
               <Trash2 className="w-4 h-4 mr-1 text-destructive" /> Excluir
+            </Button>
+            {saving && (
+              <span className="text-xs text-muted-foreground px-2">Salvando...</span>
+            )}
+            <Button variant="ghost" size="sm" onClick={onSignOut} title={`Sair (${userEmail})`}>
+              <LogOut className="w-4 h-4 mr-1" /> Sair
             </Button>
           </div>
         </div>
