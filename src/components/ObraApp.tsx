@@ -396,6 +396,94 @@ function Dashboard({
     }
   }
 
+  function addCustomItem(parentItem: string | null, descricao: string, opts: {
+    und?: string;
+    quantidade?: number;
+    valorUnit?: number;
+  }) {
+    let item: string;
+    let level: number;
+    let insertAfter: number;
+    const rowsCopy = [...data.rows];
+
+    if (!parentItem) {
+      // New etapa: max top-level + 1
+      const tops = rowsCopy
+        .map((r) => parseInt(r.item.split(".")[0], 10))
+        .filter((n) => !isNaN(n));
+      const next = (tops.length ? Math.max(...tops) : 0) + 1;
+      item = String(next);
+      level = 1;
+      insertAfter = rowsCopy.length - 1;
+      const newRow: BudgetRow = {
+        item,
+        codigo: "",
+        banco: "MANUAL",
+        descricao,
+        und: "",
+        quantidade: 0,
+        valorUnit: 0,
+        valorUnitBDI: 0,
+        total: 0,
+        peso: 0,
+        isGroup: true,
+        level,
+      };
+      rowsCopy.splice(insertAfter + 1, 0, newRow);
+    } else {
+      // New service under parent etapa: next immediate sub-number
+      const prefix = parentItem + ".";
+      const directChildren = rowsCopy
+        .filter((r) => r.item.startsWith(prefix))
+        .map((r) => {
+          const rest = r.item.slice(prefix.length);
+          return parseInt(rest.split(".")[0], 10);
+        })
+        .filter((n) => !isNaN(n));
+      const next = (directChildren.length ? Math.max(...directChildren) : 0) + 1;
+      item = `${parentItem}.${next}`;
+      level = item.split(".").length;
+      // insert after last descendant of parent (or after parent itself)
+      let lastIdx = rowsCopy.findIndex((r) => r.item === parentItem);
+      for (let i = 0; i < rowsCopy.length; i++) {
+        if (rowsCopy[i].item === parentItem || rowsCopy[i].item.startsWith(prefix)) {
+          lastIdx = i;
+        }
+      }
+      const qty = opts.quantidade ?? 0;
+      const vu = opts.valorUnit ?? 0;
+      const newRow: BudgetRow = {
+        item,
+        codigo: "",
+        banco: "MANUAL",
+        descricao,
+        und: opts.und ?? "un",
+        quantidade: qty,
+        valorUnit: vu,
+        valorUnitBDI: vu,
+        total: qty * vu,
+        peso: 0,
+        isGroup: false,
+        level,
+      };
+      rowsCopy.splice(lastIdx + 1, 0, newRow);
+    }
+    setData({ ...data, rows: rowsCopy });
+    toast.success(`${parentItem ? "Serviço" : "Etapa"} ${item} adicionado(a)`);
+  }
+
+  function removeCustomItem(item: string) {
+    if (!confirm(`Remover ${item} e seus filhos? Esta ação não pode ser desfeita.`)) return;
+    const prefix = item + ".";
+    const nextRows = data.rows.filter((r) => r.item !== item && !r.item.startsWith(prefix));
+    const nextEvo = { ...data.evolutions };
+    for (const k of Object.keys(nextEvo)) {
+      if (k === item || k.startsWith(prefix)) delete nextEvo[k];
+    }
+    setData({ ...data, rows: nextRows, evolutions: nextEvo });
+    toast.success(`${item} removido`);
+  }
+
   return (
     <div className="min-h-screen bg-muted/40">
       <header className="bg-card border-b sticky top-0 z-30">
