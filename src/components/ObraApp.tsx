@@ -620,9 +620,7 @@ function Dashboard({
                   ))}
                 </SelectContent>
               </Select>
-              <Button variant="ghost" size="sm" onClick={handleRename} title="Renomear obra">
-                <Pencil className="w-3.5 h-3.5" />
-              </Button>
+              <ObraInfoDialog nome={data.nome} info={data.info} onSave={handleSaveInfo} />
             </div>
 
             <label>
