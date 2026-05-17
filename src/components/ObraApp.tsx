@@ -936,31 +936,33 @@ function ServiceRow({
       <td className="px-2 py-1.5 text-right text-muted-foreground">
         {peso ? `${fmtNum(peso)} %` : ""}
       </td>
-      <td className="px-3 py-2 text-right">
+      <td className="px-2 py-1 text-right bg-primary/5">
         <Input
           value={qty}
           onChange={(e) => syncFromQty(e.target.value)}
           onBlur={onQtyBlur}
           inputMode="decimal"
-          className="h-8 text-right"
+          className="h-7 text-right text-xs"
           placeholder="0"
         />
       </td>
-      <td className="px-3 py-2 text-right">
+      <td className="px-2 py-1 text-right bg-primary/5">
         <Input
           value={pct}
           onChange={(e) => syncFromPct(e.target.value)}
           onBlur={onPctBlur}
           inputMode="decimal"
-          className="h-8 text-right"
+          className="h-7 text-right text-xs"
           placeholder="0"
         />
       </td>
-      <td className="px-3 py-2 text-right">{fmtBRL(a.valorExec)}</td>
-      <td className="px-3 py-2 text-center">
-        <Badge variant={statusVariant(a.status)}>{a.status}</Badge>
+      <td className="px-2 py-1.5 text-right bg-primary/5">{fmtBRL(a.valorExec)}</td>
+      <td className="px-2 py-1.5 text-center bg-primary/5">
+        <Badge variant={statusVariant(a.status)} className="text-[10px]">
+          {a.status}
+        </Badge>
       </td>
-      <td className="px-3 py-2 text-center">
+      <td className="px-2 py-1.5 text-center bg-primary/5">
         <div className="flex items-center justify-center gap-1">
           <EvolutionDialog
             row={row}
