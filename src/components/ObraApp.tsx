@@ -782,9 +782,22 @@ function ActivitiesTable({
                       {fmtBRL(g.exec)}
                     </td>
                     <td className="px-3 py-2 text-center">
-                      <Badge variant="outline">{isEtapa ? "ETAPA" : "SUB"}</Badge>
+                      <Badge variant={r.banco === "MANUAL" ? "secondary" : "outline"}>
+                        {r.banco === "MANUAL" ? "MANUAL" : isEtapa ? "ETAPA" : "SUB"}
+                      </Badge>
                     </td>
-                    <td></td>
+                    <td className="px-3 py-2 text-center">
+                      {r.banco === "MANUAL" && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => onRemove(r.item)}
+                          title="Remover"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                        </Button>
+                      )}
+                    </td>
                   </tr>
                 );
               }
@@ -797,6 +810,7 @@ function ActivitiesTable({
                   evolution={evolutions[r.item]}
                   onUpdate={onUpdate}
                   onAddDiary={onAddDiary}
+                  onRemove={onRemove}
                   indent={indent}
                 />
               );
