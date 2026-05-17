@@ -110,7 +110,7 @@ export function ObraApp() {
   async function runMigration() {
     if (!user || !migration || !migration.plan.local) return;
     const plan = migration.plan;
-    const local = plan.local;
+    const local = migration.plan.local!;
     setMigration({ stage: "running", plan });
     try {
       await saveWorkspaceCloud(user.id, local);
