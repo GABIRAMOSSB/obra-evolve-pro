@@ -200,34 +200,51 @@ function ImportPreviewDialog({
             <table className="w-full text-xs">
               <thead className="bg-muted text-muted-foreground sticky top-0">
                 <tr>
-                  <th className="px-2 py-1.5 text-left">Linha</th>
-                  <th className="px-2 py-1.5 text-left">Tipo</th>
-                  <th className="px-2 py-1.5 text-left">Item</th>
-                  <th className="px-2 py-1.5 text-left">Descrição</th>
-                  <th className="px-2 py-1.5 text-left">Und</th>
-                  <th className="px-2 py-1.5 text-right">Quant.</th>
-                  <th className="px-2 py-1.5 text-right">Total</th>
+                  <th className="px-2 py-1.5 text-left w-14">Linha</th>
+                  <th className="px-2 py-1.5 text-left w-20">Item</th>
+                  <th className="px-2 py-1.5 text-left">Descrição do serviço</th>
+                  <th className="px-2 py-1.5 text-left w-16">Und</th>
+                  <th className="px-2 py-1.5 text-right w-28">Qtd. planejada</th>
+                  <th className="px-2 py-1.5 text-right w-32">Valor total</th>
                 </tr>
               </thead>
               <tbody>
-                {result.parsed.slice(0, previewLimit).map(({ rowIndex, row }) => (
-                  <tr
-                    key={rowIndex}
-                    className={`border-t ${row.isGroup ? "bg-primary/5 font-semibold" : ""}`}
-                  >
-                    <td className="px-2 py-1 text-muted-foreground font-mono">{rowIndex}</td>
-                    <td className="px-2 py-1">
-                      <Badge variant={row.isGroup ? "default" : "outline"} className="text-[10px]">
-                        {row.isGroup ? "ETAPA" : "ATIV."}
-                      </Badge>
-                    </td>
-                    <td className="px-2 py-1 font-mono">{row.item}</td>
-                    <td className="px-2 py-1 max-w-md truncate">{row.descricao}</td>
-                    <td className="px-2 py-1">{row.und}</td>
-                    <td className="px-2 py-1 text-right">{row.quantidade || ""}</td>
-                    <td className="px-2 py-1 text-right">{row.total || ""}</td>
-                  </tr>
-                ))}
+                {result.parsed.slice(0, previewLimit).map(({ rowIndex, row }) => {
+                  if (row.isGroup) {
+                    return (
+                      <tr key={rowIndex} className="border-t bg-primary/10">
+                        <td className="px-2 py-1.5 text-muted-foreground font-mono">{rowIndex}</td>
+                        <td className="px-2 py-1.5 font-mono font-bold text-primary">{row.item}</td>
+                        <td
+                          colSpan={4}
+                          className="px-2 py-1.5 font-bold uppercase text-primary tracking-wide"
+                        >
+                          <Badge className="mr-2 text-[10px]">ETAPA</Badge>
+                          {row.descricao}
+                        </td>
+                      </tr>
+                    );
+                  }
+                  const indent = Math.max(0, row.level - 2) * 12;
+                  return (
+                    <tr key={rowIndex} className="border-t hover:bg-muted/30">
+                      <td className="px-2 py-1 text-muted-foreground font-mono">{rowIndex}</td>
+                      <td className="px-2 py-1 font-mono" style={{ paddingLeft: 8 + indent }}>
+                        {row.item}
+                      </td>
+                      <td className="px-2 py-1 max-w-md truncate" title={row.descricao}>
+                        {row.descricao}
+                      </td>
+                      <td className="px-2 py-1">{row.und}</td>
+                      <td className="px-2 py-1 text-right font-medium">
+                        {row.quantidade ? fmtNum(row.quantidade) : "—"}
+                      </td>
+                      <td className="px-2 py-1 text-right">
+                        {row.total ? fmtBRL(row.total) : "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             {result.parsed.length > previewLimit && (
