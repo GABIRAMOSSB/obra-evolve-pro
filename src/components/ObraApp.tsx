@@ -835,6 +835,7 @@ function Dashboard({
               onRemove={removeCustomItem}
               collapsed={collapsed}
               onToggleCollapse={toggleCollapse}
+              obraId={data.id}
             />
           </TabsContent>
 
