@@ -828,6 +828,7 @@ function ServiceRow({
   evolution,
   onUpdate,
   onAddDiary,
+  onRemove,
   indent = 0,
 }: {
   row: BudgetRow;
@@ -835,6 +836,7 @@ function ServiceRow({
   evolution?: Evolution;
   onUpdate: (item: string, evo: Evolution) => void;
   onAddDiary: (e: DiaryEntry) => void;
+  onRemove?: (item: string) => void;
   indent?: number;
 }) {
   const a = activityMetrics(row, evolution);
