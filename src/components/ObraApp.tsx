@@ -477,11 +477,15 @@ function Dashboard({
     setData({ ...data, diaries: data.diaries.filter((d) => d.id !== id) });
   };
 
-  function reset() {
-    if (confirm("Limpar todos os dados e remover a planilha importada?")) {
-      clearProject();
-      window.location.reload();
+  function removeObra() {
+    if (confirm(`Excluir a obra "${data.nome}"? Esta ação não pode ser desfeita.`)) {
+      onDeleteObra(data.id);
     }
+  }
+
+  function handleRename() {
+    const novo = prompt("Novo nome da obra:", data.nome);
+    if (novo && novo.trim()) onRenameObra(data.id, novo.trim());
   }
 
   function addCustomItem(parentItem: string | null, descricao: string, opts: {
