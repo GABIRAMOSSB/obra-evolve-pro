@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import type { ProjectData, BudgetRow, Evolution, DiaryEntry, Workspace } from "@/lib/types";
+import type { ProjectData, BudgetRow, Evolution, DiaryEntry, Workspace, ObraInfo, DiaryPhoto } from "@/lib/types";
 import { loadWorkspace, saveWorkspace, newObraId } from "@/lib/storage";
+import { ObraInfoDialog } from "@/components/ObraInfoDialog";
+import { PhotoUploader } from "@/components/PhotoUploader";
 import { parseExcel, type ParseResult } from "@/lib/excel";
 import {
   activityMetrics,
@@ -494,9 +496,9 @@ function Dashboard({
     }
   }
 
-  function handleRename() {
-    const novo = prompt("Novo nome da obra:", data.nome);
-    if (novo && novo.trim()) onRenameObra(data.id, novo.trim());
+  function handleSaveInfo(nome: string, info: ObraInfo) {
+    if (nome !== data.nome) onRenameObra(data.id, nome);
+    setData({ ...data, nome, info });
   }
 
   function addCustomItem(parentItem: string | null, descricao: string, opts: {
@@ -618,9 +620,7 @@ function Dashboard({
                   ))}
                 </SelectContent>
               </Select>
-              <Button variant="ghost" size="sm" onClick={handleRename} title="Renomear obra">
-                <Pencil className="w-3.5 h-3.5" />
-              </Button>
+              <ObraInfoDialog nome={data.nome} info={data.info} onSave={handleSaveInfo} />
             </div>
 
             <label>
@@ -835,6 +835,7 @@ function Dashboard({
               onRemove={removeCustomItem}
               collapsed={collapsed}
               onToggleCollapse={toggleCollapse}
+              obraId={data.id}
             />
           </TabsContent>
 
@@ -879,6 +880,7 @@ function ActivitiesTable({
   onRemove,
   collapsed = {},
   onToggleCollapse,
+  obraId,
 }: {
   rows: BudgetRow[];
   allRows: BudgetRow[];
@@ -888,6 +890,7 @@ function ActivitiesTable({
   onRemove: (item: string) => void;
   collapsed?: Record<string, boolean>;
   onToggleCollapse?: (item: string) => void;
+  obraId: string;
 }) {
   if (rows.length === 0) {
     return (
@@ -1023,6 +1026,7 @@ function ActivitiesTable({
                   onRemove={onRemove}
                   indent={indent}
                   peso={pesoOf(r)}
+                  obraId={obraId}
                 />
               );
             })}
@@ -1042,6 +1046,7 @@ function ServiceRow({
   onRemove,
   indent = 0,
   peso = 0,
+  obraId,
 }: {
   row: BudgetRow;
   allRows: BudgetRow[];
@@ -1051,6 +1056,7 @@ function ServiceRow({
   onRemove?: (item: string) => void;
   indent?: number;
   peso?: number;
+  obraId: string;
 }) {
   const a = activityMetrics(row, evolution);
   const [qty, setQty] = useState(evolution?.quantExec ? String(evolution.quantExec) : "");
@@ -1155,6 +1161,7 @@ function ServiceRow({
             evolution={evolution}
             onSave={(e) => onUpdate(row.item, e)}
             onAddDiary={onAddDiary}
+            obraId={obraId}
           />
           {row.banco === "MANUAL" && onRemove && (
             <Button
@@ -1206,12 +1213,14 @@ function EvolutionDialog({
   evolution,
   onSave,
   onAddDiary,
+  obraId,
 }: {
   row: BudgetRow;
   allRows: BudgetRow[];
   evolution?: Evolution;
   onSave: (e: Evolution) => void;
   onAddDiary: (e: DiaryEntry) => void;
+  obraId: string;
 }) {
   const [open, setOpen] = useState(false);
   const [quantExec, setQuantExec] = useState<string>(evolution?.quantExec?.toString() ?? "");
@@ -1227,6 +1236,11 @@ function EvolutionDialog({
   const [equipe, setEquipe] = useState("");
   const [equipamentos, setEquipamentos] = useState("");
   const [diarioObs, setDiarioObs] = useState("");
+  const [horaInicio, setHoraInicio] = useState("07:00");
+  const [horaFim, setHoraFim] = useState("17:00");
+  const [statusDia, setStatusDia] = useState<DiaryEntry["statusDia"]>("Normal");
+  const [pendencias, setPendencias] = useState("");
+  const [fotos, setFotos] = useState<DiaryPhoto[]>([]);
 
   useEffect(() => {
     if (open) {
@@ -1237,6 +1251,9 @@ function EvolutionDialog({
       );
       setDataExec(evolution?.dataExec ?? new Date().toISOString().slice(0, 10));
       setObs(evolution?.observacoes ?? "");
+      setFotos([]);
+      setPendencias("");
+      setStatusDia("Normal");
     }
   }, [open, evolution, row.quantidade]);
 
@@ -1280,14 +1297,19 @@ function EvolutionDialog({
         id: crypto.randomUUID(),
         itemKey: row.item,
         data: dataExec,
+        horaInicio,
+        horaFim,
+        statusDia,
         clima,
         equipe,
         equipamentos,
+        pendencias,
         observacoes: diarioObs,
         quantExec: q,
         etapa,
         atividade: row.descricao,
         texto,
+        fotos,
         createdAt: new Date().toISOString(),
       });
       toast.success("Evolução e diário registrados");
@@ -1445,6 +1467,30 @@ function EvolutionDialog({
                   placeholder="Ex: 1 betoneira, 2 andaimes"
                 />
 
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div>
+                    <Label className="text-xs">Hora início</Label>
+                    <Input type="time" value={horaInicio} onChange={(e) => setHoraInicio(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Hora término</Label>
+                    <Input type="time" value={horaFim} onChange={(e) => setHoraFim(e.target.value)} />
+                  </div>
+                  <div className="col-span-2">
+                    <Label className="text-xs">Status do dia</Label>
+                    <Select value={statusDia} onValueChange={(v) => setStatusDia(v as DiaryEntry["statusDia"])}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Normal">Normal</SelectItem>
+                        <SelectItem value="Chuva">Chuva</SelectItem>
+                        <SelectItem value="Paralisação">Paralisação</SelectItem>
+                        <SelectItem value="Atraso">Atraso</SelectItem>
+                        <SelectItem value="Feriado">Feriado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
                 <div>
                   <Label className="text-xs">Observações do diário</Label>
                   <Textarea
@@ -1453,6 +1499,20 @@ function EvolutionDialog({
                     placeholder="Ocorrências, paralisações, visitas, entregas..."
                     rows={3}
                   />
+                </div>
+                <div>
+                  <Label className="text-xs">Pendências</Label>
+                  <Textarea
+                    value={pendencias}
+                    onChange={(e) => setPendencias(e.target.value)}
+                    placeholder="Pendências para o próximo dia..."
+                    rows={2}
+                  />
+                </div>
+
+                <div className="border-t pt-3">
+                  <Label className="text-xs mb-2 block">Fotos e vídeos do serviço</Label>
+                  <PhotoUploader obraId={obraId} photos={fotos} onChange={setFotos} compact />
                 </div>
               </div>
             )}

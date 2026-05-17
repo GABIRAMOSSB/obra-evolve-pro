@@ -19,19 +19,42 @@ export interface Evolution {
   observacoes: string;
 }
 
+export interface DiaryPhoto {
+  id: string;
+  url: string;
+  path: string; // storage path for deletion
+  legenda: string;
+  hora: string; // HH:MM
+  tipo?: "antes" | "depois" | "geral" | "video";
+}
+
 export interface DiaryEntry {
   id: string;
   itemKey: string;
   data: string;
+  horaInicio?: string;
+  horaFim?: string;
+  statusDia?: "Normal" | "Chuva" | "Paralisação" | "Atraso" | "Feriado";
   clima: string;
   equipe: string;
   equipamentos: string;
+  pendencias?: string;
   observacoes: string;
   quantExec: number;
   etapa: string;
   atividade: string;
   texto: string;
+  fotos?: DiaryPhoto[];
   createdAt: string;
+}
+
+export interface ObraInfo {
+  cliente?: string;
+  endereco?: string;
+  responsavelTecnico?: string;
+  artRrt?: string;
+  empresaExecutora?: string;
+  numeroContrato?: string;
 }
 
 export interface ProjectData {
@@ -42,6 +65,7 @@ export interface ProjectData {
   rows: BudgetRow[];
   evolutions: Record<string, Evolution>;
   diaries: DiaryEntry[];
+  info?: ObraInfo;
 }
 
 export interface Workspace {
