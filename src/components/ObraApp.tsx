@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import type { ProjectData, BudgetRow, Evolution, DiaryEntry, Workspace } from "@/lib/types";
+import type { ProjectData, BudgetRow, Evolution, DiaryEntry, Workspace, ObraInfo, DiaryPhoto } from "@/lib/types";
 import { loadWorkspace, saveWorkspace, newObraId } from "@/lib/storage";
+import { ObraInfoDialog } from "@/components/ObraInfoDialog";
+import { PhotoUploader } from "@/components/PhotoUploader";
 import { parseExcel, type ParseResult } from "@/lib/excel";
 import {
   activityMetrics,
