@@ -44,6 +44,7 @@ import {
   BookOpen,
   Search,
   RotateCcw,
+  Plus,
 } from "lucide-react";
 
 function statusVariant(status: string): "default" | "secondary" | "outline" {
@@ -395,6 +396,94 @@ function Dashboard({
     }
   }
 
+  function addCustomItem(parentItem: string | null, descricao: string, opts: {
+    und?: string;
+    quantidade?: number;
+    valorUnit?: number;
+  }) {
+    let item: string;
+    let level: number;
+    let insertAfter: number;
+    const rowsCopy = [...data.rows];
+
+    if (!parentItem) {
+      // New etapa: max top-level + 1
+      const tops = rowsCopy
+        .map((r) => parseInt(r.item.split(".")[0], 10))
+        .filter((n) => !isNaN(n));
+      const next = (tops.length ? Math.max(...tops) : 0) + 1;
+      item = String(next);
+      level = 1;
+      insertAfter = rowsCopy.length - 1;
+      const newRow: BudgetRow = {
+        item,
+        codigo: "",
+        banco: "MANUAL",
+        descricao,
+        und: "",
+        quantidade: 0,
+        valorUnit: 0,
+        valorUnitBDI: 0,
+        total: 0,
+        peso: 0,
+        isGroup: true,
+        level,
+      };
+      rowsCopy.splice(insertAfter + 1, 0, newRow);
+    } else {
+      // New service under parent etapa: next immediate sub-number
+      const prefix = parentItem + ".";
+      const directChildren = rowsCopy
+        .filter((r) => r.item.startsWith(prefix))
+        .map((r) => {
+          const rest = r.item.slice(prefix.length);
+          return parseInt(rest.split(".")[0], 10);
+        })
+        .filter((n) => !isNaN(n));
+      const next = (directChildren.length ? Math.max(...directChildren) : 0) + 1;
+      item = `${parentItem}.${next}`;
+      level = item.split(".").length;
+      // insert after last descendant of parent (or after parent itself)
+      let lastIdx = rowsCopy.findIndex((r) => r.item === parentItem);
+      for (let i = 0; i < rowsCopy.length; i++) {
+        if (rowsCopy[i].item === parentItem || rowsCopy[i].item.startsWith(prefix)) {
+          lastIdx = i;
+        }
+      }
+      const qty = opts.quantidade ?? 0;
+      const vu = opts.valorUnit ?? 0;
+      const newRow: BudgetRow = {
+        item,
+        codigo: "",
+        banco: "MANUAL",
+        descricao,
+        und: opts.und ?? "un",
+        quantidade: qty,
+        valorUnit: vu,
+        valorUnitBDI: vu,
+        total: qty * vu,
+        peso: 0,
+        isGroup: false,
+        level,
+      };
+      rowsCopy.splice(lastIdx + 1, 0, newRow);
+    }
+    setData({ ...data, rows: rowsCopy });
+    toast.success(`${parentItem ? "Serviço" : "Etapa"} ${item} adicionado(a)`);
+  }
+
+  function removeCustomItem(item: string) {
+    if (!confirm(`Remover ${item} e seus filhos? Esta ação não pode ser desfeita.`)) return;
+    const prefix = item + ".";
+    const nextRows = data.rows.filter((r) => r.item !== item && !r.item.startsWith(prefix));
+    const nextEvo = { ...data.evolutions };
+    for (const k of Object.keys(nextEvo)) {
+      if (k === item || k.startsWith(prefix)) delete nextEvo[k];
+    }
+    setData({ ...data, rows: nextRows, evolutions: nextEvo });
+    toast.success(`${item} removido`);
+  }
+
   return (
     <div className="min-h-screen bg-muted/40">
       <header className="bg-card border-b sticky top-0 z-30">
@@ -567,12 +656,21 @@ function Dashboard({
               </div>
             </Card>
 
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="text-sm text-muted-foreground">
+                {data.rows.filter((r) => !r.isGroup).length} serviços ·{" "}
+                {data.rows.filter((r) => r.isGroup && r.level === 1).length} etapas
+              </div>
+              <AddItemDialog etapas={etapas} onAdd={addCustomItem} />
+            </div>
+
             <ActivitiesTable
               rows={visibleRows}
               allRows={data.rows}
               evolutions={data.evolutions}
               onUpdate={updateEvolution}
               onAddDiary={addDiary}
+              onRemove={removeCustomItem}
             />
           </TabsContent>
 
@@ -614,12 +712,14 @@ function ActivitiesTable({
   evolutions,
   onUpdate,
   onAddDiary,
+  onRemove,
 }: {
   rows: BudgetRow[];
   allRows: BudgetRow[];
   evolutions: Record<string, Evolution>;
   onUpdate: (item: string, evo: Evolution) => void;
   onAddDiary: (e: DiaryEntry) => void;
+  onRemove: (item: string) => void;
 }) {
   if (rows.length === 0) {
     return (
@@ -682,9 +782,22 @@ function ActivitiesTable({
                       {fmtBRL(g.exec)}
                     </td>
                     <td className="px-3 py-2 text-center">
-                      <Badge variant="outline">{isEtapa ? "ETAPA" : "SUB"}</Badge>
+                      <Badge variant={r.banco === "MANUAL" ? "secondary" : "outline"}>
+                        {r.banco === "MANUAL" ? "MANUAL" : isEtapa ? "ETAPA" : "SUB"}
+                      </Badge>
                     </td>
-                    <td></td>
+                    <td className="px-3 py-2 text-center">
+                      {r.banco === "MANUAL" && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => onRemove(r.item)}
+                          title="Remover"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                        </Button>
+                      )}
+                    </td>
                   </tr>
                 );
               }
@@ -697,6 +810,7 @@ function ActivitiesTable({
                   evolution={evolutions[r.item]}
                   onUpdate={onUpdate}
                   onAddDiary={onAddDiary}
+                  onRemove={onRemove}
                   indent={indent}
                 />
               );
@@ -714,6 +828,7 @@ function ServiceRow({
   evolution,
   onUpdate,
   onAddDiary,
+  onRemove,
   indent = 0,
 }: {
   row: BudgetRow;
@@ -721,6 +836,7 @@ function ServiceRow({
   evolution?: Evolution;
   onUpdate: (item: string, evo: Evolution) => void;
   onAddDiary: (e: DiaryEntry) => void;
+  onRemove?: (item: string) => void;
   indent?: number;
 }) {
   const a = activityMetrics(row, evolution);
@@ -802,13 +918,25 @@ function ServiceRow({
         <Badge variant={statusVariant(a.status)}>{a.status}</Badge>
       </td>
       <td className="px-3 py-2 text-center">
-        <EvolutionDialog
-          row={row}
-          allRows={allRows}
-          evolution={evolution}
-          onSave={(e) => onUpdate(row.item, e)}
-          onAddDiary={onAddDiary}
-        />
+        <div className="flex items-center justify-center gap-1">
+          <EvolutionDialog
+            row={row}
+            allRows={allRows}
+            evolution={evolution}
+            onSave={(e) => onUpdate(row.item, e)}
+            onAddDiary={onAddDiary}
+          />
+          {row.banco === "MANUAL" && onRemove && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onRemove(row.item)}
+              title="Remover serviço"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-destructive" />
+            </Button>
+          )}
+        </div>
       </td>
     </tr>
   );
@@ -1158,5 +1286,142 @@ function DiaryCard({
         </>
       )}
     </Card>
+  );
+}
+
+function AddItemDialog({
+  etapas,
+  onAdd,
+}: {
+  etapas: BudgetRow[];
+  onAdd: (
+    parentItem: string | null,
+    descricao: string,
+    opts: { und?: string; quantidade?: number; valorUnit?: number },
+  ) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [tipo, setTipo] = useState<"etapa" | "servico">("servico");
+  const [parent, setParent] = useState<string>(etapas[0]?.item ?? "");
+  const [descricao, setDescricao] = useState("");
+  const [und, setUnd] = useState("un");
+  const [quant, setQuant] = useState("");
+  const [vu, setVu] = useState("");
+
+  useEffect(() => {
+    if (open) {
+      setTipo("servico");
+      setParent(etapas[0]?.item ?? "");
+      setDescricao("");
+      setUnd("un");
+      setQuant("");
+      setVu("");
+    }
+  }, [open, etapas]);
+
+  function save() {
+    if (!descricao.trim()) {
+      toast.error("Informe a descrição.");
+      return;
+    }
+    if (tipo === "servico" && !parent) {
+      toast.error("Selecione a etapa.");
+      return;
+    }
+    onAdd(tipo === "etapa" ? null : parent, descricao.trim(), {
+      und: und.trim() || "un",
+      quantidade: parseFloat(quant.replace(",", ".")) || 0,
+      valorUnit: parseFloat(vu.replace(",", ".")) || 0,
+    });
+    setOpen(false);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm">
+          <Plus className="w-4 h-4 mr-1" /> Adicionar etapa/serviço
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Adicionar item manual</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label>Tipo</Label>
+            <Select value={tipo} onValueChange={(v) => setTipo(v as "etapa" | "servico")}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="etapa">Nova etapa</SelectItem>
+                <SelectItem value="servico">Novo serviço (em uma etapa)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {tipo === "servico" && (
+            <div>
+              <Label>Etapa</Label>
+              <Select value={parent} onValueChange={setParent}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a etapa" />
+                </SelectTrigger>
+                <SelectContent>
+                  {etapas.map((e) => (
+                    <SelectItem key={e.item} value={e.item}>
+                      {e.item} — {e.descricao}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div>
+            <Label>Descrição</Label>
+            <Input
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+              placeholder={tipo === "etapa" ? "Ex: SERVIÇOS COMPLEMENTARES" : "Ex: Pintura externa"}
+            />
+          </div>
+
+          {tipo === "servico" && (
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Label>Unidade</Label>
+                <Input value={und} onChange={(e) => setUnd(e.target.value)} placeholder="m², un, kg..." />
+              </div>
+              <div>
+                <Label>Qtd. planejada</Label>
+                <Input
+                  value={quant}
+                  onChange={(e) => setQuant(e.target.value)}
+                  inputMode="decimal"
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <Label>V. unit. (R$)</Label>
+                <Input
+                  value={vu}
+                  onChange={(e) => setVu(e.target.value)}
+                  inputMode="decimal"
+                  placeholder="0,00"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={save}>Adicionar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
