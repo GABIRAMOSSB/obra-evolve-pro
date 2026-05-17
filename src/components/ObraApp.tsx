@@ -250,6 +250,9 @@ export function ObraApp() {
         onRenameObra={renameObra}
         onDeleteObra={deleteObra}
         onImportFile={handleFile}
+        saving={saving}
+        userEmail={user?.email ?? ""}
+        onSignOut={handleSignOut}
       />
       <ImportPreviewDialog
         preview={preview}
