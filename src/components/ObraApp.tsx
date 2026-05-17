@@ -744,7 +744,7 @@ function Dashboard({
 
           <TabsContent value="atividades" className="space-y-4">
             <Card className="p-4">
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
                 <div>
                   <Label className="text-xs">Etapa</Label>
                   <Select value={filterEtapa} onValueChange={setFilterEtapa}>
