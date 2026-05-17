@@ -16,6 +16,7 @@ interface Props {
 
 export function PhotoUploader({ obraId, photos, onChange, compact }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
   async function handleFiles(files: FileList | null) {
@@ -38,6 +39,7 @@ export function PhotoUploader({ obraId, photos, onChange, compact }: Props) {
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
+      if (cameraRef.current) cameraRef.current.value = "";
     }
   }
 
@@ -63,6 +65,13 @@ export function PhotoUploader({ obraId, photos, onChange, compact }: Props) {
           type="file"
           accept="image/*,video/*"
           multiple
+          className="hidden"
+          onChange={(e) => handleFiles(e.target.files)}
+        />
+        <input
+          ref={cameraRef}
+          type="file"
+          accept="image/*,video/*"
           capture="environment"
           className="hidden"
           onChange={(e) => handleFiles(e.target.files)}
@@ -75,7 +84,16 @@ export function PhotoUploader({ obraId, photos, onChange, compact }: Props) {
           disabled={uploading}
         >
           {uploading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Camera className="w-4 h-4 mr-1" />}
-          {uploading ? "Enviando..." : "Adicionar fotos / vídeo"}
+          {uploading ? "Enviando..." : "Escolher arquivos"}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size={compact ? "sm" : "default"}
+          onClick={() => cameraRef.current?.click()}
+          disabled={uploading}
+        >
+          <Camera className="w-4 h-4 mr-1" /> Câmera
         </Button>
         <span className="text-xs text-muted-foreground">
           {photos.length} arquivo(s)
