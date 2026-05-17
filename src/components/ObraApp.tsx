@@ -796,6 +796,17 @@ function Dashboard({
                     placeholder="0"
                   />
                 </div>
+                <div>
+                  <Label className="text-xs">Excedido</Label>
+                  <Select value={filterExcedido} onValueChange={setFilterExcedido}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="yes">Apenas excedidos</SelectItem>
+                      <SelectItem value="no">Sem excesso</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </Card>
 
