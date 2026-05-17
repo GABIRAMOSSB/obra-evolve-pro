@@ -16,6 +16,7 @@ interface Props {
 
 export function PhotoUploader({ obraId, photos, onChange, compact }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
   async function handleFiles(files: FileList | null) {
