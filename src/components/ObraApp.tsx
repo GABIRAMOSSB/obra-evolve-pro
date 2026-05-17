@@ -656,12 +656,21 @@ function Dashboard({
               </div>
             </Card>
 
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="text-sm text-muted-foreground">
+                {data.rows.filter((r) => !r.isGroup).length} serviços ·{" "}
+                {data.rows.filter((r) => r.isGroup && r.level === 1).length} etapas
+              </div>
+              <AddItemDialog etapas={etapas} onAdd={addCustomItem} />
+            </div>
+
             <ActivitiesTable
               rows={visibleRows}
               allRows={data.rows}
               evolutions={data.evolutions}
               onUpdate={updateEvolution}
               onAddDiary={addDiary}
+              onRemove={removeCustomItem}
             />
           </TabsContent>
 
