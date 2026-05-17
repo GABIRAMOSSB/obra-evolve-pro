@@ -1530,10 +1530,12 @@ function EvolutionDialog({
 }
 
 function DiaryPanel({
+  obraId,
   diaries,
   onUpdate,
   onRemove,
 }: {
+  obraId: string;
   diaries: DiaryEntry[];
   onUpdate: (e: DiaryEntry) => void;
   onRemove: (id: string) => void;
@@ -1580,7 +1582,7 @@ function DiaryPanel({
       ) : (
         <div className="space-y-3">
           {filtered.map((d) => (
-            <DiaryCard key={d.id} entry={d} onUpdate={onUpdate} onRemove={onRemove} />
+            <DiaryCard key={d.id} obraId={obraId} entry={d} onUpdate={onUpdate} onRemove={onRemove} />
           ))}
         </div>
       )}
