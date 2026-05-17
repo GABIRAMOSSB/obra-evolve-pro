@@ -918,13 +918,25 @@ function ServiceRow({
         <Badge variant={statusVariant(a.status)}>{a.status}</Badge>
       </td>
       <td className="px-3 py-2 text-center">
-        <EvolutionDialog
-          row={row}
-          allRows={allRows}
-          evolution={evolution}
-          onSave={(e) => onUpdate(row.item, e)}
-          onAddDiary={onAddDiary}
-        />
+        <div className="flex items-center justify-center gap-1">
+          <EvolutionDialog
+            row={row}
+            allRows={allRows}
+            evolution={evolution}
+            onSave={(e) => onUpdate(row.item, e)}
+            onAddDiary={onAddDiary}
+          />
+          {row.banco === "MANUAL" && onRemove && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onRemove(row.item)}
+              title="Remover serviço"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-destructive" />
+            </Button>
+          )}
+        </div>
       </td>
     </tr>
   );
