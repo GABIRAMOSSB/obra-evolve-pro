@@ -861,6 +861,7 @@ function ServiceRow({
   onAddDiary,
   onRemove,
   indent = 0,
+  peso = 0,
 }: {
   row: BudgetRow;
   allRows: BudgetRow[];
@@ -869,6 +870,7 @@ function ServiceRow({
   onAddDiary: (e: DiaryEntry) => void;
   onRemove?: (item: string) => void;
   indent?: number;
+  peso?: number;
 }) {
   const a = activityMetrics(row, evolution);
   const [qty, setQty] = useState(evolution?.quantExec ? String(evolution.quantExec) : "");
@@ -914,18 +916,26 @@ function ServiceRow({
   return (
     <tr className="border-t hover:bg-muted/30">
       <td
-        className="px-3 py-2 font-mono whitespace-nowrap"
-        style={{ paddingLeft: 12 + indent }}
+        className="px-2 py-1.5 font-mono whitespace-nowrap"
+        style={{ paddingLeft: 8 + indent }}
       >
         {row.item}
       </td>
-      <td className="px-3 py-2 max-w-md" style={{ paddingLeft: 12 + indent }}>
+      <td className="px-2 py-1.5 text-muted-foreground">{row.codigo}</td>
+      <td className="px-2 py-1.5 text-muted-foreground">{row.banco}</td>
+      <td className="px-2 py-1.5 max-w-md" style={{ paddingLeft: 8 + indent }}>
         {row.descricao}
       </td>
-      <td className="px-3 py-2">{row.und}</td>
-      <td className="px-3 py-2 text-right font-medium">{fmtNum(row.quantidade)}</td>
-      <td className="px-3 py-2 text-right">{fmtBRL(row.valorUnitBDI || row.valorUnit)}</td>
-      <td className="px-3 py-2 text-right">{fmtBRL(row.total)}</td>
+      <td className="px-2 py-1.5">{row.und}</td>
+      <td className="px-2 py-1.5 text-right">{row.quantidade ? fmtNum(row.quantidade) : ""}</td>
+      <td className="px-2 py-1.5 text-right">{row.valorUnit ? fmtBRL(row.valorUnit) : ""}</td>
+      <td className="px-2 py-1.5 text-right">
+        {row.valorUnitBDI ? fmtBRL(row.valorUnitBDI) : ""}
+      </td>
+      <td className="px-2 py-1.5 text-right font-medium">{fmtBRL(row.total)}</td>
+      <td className="px-2 py-1.5 text-right text-muted-foreground">
+        {peso ? `${fmtNum(peso)} %` : ""}
+      </td>
       <td className="px-3 py-2 text-right">
         <Input
           value={qty}
