@@ -496,9 +496,9 @@ function Dashboard({
     }
   }
 
-  function handleRename() {
-    const novo = prompt("Novo nome da obra:", data.nome);
-    if (novo && novo.trim()) onRenameObra(data.id, novo.trim());
+  function handleSaveInfo(nome: string, info: ObraInfo) {
+    if (nome !== data.nome) onRenameObra(data.id, nome);
+    setData({ ...data, nome, info });
   }
 
   function addCustomItem(parentItem: string | null, descricao: string, opts: {
