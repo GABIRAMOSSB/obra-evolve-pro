@@ -880,6 +880,7 @@ function ActivitiesTable({
   onRemove,
   collapsed = {},
   onToggleCollapse,
+  obraId,
 }: {
   rows: BudgetRow[];
   allRows: BudgetRow[];
@@ -889,6 +890,7 @@ function ActivitiesTable({
   onRemove: (item: string) => void;
   collapsed?: Record<string, boolean>;
   onToggleCollapse?: (item: string) => void;
+  obraId: string;
 }) {
   if (rows.length === 0) {
     return (
