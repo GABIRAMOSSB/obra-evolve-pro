@@ -1216,8 +1216,9 @@ function EvolutionDialog({
       const texto = gerarTextoDiario({
         etapa,
         descricao: row.descricao,
-        quantExec: q - (evolution?.quantExec ?? 0) || q,
+        quantExec: q,
         unidade: row.und,
+        quantTotal: row.quantidade,
       });
       onAddDiary({
         id: crypto.randomUUID(),
