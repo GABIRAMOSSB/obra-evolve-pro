@@ -133,6 +133,15 @@ export function ObraApp() {
     setMigration(null);
   }
 
+  function checkLocalMigration() {
+    const plan = detectMigration({ force: true });
+    if (!plan.needed) {
+      toast.message("Nenhum dado local encontrado neste aparelho.");
+      return;
+    }
+    setMigration({ stage: "prompt", plan });
+  }
+
   useEffect(() => {
     if (!loaded || !user) return;
     if (skipNextSave.current) {
@@ -307,6 +316,9 @@ export function ObraApp() {
             <p className="text-xs text-muted-foreground">
               Seus dados ficam sincronizados na nuvem.
             </p>
+            <Button variant="outline" className="w-full" onClick={checkLocalMigration}>
+              <CloudUpload className="mr-2 w-4 h-4" /> Procurar dados locais para migrar
+            </Button>
             <div className="flex items-center justify-between text-xs text-muted-foreground border-t pt-4">
               <span className="truncate">{user?.email}</span>
               <Button variant="ghost" size="sm" onClick={handleSignOut}>
