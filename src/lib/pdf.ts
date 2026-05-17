@@ -130,6 +130,78 @@ async function loadImageAsDataUrl(url: string): Promise<{ dataUrl: string; w: nu
   }
 }
 
+async function loadVideoThumbnail(url: string): Promise<{ dataUrl: string } | null> {
+  return new Promise((resolve) => {
+    try {
+      const video = document.createElement("video");
+      video.crossOrigin = "anonymous";
+      video.muted = true;
+      video.playsInline = true;
+      video.preload = "metadata";
+      video.src = url;
+      const cleanup = () => {
+        video.removeAttribute("src");
+        video.load();
+      };
+      const timeout = setTimeout(() => {
+        cleanup();
+        resolve(null);
+      }, 8000);
+      video.onloadeddata = () => {
+        try {
+          video.currentTime = Math.min(0.5, (video.duration || 1) / 2);
+        } catch {
+          /* ignore */
+        }
+      };
+      video.onseeked = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = video.videoWidth || 640;
+          canvas.height = video.videoHeight || 480;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            clearTimeout(timeout);
+            cleanup();
+            return resolve(null);
+          }
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          // Overlay play icon
+          const cx = canvas.width / 2;
+          const cy = canvas.height / 2;
+          const r = Math.min(canvas.width, canvas.height) * 0.12;
+          ctx.fillStyle = "rgba(0,0,0,0.55)";
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#fff";
+          ctx.beginPath();
+          ctx.moveTo(cx - r * 0.35, cy - r * 0.5);
+          ctx.lineTo(cx + r * 0.55, cy);
+          ctx.lineTo(cx - r * 0.35, cy + r * 0.5);
+          ctx.closePath();
+          ctx.fill();
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+          clearTimeout(timeout);
+          cleanup();
+          resolve({ dataUrl });
+        } catch {
+          clearTimeout(timeout);
+          cleanup();
+          resolve(null);
+        }
+      };
+      video.onerror = () => {
+        clearTimeout(timeout);
+        cleanup();
+        resolve(null);
+      };
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
 export async function exportDiarioPdf(entries: DiaryEntry[], titulo = "Diário de Obra") {
   const doc = new jsPDF();
   const pageW = doc.internal.pageSize.getWidth();
