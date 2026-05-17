@@ -621,35 +621,7 @@ function ActivitiesTable({
   onUpdate: (item: string, evo: Evolution) => void;
   onAddDiary: (e: DiaryEntry) => void;
 }) {
-  // Group visible rows by top-level etapa, preserving order.
-  const sections: { etapa: BudgetRow | null; services: BudgetRow[] }[] = [];
-  const indexByEtapa = new Map<string, number>();
-
-  for (const r of rows) {
-    if (r.isGroup && r.level === 1) {
-      if (!indexByEtapa.has(r.item)) {
-        indexByEtapa.set(r.item, sections.length);
-        sections.push({ etapa: r, services: [] });
-      }
-      continue;
-    }
-    if (r.isGroup) continue; // sub-groups handled implicitly
-    const topKey = r.item.split(".")[0];
-    let idx = indexByEtapa.get(topKey);
-    if (idx === undefined) {
-      // etapa not in visible rows but exists in allRows: include it as header
-      const etapa = allRows.find((x) => x.item === topKey && x.isGroup) ?? null;
-      idx = sections.length;
-      indexByEtapa.set(topKey, idx);
-      sections.push({ etapa, services: [] });
-    }
-    sections[idx].services.push(r);
-  }
-
-  // Drop empty etapa sections that have no services (case where etapa shows alone via filter)
-  const visibleSections = sections.filter((s) => s.services.length > 0 || s.etapa);
-
-  if (visibleSections.length === 0) {
+  if (rows.length === 0) {
     return (
       <Card className="p-10 text-center text-muted-foreground">
         Nenhum item encontrado com os filtros aplicados.
@@ -658,97 +630,77 @@ function ActivitiesTable({
   }
 
   return (
-    <div className="space-y-4">
-      {visibleSections.map((section, i) => (
-        <EtapaSection
-          key={section.etapa?.item ?? `s-${i}`}
-          etapa={section.etapa}
-          services={section.services}
-          allRows={allRows}
-          evolutions={evolutions}
-          onUpdate={onUpdate}
-          onAddDiary={onAddDiary}
-        />
-      ))}
-    </div>
-  );
-}
-
-function EtapaSection({
-  etapa,
-  services,
-  allRows,
-  evolutions,
-  onUpdate,
-  onAddDiary,
-}: {
-  etapa: BudgetRow | null;
-  services: BudgetRow[];
-  allRows: BudgetRow[];
-  evolutions: Record<string, Evolution>;
-  onUpdate: (item: string, evo: Evolution) => void;
-  onAddDiary: (e: DiaryEntry) => void;
-}) {
-  const g = etapa ? groupMetrics(etapa, allRows, evolutions) : null;
-  return (
     <Card className="overflow-hidden">
-      {etapa && (
-        <div className="bg-primary/10 border-b px-4 py-3">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="min-w-0">
-              <div className="text-xs text-primary font-mono">ETAPA {etapa.item}</div>
-              <div className="font-bold text-foreground uppercase tracking-wide truncate">
-                {etapa.descricao}
-              </div>
-            </div>
-            <div className="flex items-center gap-4 text-xs">
-              <div className="text-right">
-                <div className="text-muted-foreground">Planejado</div>
-                <div className="font-semibold">{fmtBRL(g!.total)}</div>
-              </div>
-              <div className="text-right">
-                <div className="text-muted-foreground">Executado</div>
-                <div className="font-semibold text-[var(--success)]">{fmtBRL(g!.exec)}</div>
-              </div>
-              <div className="text-right min-w-[110px]">
-                <div className="flex items-center justify-between gap-2 mb-1">
-                  <span className="text-muted-foreground">% Etapa</span>
-                  <span className="font-bold">{fmtNum(g!.percent)}%</span>
-                </div>
-                <Progress value={g!.percent} className="h-2" />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-muted text-muted-foreground text-xs uppercase">
+        <table className="w-full text-sm border-collapse">
+          <thead className="bg-muted text-muted-foreground text-xs uppercase sticky top-0">
             <tr>
-              <th className="px-3 py-2 text-left w-24">Item</th>
-              <th className="px-3 py-2 text-left">Serviço</th>
-              <th className="px-3 py-2 text-left w-16">Und</th>
-              <th className="px-3 py-2 text-right w-28">Qtd. planejada</th>
-              <th className="px-3 py-2 text-right w-32">V. total</th>
-              <th className="px-3 py-2 text-right w-32">Qtd. executada</th>
-              <th className="px-3 py-2 text-right w-24">% Exec.</th>
-              <th className="px-3 py-2 text-right w-32">V. executado</th>
-              <th className="px-3 py-2 text-center w-32">Status</th>
-              <th className="px-3 py-2 text-center w-20">Diário</th>
+              <th className="px-3 py-2 text-left w-28 border-b">Item</th>
+              <th className="px-3 py-2 text-left border-b">Descrição</th>
+              <th className="px-3 py-2 text-left w-16 border-b">Und</th>
+              <th className="px-3 py-2 text-right w-28 border-b">Qtd. planejada</th>
+              <th className="px-3 py-2 text-right w-28 border-b">V. unit (BDI)</th>
+              <th className="px-3 py-2 text-right w-32 border-b">V. total</th>
+              <th className="px-3 py-2 text-right w-28 border-b">Qtd. exec.</th>
+              <th className="px-3 py-2 text-right w-24 border-b">% Exec.</th>
+              <th className="px-3 py-2 text-right w-32 border-b">V. executado</th>
+              <th className="px-3 py-2 text-center w-32 border-b">Status</th>
+              <th className="px-3 py-2 text-center w-16 border-b">Diário</th>
             </tr>
           </thead>
           <tbody>
-            {services.map((r) => (
-              <ServiceRow
-                key={r.item}
-                row={r}
-                allRows={allRows}
-                evolution={evolutions[r.item]}
-                onUpdate={onUpdate}
-                onAddDiary={onAddDiary}
-              />
-            ))}
+            {rows.map((r) => {
+              if (r.isGroup) {
+                const g = groupMetrics(r, allRows, evolutions);
+                const isEtapa = r.level === 1;
+                const indent = Math.max(0, r.level - 1) * 14;
+                return (
+                  <tr
+                    key={r.item}
+                    className={
+                      isEtapa
+                        ? "bg-primary/15 border-y-2 border-primary/30"
+                        : "bg-primary/5 border-t"
+                    }
+                  >
+                    <td
+                      className={`px-3 py-2 font-mono ${isEtapa ? "font-bold text-primary" : "font-semibold"}`}
+                      style={{ paddingLeft: 12 + indent }}
+                    >
+                      {r.item}
+                    </td>
+                    <td
+                      className={`px-3 py-2 ${isEtapa ? "font-bold uppercase tracking-wide" : "font-semibold"}`}
+                      colSpan={4}
+                    >
+                      {r.descricao}
+                    </td>
+                    <td className="px-3 py-2 text-right font-semibold">{fmtBRL(g.total)}</td>
+                    <td className="px-3 py-2"></td>
+                    <td className="px-3 py-2 text-right font-semibold">{fmtNum(g.percent)}%</td>
+                    <td className="px-3 py-2 text-right font-semibold text-[var(--success)]">
+                      {fmtBRL(g.exec)}
+                    </td>
+                    <td className="px-3 py-2 text-center">
+                      <Badge variant="outline">{isEtapa ? "ETAPA" : "SUB"}</Badge>
+                    </td>
+                    <td></td>
+                  </tr>
+                );
+              }
+              const indent = Math.max(0, r.level - 1) * 14;
+              return (
+                <ServiceRow
+                  key={r.item}
+                  row={r}
+                  allRows={allRows}
+                  evolution={evolutions[r.item]}
+                  onUpdate={onUpdate}
+                  onAddDiary={onAddDiary}
+                  indent={indent}
+                />
+              );
+            })}
           </tbody>
         </table>
       </div>
