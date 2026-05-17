@@ -39,6 +39,7 @@ export function PhotoUploader({ obraId, photos, onChange, compact }: Props) {
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
+      if (cameraRef.current) cameraRef.current.value = "";
     }
   }
 
