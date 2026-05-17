@@ -53,8 +53,9 @@ export interface MigrationPlan {
   local: Workspace | null;
 }
 
-export function detectMigration(): MigrationPlan {
-  if (typeof window === "undefined" || localStorage.getItem(MIGRATED_KEY)) {
+export function detectMigration(options?: { force?: boolean }): MigrationPlan {
+  const force = options?.force ?? false;
+  if (typeof window === "undefined" || (!force && localStorage.getItem(MIGRATED_KEY))) {
     return { needed: false, obrasCount: 0, diariesCount: 0, fotosCount: 0, local: null };
   }
   const local = readLocal();
