@@ -887,7 +887,7 @@ function ActivitiesTable({
   return (
     <Card className="overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full text-xs border-collapse">
+        <table className="w-full text-xs border-collapse" style={{ minWidth: 1500 }}>
           <thead className="bg-muted text-muted-foreground uppercase sticky top-0 z-10">
             <tr className="text-[10px]">
               <th colSpan={10} className="px-3 py-1 text-center border-b bg-muted/80 font-semibold tracking-wider">
@@ -898,21 +898,21 @@ function ActivitiesTable({
               </th>
             </tr>
             <tr>
-              <th className="px-2 py-2 text-left w-20 border-b">Item</th>
+              <th className="px-2 py-2 text-left w-24 border-b">Item</th>
               <th className="px-2 py-2 text-left w-20 border-b">Código</th>
               <th className="px-2 py-2 text-left w-20 border-b">Banco</th>
-              <th className="px-2 py-2 text-left border-b">Descrição</th>
+              <th className="px-2 py-2 text-left border-b min-w-[280px]">Descrição</th>
               <th className="px-2 py-2 text-left w-14 border-b">Und</th>
               <th className="px-2 py-2 text-right w-20 border-b">Quant.</th>
               <th className="px-2 py-2 text-right w-24 border-b">Valor Unit</th>
               <th className="px-2 py-2 text-right w-28 border-b">V. Unit c/ BDI</th>
               <th className="px-2 py-2 text-right w-28 border-b">Total</th>
               <th className="px-2 py-2 text-right w-20 border-b">Peso (%)</th>
-              <th className="px-2 py-2 text-right w-24 border-b bg-primary/5">Qtd exec.</th>
-              <th className="px-2 py-2 text-right w-20 border-b bg-primary/5">% Exec.</th>
+              <th className="px-2 py-2 text-right w-28 border-b bg-primary/5">Qtd exec.</th>
+              <th className="px-2 py-2 text-right w-24 border-b bg-primary/5">% Exec.</th>
               <th className="px-2 py-2 text-right w-28 border-b bg-primary/5">V. executado</th>
               <th className="px-2 py-2 text-center w-28 border-b bg-primary/5">Status</th>
-              <th className="px-2 py-2 text-center w-16 border-b bg-primary/5">Ações</th>
+              <th className="px-2 py-2 text-center w-24 border-b bg-primary/5">Ações</th>
             </tr>
           </thead>
           <tbody>
