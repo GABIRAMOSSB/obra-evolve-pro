@@ -1,7 +1,9 @@
+import { supabase } from "@/integrations/supabase/client";
 import type { ProjectData, Workspace } from "./types";
 
 const KEY = "obra-acompanhamento-v2";
 const LEGACY_KEY = "obra-acompanhamento-v1";
+const MIGRATED_KEY = "obra-acompanhamento-cloud-migrated";
 
 function genId() {
   return (
@@ -11,15 +13,18 @@ function genId() {
   );
 }
 
-export function loadWorkspace(): Workspace {
-  if (typeof window === "undefined") return { obras: [], activeId: null };
+function emptyWs(): Workspace {
+  return { obras: [], activeId: null };
+}
+
+function readLocal(): Workspace | null {
+  if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const ws = JSON.parse(raw) as Workspace;
       if (ws && Array.isArray(ws.obras)) return ws;
     }
-    // Migrate v1
     const legacy = localStorage.getItem(LEGACY_KEY);
     if (legacy) {
       const old = JSON.parse(legacy) as Partial<ProjectData>;
@@ -32,37 +37,55 @@ export function loadWorkspace(): Workspace {
         evolutions: old.evolutions || {},
         diaries: old.diaries || [],
       };
-      const ws: Workspace = { obras: [obra], activeId: obra.id };
-      localStorage.setItem(KEY, JSON.stringify(ws));
-      return ws;
+      return { obras: [obra], activeId: obra.id };
     }
   } catch {
     // ignore
   }
-  return { obras: [], activeId: null };
+  return null;
 }
 
-export function saveWorkspace(ws: Workspace) {
-  localStorage.setItem(KEY, JSON.stringify(ws));
+export async function loadWorkspaceCloud(userId: string): Promise<Workspace> {
+  const { data, error } = await supabase
+    .from("user_workspaces")
+    .select("workspace")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) {
+    console.error("loadWorkspaceCloud", error);
+  }
+  const remote = (data?.workspace as Workspace | undefined) ?? null;
+
+  // Migration: if no cloud data and we have local data, push it once.
+  if (
+    (!remote || remote.obras.length === 0) &&
+    typeof window !== "undefined" &&
+    !localStorage.getItem(MIGRATED_KEY)
+  ) {
+    const local = readLocal();
+    if (local && local.obras.length > 0) {
+      await saveWorkspaceCloud(userId, local);
+      localStorage.setItem(MIGRATED_KEY, "1");
+      return local;
+    }
+  }
+
+  return remote ?? emptyWs();
 }
 
-export function clearWorkspace() {
-  localStorage.removeItem(KEY);
-  localStorage.removeItem(LEGACY_KEY);
+export async function saveWorkspaceCloud(userId: string, ws: Workspace) {
+  const { error } = await supabase
+    .from("user_workspaces")
+    .upsert(
+      { user_id: userId, workspace: ws as unknown as Record<string, unknown> },
+      { onConflict: "user_id" },
+    );
+  if (error) {
+    console.error("saveWorkspaceCloud", error);
+    throw error;
+  }
 }
 
 export function newObraId() {
   return genId();
-}
-
-// Backwards-compat single-obra helpers (no longer used by app, kept for safety)
-export function loadProject(): ProjectData | null {
-  const ws = loadWorkspace();
-  return ws.obras.find((o) => o.id === ws.activeId) ?? ws.obras[0] ?? null;
-}
-export function saveProject(_data: ProjectData) {
-  // no-op: use saveWorkspace
-}
-export function clearProject() {
-  clearWorkspace();
 }
