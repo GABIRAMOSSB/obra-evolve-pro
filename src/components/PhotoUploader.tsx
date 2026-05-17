@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Camera, Trash2, Loader2, Play } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 
 interface Props {
@@ -18,6 +19,7 @@ export function PhotoUploader({ obraId, photos, onChange, compact }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
 
   function isSupportedMedia(file: File) {
     if (file.type.startsWith("image/") || file.type.startsWith("video/")) return true;
@@ -39,15 +41,18 @@ export function PhotoUploader({ obraId, photos, onChange, compact }: Props) {
     }
 
     setUploading(true);
+    setProgress({ current: 0, total: validFiles.length });
     try {
       const uploaded: DiaryPhoto[] = [];
-      for (const f of validFiles) {
+      for (let i = 0; i < validFiles.length; i++) {
+        const f = validFiles[i];
         try {
           const p = await uploadDiaryPhoto(obraId, f);
           uploaded.push(p);
         } catch (e) {
           toast.error(`Falha ao enviar ${f.name}: ${(e as Error).message}`);
         }
+        setProgress({ current: i + 1, total: validFiles.length });
       }
       if (uploaded.length) {
         onChange([...photos, ...uploaded]);
@@ -58,6 +63,7 @@ export function PhotoUploader({ obraId, photos, onChange, compact }: Props) {
       }
     } finally {
       setUploading(false);
+      setProgress({ current: 0, total: 0 });
       if (fileRef.current) fileRef.current.value = "";
       if (cameraRef.current) cameraRef.current.value = "";
     }
