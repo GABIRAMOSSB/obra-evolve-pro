@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ProjectData, BudgetRow, Evolution, DiaryEntry } from "@/lib/types";
 import { loadProject, saveProject, clearProject } from "@/lib/storage";
-import { parseExcel } from "@/lib/excel";
+import { parseExcel, type ParseResult } from "@/lib/excel";
 import {
   activityMetrics,
   fmtBRL,
