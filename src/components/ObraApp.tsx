@@ -712,12 +712,14 @@ function ActivitiesTable({
   evolutions,
   onUpdate,
   onAddDiary,
+  onRemove,
 }: {
   rows: BudgetRow[];
   allRows: BudgetRow[];
   evolutions: Record<string, Evolution>;
   onUpdate: (item: string, evo: Evolution) => void;
   onAddDiary: (e: DiaryEntry) => void;
+  onRemove: (item: string) => void;
 }) {
   if (rows.length === 0) {
     return (
