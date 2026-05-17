@@ -1282,34 +1282,111 @@ function EvolutionDialog({
           </div>
 
           <div className="border-t pt-4">
-            <label className="flex items-center gap-2 mb-3">
+            <label className="flex items-center gap-2 mb-4 cursor-pointer">
               <input
                 type="checkbox"
                 checked={criarDiario}
                 onChange={(e) => setCriarDiario(e.target.checked)}
+                className="w-4 h-4 accent-primary"
               />
-              <span className="font-medium">Registrar entrada no diário de obra</span>
+              <BookOpen className="w-4 h-4 text-primary" />
+              <span className="font-semibold">Registrar entrada no diário de obra</span>
             </label>
             {criarDiario && (
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Clima</Label>
-                  <Input value={clima} onChange={(e) => setClima(e.target.value)} />
+              <div className="space-y-4 bg-muted/30 rounded-lg p-4 border">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Clima</Label>
+                    <Select value={clima} onValueChange={setClima}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Ensolarado">☀️ Ensolarado</SelectItem>
+                        <SelectItem value="Bom">🌤️ Bom</SelectItem>
+                        <SelectItem value="Nublado">☁️ Nublado</SelectItem>
+                        <SelectItem value="Chuvoso">🌧️ Chuvoso</SelectItem>
+                        <SelectItem value="Chuva forte">⛈️ Chuva forte</SelectItem>
+                        <SelectItem value="Garoa">🌦️ Garoa</SelectItem>
+                        <SelectItem value="Impraticável">🚫 Impraticável</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Período trabalhado</Label>
+                    <Select
+                      value={
+                        (diarioObs.match(/Período: (Manhã|Tarde|Dia todo|Noite)/)?.[1] as string) ??
+                        "Dia todo"
+                      }
+                      onValueChange={(v) => {
+                        const cleaned = diarioObs.replace(/Período: [^\n]*\n?/g, "");
+                        setDiarioObs(`Período: ${v}\n${cleaned}`.trim());
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Manhã">🌅 Manhã</SelectItem>
+                        <SelectItem value="Tarde">🌇 Tarde</SelectItem>
+                        <SelectItem value="Dia todo">🌞 Dia todo</SelectItem>
+                        <SelectItem value="Noite">🌙 Noite</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
+
+                <ChipMultiSelect
+                  label="Equipe presente"
+                  value={equipe}
+                  onChange={setEquipe}
+                  options={[
+                    "Mestre de obras",
+                    "Encarregado",
+                    "Engenheiro",
+                    "Pedreiro",
+                    "Servente",
+                    "Carpinteiro",
+                    "Armador",
+                    "Eletricista",
+                    "Encanador",
+                    "Pintor",
+                    "Soldador",
+                    "Operador de máquina",
+                  ]}
+                  placeholder="Ex: 2 pedreiros, 3 serventes"
+                />
+
+                <ChipMultiSelect
+                  label="Equipamentos utilizados"
+                  value={equipamentos}
+                  onChange={setEquipamentos}
+                  options={[
+                    "Betoneira",
+                    "Bomba de concreto",
+                    "Caminhão basculante",
+                    "Retroescavadeira",
+                    "Escavadeira",
+                    "Compactador",
+                    "Serra mármore",
+                    "Furadeira",
+                    "Andaime",
+                    "Vibrador de concreto",
+                    "Caçamba",
+                    "Carrinho de mão",
+                  ]}
+                  placeholder="Ex: 1 betoneira, 2 andaimes"
+                />
+
                 <div>
-                  <Label>Equipe</Label>
-                  <Input value={equipe} onChange={(e) => setEquipe(e.target.value)} />
-                </div>
-                <div className="col-span-2">
-                  <Label>Equipamentos utilizados</Label>
-                  <Input
-                    value={equipamentos}
-                    onChange={(e) => setEquipamentos(e.target.value)}
+                  <Label className="text-xs">Observações do diário</Label>
+                  <Textarea
+                    value={diarioObs}
+                    onChange={(e) => setDiarioObs(e.target.value)}
+                    placeholder="Ocorrências, paralisações, visitas, entregas..."
+                    rows={3}
                   />
-                </div>
-                <div className="col-span-2">
-                  <Label>Observações do diário</Label>
-                  <Textarea value={diarioObs} onChange={(e) => setDiarioObs(e.target.value)} />
                 </div>
               </div>
             )}
