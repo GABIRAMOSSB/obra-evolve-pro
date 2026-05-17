@@ -1076,7 +1076,12 @@ function ServiceRow({
     if (!isNaN(n)) setQty(((n / 100) * row.quantidade).toFixed(4));
   }
 
+  const excesso = a.quantExec - row.quantidade;
+  const temExcesso = row.quantidade > 0 && excesso > 0.0001;
+  const valorExcesso = excesso * (row.valorUnitBDI || row.valorUnit || 0);
+
   return (
+    <>
     <tr className="border-t hover:bg-muted/30">
       <td
         className="px-2 py-1.5 font-mono whitespace-nowrap"
