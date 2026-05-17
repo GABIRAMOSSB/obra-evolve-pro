@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import type { ProjectData, BudgetRow, Evolution, DiaryEntry } from "@/lib/types";
-import { loadProject, saveProject, clearProject } from "@/lib/storage";
+import type { ProjectData, BudgetRow, Evolution, DiaryEntry, Workspace } from "@/lib/types";
+import { loadWorkspace, saveWorkspace, newObraId } from "@/lib/storage";
 import { parseExcel, type ParseResult } from "@/lib/excel";
 import {
   activityMetrics,
@@ -43,11 +43,12 @@ import {
   Pencil,
   BookOpen,
   Search,
-  RotateCcw,
   Plus,
   ChevronRight,
   ChevronDown,
+  Building2,
 } from "lucide-react";
+
 
 function statusVariant(status: string): "default" | "secondary" | "outline" {
   if (status === "Concluída") return "default";
@@ -56,18 +57,31 @@ function statusVariant(status: string): "default" | "secondary" | "outline" {
 }
 
 export function ObraApp() {
-  const [data, setData] = useState<ProjectData | null>(null);
+  const [ws, setWs] = useState<Workspace>({ obras: [], activeId: null });
   const [loaded, setLoaded] = useState(false);
   const [preview, setPreview] = useState<{ result: ParseResult; fileName: string } | null>(null);
 
   useEffect(() => {
-    setData(loadProject());
+    setWs(loadWorkspace());
     setLoaded(true);
   }, []);
 
   useEffect(() => {
-    if (data && loaded) saveProject(data);
-  }, [data, loaded]);
+    if (loaded) saveWorkspace(ws);
+  }, [ws, loaded]);
+
+  const activeObra = ws.obras.find((o) => o.id === ws.activeId) ?? null;
+
+  function updateActive(updater: (o: ProjectData) => ProjectData) {
+    setWs((prev) => ({
+      ...prev,
+      obras: prev.obras.map((o) => (o.id === prev.activeId ? updater(o) : o)),
+    }));
+  }
+
+  function setActiveObra(data: ProjectData) {
+    updateActive(() => data);
+  }
 
   async function handleFile(file: File) {
     try {
@@ -80,20 +94,45 @@ export function ObraApp() {
 
   function confirmImport() {
     if (!preview) return;
-    setData({
+    const baseName = preview.fileName.replace(/\.[^.]+$/, "");
+    const nome = baseName || `Obra ${ws.obras.length + 1}`;
+    const obra: ProjectData = {
+      id: newObraId(),
+      nome,
       fileName: preview.fileName,
       importedAt: new Date().toISOString(),
       rows: preview.result.rows,
       evolutions: {},
       diaries: [],
-    });
-    toast.success(`Planilha importada: ${preview.result.rows.length} linhas`);
+    };
+    setWs((prev) => ({ obras: [...prev.obras, obra], activeId: obra.id }));
+    toast.success(`Obra "${nome}" criada com ${preview.result.rows.length} linhas`);
     setPreview(null);
+  }
+
+  function selectObra(id: string) {
+    setWs((prev) => ({ ...prev, activeId: id }));
+  }
+
+  function renameObra(id: string, nome: string) {
+    setWs((prev) => ({
+      ...prev,
+      obras: prev.obras.map((o) => (o.id === id ? { ...o, nome } : o)),
+    }));
+  }
+
+  function deleteObra(id: string) {
+    setWs((prev) => {
+      const obras = prev.obras.filter((o) => o.id !== id);
+      const activeId = prev.activeId === id ? (obras[0]?.id ?? null) : prev.activeId;
+      return { obras, activeId };
+    });
+    toast.success("Obra removida");
   }
 
   if (!loaded) return null;
 
-  if (!data) {
+  if (!activeObra) {
     return (
       <>
         <div className="min-h-screen bg-background flex items-center justify-center p-6">
@@ -104,7 +143,7 @@ export function ObraApp() {
             <div>
               <h1 className="text-2xl font-bold text-foreground">Acompanhamento de Obras</h1>
               <p className="text-muted-foreground mt-2">
-                Importe sua planilha orçamentária para começar. O sistema lê apenas a 1ª aba.
+                Importe sua primeira planilha orçamentária para começar. Cada planilha vira uma obra. Você pode adicionar quantas quiser.
               </p>
             </div>
             <label className="block">
@@ -138,8 +177,27 @@ export function ObraApp() {
     );
   }
 
-  return <Dashboard data={data} setData={setData} />;
+  return (
+    <>
+      <Dashboard
+        data={activeObra}
+        setData={setActiveObra}
+        obras={ws.obras}
+        activeId={ws.activeId!}
+        onSelectObra={selectObra}
+        onRenameObra={renameObra}
+        onDeleteObra={deleteObra}
+        onImportFile={handleFile}
+      />
+      <ImportPreviewDialog
+        preview={preview}
+        onCancel={() => setPreview(null)}
+        onConfirm={confirmImport}
+      />
+    </>
+  );
 }
+
 
 function ImportPreviewDialog({
   preview,
@@ -337,9 +395,21 @@ function PreviewStat({
 function Dashboard({
   data,
   setData,
+  obras,
+  activeId,
+  onSelectObra,
+  onRenameObra,
+  onDeleteObra,
+  onImportFile,
 }: {
   data: ProjectData;
   setData: (d: ProjectData) => void;
+  obras: ProjectData[];
+  activeId: string;
+  onSelectObra: (id: string) => void;
+  onRenameObra: (id: string, nome: string) => void;
+  onDeleteObra: (id: string) => void;
+  onImportFile: (file: File) => void;
 }) {
   const m = useMemo(() => projectMetrics(data.rows, data.evolutions), [data]);
 
@@ -406,11 +476,15 @@ function Dashboard({
     setData({ ...data, diaries: data.diaries.filter((d) => d.id !== id) });
   };
 
-  function reset() {
-    if (confirm("Limpar todos os dados e remover a planilha importada?")) {
-      clearProject();
-      window.location.reload();
+  function removeObra() {
+    if (confirm(`Excluir a obra "${data.nome}"? Esta ação não pode ser desfeita.`)) {
+      onDeleteObra(data.id);
     }
+  }
+
+  function handleRename() {
+    const novo = prompt("Novo nome da obra:", data.nome);
+    if (novo && novo.trim()) onRenameObra(data.id, novo.trim());
   }
 
   function addCustomItem(parentItem: string | null, descricao: string, opts: {
@@ -504,7 +578,7 @@ function Dashboard({
   return (
     <div className="min-h-screen bg-muted/40">
       <header className="bg-card border-b sticky top-0 z-30">
-        <div className="max-w-[1600px] mx-auto px-6 py-4 flex items-center justify-between gap-4">
+        <div className="max-w-[1600px] mx-auto px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center">
               <HardHat className="w-5 h-5" />
@@ -516,7 +590,45 @@ function Dashboard({
               <p className="text-xs text-muted-foreground">{data.fileName}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 bg-muted/50 rounded-md px-2 py-1">
+              <Building2 className="w-4 h-4 text-muted-foreground" />
+              <Select value={activeId} onValueChange={onSelectObra}>
+                <SelectTrigger className="h-8 min-w-[200px] border-0 bg-transparent focus:ring-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {obras.map((o) => (
+                    <SelectItem key={o.id} value={o.id}>
+                      {o.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="ghost" size="sm" onClick={handleRename} title="Renomear obra">
+                <Pencil className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+
+            <label>
+              <input
+                type="file"
+                accept=".xlsx,.xls"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  e.target.value = "";
+                  if (f) onImportFile(f);
+                }}
+              />
+              <Button asChild variant="default" size="sm">
+                <span className="cursor-pointer">
+                  <Plus className="w-4 h-4 mr-1" /> Nova obra
+                </span>
+              </Button>
+            </label>
+
             <label>
               <input
                 type="file"
@@ -559,6 +671,7 @@ function Dashboard({
                 </span>
               </Button>
             </label>
+
             <Button
               variant="outline"
               size="sm"
@@ -573,12 +686,13 @@ function Dashboard({
             >
               <FileText className="w-4 h-4 mr-1" /> PDF
             </Button>
-            <Button variant="ghost" size="sm" onClick={reset}>
-              <RotateCcw className="w-4 h-4 mr-1" /> Nova obra
+            <Button variant="ghost" size="sm" onClick={removeObra} title="Excluir esta obra">
+              <Trash2 className="w-4 h-4 mr-1 text-destructive" /> Excluir
             </Button>
           </div>
         </div>
       </header>
+
 
       <main className="max-w-[1600px] mx-auto px-6 py-6 space-y-6">
         {/* Resumo */}
