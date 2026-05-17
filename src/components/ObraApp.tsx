@@ -1704,3 +1704,65 @@ function AddItemDialog({
     </Dialog>
   );
 }
+
+function ChipMultiSelect({
+  label,
+  value,
+  onChange,
+  options,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+  placeholder?: string;
+}) {
+  const selected = value
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const isSelected = (opt: string) =>
+    selected.some((s) => s.toLowerCase() === opt.toLowerCase());
+
+  function toggle(opt: string) {
+    if (isSelected(opt)) {
+      const next = selected.filter((s) => s.toLowerCase() !== opt.toLowerCase());
+      onChange(next.join(", "));
+    } else {
+      onChange([...selected, opt].join(", "));
+    }
+  }
+
+  return (
+    <div>
+      <Label className="text-xs">{label}</Label>
+      <div className="flex flex-wrap gap-1.5 mb-2 mt-1">
+        {options.map((opt) => {
+          const active = isSelected(opt);
+          return (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => toggle(opt)}
+              className={`text-xs px-2.5 py-1 rounded-full border transition ${
+                active
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background border-border hover:border-primary/50 text-foreground"
+              }`}
+            >
+              {active ? "✓ " : "+ "}
+              {opt}
+            </button>
+          );
+        })}
+      </div>
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="text-xs"
+      />
+    </div>
+  );
+}
