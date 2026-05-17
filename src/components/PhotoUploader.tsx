@@ -19,12 +19,29 @@ export function PhotoUploader({ obraId, photos, onChange, compact }: Props) {
   const cameraRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
+  function isSupportedMedia(file: File) {
+    if (file.type.startsWith("image/") || file.type.startsWith("video/")) return true;
+    return /\.(jpg|jpeg|png|gif|webp|bmp|heic|heif|mp4|mov|avi|webm|mkv|m4v|3gp)$/i.test(file.name);
+  }
+
   async function handleFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
+
+    const selectedFiles = Array.from(files);
+    const validFiles = selectedFiles.filter(isSupportedMedia);
+    const invalidCount = selectedFiles.length - validFiles.length;
+
+    if (validFiles.length === 0) {
+      toast.error("Selecione apenas imagens ou vídeos compatíveis.");
+      if (fileRef.current) fileRef.current.value = "";
+      if (cameraRef.current) cameraRef.current.value = "";
+      return;
+    }
+
     setUploading(true);
     try {
       const uploaded: DiaryPhoto[] = [];
-      for (const f of Array.from(files)) {
+      for (const f of validFiles) {
         try {
           const p = await uploadDiaryPhoto(obraId, f);
           uploaded.push(p);
@@ -35,6 +52,9 @@ export function PhotoUploader({ obraId, photos, onChange, compact }: Props) {
       if (uploaded.length) {
         onChange([...photos, ...uploaded]);
         toast.success(`${uploaded.length} arquivo(s) enviado(s)`);
+      }
+      if (invalidCount > 0) {
+        toast.error(`${invalidCount} arquivo(s) ignorado(s) por formato incompatível.`);
       }
     } finally {
       setUploading(false);
@@ -63,7 +83,6 @@ export function PhotoUploader({ obraId, photos, onChange, compact }: Props) {
         <input
           ref={fileRef}
           type="file"
-          accept="image/*,video/*"
           multiple
           className="hidden"
           onChange={(e) => handleFiles(e.target.files)}
