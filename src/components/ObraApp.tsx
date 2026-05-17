@@ -714,12 +714,14 @@ function ServiceRow({
   evolution,
   onUpdate,
   onAddDiary,
+  indent = 0,
 }: {
   row: BudgetRow;
   allRows: BudgetRow[];
   evolution?: Evolution;
   onUpdate: (item: string, evo: Evolution) => void;
   onAddDiary: (e: DiaryEntry) => void;
+  indent?: number;
 }) {
   const a = activityMetrics(row, evolution);
   const [qty, setQty] = useState(evolution?.quantExec ? String(evolution.quantExec) : "");
