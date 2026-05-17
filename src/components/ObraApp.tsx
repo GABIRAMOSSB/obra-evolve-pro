@@ -1046,6 +1046,7 @@ function ServiceRow({
   onRemove,
   indent = 0,
   peso = 0,
+  obraId,
 }: {
   row: BudgetRow;
   allRows: BudgetRow[];
@@ -1055,6 +1056,7 @@ function ServiceRow({
   onRemove?: (item: string) => void;
   indent?: number;
   peso?: number;
+  obraId: string;
 }) {
   const a = activityMetrics(row, evolution);
   const [qty, setQty] = useState(evolution?.quantExec ? String(evolution.quantExec) : "");
