@@ -133,7 +133,7 @@ export async function parseExcel(file: File): Promise<ParseResult> {
   const rowToStrings = (row: unknown[]) =>
     (row ?? []).map((c) => String(c ?? "").trim());
 
-  for (let i = headerRow + 1; i < matrix.length; i++) {
+  for (let i = headerRow + headerRowsConsumed; i < matrix.length; i++) {
     const row = matrix[i];
     const excelRowIndex = i + 1;
     if (!row) continue;
