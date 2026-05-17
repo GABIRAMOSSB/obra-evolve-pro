@@ -451,7 +451,12 @@ function Dashboard({
         const a = activityMetrics(r, data.evolutions[r.item]);
         if (filterStatus !== "all" && a.status !== filterStatus) return false;
         if (filterPercMin && a.percent < parseFloat(filterPercMin)) return false;
-      } else if (filterStatus !== "all" || filterPercMin) {
+        if (filterExcedido !== "all") {
+          const excedido = r.quantidade > 0 && a.quantExec - r.quantidade > 0.0001;
+          if (filterExcedido === "yes" && !excedido) return false;
+          if (filterExcedido === "no" && excedido) return false;
+        }
+      } else if (filterStatus !== "all" || filterPercMin || filterExcedido !== "all") {
         return false;
       }
       // Hide rows whose ancestor group is collapsed
@@ -460,7 +465,7 @@ function Dashboard({
       }
       return true;
     });
-  }, [data, filterEtapa, filterItem, filterDesc, filterStatus, filterPercMin, collapsed]);
+  }, [data, filterEtapa, filterItem, filterDesc, filterStatus, filterPercMin, filterExcedido, collapsed]);
 
   const updateEvolution = (item: string, evo: Evolution) => {
     const next = { ...data.evolutions, [item]: evo };
