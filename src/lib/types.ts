@@ -35,9 +35,16 @@ export interface DiaryEntry {
 }
 
 export interface ProjectData {
+  id: string;
+  nome: string;
   fileName: string;
   importedAt: string;
   rows: BudgetRow[];
   evolutions: Record<string, Evolution>;
   diaries: DiaryEntry[];
+}
+
+export interface Workspace {
+  obras: ProjectData[];
+  activeId: string | null;
 }
