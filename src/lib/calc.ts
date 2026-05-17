@@ -68,3 +68,10 @@ export const fmtBRL = (n: number) =>
 
 export const fmtNum = (n: number, dec = 2) =>
   n.toLocaleString("pt-BR", { minimumFractionDigits: dec, maximumFractionDigits: dec });
+
+export const fmtDate = (iso: string) => {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-");
+  if (!y || !m || !d) return iso;
+  return `${d}/${m}/${y}`;
+};
