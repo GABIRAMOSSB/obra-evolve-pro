@@ -1152,6 +1152,32 @@ function ServiceRow({
         </div>
       </td>
     </tr>
+    {temExcesso && (
+      <tr className="border-t bg-destructive/10 text-destructive">
+        <td className="px-2 py-1.5 font-mono whitespace-nowrap" style={{ paddingLeft: 8 + indent }}>
+          {row.item}
+        </td>
+        <td className="px-2 py-1.5"></td>
+        <td className="px-2 py-1.5"></td>
+        <td className="px-2 py-1.5 font-medium" style={{ paddingLeft: 8 + indent }}>
+          ⚠ EXCESSO — quantidade executada acima do previsto
+        </td>
+        <td className="px-2 py-1.5">{row.und}</td>
+        <td className="px-2 py-1.5 text-right font-semibold">{fmtNum(excesso)}</td>
+        <td className="px-2 py-1.5"></td>
+        <td className="px-2 py-1.5"></td>
+        <td className="px-2 py-1.5 text-right font-semibold">{fmtBRL(valorExcesso)}</td>
+        <td className="px-2 py-1.5"></td>
+        <td className="px-2 py-1.5"></td>
+        <td className="px-2 py-1.5"></td>
+        <td className="px-2 py-1.5 text-right font-semibold">{fmtBRL(valorExcesso)}</td>
+        <td className="px-2 py-1.5 text-center">
+          <Badge variant="destructive" className="text-[10px]">EXCESSO</Badge>
+        </td>
+        <td className="px-2 py-1.5"></td>
+      </tr>
+    )}
+    </>
   );
 }
 
