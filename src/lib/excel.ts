@@ -139,7 +139,9 @@ export async function parseExcel(file: File): Promise<ParseResult> {
     if (!row) continue;
     const cells = rowToStrings(row);
 
-    const item = String(row[headerMap.item] ?? "").trim();
+    const rawItem = String(row[headerMap.item] ?? "").trim();
+    // Normalize: strip trailing dot(s), collapse spaces
+    const item = rawItem.replace(/\s+/g, "").replace(/\.+$/, "");
     const descricao = String(row[headerMap.descricao] ?? "").trim();
 
     if (!item && !descricao && cells.every((c) => !c)) continue; // truly blank
@@ -160,7 +162,7 @@ export async function parseExcel(file: File): Promise<ParseResult> {
       skipped.push({
         rowIndex: excelRowIndex,
         cells,
-        reason: `Item em formato inválido ("${item}")`,
+        reason: `Item em formato inválido ("${rawItem}")`,
       });
       continue;
     }
@@ -169,6 +171,11 @@ export async function parseExcel(file: File): Promise<ParseResult> {
     const quantidade = toNumber(row[headerMap.quantidade]);
     const total = toNumber(row[headerMap.total]);
     const isGroup = !und && !quantidade && !total;
+
+    // Effective level: count only non-zero segments so "1.2.0.0.1" reads as
+    // depth 3 (etapa 1 → sub 1.2 → serviço 1.2.0.0.1) for indentation purposes.
+    const segments = item.split(".");
+    const effectiveLevel = segments.filter((s, i) => i === 0 || s !== "0").length;
 
     const budgetRow: BudgetRow = {
       item,
@@ -182,7 +189,7 @@ export async function parseExcel(file: File): Promise<ParseResult> {
       total,
       peso: toNumber(row[headerMap.peso]),
       isGroup,
-      level: item.split(".").length,
+      level: effectiveLevel,
     };
     rows.push(budgetRow);
     parsed.push({ rowIndex: excelRowIndex, row: budgetRow });
