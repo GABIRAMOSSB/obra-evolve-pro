@@ -51,6 +51,8 @@ import {
   CloudSun,
   Users,
   Wrench,
+  Calendar,
+  StickyNote,
 } from "lucide-react";
 
 
