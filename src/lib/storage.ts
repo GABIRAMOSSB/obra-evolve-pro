@@ -77,7 +77,8 @@ export async function saveWorkspaceCloud(userId: string, ws: Workspace) {
   const { error } = await supabase
     .from("user_workspaces")
     .upsert(
-      { user_id: userId, workspace: ws as unknown as Record<string, unknown> },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { user_id: userId, workspace: ws as any },
       { onConflict: "user_id" },
     );
   if (error) {

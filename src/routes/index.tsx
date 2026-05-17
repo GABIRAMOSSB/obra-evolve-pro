@@ -1,8 +1,16 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { ObraApp } from "@/components/ObraApp";
 import { Toaster } from "@/components/ui/sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/")({
+  beforeLoad: async () => {
+    if (typeof window === "undefined") return;
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) {
+      throw redirect({ to: "/login" });
+    }
+  },
   component: Index,
   head: () => ({
     meta: [
@@ -10,7 +18,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Sistema local de acompanhamento físico-financeiro de obras a partir de planilha orçamentária Excel.",
+          "Sistema de acompanhamento físico-financeiro de obras a partir de planilha orçamentária Excel.",
       },
     ],
   }),
