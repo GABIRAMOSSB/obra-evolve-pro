@@ -283,7 +283,7 @@ export async function exportDiarioPdf(entries: DiaryEntry[], titulo = "Diário d
           doc.rect(rowX, y, cellW, cellH, "FD");
           doc.setFontSize(10);
           doc.setFont("helvetica", "bold");
-          doc.text(isVideo ? "▶  VÍDEO" : "Imagem indisponível", rowX + cellW / 2, y + cellH / 2, {
+          doc.text(isVideo ? "VIDEO" : "Imagem indisponivel", rowX + cellW / 2, y + cellH / 2, {
             align: "center",
           });
           doc.setFont("helvetica", "normal");
@@ -313,7 +313,7 @@ export async function exportDiarioPdf(entries: DiaryEntry[], titulo = "Diário d
           doc.setTextColor(255, 255, 255);
           doc.setFont("helvetica", "bold");
           doc.setFontSize(9);
-          doc.textWithLink("▶  Abrir vídeo", btnX + btnW / 2, btnY + btnH / 2 + 1.5, {
+          doc.textWithLink("Abrir video", btnX + btnW / 2, btnY + btnH / 2 + 1.5, {
             url: f.url,
             align: "center",
           });
@@ -322,7 +322,7 @@ export async function exportDiarioPdf(entries: DiaryEntry[], titulo = "Diário d
           doc.setFontSize(8);
           doc.setTextColor(37, 99, 235);
           const dlUrl = f.url + (f.url.includes("?") ? "&" : "?") + "download=1";
-          doc.textWithLink("⬇  Baixar vídeo", rowX + cellW / 2, btnY + btnH + 4, {
+          doc.textWithLink("Baixar video", rowX + cellW / 2, btnY + btnH + 4, {
             url: dlUrl,
             align: "center",
           });
