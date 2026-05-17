@@ -137,7 +137,7 @@ export function PhotoUploader({ obraId, photos, onChange, compact }: Props) {
           </p>
         </div>
       )}
-      <div className="hidden">{/* spacer */}</div>
+
 
       {photos.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
