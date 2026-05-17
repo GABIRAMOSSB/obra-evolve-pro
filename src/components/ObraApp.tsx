@@ -411,6 +411,48 @@ function Dashboard({
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <label>
+              <input
+                type="file"
+                accept=".xlsx,.xls"
+                className="hidden"
+                onChange={async (e) => {
+                  const f = e.target.files?.[0];
+                  e.target.value = "";
+                  if (!f) return;
+                  try {
+                    const result = await parseExcel(f);
+                    const validKeys = new Set(result.rows.map((r) => r.item));
+                    const keptEvolutions: Record<string, Evolution> = {};
+                    let kept = 0;
+                    let dropped = 0;
+                    for (const [k, v] of Object.entries(data.evolutions)) {
+                      if (validKeys.has(k)) {
+                        keptEvolutions[k] = v;
+                        kept++;
+                      } else dropped++;
+                    }
+                    setData({
+                      ...data,
+                      fileName: f.name,
+                      importedAt: new Date().toISOString(),
+                      rows: result.rows,
+                      evolutions: keptEvolutions,
+                    });
+                    toast.success(
+                      `Planilha atualizada: ${result.rows.length} linhas. ${kept} evolução(ões) preservada(s)${dropped ? `, ${dropped} descartada(s)` : ""}.`,
+                    );
+                  } catch (err) {
+                    toast.error((err as Error).message);
+                  }
+                }}
+              />
+              <Button asChild variant="outline" size="sm">
+                <span className="cursor-pointer">
+                  <Upload className="w-4 h-4 mr-1" /> Reimportar
+                </span>
+              </Button>
+            </label>
             <Button
               variant="outline"
               size="sm"
