@@ -68,18 +68,63 @@ function statusVariant(status: string): "default" | "secondary" | "outline" {
 }
 
 export function ObraApp() {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [ws, setWs] = useState<Workspace>({ obras: [], activeId: null });
   const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState<{ result: ParseResult; fileName: string } | null>(null);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const skipNextSave = useRef(true);
 
   useEffect(() => {
-    setWs(loadWorkspace());
-    setLoaded(true);
-  }, []);
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const remote = await loadWorkspaceCloud(user.id);
+        if (!cancelled) {
+          skipNextSave.current = true;
+          setWs(remote);
+          setLoaded(true);
+        }
+      } catch (e) {
+        console.error(e);
+        toast.error("Falha ao carregar dados da nuvem");
+        if (!cancelled) setLoaded(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   useEffect(() => {
-    if (loaded) saveWorkspace(ws);
-  }, [ws, loaded]);
+    if (!loaded || !user) return;
+    if (skipNextSave.current) {
+      skipNextSave.current = false;
+      return;
+    }
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    setSaving(true);
+    saveTimer.current = setTimeout(async () => {
+      try {
+        await saveWorkspaceCloud(user.id, ws);
+      } catch {
+        toast.error("Falha ao salvar na nuvem");
+      } finally {
+        setSaving(false);
+      }
+    }, 600);
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+  }, [ws, loaded, user]);
+
+  async function handleSignOut() {
+    await signOut();
+    navigate({ to: "/login" });
+  }
 
   const activeObra = ws.obras.find((o) => o.id === ws.activeId) ?? null;
 
