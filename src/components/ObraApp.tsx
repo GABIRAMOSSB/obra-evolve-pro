@@ -466,6 +466,9 @@ function Dashboard({
   onRenameObra,
   onDeleteObra,
   onImportFile,
+  saving,
+  userEmail,
+  onSignOut,
 }: {
   data: ProjectData;
   setData: (d: ProjectData) => void;
@@ -475,6 +478,9 @@ function Dashboard({
   onRenameObra: (id: string, nome: string) => void;
   onDeleteObra: (id: string) => void;
   onImportFile: (file: File) => void;
+  saving: boolean;
+  userEmail: string;
+  onSignOut: () => void;
 }) {
   const m = useMemo(() => projectMetrics(data.rows, data.evolutions), [data]);
 
