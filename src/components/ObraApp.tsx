@@ -840,7 +840,7 @@ function Dashboard({
           </TabsContent>
 
           <TabsContent value="diario">
-            <DiaryPanel diaries={data.diaries} onUpdate={updateDiary} onRemove={removeDiary} />
+            <DiaryPanel obraId={data.id} diaries={data.diaries} onUpdate={updateDiary} onRemove={removeDiary} />
           </TabsContent>
         </Tabs>
       </main>
@@ -1530,10 +1530,12 @@ function EvolutionDialog({
 }
 
 function DiaryPanel({
+  obraId,
   diaries,
   onUpdate,
   onRemove,
 }: {
+  obraId: string;
   diaries: DiaryEntry[];
   onUpdate: (e: DiaryEntry) => void;
   onRemove: (id: string) => void;
@@ -1580,7 +1582,7 @@ function DiaryPanel({
       ) : (
         <div className="space-y-3">
           {filtered.map((d) => (
-            <DiaryCard key={d.id} entry={d} onUpdate={onUpdate} onRemove={onRemove} />
+            <DiaryCard key={d.id} obraId={obraId} entry={d} onUpdate={onUpdate} onRemove={onRemove} />
           ))}
         </div>
       )}
@@ -1589,10 +1591,12 @@ function DiaryPanel({
 }
 
 function DiaryCard({
+  obraId,
   entry,
   onUpdate,
   onRemove,
 }: {
+  obraId: string;
   entry: DiaryEntry;
   onUpdate: (e: DiaryEntry) => void;
   onRemove: (id: string) => void;
@@ -1606,6 +1610,8 @@ function DiaryCard({
     toast.success("Diário atualizado");
   }
 
+  const fotos = entry.fotos ?? [];
+
   return (
     <Card className="p-5">
       <div className="flex items-start justify-between gap-3 mb-3">
@@ -1615,6 +1621,10 @@ function DiaryCard({
             <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
             <span>{fmtDate(entry.data)}</span>
             <span>· Item {entry.itemKey} · {entry.atividade}</span>
+            {entry.statusDia && <span>· {entry.statusDia}</span>}
+            {(entry.horaInicio || entry.horaFim) && (
+              <span>· {entry.horaInicio || "--"} às {entry.horaFim || "--"}</span>
+            )}
           </div>
         </div>
         <div className="flex gap-1">
@@ -1662,6 +1672,14 @@ function DiaryCard({
                 onChange={(ev) => setE({ ...e, equipamentos: ev.target.value })}
               />
             </div>
+            <div>
+              <Label>Hora início</Label>
+              <Input type="time" value={e.horaInicio ?? ""} onChange={(ev) => setE({ ...e, horaInicio: ev.target.value })} />
+            </div>
+            <div>
+              <Label>Hora fim</Label>
+              <Input type="time" value={e.horaFim ?? ""} onChange={(ev) => setE({ ...e, horaFim: ev.target.value })} />
+            </div>
           </div>
           <div>
             <Label>Texto do diário</Label>
@@ -1672,10 +1690,25 @@ function DiaryCard({
             />
           </div>
           <div>
+            <Label>Pendências</Label>
+            <Textarea
+              value={e.pendencias ?? ""}
+              onChange={(ev) => setE({ ...e, pendencias: ev.target.value })}
+            />
+          </div>
+          <div>
             <Label>Observações</Label>
             <Textarea
               value={e.observacoes}
               onChange={(ev) => setE({ ...e, observacoes: ev.target.value })}
+            />
+          </div>
+          <div>
+            <Label>Fotos / vídeos</Label>
+            <PhotoUploader
+              obraId={obraId}
+              photos={e.fotos ?? []}
+              onChange={(photos) => setE({ ...e, fotos: photos })}
             />
           </div>
           <Button onClick={save}>Salvar alterações</Button>
@@ -1699,11 +1732,50 @@ function DiaryCard({
               <span>{entry.equipamentos || "-"}</span>
             </div>
           </div>
-          <p className="text-sm text-foreground leading-relaxed">{entry.texto}</p>
+          <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{entry.texto}</p>
+          {entry.pendencias && (
+            <div className="flex items-start gap-2 mt-3 p-2 rounded-md bg-amber-500/10 border border-amber-500/30">
+              <StickyNote className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
+              <p className="text-sm text-foreground"><span className="font-medium">Pendências:</span> {entry.pendencias}</p>
+            </div>
+          )}
           {entry.observacoes && (
             <div className="flex items-start gap-2 mt-3 p-2 rounded-md bg-muted/40 border border-border/50">
               <StickyNote className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
               <p className="text-sm italic text-muted-foreground">{entry.observacoes}</p>
+            </div>
+          )}
+          {fotos.length > 0 && (
+            <div className="mt-4">
+              <div className="text-xs font-medium text-muted-foreground mb-2">
+                Registro fotográfico ({fotos.length})
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                {fotos.map((f) => (
+                  <a
+                    key={f.id}
+                    href={f.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="group block rounded-md overflow-hidden border border-border/60 bg-muted/30"
+                  >
+                    {f.tipo === "video" ? (
+                      <video src={f.url} className="w-full h-28 object-cover" />
+                    ) : (
+                      <img
+                        src={f.url}
+                        alt={f.legenda || "foto"}
+                        loading="lazy"
+                        className="w-full h-28 object-cover group-hover:scale-105 transition-transform"
+                      />
+                    )}
+                    <div className="px-1.5 py-1 text-[10px] text-muted-foreground truncate">
+                      {f.hora}{f.legenda ? ` · ${f.legenda}` : ""}
+                      {f.tipo && f.tipo !== "geral" && f.tipo !== "video" ? ` · ${f.tipo}` : ""}
+                    </div>
+                  </a>
+                ))}
+              </div>
             </div>
           )}
         </>
