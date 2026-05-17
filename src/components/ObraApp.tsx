@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ProjectData, BudgetRow, Evolution, DiaryEntry, Workspace, ObraInfo, DiaryPhoto } from "@/lib/types";
-import { loadWorkspaceCloud, saveWorkspaceCloud, newObraId } from "@/lib/storage";
+import { loadWorkspaceCloud, saveWorkspaceCloud, newObraId, detectMigration, markMigrated, type MigrationPlan } from "@/lib/storage";
 import { useAuth } from "@/hooks/use-auth";
 import { useNavigate } from "@tanstack/react-router";
-import { LogOut } from "lucide-react";
+import { LogOut, CloudUpload, CheckCircle2 } from "lucide-react";
 import { ObraInfoDialog } from "@/components/ObraInfoDialog";
 import { PhotoUploader } from "@/components/PhotoUploader";
 import { parseExcel, type ParseResult } from "@/lib/excel";
@@ -74,6 +74,12 @@ export function ObraApp() {
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState<{ result: ParseResult; fileName: string } | null>(null);
+  const [migration, setMigration] = useState<
+    | { stage: "prompt"; plan: MigrationPlan }
+    | { stage: "running"; plan: MigrationPlan }
+    | { stage: "done"; plan: MigrationPlan }
+    | null
+  >(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipNextSave = useRef(true);
 
@@ -83,11 +89,13 @@ export function ObraApp() {
     (async () => {
       try {
         const remote = await loadWorkspaceCloud(user.id);
-        if (!cancelled) {
-          skipNextSave.current = true;
-          setWs(remote);
-          setLoaded(true);
-        }
+        if (cancelled) return;
+        const plan = detectMigration();
+        const shouldPrompt = plan.needed && remote.obras.length === 0;
+        skipNextSave.current = true;
+        setWs(remote);
+        setLoaded(true);
+        if (shouldPrompt) setMigration({ stage: "prompt", plan });
       } catch (e) {
         console.error(e);
         toast.error("Falha ao carregar dados da nuvem");
@@ -98,6 +106,28 @@ export function ObraApp() {
       cancelled = true;
     };
   }, [user]);
+
+  async function runMigration() {
+    if (!user || !migration || !migration.plan.local) return;
+    const plan = migration.plan;
+    setMigration({ stage: "running", plan });
+    try {
+      await saveWorkspaceCloud(user.id, plan.local);
+      markMigrated();
+      skipNextSave.current = true;
+      setWs(plan.local);
+      setMigration({ stage: "done", plan });
+    } catch (e) {
+      console.error(e);
+      toast.error("Falha ao migrar dados. Tente novamente.");
+      setMigration({ stage: "prompt", plan });
+    }
+  }
+
+  function skipMigration() {
+    markMigrated();
+    setMigration(null);
+  }
 
   useEffect(() => {
     if (!loaded || !user) return;
