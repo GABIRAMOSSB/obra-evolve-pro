@@ -772,6 +772,7 @@ function ActivitiesTable({
                     <td
                       className={`px-3 py-2 ${isEtapa ? "font-bold uppercase tracking-wide" : "font-semibold"}`}
                       colSpan={4}
+                      style={{ paddingLeft: 12 + indent }}
                     >
                       {r.descricao}
                     </td>
@@ -888,7 +889,9 @@ function ServiceRow({
       >
         {row.item}
       </td>
-      <td className="px-3 py-2 max-w-md">{row.descricao}</td>
+      <td className="px-3 py-2 max-w-md" style={{ paddingLeft: 12 + indent }}>
+        {row.descricao}
+      </td>
       <td className="px-3 py-2">{row.und}</td>
       <td className="px-3 py-2 text-right font-medium">{fmtNum(row.quantidade)}</td>
       <td className="px-3 py-2 text-right">{fmtBRL(row.valorUnitBDI || row.valorUnit)}</td>
