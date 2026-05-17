@@ -350,6 +350,17 @@ function Dashboard({
   const [filterItem, setFilterItem] = useState("");
   const [filterDesc, setFilterDesc] = useState("");
   const [filterPercMin, setFilterPercMin] = useState("");
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const toggleCollapse = (item: string) =>
+    setCollapsed((c) => ({ ...c, [item]: !c[item] }));
+  const expandAll = () => setCollapsed({});
+  const collapseAll = () => {
+    const next: Record<string, boolean> = {};
+    data.rows.forEach((r) => {
+      if (r.isGroup) next[r.item] = true;
+    });
+    setCollapsed(next);
+  };
 
   const visibleRows = useMemo(() => {
     return data.rows.filter((r) => {
