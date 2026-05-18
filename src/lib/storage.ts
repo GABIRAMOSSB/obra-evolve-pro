@@ -75,11 +75,20 @@ export function markMigrated() {
   if (typeof window !== "undefined") localStorage.setItem(MIGRATED_KEY, "1");
 }
 
-export async function loadWorkspaceCloud(userId: string): Promise<Workspace> {
+export async function getCurrentCompanyId(): Promise<string | null> {
+  const { data, error } = await supabase.rpc("current_user_company");
+  if (error) {
+    console.error("getCurrentCompanyId", error);
+    return null;
+  }
+  return (data as string | null) ?? null;
+}
+
+export async function loadWorkspaceCloud(companyId: string): Promise<Workspace> {
   const { data, error } = await supabase
-    .from("user_workspaces")
+    .from("company_workspaces")
     .select("workspace")
-    .eq("user_id", userId)
+    .eq("company_id", companyId)
     .maybeSingle();
   if (error) {
     console.error("loadWorkspaceCloud", error);
@@ -88,13 +97,13 @@ export async function loadWorkspaceCloud(userId: string): Promise<Workspace> {
   return remote ?? emptyWs();
 }
 
-export async function saveWorkspaceCloud(userId: string, ws: Workspace) {
+export async function saveWorkspaceCloud(companyId: string, ws: Workspace) {
   const { error } = await supabase
-    .from("user_workspaces")
+    .from("company_workspaces")
     .upsert(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { user_id: userId, workspace: ws as any },
-      { onConflict: "user_id" },
+      { company_id: companyId, workspace: ws as any },
+      { onConflict: "company_id" },
     );
   if (error) {
     console.error("saveWorkspaceCloud", error);
