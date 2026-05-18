@@ -1,40 +1,68 @@
-## Objetivo
+# Empresa/Equipe compartilhada
 
-Hoje as obras, evoluções e diários ficam salvos só no navegador (localStorage), por isso não aparecem no celular. Vou migrar tudo para a nuvem, protegido por login, para você acessar as mesmas obras em qualquer dispositivo.
+## Modelo de dados (novas tabelas)
 
-## O que será feito
+- **companies** — `id`, `name`, `owner_id`, `created_at`
+- **company_members** — `company_id` + `user_id` (PK composta), `role` (`admin` | `member`), `joined_at`
+- **company_invites** — `id`, `company_id`, `email`, `role`, `token` (uuid único, vai no link), `invited_by`, `created_at`, `expires_at` (7 dias), `accepted_at`
+- **company_workspaces** — `company_id` (PK), `workspace` (jsonb com obras/diários/fotos), `updated_at` — substitui o `user_workspaces` por dado compartilhado da empresa
 
-1. **Login**
-   - Criar tela de login/cadastro com **e-mail/senha** e **Google**.
-   - Toda a área do app fica protegida; sem login, redireciona para `/login`.
-   - Botão "Sair" no topo.
+Funções `security definer` para evitar recursão em RLS:
+- `is_company_member(_user, _company)`
+- `has_company_role(_user, _company, _role)`
+- `current_user_company()` — retorna a única empresa do usuário (uma empresa por usuário)
 
-2. **Banco de dados na nuvem** (tabelas privadas por usuário, com RLS):
-   - `obras` — nome, arquivo, info da obra, data de importação.
-   - `budget_rows` — linhas da planilha orçamentária de cada obra.
-   - `evolutions` — execuções por item.
-   - `diaries` — entradas do diário (com as fotos em JSON, já que as URLs vivem no bucket).
-   - O bucket `obra-fotos` continua sendo usado; as fotos já estão na nuvem.
+## Regras de acesso (RLS)
 
-3. **Sincronização**
-   - Ao logar, o app carrega as obras do usuário do banco.
-   - Criar/editar/excluir obra, importar planilha, registrar evolução e diário passam a gravar direto no Supabase.
-   - Mostrar indicador "Salvando..." discreto no header.
+- **companies**: membro vê; só admin atualiza nome; ninguém deleta direto (usar função).
+- **company_members**: membros vêem a lista; só admin insere/remove/muda papel; usuário pode sair (deletar a si mesmo se não for o último admin).
+- **company_invites**: admin gerencia (CRUD); convidado vê pelo token via função pública `accept_invite(token)`.
+- **company_workspaces**: qualquer membro lê e escreve a workspace da empresa.
 
-4. **Migração automática dos dados locais**
-   - Na primeira vez que você logar num dispositivo que tem dados antigos no `localStorage`, o app envia as obras locais para a nuvem (associadas à sua conta) e marca como migradas para não duplicar.
+## Migração automática dos dados atuais
 
-## Detalhes técnicos
+Migration faz, para cada linha em `user_workspaces`:
+1. Cria `companies` com nome "Minha Empresa" e `owner_id = user_id`.
+2. Insere `company_members` com role `admin`.
+3. Copia `workspace` para `company_workspaces`.
 
-- Auth via Lovable Cloud (e-mail/senha + Google gerenciado).
-- Rotas: `/login` pública; `/` dentro de layout `_authenticated` com `beforeLoad` redirecionando.
-- Listener `onAuthStateChange` no root para invalidar cache ao trocar de sessão.
-- Acesso ao banco via cliente browser do Supabase (RLS escopa por `auth.uid()`); nada de service role no frontend.
-- Estrutura de salvamento: ao invés de `saveWorkspace` salvar tudo num blob, debounce de ~500ms persistindo só o que mudou (obra ativa, evoluções alteradas, diário criado/editado/removido).
-- `storage.ts` antigo vira utilitário só de leitura do localStorage para a rotina de migração.
+Trigger em `auth.users` (novo cadastro):
+- Se o e-mail tem convite pendente válido → entra como `member` na empresa que convidou (aceita automaticamente).
+- Senão → cria uma nova empresa "Minha Empresa" e vira `admin`.
 
-## Fora do escopo
+## Convite por e-mail
 
-- Compartilhamento de obras entre usuários (cada conta vê só as suas).
-- Histórico/versionamento.
-- Edição offline com sync posterior (vai exigir internet para salvar).
+- Admin abre **Equipe** → digita e-mail + papel → app cria `company_invites` com token único.
+- App mostra **link copiável** `/invite/<token>` e (se a infra de e-mail estiver ativa) envia automaticamente; senão o admin compartilha o link. Posso ativar envio automático depois.
+- Rota `/invite/<token>`:
+  - Logado e e-mail bate → aceita e entra na empresa.
+  - Não logado → manda pro login/cadastro; depois do login aceita.
+
+> Como cada usuário só pode estar em uma empresa, aceitar convite enquanto já é admin solo da própria empresa: pergunta se quer sair da atual e entrar na nova (ou recusar). Se a empresa antiga ficar sem membros, é removida.
+
+## UI
+
+- **Header**: mostra nome da empresa e link "Equipe".
+- **Página Equipe** (`/equipe`):
+  - Nome da empresa (admin pode editar).
+  - Lista de membros com papel; admin pode promover/rebaixar/remover.
+  - Lista de convites pendentes com botão "Copiar link" e "Cancelar".
+  - Form de novo convite (e-mail + papel).
+  - Botão "Sair da empresa" (não aparece se for último admin).
+- **Obras**: sem mudança visual — só passa a vir da empresa, não do usuário.
+
+## Código
+
+- `src/lib/storage.ts`: usa `company_workspaces` em vez de `user_workspaces`; busca `company_id` via `current_user_company()` no carregamento.
+- Novo `src/hooks/use-company.tsx` (carrega empresa, membros, papel do usuário).
+- Novo `src/routes/_authenticated/equipe.tsx`.
+- Nova rota pública `src/routes/invite.$token.tsx`.
+- Migração da workspace local (banner já existente) continua funcionando — agora grava na empresa do usuário.
+
+## Fora do escopo desta entrega
+
+- Envio automático de e-mail (precisa configurar domínio de e-mail; faço como próximo passo se quiser).
+- Múltiplas empresas por usuário (decidido: uma só).
+- Permissões granulares por obra (todos os membros vêem todas as obras).
+
+Confirmando, sigo com a migração SQL + código.
