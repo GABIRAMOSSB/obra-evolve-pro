@@ -593,6 +593,7 @@ function Dashboard({
   onImportFile,
   saving,
   userEmail,
+  companyName,
   onSignOut,
 }: {
   data: ProjectData;
@@ -605,6 +606,7 @@ function Dashboard({
   onImportFile: (file: File) => void;
   saving: boolean;
   userEmail: string;
+  companyName: string;
   onSignOut: () => void;
 }) {
   const m = useMemo(() => projectMetrics(data.rows, data.evolutions), [data]);
