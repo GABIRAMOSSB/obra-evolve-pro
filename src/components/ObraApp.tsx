@@ -231,7 +231,29 @@ export function ObraApp() {
     toast.success("Obra removida");
   }
 
-  if (!loaded) return null;
+  if (companyLoading || !loaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">
+        Carregando...
+      </div>
+    );
+  }
+
+  if (!company) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <Card className="max-w-md w-full p-8 text-center space-y-4">
+          <h2 className="text-lg font-bold">Nenhuma empresa encontrada</h2>
+          <p className="text-sm text-muted-foreground">
+            Sua conta ainda não está vinculada a nenhuma empresa. Tente sair e entrar novamente.
+          </p>
+          <Button onClick={handleSignOut} variant="outline" className="w-full">
+            <LogOut className="w-4 h-4 mr-1" /> Sair
+          </Button>
+        </Card>
+      </div>
+    );
+  }
 
   if (migration && migration.stage !== "done") {
     const { plan, stage } = migration;
