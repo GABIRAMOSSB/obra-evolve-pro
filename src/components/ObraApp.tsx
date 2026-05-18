@@ -317,7 +317,7 @@ export function ObraApp() {
             <div>
               <h1 className="text-2xl font-bold text-foreground">Acompanhamento de Obras</h1>
               <p className="text-muted-foreground mt-2">
-                Importe sua primeira planilha orçamentária para começar. Cada planilha vira uma obra. Você pode adicionar quantas quiser.
+                <span className="font-medium text-foreground">{company.name}</span> — importe sua primeira planilha orçamentária para começar.
               </p>
             </div>
             <label className="block">
@@ -338,13 +338,16 @@ export function ObraApp() {
               </Button>
             </label>
             <p className="text-xs text-muted-foreground">
-              Seus dados ficam sincronizados na nuvem.
+              Seus dados ficam sincronizados na nuvem e visíveis para toda a sua equipe.
             </p>
             <Button variant="outline" className="w-full" onClick={checkLocalMigration}>
               <CloudUpload className="mr-2 w-4 h-4" /> Procurar dados locais para migrar
             </Button>
+            <Button asChild variant="outline" className="w-full">
+              <Link to="/equipe"><Users className="mr-2 w-4 h-4" /> Gerenciar equipe</Link>
+            </Button>
             <div className="flex items-center justify-between text-xs text-muted-foreground border-t pt-4">
-              <span className="truncate">{user?.email}</span>
+              <span className="truncate">{user?.email} • {company.role === "admin" ? "Admin" : "Membro"}</span>
               <Button variant="ghost" size="sm" onClick={handleSignOut}>
                 <LogOut className="w-3.5 h-3.5 mr-1" /> Sair
               </Button>
@@ -373,6 +376,7 @@ export function ObraApp() {
         onImportFile={handleFile}
         saving={saving}
         userEmail={user?.email ?? ""}
+        companyName={company.name}
         onSignOut={handleSignOut}
       />
       <ImportPreviewDialog
