@@ -894,6 +894,9 @@ function Dashboard({
             {saving && (
               <span className="text-xs text-muted-foreground px-2">Salvando...</span>
             )}
+            <Button asChild variant="ghost" size="sm" title={`Equipe (${companyName})`}>
+              <Link to="/equipe"><Users className="w-4 h-4 mr-1" /> {companyName}</Link>
+            </Button>
             <Button variant="ghost" size="sm" onClick={onSignOut} title={`Sair (${userEmail})`}>
               <LogOut className="w-4 h-4 mr-1" /> Sair
             </Button>
