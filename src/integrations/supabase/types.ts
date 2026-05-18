@@ -14,6 +14,132 @@ export type Database = {
   }
   public: {
     Tables: {
+      companies: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name?: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      company_invites: {
+        Row: {
+          accepted_at: string | null
+          company_id: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          role: Database["public"]["Enums"]["company_role"]
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          company_id: string
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          role?: Database["public"]["Enums"]["company_role"]
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          company_id?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          role?: Database["public"]["Enums"]["company_role"]
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_invites_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_members: {
+        Row: {
+          company_id: string
+          joined_at: string
+          role: Database["public"]["Enums"]["company_role"]
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          joined_at?: string
+          role?: Database["public"]["Enums"]["company_role"]
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          joined_at?: string
+          role?: Database["public"]["Enums"]["company_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_members_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_workspaces: {
+        Row: {
+          company_id: string
+          created_at: string
+          updated_at: string
+          workspace: Json
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          updated_at?: string
+          workspace?: Json
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          updated_at?: string
+          workspace?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_workspaces_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_workspaces: {
         Row: {
           created_at: string
@@ -40,10 +166,34 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      accept_company_invite: { Args: { _token: string }; Returns: string }
+      current_user_company: { Args: never; Returns: string }
+      get_invite_info: {
+        Args: { _token: string }
+        Returns: {
+          accepted: boolean
+          company_id: string
+          company_name: string
+          email: string
+          expires_at: string
+          role: Database["public"]["Enums"]["company_role"]
+        }[]
+      }
+      has_company_role: {
+        Args: {
+          _company: string
+          _role: Database["public"]["Enums"]["company_role"]
+          _user: string
+        }
+        Returns: boolean
+      }
+      is_company_member: {
+        Args: { _company: string; _user: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      company_role: "admin" | "member"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -170,6 +320,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      company_role: ["admin", "member"],
+    },
   },
 } as const

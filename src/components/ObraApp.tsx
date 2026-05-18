@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ProjectData, BudgetRow, Evolution, DiaryEntry, Workspace, ObraInfo, DiaryPhoto } from "@/lib/types";
 import { loadWorkspaceCloud, saveWorkspaceCloud, newObraId, detectMigration, markMigrated, type MigrationPlan } from "@/lib/storage";
 import { useAuth } from "@/hooks/use-auth";
-import { useNavigate } from "@tanstack/react-router";
+import { useCompany } from "@/hooks/use-company";
+import { useNavigate, Link } from "@tanstack/react-router";
 import { LogOut, CloudUpload, CheckCircle2 } from "lucide-react";
 import { ObraInfoDialog } from "@/components/ObraInfoDialog";
 import { PhotoUploader } from "@/components/PhotoUploader";
@@ -69,6 +70,7 @@ function statusVariant(status: string): "default" | "secondary" | "outline" {
 
 export function ObraApp() {
   const { user, signOut } = useAuth();
+  const { company, loading: companyLoading } = useCompany();
   const navigate = useNavigate();
   const [ws, setWs] = useState<Workspace>({ obras: [], activeId: null });
   const [loaded, setLoaded] = useState(false);
@@ -84,11 +86,11 @@ export function ObraApp() {
   const skipNextSave = useRef(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !company) return;
     let cancelled = false;
     (async () => {
       try {
-        const remote = await loadWorkspaceCloud(user.id);
+        const remote = await loadWorkspaceCloud(company.id);
         if (cancelled) return;
         const plan = detectMigration();
         const shouldPrompt = plan.needed && remote.obras.length === 0;
@@ -105,15 +107,15 @@ export function ObraApp() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, company]);
 
   async function runMigration() {
-    if (!user || !migration || !migration.plan.local) return;
+    if (!company || !migration || !migration.plan.local) return;
     const plan = migration.plan;
     const local = migration.plan.local!;
     setMigration({ stage: "running", plan });
     try {
-      await saveWorkspaceCloud(user.id, local);
+      await saveWorkspaceCloud(company.id, local);
       markMigrated();
       skipNextSave.current = true;
       setWs(local);
@@ -143,7 +145,7 @@ export function ObraApp() {
   }
 
   useEffect(() => {
-    if (!loaded || !user) return;
+    if (!loaded || !company) return;
     if (skipNextSave.current) {
       skipNextSave.current = false;
       return;
@@ -152,7 +154,7 @@ export function ObraApp() {
     setSaving(true);
     saveTimer.current = setTimeout(async () => {
       try {
-        await saveWorkspaceCloud(user.id, ws);
+        await saveWorkspaceCloud(company.id, ws);
       } catch {
         toast.error("Falha ao salvar na nuvem");
       } finally {
@@ -162,7 +164,7 @@ export function ObraApp() {
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
-  }, [ws, loaded, user]);
+  }, [ws, loaded, company]);
 
   async function handleSignOut() {
     await signOut();
@@ -229,7 +231,29 @@ export function ObraApp() {
     toast.success("Obra removida");
   }
 
-  if (!loaded) return null;
+  if (companyLoading || !loaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">
+        Carregando...
+      </div>
+    );
+  }
+
+  if (!company) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <Card className="max-w-md w-full p-8 text-center space-y-4">
+          <h2 className="text-lg font-bold">Nenhuma empresa encontrada</h2>
+          <p className="text-sm text-muted-foreground">
+            Sua conta ainda não está vinculada a nenhuma empresa. Tente sair e entrar novamente.
+          </p>
+          <Button onClick={handleSignOut} variant="outline" className="w-full">
+            <LogOut className="w-4 h-4 mr-1" /> Sair
+          </Button>
+        </Card>
+      </div>
+    );
+  }
 
   if (migration && migration.stage !== "done") {
     const { plan, stage } = migration;
@@ -293,7 +317,7 @@ export function ObraApp() {
             <div>
               <h1 className="text-2xl font-bold text-foreground">Acompanhamento de Obras</h1>
               <p className="text-muted-foreground mt-2">
-                Importe sua primeira planilha orçamentária para começar. Cada planilha vira uma obra. Você pode adicionar quantas quiser.
+                <span className="font-medium text-foreground">{company.name}</span> — importe sua primeira planilha orçamentária para começar.
               </p>
             </div>
             <label className="block">
@@ -314,13 +338,16 @@ export function ObraApp() {
               </Button>
             </label>
             <p className="text-xs text-muted-foreground">
-              Seus dados ficam sincronizados na nuvem.
+              Seus dados ficam sincronizados na nuvem e visíveis para toda a sua equipe.
             </p>
             <Button variant="outline" className="w-full" onClick={checkLocalMigration}>
               <CloudUpload className="mr-2 w-4 h-4" /> Procurar dados locais para migrar
             </Button>
+            <Button asChild variant="outline" className="w-full">
+              <Link to="/equipe"><Users className="mr-2 w-4 h-4" /> Gerenciar equipe</Link>
+            </Button>
             <div className="flex items-center justify-between text-xs text-muted-foreground border-t pt-4">
-              <span className="truncate">{user?.email}</span>
+              <span className="truncate">{user?.email} • {company.role === "admin" ? "Admin" : "Membro"}</span>
               <Button variant="ghost" size="sm" onClick={handleSignOut}>
                 <LogOut className="w-3.5 h-3.5 mr-1" /> Sair
               </Button>
@@ -349,6 +376,7 @@ export function ObraApp() {
         onImportFile={handleFile}
         saving={saving}
         userEmail={user?.email ?? ""}
+        companyName={company.name}
         onSignOut={handleSignOut}
       />
       <ImportPreviewDialog
@@ -565,6 +593,7 @@ function Dashboard({
   onImportFile,
   saving,
   userEmail,
+  companyName,
   onSignOut,
 }: {
   data: ProjectData;
@@ -577,6 +606,7 @@ function Dashboard({
   onImportFile: (file: File) => void;
   saving: boolean;
   userEmail: string;
+  companyName: string;
   onSignOut: () => void;
 }) {
   const m = useMemo(() => projectMetrics(data.rows, data.evolutions), [data]);
@@ -864,6 +894,9 @@ function Dashboard({
             {saving && (
               <span className="text-xs text-muted-foreground px-2">Salvando...</span>
             )}
+            <Button asChild variant="ghost" size="sm" title={`Equipe (${companyName})`}>
+              <Link to="/equipe"><Users className="w-4 h-4 mr-1" /> {companyName}</Link>
+            </Button>
             <Button variant="ghost" size="sm" onClick={onSignOut} title={`Sair (${userEmail})`}>
               <LogOut className="w-4 h-4 mr-1" /> Sair
             </Button>
