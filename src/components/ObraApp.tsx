@@ -70,6 +70,7 @@ function statusVariant(status: string): "default" | "secondary" | "outline" {
 
 export function ObraApp() {
   const { user, signOut } = useAuth();
+  const { company, loading: companyLoading } = useCompany();
   const navigate = useNavigate();
   const [ws, setWs] = useState<Workspace>({ obras: [], activeId: null });
   const [loaded, setLoaded] = useState(false);
@@ -85,11 +86,11 @@ export function ObraApp() {
   const skipNextSave = useRef(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !company) return;
     let cancelled = false;
     (async () => {
       try {
-        const remote = await loadWorkspaceCloud(user.id);
+        const remote = await loadWorkspaceCloud(company.id);
         if (cancelled) return;
         const plan = detectMigration();
         const shouldPrompt = plan.needed && remote.obras.length === 0;
@@ -106,15 +107,15 @@ export function ObraApp() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, company]);
 
   async function runMigration() {
-    if (!user || !migration || !migration.plan.local) return;
+    if (!company || !migration || !migration.plan.local) return;
     const plan = migration.plan;
     const local = migration.plan.local!;
     setMigration({ stage: "running", plan });
     try {
-      await saveWorkspaceCloud(user.id, local);
+      await saveWorkspaceCloud(company.id, local);
       markMigrated();
       skipNextSave.current = true;
       setWs(local);
@@ -144,7 +145,7 @@ export function ObraApp() {
   }
 
   useEffect(() => {
-    if (!loaded || !user) return;
+    if (!loaded || !company) return;
     if (skipNextSave.current) {
       skipNextSave.current = false;
       return;
@@ -153,7 +154,7 @@ export function ObraApp() {
     setSaving(true);
     saveTimer.current = setTimeout(async () => {
       try {
-        await saveWorkspaceCloud(user.id, ws);
+        await saveWorkspaceCloud(company.id, ws);
       } catch {
         toast.error("Falha ao salvar na nuvem");
       } finally {
@@ -163,7 +164,7 @@ export function ObraApp() {
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
-  }, [ws, loaded, user]);
+  }, [ws, loaded, company]);
 
   async function handleSignOut() {
     await signOut();
