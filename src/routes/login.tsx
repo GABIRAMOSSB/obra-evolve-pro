@@ -12,20 +12,30 @@ import { HardHat } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
 
 export const Route = createFileRoute("/login")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    redirect: typeof s.redirect === "string" ? s.redirect : undefined,
+  }),
   component: LoginPage,
 });
 
 function LoginPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const { redirect } = Route.useSearch();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) navigate({ to: "/" });
-  }, [user, loading, navigate]);
+    if (!loading && user) {
+      if (redirect && redirect.startsWith("/")) {
+        window.location.href = redirect;
+      } else {
+        navigate({ to: "/" });
+      }
+    }
+  }, [user, loading, navigate, redirect]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
