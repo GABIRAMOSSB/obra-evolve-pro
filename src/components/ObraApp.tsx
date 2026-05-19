@@ -610,7 +610,7 @@ function Dashboard({
   companyName: string;
   onSignOut: () => void;
 }) {
-  const m = useMemo(() => projectMetrics(data.rows, data.evolutions), [data]);
+  const m = useMemo(() => projectMetrics(filteredRows, data.evolutions), [filteredRows, data.evolutions]);
 
   const etapas = useMemo(() => data.rows.filter((r) => r.isGroup && r.level === 1), [data.rows]);
 
