@@ -910,14 +910,14 @@ function Dashboard({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => exportAcompanhamentoXlsx(data.rows, data.evolutions)}
+              onClick={() => exportAcompanhamentoXlsx(filteredRows, data.evolutions)}
             >
               <FileSpreadsheet className="w-4 h-4 mr-1" /> Excel
             </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => exportRelatorioPdf(data.rows, data.evolutions, data.fileName)}
+              onClick={() => exportRelatorioPdf(filteredRows, data.evolutions, data.fileName)}
             >
               <FileText className="w-4 h-4 mr-1" /> PDF
             </Button>
