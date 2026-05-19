@@ -687,6 +687,11 @@ function Dashboard({
     });
   }, [filteredRows, collapsed]);
 
+  const m = useMemo(
+    () => projectMetrics(filteredRows, data.evolutions),
+    [filteredRows, data.evolutions],
+  );
+
   const updateEvolution = (item: string, evo: Evolution) => {
     const next = { ...data.evolutions, [item]: evo };
     if (!evo.quantExec && !evo.dataExec && !evo.observacoes) delete next[item];
