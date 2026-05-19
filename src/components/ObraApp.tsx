@@ -979,33 +979,37 @@ function Dashboard({
               <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
                 <div>
                   <Label className="text-xs">Etapa</Label>
-                  <Select value={filterEtapa} onValueChange={setFilterEtapa}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas as etapas</SelectItem>
-                      {etapas.map((e) => (
-                        <SelectItem key={e.item} value={e.item}>
-                          {e.item} — {e.descricao}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <MultiSelect
+                    options={etapas.map((e) => ({
+                      value: e.item,
+                      label: `${e.item} — ${e.descricao}`,
+                    }))}
+                    value={filterEtapas}
+                    onChange={setFilterEtapas}
+                    placeholder="Todas as etapas"
+                    searchable
+                  />
                 </div>
                 <div>
                   <Label className="text-xs">Status</Label>
-                  <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="Não iniciada">Não iniciada</SelectItem>
-                      <SelectItem value="Em andamento">Em andamento</SelectItem>
-                      <SelectItem value="Concluída">Concluída</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <MultiSelect
+                    options={[
+                      { value: "Não iniciada", label: "Não iniciada" },
+                      { value: "Em andamento", label: "Em andamento" },
+                      { value: "Concluída", label: "Concluída" },
+                    ]}
+                    value={filterStatuses}
+                    onChange={setFilterStatuses}
+                    placeholder="Todos os status"
+                  />
                 </div>
                 <div>
                   <Label className="text-xs">Item</Label>
-                  <Input value={filterItem} onChange={(e) => setFilterItem(e.target.value)} placeholder="1.1" />
+                  <Input
+                    value={filterItem}
+                    onChange={(e) => setFilterItem(e.target.value)}
+                    placeholder="1.1, 2.3"
+                  />
                 </div>
                 <div>
                   <Label className="text-xs">Descrição</Label>
@@ -1029,15 +1033,16 @@ function Dashboard({
                   />
                 </div>
                 <div>
-                  <Label className="text-xs">Excedido</Label>
-                  <Select value={filterExcedido} onValueChange={setFilterExcedido}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="yes">Apenas excedidos</SelectItem>
-                      <SelectItem value="no">Sem excesso</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-xs">Execução</Label>
+                  <MultiSelect
+                    options={[
+                      { value: "executado", label: "Executado" },
+                      { value: "nao", label: "Não executado" },
+                    ]}
+                    value={filterExec}
+                    onChange={setFilterExec}
+                    placeholder="Todos"
+                  />
                 </div>
               </div>
             </Card>
