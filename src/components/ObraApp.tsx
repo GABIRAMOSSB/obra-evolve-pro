@@ -614,12 +614,12 @@ function Dashboard({
 
   const etapas = useMemo(() => data.rows.filter((r) => r.isGroup && r.level === 1), [data.rows]);
 
-  const [filterEtapa, setFilterEtapa] = useState<string>("all");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterEtapas, setFilterEtapas] = useState<string[]>([]);
+  const [filterStatuses, setFilterStatuses] = useState<string[]>([]);
+  const [filterExec, setFilterExec] = useState<string[]>([]); // "executado" | "nao"
   const [filterItem, setFilterItem] = useState("");
   const [filterDesc, setFilterDesc] = useState("");
   const [filterPercMin, setFilterPercMin] = useState("");
-  const [filterExcedido, setFilterExcedido] = useState<string>("all");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const toggleCollapse = (item: string) =>
     setCollapsed((c) => ({ ...c, [item]: !c[item] }));
@@ -632,33 +632,61 @@ function Dashboard({
     setCollapsed(next);
   };
 
-  const visibleRows = useMemo(() => {
+  // Tokens (case-insensitive substrings) for the Item filter, comma-separated.
+  const itemTokens = useMemo(
+    () =>
+      filterItem
+        .split(",")
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean),
+    [filterItem],
+  );
+
+  const hasRowFilters =
+    filterStatuses.length > 0 || !!filterPercMin || filterExec.length > 0;
+
+  // Rows that match filters (ignoring collapse) — used for metrics & exports.
+  const filteredRows = useMemo(() => {
     return data.rows.filter((r) => {
-      if (filterEtapa !== "all") {
-        if (r.item !== filterEtapa && !isChildOf(r.item, filterEtapa)) return false;
+      if (filterEtapas.length > 0) {
+        const inEtapa = filterEtapas.some(
+          (e) => r.item === e || isChildOf(r.item, e),
+        );
+        if (!inEtapa) return false;
       }
-      if (filterItem && !r.item.includes(filterItem)) return false;
+      if (itemTokens.length > 0) {
+        const itemLower = r.item.toLowerCase();
+        if (!itemTokens.some((t) => itemLower.includes(t))) return false;
+      }
       if (filterDesc && !r.descricao.toLowerCase().includes(filterDesc.toLowerCase()))
         return false;
       if (!r.isGroup) {
         const a = activityMetrics(r, data.evolutions[r.item]);
-        if (filterStatus !== "all" && a.status !== filterStatus) return false;
+        if (filterStatuses.length > 0 && !filterStatuses.includes(a.status)) return false;
         if (filterPercMin && a.percent < parseFloat(filterPercMin)) return false;
-        if (filterExcedido !== "all") {
-          const excedido = r.quantidade > 0 && a.quantExec - r.quantidade > 0.0001;
-          if (filterExcedido === "yes" && !excedido) return false;
-          if (filterExcedido === "no" && excedido) return false;
+        if (filterExec.length > 0) {
+          const executado = a.quantExec > 0;
+          const matches =
+            (filterExec.includes("executado") && executado) ||
+            (filterExec.includes("nao") && !executado);
+          if (!matches) return false;
         }
-      } else if (filterStatus !== "all" || filterPercMin || filterExcedido !== "all") {
+      } else if (hasRowFilters) {
         return false;
       }
-      // Hide rows whose ancestor group is collapsed
+      return true;
+    });
+  }, [data, filterEtapas, itemTokens, filterDesc, filterStatuses, filterPercMin, filterExec, hasRowFilters]);
+
+  // Visible rows additionally hide descendants of collapsed groups.
+  const visibleRows = useMemo(() => {
+    return filteredRows.filter((r) => {
       for (const ancestor of Object.keys(collapsed)) {
         if (collapsed[ancestor] && isChildOf(r.item, ancestor)) return false;
       }
       return true;
     });
-  }, [data, filterEtapa, filterItem, filterDesc, filterStatus, filterPercMin, filterExcedido, collapsed]);
+  }, [filteredRows, collapsed]);
 
   const updateEvolution = (item: string, evo: Evolution) => {
     const next = { ...data.evolutions, [item]: evo };
