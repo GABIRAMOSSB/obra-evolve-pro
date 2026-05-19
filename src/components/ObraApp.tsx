@@ -31,6 +31,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MultiSelect } from "@/components/ui/multi-select";
 import {
   Dialog,
   DialogContent,
@@ -609,16 +610,15 @@ function Dashboard({
   companyName: string;
   onSignOut: () => void;
 }) {
-  const m = useMemo(() => projectMetrics(data.rows, data.evolutions), [data]);
 
   const etapas = useMemo(() => data.rows.filter((r) => r.isGroup && r.level === 1), [data.rows]);
 
-  const [filterEtapa, setFilterEtapa] = useState<string>("all");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterEtapas, setFilterEtapas] = useState<string[]>([]);
+  const [filterStatuses, setFilterStatuses] = useState<string[]>([]);
+  const [filterExec, setFilterExec] = useState<string[]>([]); // "executado" | "nao"
   const [filterItem, setFilterItem] = useState("");
   const [filterDesc, setFilterDesc] = useState("");
   const [filterPercMin, setFilterPercMin] = useState("");
-  const [filterExcedido, setFilterExcedido] = useState<string>("all");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const toggleCollapse = (item: string) =>
     setCollapsed((c) => ({ ...c, [item]: !c[item] }));
@@ -631,33 +631,66 @@ function Dashboard({
     setCollapsed(next);
   };
 
-  const visibleRows = useMemo(() => {
+  // Tokens (case-insensitive substrings) for the Item filter, comma-separated.
+  const itemTokens = useMemo(
+    () =>
+      filterItem
+        .split(",")
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean),
+    [filterItem],
+  );
+
+  const hasRowFilters =
+    filterStatuses.length > 0 || !!filterPercMin || filterExec.length > 0;
+
+  // Rows that match filters (ignoring collapse) — used for metrics & exports.
+  const filteredRows = useMemo(() => {
     return data.rows.filter((r) => {
-      if (filterEtapa !== "all") {
-        if (r.item !== filterEtapa && !isChildOf(r.item, filterEtapa)) return false;
+      if (filterEtapas.length > 0) {
+        const inEtapa = filterEtapas.some(
+          (e) => r.item === e || isChildOf(r.item, e),
+        );
+        if (!inEtapa) return false;
       }
-      if (filterItem && !r.item.includes(filterItem)) return false;
+      if (itemTokens.length > 0) {
+        const itemLower = r.item.toLowerCase();
+        if (!itemTokens.some((t) => itemLower.includes(t))) return false;
+      }
       if (filterDesc && !r.descricao.toLowerCase().includes(filterDesc.toLowerCase()))
         return false;
       if (!r.isGroup) {
         const a = activityMetrics(r, data.evolutions[r.item]);
-        if (filterStatus !== "all" && a.status !== filterStatus) return false;
+        if (filterStatuses.length > 0 && !filterStatuses.includes(a.status)) return false;
         if (filterPercMin && a.percent < parseFloat(filterPercMin)) return false;
-        if (filterExcedido !== "all") {
-          const excedido = r.quantidade > 0 && a.quantExec - r.quantidade > 0.0001;
-          if (filterExcedido === "yes" && !excedido) return false;
-          if (filterExcedido === "no" && excedido) return false;
+        if (filterExec.length > 0) {
+          const executado = a.quantExec > 0;
+          const matches =
+            (filterExec.includes("executado") && executado) ||
+            (filterExec.includes("nao") && !executado);
+          if (!matches) return false;
         }
-      } else if (filterStatus !== "all" || filterPercMin || filterExcedido !== "all") {
+      } else if (hasRowFilters) {
         return false;
       }
-      // Hide rows whose ancestor group is collapsed
+      return true;
+    });
+  }, [data, filterEtapas, itemTokens, filterDesc, filterStatuses, filterPercMin, filterExec, hasRowFilters]);
+
+  // Visible rows additionally hide descendants of collapsed groups.
+  const visibleRows = useMemo(() => {
+    return filteredRows.filter((r) => {
       for (const ancestor of Object.keys(collapsed)) {
         if (collapsed[ancestor] && isChildOf(r.item, ancestor)) return false;
       }
       return true;
     });
-  }, [data, filterEtapa, filterItem, filterDesc, filterStatus, filterPercMin, filterExcedido, collapsed]);
+  }, [filteredRows, collapsed]);
+
+  const m = useMemo(
+    () => projectMetrics(filteredRows, data.evolutions),
+    [filteredRows, data.evolutions],
+  );
 
   const updateEvolution = (item: string, evo: Evolution) => {
     const next = { ...data.evolutions, [item]: evo };
@@ -877,14 +910,14 @@ function Dashboard({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => exportAcompanhamentoXlsx(data.rows, data.evolutions)}
+              onClick={() => exportAcompanhamentoXlsx(filteredRows, data.evolutions)}
             >
               <FileSpreadsheet className="w-4 h-4 mr-1" /> Excel
             </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => exportRelatorioPdf(data.rows, data.evolutions, data.fileName)}
+              onClick={() => exportRelatorioPdf(filteredRows, data.evolutions, data.fileName)}
             >
               <FileText className="w-4 h-4 mr-1" /> PDF
             </Button>
@@ -946,33 +979,37 @@ function Dashboard({
               <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
                 <div>
                   <Label className="text-xs">Etapa</Label>
-                  <Select value={filterEtapa} onValueChange={setFilterEtapa}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas as etapas</SelectItem>
-                      {etapas.map((e) => (
-                        <SelectItem key={e.item} value={e.item}>
-                          {e.item} — {e.descricao}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <MultiSelect
+                    options={etapas.map((e) => ({
+                      value: e.item,
+                      label: `${e.item} — ${e.descricao}`,
+                    }))}
+                    value={filterEtapas}
+                    onChange={setFilterEtapas}
+                    placeholder="Todas as etapas"
+                    searchable
+                  />
                 </div>
                 <div>
                   <Label className="text-xs">Status</Label>
-                  <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="Não iniciada">Não iniciada</SelectItem>
-                      <SelectItem value="Em andamento">Em andamento</SelectItem>
-                      <SelectItem value="Concluída">Concluída</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <MultiSelect
+                    options={[
+                      { value: "Não iniciada", label: "Não iniciada" },
+                      { value: "Em andamento", label: "Em andamento" },
+                      { value: "Concluída", label: "Concluída" },
+                    ]}
+                    value={filterStatuses}
+                    onChange={setFilterStatuses}
+                    placeholder="Todos os status"
+                  />
                 </div>
                 <div>
                   <Label className="text-xs">Item</Label>
-                  <Input value={filterItem} onChange={(e) => setFilterItem(e.target.value)} placeholder="1.1" />
+                  <Input
+                    value={filterItem}
+                    onChange={(e) => setFilterItem(e.target.value)}
+                    placeholder="1.1, 2.3"
+                  />
                 </div>
                 <div>
                   <Label className="text-xs">Descrição</Label>
@@ -996,15 +1033,16 @@ function Dashboard({
                   />
                 </div>
                 <div>
-                  <Label className="text-xs">Excedido</Label>
-                  <Select value={filterExcedido} onValueChange={setFilterExcedido}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="yes">Apenas excedidos</SelectItem>
-                      <SelectItem value="no">Sem excesso</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-xs">Execução</Label>
+                  <MultiSelect
+                    options={[
+                      { value: "executado", label: "Executado" },
+                      { value: "nao", label: "Não executado" },
+                    ]}
+                    value={filterExec}
+                    onChange={setFilterExec}
+                    placeholder="Todos"
+                  />
                 </div>
               </div>
             </Card>
