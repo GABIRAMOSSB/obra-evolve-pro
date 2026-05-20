@@ -1416,6 +1416,7 @@ function ActivitiesTable({
                   indent={indent}
                   peso={pesoOf(r)}
                   obraId={obraId}
+                  currentMeasurement={currentMeasurement}
                 />
               );
             })}
