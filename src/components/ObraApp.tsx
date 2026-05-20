@@ -2096,11 +2096,8 @@ function EvolutionDialog({
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancelar
           </Button>
-          <Button variant="secondary" onClick={salvarParcial}>
-            Salvar parcial
-          </Button>
-          <Button onClick={fecharMedicao}>
-            🔒 Fechar Medição
+          <Button onClick={salvarParcial}>
+            Salvar lançamento
           </Button>
         </DialogFooter>
       </DialogContent>
