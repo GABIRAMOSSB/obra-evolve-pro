@@ -1669,7 +1669,11 @@ function ServiceRow({
         <td className="px-2 py-1.5 text-right">{row.valorUnitBDI ? fmtBRL(row.valorUnitBDI) : ""}</td>
         <td className="px-2 py-1.5 text-right font-semibold">{fmtBRL(valorExcesso)}</td>
         <td className="px-2 py-1.5 text-right">{peso ? `${fmtNum(peso)} %` : ""}</td>
+        {closedNumbers.map((n) => (
+          <td key={`xh-${n}`} className="px-2 py-1.5"></td>
+        ))}
         <td className="px-2 py-1.5 text-right font-semibold">{fmtNum(excesso)}</td>
+
         <td className="px-2 py-1.5 text-right font-semibold">
           {row.quantidade > 0 ? `${fmtNum((excesso / row.quantidade) * 100)} %` : ""}
         </td>
