@@ -458,7 +458,7 @@ export function ObraApp() {
         userId={user?.id ?? ""}
         companyId={company.id}
         companyName={company.name}
-        isAdmin={company.role === "admin"}
+        isAdmin={company.role === "admin" || company.role === "editor"}
         onSignOut={handleSignOut}
       />
       <ImportPreviewDialog
