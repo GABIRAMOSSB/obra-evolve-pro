@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import DocumentsTab from "@/components/DocumentsTab";
 import {
   Upload,
   HardHat,
@@ -1025,6 +1026,7 @@ function Dashboard({
             <TabsTrigger value="diario">
               Diário de obra ({data.diaries.length})
             </TabsTrigger>
+            <TabsTrigger value="documentos">Documentos</TabsTrigger>
           </TabsList>
 
           <TabsContent value="atividades" className="space-y-4">
@@ -1201,6 +1203,10 @@ function Dashboard({
 
           <TabsContent value="diario">
             <DiaryPanel obraId={data.id} diaries={data.diaries} onUpdate={updateDiary} onRemove={removeDiary} />
+          </TabsContent>
+
+          <TabsContent value="documentos">
+            <DocumentsTab obraId={data.id} />
           </TabsContent>
         </Tabs>
       </main>
