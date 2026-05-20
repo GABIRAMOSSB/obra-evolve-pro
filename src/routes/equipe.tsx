@@ -287,12 +287,13 @@ function EquipePage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="editor">Editor</SelectItem>
                         <SelectItem value="member">Membro</SelectItem>
                       </SelectContent>
                     </Select>
                   ) : (
                     <Badge variant={m.role === "admin" ? "default" : "secondary"}>
-                      {m.role === "admin" ? <><Shield className="w-3 h-3 mr-1" /> Admin</> : "Membro"}
+                      {m.role === "admin" ? <><Shield className="w-3 h-3 mr-1" /> Admin</> : m.role === "editor" ? "Editor" : "Membro"}
                     </Badge>
                   )}
                   {isAdmin && m.user_id !== user.id && (
