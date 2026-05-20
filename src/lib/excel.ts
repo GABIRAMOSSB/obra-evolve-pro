@@ -18,7 +18,7 @@ function toNumber(v: unknown): number {
   return isNaN(n) ? 0 : n;
 }
 
-const REQUIRED_HEADERS = ["item", "descricao", "und", "total"];
+const REQUIRED_HEADERS = ["item", "banco", "descricao", "und", "quantidade", "total"];
 
 export interface SkippedRow {
   rowIndex: number; // 1-based as in Excel
