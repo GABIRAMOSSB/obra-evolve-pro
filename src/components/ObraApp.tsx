@@ -60,6 +60,7 @@ import {
   Wrench,
   Calendar,
   StickyNote,
+  X,
 } from "lucide-react";
 
 
@@ -1047,8 +1048,78 @@ function Dashboard({
               </div>
             </Card>
 
+            {(() => {
+              const chips: { label: string; onRemove: () => void }[] = [];
+              filterEtapas.forEach((e) => {
+                const et = etapas.find((x) => x.item === e);
+                chips.push({
+                  label: `Etapa: ${et ? `${et.item} — ${et.descricao}` : e}`,
+                  onRemove: () => setFilterEtapas(filterEtapas.filter((x) => x !== e)),
+                });
+              });
+              filterStatuses.forEach((s) =>
+                chips.push({
+                  label: `Status: ${s}`,
+                  onRemove: () => setFilterStatuses(filterStatuses.filter((x) => x !== s)),
+                }),
+              );
+              filterExec.forEach((e) =>
+                chips.push({
+                  label: `Execução: ${e === "executado" ? "Executado" : "Não executado"}`,
+                  onRemove: () => setFilterExec(filterExec.filter((x) => x !== e)),
+                }),
+              );
+              if (filterItem.trim())
+                chips.push({ label: `Item: ${filterItem}`, onRemove: () => setFilterItem("") });
+              if (filterDesc.trim())
+                chips.push({ label: `Descrição: ${filterDesc}`, onRemove: () => setFilterDesc("") });
+              if (filterPercMin)
+                chips.push({
+                  label: `% mín: ${filterPercMin}`,
+                  onRemove: () => setFilterPercMin(""),
+                });
+              if (chips.length === 0) return null;
+              return (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Filtros ativos:</span>
+                  {chips.map((c, i) => (
+                    <span
+                      key={i}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground text-xs"
+                    >
+                      {c.label}
+                      <button
+                        type="button"
+                        onClick={c.onRemove}
+                        className="hover:text-foreground opacity-70 hover:opacity-100"
+                        aria-label="Remover filtro"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 px-2 text-xs"
+                    onClick={() => {
+                      setFilterEtapas([]);
+                      setFilterStatuses([]);
+                      setFilterExec([]);
+                      setFilterItem("");
+                      setFilterDesc("");
+                      setFilterPercMin("");
+                    }}
+                  >
+                    Limpar todos
+                  </Button>
+                </div>
+              );
+            })()}
+
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="text-sm text-muted-foreground">
+                Exibindo <strong>{filteredRows.filter((r) => !r.isGroup).length}</strong> de{" "}
                 {data.rows.filter((r) => !r.isGroup).length} serviços ·{" "}
                 {data.rows.filter((r) => r.isGroup && r.level === 1).length} etapas
               </div>
