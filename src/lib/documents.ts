@@ -100,6 +100,9 @@ export async function uploadDocumentBlob(
     contentType: contentType || blob.type || undefined,
   });
   if (error) throw error;
+}
+
+
 
 export async function listDocuments(
   companyId: string,
