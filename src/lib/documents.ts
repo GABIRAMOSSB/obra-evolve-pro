@@ -49,8 +49,15 @@ export interface DocumentItem {
   folder: DocFolder;
 }
 
+function sanitizeSegment(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w.\-() ]+/g, "_");
+}
+
 function basePath(companyId: string, obraId: string, folder: DocFolder) {
-  return `${companyId}/${obraId}/${folder}`;
+  return `${companyId}/${obraId}/${sanitizeSegment(folder)}`;
 }
 
 export function validateFile(file: File): string | null {
