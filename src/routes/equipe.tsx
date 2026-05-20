@@ -341,7 +341,7 @@ function EquipePage() {
                     <div className="min-w-0">
                       <div className="truncate">{i.email}</div>
                       <div className="text-xs text-muted-foreground">
-                        {i.role === "admin" ? "Admin" : "Membro"} • expira em {new Date(i.expires_at).toLocaleDateString("pt-BR")}
+                        {i.role === "admin" ? "Admin" : i.role === "editor" ? "Editor" : "Membro"} • expira em {new Date(i.expires_at).toLocaleDateString("pt-BR")}
                       </div>
                     </div>
                     <div className="flex gap-1">
