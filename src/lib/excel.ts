@@ -222,17 +222,20 @@ export async function parseExcel(file: File): Promise<ParseResult> {
   // (i.e. they have no children) — these are títulos, observações,
   // textos informativos, subtítulos, totais gerais, etc.
   const filtered = rows.filter((r) => {
-    // Regra: é ITEM quando tem CÓDIGO preenchido (independente das demais
-    // colunas). Demais linhas só permanecem se forem etapas/subetapas
-    // (i.e., possuem filhos na hierarquia).
-    const isItem = !!r.codigo;
     const hasChild = rows.some((o) => o.item !== r.item && o.item.startsWith(r.item + "."));
-    if (isItem) return true;
-    if (hasChild) return true;
+    // ITEM EXECUTÁVEL: código + unidade + quantidade > 0 + total > 0.
+    const isExecutable =
+      !!r.codigo && !!r.und && r.quantidade > 0 && r.total > 0;
+    // ETAPA / SUBETAPA: sem código, mas possui filhos na hierarquia.
+    const isGroup = !r.codigo && hasChild;
+    if (isExecutable) return true;
+    if (isGroup) return true;
     skipped.push({
       rowIndex: parsed.find((p) => p.row === r)?.rowIndex ?? 0,
       cells: [r.item, r.codigo, r.descricao, r.und, String(r.quantidade), String(r.total)],
-      reason: "Linha sem código e sem subitens (título/observação/total)",
+      reason: r.codigo
+        ? "Código preenchido mas sem unidade/quantidade/total (item inválido)"
+        : "Linha sem código e sem subitens (título/observação/total)",
     });
     return false;
   });
