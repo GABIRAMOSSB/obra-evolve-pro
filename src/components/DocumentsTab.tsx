@@ -91,16 +91,17 @@ export default function DocumentsTab({ obraId }: Props) {
         ok++;
       } catch (e) {
         fail++;
-        toast({
-          title: `Falha ao enviar ${file.name}`,
+        toast.error(`Falha ao enviar ${file.name}`, {
           description: String((e as Error).message),
-          variant: "destructive",
         });
       }
     }
     setUploading(false);
     if (fileRef.current) fileRef.current.value = "";
-    if (ok) toast({ title: `${ok} arquivo(s) enviado(s)`, description: fail ? `${fail} falharam` : undefined });
+    if (ok)
+      toast.success(`${ok} arquivo(s) enviado(s)`, {
+        description: fail ? `${fail} falharam` : undefined,
+      });
     await openFolder(active);
   };
 
