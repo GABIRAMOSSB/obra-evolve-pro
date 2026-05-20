@@ -229,8 +229,8 @@ export async function parseExcel(file: File): Promise<ParseResult> {
   }
 
   return {
-    rows,
-    parsed,
+    rows: filtered,
+    parsed: parsed.filter((p) => filtered.includes(p.row)),
     skipped,
     headerRowIndex: headerRow + 1,
     headerLabels,
