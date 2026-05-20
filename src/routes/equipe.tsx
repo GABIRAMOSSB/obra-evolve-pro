@@ -22,7 +22,7 @@ export const Route = createFileRoute("/equipe")({
   component: EquipePage,
 });
 
-type Role = "admin" | "member";
+type Role = "admin" | "editor" | "member";
 
 interface Member {
   user_id: string;
