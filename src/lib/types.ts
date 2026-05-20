@@ -69,6 +69,15 @@ export interface ObraInfo {
   numeroContrato?: string;
 }
 
+export interface MeasurementAuditEntry {
+  number: number;
+  action: "closed" | "reopened";
+  userId: string;
+  userEmail?: string;
+  at: string; // ISO
+  reason?: string;
+}
+
 export interface ProjectData {
   id: string;
   nome: string;
@@ -78,6 +87,10 @@ export interface ProjectData {
   evolutions: Record<string, Evolution>;
   diaries: DiaryEntry[];
   info?: ObraInfo;
+  /** Número da medição atualmente em aberto (global, 1-based). */
+  currentMeasurement?: number;
+  /** Auditoria de fechamento/reabertura de medições. */
+  measurementLog?: MeasurementAuditEntry[];
 }
 
 export interface Workspace {
