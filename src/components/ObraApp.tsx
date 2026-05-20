@@ -1417,7 +1417,11 @@ function ActivitiesTable({
                     <td className="px-2 py-1.5"></td>
                     <td className="px-2 py-1.5 text-right">{fmtBRL(g.total)}</td>
                     <td className="px-2 py-1.5 text-right">{fmtNum(peso)} %</td>
+                    {closedNumbers.map((n) => (
+                      <td key={`gh-${n}`} className="px-2 py-1.5 bg-muted/30"></td>
+                    ))}
                     <td className="px-2 py-1.5"></td>
+
                     <td className="px-2 py-1.5 text-right">{fmtNum(g.percent)}%</td>
                     <td className="px-2 py-1.5 text-right text-[var(--success)]">
                       {fmtBRL(g.exec)}
