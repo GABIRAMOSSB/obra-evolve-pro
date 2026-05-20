@@ -271,7 +271,8 @@ function EquipePage() {
                   </div>
                   <div className="min-w-0">
                     <div className="text-sm font-medium truncate">
-                      {m.user_id === user.id ? `${user.email} (você)` : m.user_id.slice(0, 8)}
+                      {m.email ?? m.user_id.slice(0, 8)}
+                      {m.user_id === user.id ? " (você)" : ""}
                     </div>
                     <div className="text-xs text-muted-foreground">
                       Desde {new Date(m.joined_at).toLocaleDateString("pt-BR")}
