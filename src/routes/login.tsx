@@ -37,6 +37,23 @@ function LoginPage() {
     }
   }, [user, loading, navigate, redirect]);
 
+  // Detecta erro de OAuth retornado pelo Google / broker
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const err =
+      url.searchParams.get("error_description") ||
+      url.searchParams.get("error") ||
+      url.hash.match(/error_description=([^&]+)/)?.[1];
+    if (err) {
+      const decoded = decodeURIComponent(err).replace(/\+/g, " ");
+      const friendly = /exchange|code|expired|invalid_grant/i.test(decoded)
+        ? "Falha na autenticação com o Google. O código expirou ou já foi usado. Tente novamente em uma aba anônima e não recarregue durante o redirecionamento."
+        : decoded;
+      toast.error(friendly, { duration: 8000 });
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
