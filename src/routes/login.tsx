@@ -7,29 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  formatGoogleAuthError,
+  isIframePreview,
+  normalizeRedirect,
+  popStoredRedirect,
+  setStoredRedirect,
+} from "@/lib/auth-redirect";
 import { toast } from "sonner";
 import { HardHat } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
-
-const GOOGLE_REDIRECT_STORAGE_KEY = "obra-google-redirect";
-
-function normalizeRedirect(value?: string | null) {
-  return value && value.startsWith("/") ? value : undefined;
-}
-
-function getStoredRedirect() {
-  if (typeof window === "undefined") return undefined;
-  return normalizeRedirect(window.sessionStorage.getItem(GOOGLE_REDIRECT_STORAGE_KEY));
-}
-
-function setStoredRedirect(value?: string) {
-  if (typeof window === "undefined") return;
-  if (value) {
-    window.sessionStorage.setItem(GOOGLE_REDIRECT_STORAGE_KEY, value);
-    return;
-  }
-  window.sessionStorage.removeItem(GOOGLE_REDIRECT_STORAGE_KEY);
-}
 
 export const Route = createFileRoute("/login")({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -50,8 +37,7 @@ function LoginPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      const redirectTarget = safeRedirect ?? getStoredRedirect();
-      setStoredRedirect(undefined);
+      const redirectTarget = safeRedirect ?? popStoredRedirect();
 
       if (redirectTarget) {
         window.location.replace(redirectTarget);
@@ -111,11 +97,10 @@ function LoginPage() {
     try {
       setBusy(true);
       setStoredRedirect(safeRedirect);
-
-      const callbackUrl = new URL("/login", window.location.origin);
+      const redirectUri = window.location.origin;
 
       const res = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: callbackUrl.toString(),
+        redirect_uri: redirectUri,
         extraParams: {
           prompt: "select_account",
           ...(email.trim() ? { login_hint: email.trim() } : {}),
@@ -127,17 +112,34 @@ function LoginPage() {
       }
 
       if (res.error) {
-        toast.error(res.error.message ?? "Falha no login com Google");
+        const friendly = formatGoogleAuthError(res.error.message);
+
+        if (isIframePreview()) {
+          toast.error(`${friendly} Abrindo em nova aba...`, { duration: 6000 });
+          const loginUrl = new URL("/login", window.location.origin);
+          if (safeRedirect) loginUrl.searchParams.set("redirect", safeRedirect);
+          window.open(loginUrl.toString(), "_blank", "noopener,noreferrer");
+          return;
+        }
+
+        toast.error(friendly);
         return;
       }
 
-      if (safeRedirect) {
-        window.location.href = safeRedirect;
-      } else {
-        navigate({ to: "/" });
-      }
+      const redirectTarget = safeRedirect ?? popStoredRedirect();
+      if (redirectTarget) window.location.replace(redirectTarget);
+      else navigate({ to: "/" });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Falha no login com Google");
+      const friendly = formatGoogleAuthError(err instanceof Error ? err.message : undefined);
+
+      if (isIframePreview()) {
+        toast.error(`${friendly} Abrindo em nova aba...`, { duration: 6000 });
+        const loginUrl = new URL("/login", window.location.origin);
+        if (safeRedirect) loginUrl.searchParams.set("redirect", safeRedirect);
+        window.open(loginUrl.toString(), "_blank", "noopener,noreferrer");
+      } else {
+        toast.error(friendly);
+      }
     } finally {
       setBusy(false);
     }
