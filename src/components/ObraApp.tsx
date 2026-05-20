@@ -2050,11 +2050,16 @@ function EvolutionDialog({
             )}
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancelar
           </Button>
-          <Button onClick={save}>Salvar</Button>
+          <Button variant="secondary" onClick={salvarParcial}>
+            Salvar parcial
+          </Button>
+          <Button onClick={fecharMedicao}>
+            🔒 Fechar Medição
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
