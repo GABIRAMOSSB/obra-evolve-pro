@@ -1437,6 +1437,7 @@ function ServiceRow({
   indent = 0,
   peso = 0,
   obraId,
+  currentMeasurement,
 }: {
   row: BudgetRow;
   allRows: BudgetRow[];
@@ -1447,6 +1448,7 @@ function ServiceRow({
   indent?: number;
   peso?: number;
   obraId: string;
+  currentMeasurement: number;
 }) {
   const a = activityMetrics(row, evolution);
   const allMeasurements = a.measurements;
