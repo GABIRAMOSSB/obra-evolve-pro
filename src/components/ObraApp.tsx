@@ -1007,6 +1007,15 @@ function Dashboard({
             >
               <FileText className="w-4 h-4 mr-1" /> PDF
             </Button>
+            <MeasurementClosure
+              data={data}
+              setData={setData}
+              companyId={companyId}
+              userId={userId}
+              userEmail={userEmail}
+              isAdmin={isAdmin}
+              variant="inline"
+            />
             <Button variant="ghost" size="sm" onClick={removeObra} title="Excluir esta obra">
               <Trash2 className="w-4 h-4 mr-1 text-destructive" /> Excluir
             </Button>
@@ -1025,15 +1034,6 @@ function Dashboard({
 
 
       <main className="max-w-[1600px] mx-auto px-6 py-6 space-y-6">
-        <MeasurementClosure
-          data={data}
-          setData={setData}
-          companyId={companyId}
-          userId={userId}
-          userEmail={userEmail}
-          isAdmin={isAdmin}
-        />
-
         {/* Resumo */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <SummaryCard label="Valor total" value={fmtBRL(m.total)} />
