@@ -168,6 +168,13 @@ export type Database = {
     Functions: {
       accept_company_invite: { Args: { _token: string }; Returns: string }
       current_user_company: { Args: never; Returns: string }
+      get_company_member_emails: {
+        Args: { _company: string }
+        Returns: {
+          email: string
+          user_id: string
+        }[]
+      }
       get_invite_info: {
         Args: { _token: string }
         Returns: {
