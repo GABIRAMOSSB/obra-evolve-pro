@@ -11,6 +11,26 @@ import { toast } from "sonner";
 import { HardHat } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
 
+const GOOGLE_REDIRECT_STORAGE_KEY = "obra-google-redirect";
+
+function normalizeRedirect(value?: string | null) {
+  return value && value.startsWith("/") ? value : undefined;
+}
+
+function getStoredRedirect() {
+  if (typeof window === "undefined") return undefined;
+  return normalizeRedirect(window.sessionStorage.getItem(GOOGLE_REDIRECT_STORAGE_KEY));
+}
+
+function setStoredRedirect(value?: string) {
+  if (typeof window === "undefined") return;
+  if (value) {
+    window.sessionStorage.setItem(GOOGLE_REDIRECT_STORAGE_KEY, value);
+    return;
+  }
+  window.sessionStorage.removeItem(GOOGLE_REDIRECT_STORAGE_KEY);
+}
+
 export const Route = createFileRoute("/login")({
   validateSearch: (s: Record<string, unknown>) => ({
     redirect: typeof s.redirect === "string" ? s.redirect : undefined,
@@ -22,7 +42,7 @@ function LoginPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { redirect } = Route.useSearch();
-  const safeRedirect = redirect && redirect.startsWith("/") ? redirect : undefined;
+  const safeRedirect = normalizeRedirect(redirect);
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -30,8 +50,11 @@ function LoginPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      if (safeRedirect) {
-        window.location.href = safeRedirect;
+      const redirectTarget = safeRedirect ?? getStoredRedirect();
+      setStoredRedirect(undefined);
+
+      if (redirectTarget) {
+        window.location.replace(redirectTarget);
       } else {
         navigate({ to: "/" });
       }
@@ -61,6 +84,7 @@ function LoginPage() {
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
+    if (busy) return;
     setBusy(true);
     try {
       if (mode === "signup") {
@@ -83,12 +107,12 @@ function LoginPage() {
   }
 
   async function onGoogle() {
+    if (busy) return;
     try {
       setBusy(true);
+      setStoredRedirect(safeRedirect);
+
       const callbackUrl = new URL("/login", window.location.origin);
-      if (safeRedirect) {
-        callbackUrl.searchParams.set("redirect", safeRedirect);
-      }
 
       const res = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: callbackUrl.toString(),
