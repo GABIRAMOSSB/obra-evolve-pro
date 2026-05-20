@@ -13,10 +13,22 @@ export interface BudgetRow {
   level: number;
 }
 
-export interface Evolution {
+export interface Measurement {
+  id: string;
+  number: number;
   quantExec: number;
   dataExec: string;
   observacoes: string;
+  closed: boolean;
+  closedAt?: string;
+}
+
+export interface Evolution {
+  measurements?: Measurement[];
+  // Campos legados (formato anterior) — mantidos para leitura/migração.
+  quantExec?: number;
+  dataExec?: string;
+  observacoes?: string;
 }
 
 export interface DiaryPhoto {
