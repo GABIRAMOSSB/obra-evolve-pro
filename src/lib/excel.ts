@@ -183,7 +183,7 @@ export async function parseExcel(file: File): Promise<ParseResult> {
 
     const budgetRow: BudgetRow = {
       item,
-      codigo: String(row[headerMap.codigo] ?? "").trim(),
+      codigo,
       banco: String(row[headerMap.banco] ?? "").trim(),
       descricao,
       und,
