@@ -174,7 +174,32 @@ function LoginPage() {
             <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
           </div>
           <div>
-            <Label htmlFor="password">Senha</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Senha</Label>
+              {mode === "login" && (
+                <button
+                  type="button"
+                  className="text-xs text-primary hover:underline"
+                  disabled={busy}
+                  onClick={async () => {
+                    const target = email.trim();
+                    if (!target || !target.includes("@")) {
+                      toast.error("Informe seu e-mail acima primeiro");
+                      return;
+                    }
+                    setBusy(true);
+                    const { error } = await supabase.auth.resetPasswordForEmail(target, {
+                      redirectTo: `${window.location.origin}/reset-password`,
+                    });
+                    setBusy(false);
+                    if (error) toast.error(error.message);
+                    else toast.success(`Enviamos um link de recuperação para ${target}.`);
+                  }}
+                >
+                  Esqueci minha senha
+                </button>
+              )}
+            </div>
             <Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={mode === "login" ? "current-password" : "new-password"} />
           </div>
           <Button type="submit" className="w-full" disabled={busy}>

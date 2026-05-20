@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, Copy, Trash2, UserPlus, LogOut, Shield, Users } from "lucide-react";
+import { ArrowLeft, Copy, Trash2, UserPlus, LogOut, Shield, Users, MessageCircle, Mail } from "lucide-react";
 
 export const Route = createFileRoute("/equipe")({
   component: EquipePage,
@@ -163,14 +163,33 @@ function EquipePage() {
     reload();
   }
 
+  function inviteUrl(token: string) {
+    return `${window.location.origin}/invite/${token}`;
+  }
+
+  function inviteMessage(email: string, token: string) {
+    const companyN = company?.name ?? "nossa empresa";
+    return `Olá! Você foi convidado para fazer parte da equipe de ${companyN} no app de Acompanhamento de Obras.\n\nAcesse o link abaixo para entrar (use o e-mail ${email}):\n${inviteUrl(token)}`;
+  }
+
   async function copyInviteLink(token: string) {
-    const url = `${window.location.origin}/invite/${token}`;
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(inviteUrl(token));
       toast.success("Link copiado");
     } catch {
-      toast.message(url);
+      toast.message(inviteUrl(token));
     }
+  }
+
+  function shareWhatsApp(email: string, token: string) {
+    const text = encodeURIComponent(inviteMessage(email, token));
+    window.open(`https://wa.me/?text=${text}`, "_blank", "noopener,noreferrer");
+  }
+
+  function shareEmail(email: string, token: string) {
+    const subject = encodeURIComponent(`Convite para ${company?.name ?? "nossa equipe"}`);
+    const body = encodeURIComponent(inviteMessage(email, token));
+    window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
   }
 
   async function changeRole(userId: string, role: Role) {
@@ -334,22 +353,33 @@ function EquipePage() {
             </p>
 
             {invites.length > 0 && (
-              <div className="border-t pt-4 space-y-2">
+              <div className="border-t pt-4 space-y-3">
                 <div className="text-xs uppercase text-muted-foreground">Convites pendentes</div>
                 {invites.map((i) => (
-                  <div key={i.id} className="flex items-center justify-between gap-2 text-sm border rounded-md p-2">
-                    <div className="min-w-0">
-                      <div className="truncate">{i.email}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {i.role === "admin" ? "Admin" : i.role === "editor" ? "Editor" : "Membro"} • expira em {new Date(i.expires_at).toLocaleDateString("pt-BR")}
+                  <div key={i.id} className="border rounded-md p-3 space-y-3 bg-muted/30">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="font-medium text-sm truncate">{i.email}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {i.role === "admin" ? "Admin" : i.role === "editor" ? "Editor" : "Membro"} • expira em {new Date(i.expires_at).toLocaleDateString("pt-BR")}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex gap-1">
-                      <Button variant="outline" size="sm" onClick={() => copyInviteLink(i.token)}>
-                        <Copy className="w-3.5 h-3.5 mr-1" /> Copiar link
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => cancelInvite(i.id)}>
+                      <Button variant="ghost" size="sm" onClick={() => cancelInvite(i.id)} title="Cancelar convite">
                         <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-1.5 bg-background border rounded-md px-2 py-1.5">
+                      <code className="flex-1 text-xs truncate text-muted-foreground">{inviteUrl(i.token)}</code>
+                      <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => copyInviteLink(i.token)}>
+                        <Copy className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button variant="outline" size="sm" onClick={() => shareWhatsApp(i.email, i.token)}>
+                        <MessageCircle className="w-3.5 h-3.5 mr-1.5" /> WhatsApp
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => shareEmail(i.email, i.token)}>
+                        <Mail className="w-3.5 h-3.5 mr-1.5" /> E-mail
                       </Button>
                     </div>
                   </div>
