@@ -85,6 +85,25 @@ export async function uploadDocument(
   if (error) throw error;
 }
 
+export async function uploadDocumentBlob(
+  companyId: string,
+  obraId: string,
+  folder: DocFolder,
+  fileName: string,
+  blob: Blob,
+  contentType?: string,
+): Promise<void> {
+  const safeName = fileName.replace(/[^\w.\-() ]+/g, "_");
+  const path = `${basePath(companyId, obraId, folder)}/${Date.now()}-${safeName}`;
+  const { error } = await supabase.storage.from(BUCKET).upload(path, blob, {
+    upsert: false,
+    contentType: contentType || blob.type || undefined,
+  });
+  if (error) throw error;
+}
+
+
+
 export async function listDocuments(
   companyId: string,
   obraId: string,

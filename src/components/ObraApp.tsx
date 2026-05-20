@@ -23,7 +23,9 @@ import {
   exportDiarioPdf,
   exportRelatorioPdf,
   gerarTextoDiario,
+  buildMeasurementPdfBlob,
 } from "@/lib/pdf";
+import { uploadDocumentBlob } from "@/lib/documents";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -78,16 +80,22 @@ function normalizeEvolution(evo?: Evolution): Evolution {
   return { measurements: list };
 }
 
-/** Garante que exista uma medição aberta (cria M1 ou Mn+1). */
-function ensureOpenMeasurement(evo?: Evolution): { evo: Evolution; open: Measurement } {
+/**
+ * Garante que exista uma medição aberta com o número da medição GLOBAL atual.
+ * Se já existir uma medição com esse número, devolve-a (mesmo já fechada — nesse
+ * caso o chamador deve verificar e bloquear edição).
+ */
+function ensureOpenMeasurement(
+  evo: Evolution | undefined,
+  currentNumber: number,
+): { evo: Evolution; open: Measurement } {
   const base = normalizeEvolution(evo);
   const list = base.measurements ?? [];
-  const open = list.find((m) => !m.closed);
-  if (open) return { evo: base, open };
-  const nextNumber = list.reduce((max, m) => Math.max(max, m.number), 0) + 1;
+  const existing = list.find((m) => m.number === currentNumber);
+  if (existing) return { evo: base, open: existing };
   const novo: Measurement = {
     id: crypto.randomUUID(),
-    number: nextNumber,
+    number: currentNumber,
     quantExec: 0,
     dataExec: new Date().toISOString().slice(0, 10),
     observacoes: "",
@@ -96,16 +104,17 @@ function ensureOpenMeasurement(evo?: Evolution): { evo: Evolution; open: Measure
   return { evo: { measurements: [...list, novo] }, open: novo };
 }
 
-/** Atualiza o acumulado ajustando a medição em aberto. */
+/** Atualiza o acumulado ajustando a medição aberta (número global). */
 function setAccumulatedQty(
   evo: Evolution | undefined,
   row: BudgetRow,
   newAcc: number,
+  currentNumber: number,
 ): { evo: Evolution; clamped: boolean } {
-  const { evo: ev, open } = ensureOpenMeasurement(evo);
+  const { evo: ev, open } = ensureOpenMeasurement(evo, currentNumber);
   const list = ev.measurements ?? [];
   const closedSum = list
-    .filter((m) => m.closed)
+    .filter((m) => m.number !== currentNumber)
     .reduce((s, m) => s + (m.quantExec || 0), 0);
   const max = row.quantidade > 0 ? row.quantidade : Number.POSITIVE_INFINITY;
   const target = Math.max(closedSum, Math.min(newAcc, max));
@@ -117,6 +126,19 @@ function setAccumulatedQty(
       : m,
   );
   return { evo: { measurements: next }, clamped };
+}
+
+/** Número da medição atualmente aberta (global). */
+function getCurrentMeasurement(p: ProjectData): number {
+  if (p.currentMeasurement && p.currentMeasurement > 0) return p.currentMeasurement;
+  // Compatibilidade: deduz a partir do maior número já registrado nas evolutions.
+  let maxClosed = 0;
+  for (const evo of Object.values(p.evolutions || {})) {
+    for (const m of evo?.measurements ?? []) {
+      if (m.closed && m.number > maxClosed) maxClosed = m.number;
+    }
+  }
+  return maxClosed + 1;
 }
 
 export function ObraApp() {
@@ -1198,6 +1220,7 @@ function Dashboard({
               collapsed={collapsed}
               onToggleCollapse={toggleCollapse}
               obraId={data.id}
+              currentMeasurement={getCurrentMeasurement(data)}
             />
           </TabsContent>
 
@@ -1247,6 +1270,7 @@ function ActivitiesTable({
   collapsed = {},
   onToggleCollapse,
   obraId,
+  currentMeasurement,
 }: {
   rows: BudgetRow[];
   allRows: BudgetRow[];
@@ -1257,6 +1281,7 @@ function ActivitiesTable({
   collapsed?: Record<string, boolean>;
   onToggleCollapse?: (item: string) => void;
   obraId: string;
+  currentMeasurement: number;
 }) {
   if (rows.length === 0) {
     return (
@@ -1393,6 +1418,7 @@ function ActivitiesTable({
                   indent={indent}
                   peso={pesoOf(r)}
                   obraId={obraId}
+                  currentMeasurement={currentMeasurement}
                 />
               );
             })}
@@ -1413,6 +1439,7 @@ function ServiceRow({
   indent = 0,
   peso = 0,
   obraId,
+  currentMeasurement,
 }: {
   row: BudgetRow;
   allRows: BudgetRow[];
@@ -1423,6 +1450,7 @@ function ServiceRow({
   indent?: number;
   peso?: number;
   obraId: string;
+  currentMeasurement: number;
 }) {
   const a = activityMetrics(row, evolution);
   const allMeasurements = a.measurements;
@@ -1455,7 +1483,7 @@ function ServiceRow({
         `Acumulado limitado ao total previsto: ${fmtNum(row.quantidade)} ${row.und}.`,
       );
     }
-    const { evo } = setAccumulatedQty(evolution, row, newAcc);
+    const { evo } = setAccumulatedQty(evolution, row, newAcc, currentMeasurement);
     onUpdate(row.item, evo);
   }
 
@@ -2070,11 +2098,8 @@ function EvolutionDialog({
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancelar
           </Button>
-          <Button variant="secondary" onClick={salvarParcial}>
-            Salvar parcial
-          </Button>
-          <Button onClick={fecharMedicao}>
-            🔒 Fechar Medição
+          <Button onClick={salvarParcial}>
+            Salvar lançamento
           </Button>
         </DialogFooter>
       </DialogContent>

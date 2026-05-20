@@ -108,6 +108,100 @@ export function exportRelatorioPdf(
   doc.save(`relatorio-${Date.now()}.pdf`);
 }
 
+/**
+ * Gera um PDF da medição (snapshot do período fechado) e retorna como Blob,
+ * para upload na pasta "Medições da Obra".
+ */
+export function buildMeasurementPdfBlob(
+  rows: BudgetRow[],
+  evolutions: Record<string, Evolution>,
+  measurementNumber: number,
+  projectName: string,
+  closedAt: Date = new Date(),
+): Blob {
+  const doc = new jsPDF({ orientation: "landscape" });
+  doc.setFontSize(16);
+  doc.text(`Medição ${measurementNumber} — ${projectName}`, 14, 15);
+  doc.setFontSize(10);
+  doc.text(`Fechada em ${closedAt.toLocaleString("pt-BR")}`, 14, 22);
+
+  const m = projectMetrics(rows, evolutions);
+  doc.text(
+    [
+      `Valor total: ${fmtBRL(m.total)}`,
+      `Acumulado executado: ${fmtBRL(m.exec)}`,
+      `Saldo restante: ${fmtBRL(m.restante)}`,
+      `% Geral: ${fmtNum(m.percent)}%`,
+    ].join("    "),
+    14,
+    28,
+  );
+
+  const body: (string | number)[][] = [];
+  let totalPeriodo = 0;
+  for (const r of rows) {
+    if (r.isGroup) continue;
+    const evo = evolutions[r.item];
+    const med = evo?.measurements?.find((mm) => mm.number === measurementNumber);
+    const qPeriodo = med?.quantExec ?? 0;
+    if (qPeriodo <= 0) continue;
+    const a = activityMetrics(r, evo);
+    const valorPeriodo =
+      r.quantidade > 0 ? (qPeriodo / r.quantidade) * (r.total || 0) : 0;
+    totalPeriodo += valorPeriodo;
+    body.push([
+      r.item,
+      r.descricao,
+      r.und,
+      fmtNum(r.quantidade),
+      fmtNum(qPeriodo),
+      fmtNum(a.quantExec),
+      `${fmtNum(a.percent)}%`,
+      fmtBRL(valorPeriodo),
+      a.status,
+    ]);
+  }
+
+  autoTable(doc, {
+    head: [
+      [
+        "Item",
+        "Descrição",
+        "Und",
+        "Quant. Total",
+        "Qtd no Período",
+        "Acumulado",
+        "% Acum.",
+        "Valor no Período",
+        "Status",
+      ],
+    ],
+    body: body.length
+      ? body
+      : [["—", "Sem lançamentos neste período", "", "", "", "", "", "", ""]],
+    startY: 35,
+    styles: { fontSize: 7 },
+    headStyles: { fillColor: [194, 102, 38] },
+    columnStyles: { 1: { cellWidth: 90 } },
+    foot: [
+      [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "Total no período:",
+        fmtBRL(totalPeriodo),
+        "",
+      ],
+    ],
+    footStyles: { fontStyle: "bold", fillColor: [240, 240, 240], textColor: 20 },
+  });
+
+  return doc.output("blob");
+}
+
 async function loadImageAsDataUrl(url: string): Promise<{ dataUrl: string; w: number; h: number } | null> {
   try {
     const res = await fetch(url);
