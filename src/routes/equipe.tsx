@@ -322,8 +322,9 @@ function EquipePage() {
               <Select value={newRole} onValueChange={(v) => setNewRole(v as Role)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="member">Membro</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="member">Membro (somente leitura)</SelectItem>
+                  <SelectItem value="editor">Editor (edita conteúdo)</SelectItem>
+                  <SelectItem value="admin">Admin (edita e gerencia equipe)</SelectItem>
                 </SelectContent>
               </Select>
               <Button onClick={sendInvite} disabled={busy}>Convidar</Button>
