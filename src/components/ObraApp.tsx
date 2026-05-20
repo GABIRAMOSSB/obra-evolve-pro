@@ -1218,6 +1218,7 @@ function Dashboard({
               collapsed={collapsed}
               onToggleCollapse={toggleCollapse}
               obraId={data.id}
+              currentMeasurement={getCurrentMeasurement(data)}
             />
           </TabsContent>
 
