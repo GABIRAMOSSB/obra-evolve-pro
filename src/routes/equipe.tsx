@@ -66,11 +66,18 @@ function EquipePage() {
       .from("company_members")
       .select("user_id, role, joined_at")
       .eq("company_id", company.id);
+
+    const { data: emails } = await supabase
+      .rpc("get_company_member_emails", { _company: company.id });
+    const emailMap = new Map<string, string>(
+      (emails ?? []).map((e: { user_id: string; email: string }) => [e.user_id, e.email]),
+    );
+
     const memberList: Member[] = (m ?? []).map((x) => ({
       user_id: x.user_id,
       role: x.role as Role,
       joined_at: x.joined_at,
-      email: null,
+      email: emailMap.get(x.user_id) ?? null,
     }));
     setMembers(memberList);
 
