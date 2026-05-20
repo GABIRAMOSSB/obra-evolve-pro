@@ -83,7 +83,7 @@ export async function uploadDocument(
 ): Promise<void> {
   const err = validateFile(file);
   if (err) throw new Error(err);
-  const safeName = file.name.replace(/[^\w.\-() ]+/g, "_");
+  const safeName = sanitizeSegment(file.name);
   const path = `${basePath(companyId, obraId, folder)}/${Date.now()}-${safeName}`;
   const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
     upsert: false,
@@ -100,7 +100,7 @@ export async function uploadDocumentBlob(
   blob: Blob,
   contentType?: string,
 ): Promise<void> {
-  const safeName = fileName.replace(/[^\w.\-() ]+/g, "_");
+  const safeName = sanitizeSegment(fileName);
   const path = `${basePath(companyId, obraId, folder)}/${Date.now()}-${safeName}`;
   const { error } = await supabase.storage.from(BUCKET).upload(path, blob, {
     upsert: false,
