@@ -57,7 +57,8 @@ export function MeasurementClosure({
   const [historyOpen, setHistoryOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  // Summary of current measurement
+  // Summary of current measurement — considers all OPEN measurements and
+  // legacy entries (top-level quantExec). Closed measurements are ignored.
   const summary = useMemo(() => {
     let itensLancados = 0;
     let valorPeriodo = 0;
@@ -65,12 +66,21 @@ export function MeasurementClosure({
     for (const r of data.rows) {
       if (r.isGroup) continue;
       const evo = data.evolutions[r.item];
-      const med = evo?.measurements?.find((mm) => mm.number === current);
-      if (!med || med.quantExec <= 0) continue;
+      if (!evo) continue;
+      const list = evo.measurements ?? [];
+      let qPeriodo = 0;
+      for (const m of list) {
+        if (!m.closed) qPeriodo += m.quantExec || 0;
+      }
+      // Legacy format: quantExec at top level with no measurements array
+      if (list.length === 0 && (evo.quantExec || 0) > 0) {
+        qPeriodo += evo.quantExec || 0;
+      }
+      if (qPeriodo <= 0) continue;
       itensLancados++;
-      qtdPeriodo += med.quantExec;
+      qtdPeriodo += qPeriodo;
       if (r.quantidade > 0) {
-        valorPeriodo += (med.quantExec / r.quantidade) * (r.total || 0);
+        valorPeriodo += (qPeriodo / r.quantidade) * (r.total || 0);
       }
     }
     const m = projectMetrics(data.rows, data.evolutions);
@@ -88,19 +98,39 @@ export function MeasurementClosure({
     }
     setBusy(true);
     try {
-      // Mark all measurements with this number as closed
       const closedAt = new Date();
+      const closedAtIso = closedAt.toISOString();
+      const today = closedAtIso.slice(0, 10);
+      // Consolidate all OPEN measurements + legacy quantExec into a single
+      // closed measurement numbered `current` for each item.
       const newEvolutions: Record<string, Evolution> = {};
       for (const [k, evo] of Object.entries(data.evolutions)) {
         const list = evo?.measurements ?? [];
-        newEvolutions[k] = {
-          ...evo,
-          measurements: list.map((m) =>
-            m.number === current && !m.closed
-              ? { ...m, closed: true, closedAt: closedAt.toISOString() }
-              : m,
-          ),
-        };
+        const closedOnes = list.filter((m) => m.closed);
+        const openOnes = list.filter((m) => !m.closed);
+        const legacyQty =
+          list.length === 0 ? (evo?.quantExec || 0) : 0;
+        const periodoQty =
+          openOnes.reduce((s, m) => s + (m.quantExec || 0), 0) + legacyQty;
+        if (periodoQty > 0) {
+          const baseOpen = openOnes[0];
+          const consolidated = {
+            id: baseOpen?.id ?? crypto.randomUUID(),
+            number: current,
+            quantExec: periodoQty,
+            dataExec: baseOpen?.dataExec || evo?.dataExec || today,
+            observacoes:
+              baseOpen?.observacoes ||
+              openOnes.map((m) => m.observacoes).filter(Boolean).join(" | ") ||
+              evo?.observacoes ||
+              "",
+            closed: true,
+            closedAt: closedAtIso,
+          };
+          newEvolutions[k] = { measurements: [...closedOnes, consolidated] };
+        } else {
+          newEvolutions[k] = { measurements: closedOnes };
+        }
       }
 
       // Generate PDF snapshot
