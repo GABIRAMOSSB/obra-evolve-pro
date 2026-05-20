@@ -167,10 +167,14 @@ export async function parseExcel(file: File): Promise<ParseResult> {
       continue;
     }
 
+    const codigo = String(row[headerMap.codigo] ?? "").trim();
     const und = String(row[headerMap.und] ?? "").trim();
     const quantidade = toNumber(row[headerMap.quantidade]);
     const total = toNumber(row[headerMap.total]);
-    const isGroup = !und && !quantidade && !total;
+    // Regra de classificação: é ETAPA/SUBETAPA quando faltar QUALQUER
+    // um dos campos executáveis (código, unidade, quantidade ou total).
+    // Itens executáveis precisam possuir TODOS esses campos.
+    const isGroup = !codigo || !und || !quantidade || !total;
 
     // Effective level: count only non-zero segments so "1.2.0.0.1" reads as
     // depth 3 (etapa 1 → sub 1.2 → serviço 1.2.0.0.1) for indentation purposes.
@@ -179,7 +183,7 @@ export async function parseExcel(file: File): Promise<ParseResult> {
 
     const budgetRow: BudgetRow = {
       item,
-      codigo: String(row[headerMap.codigo] ?? "").trim(),
+      codigo,
       banco: String(row[headerMap.banco] ?? "").trim(),
       descricao,
       und,
