@@ -1419,25 +1419,40 @@ function ServiceRow({
   obraId: string;
 }) {
   const a = activityMetrics(row, evolution);
-  const [qty, setQty] = useState(evolution?.quantExec ? String(evolution.quantExec) : "");
+  const allMeasurements = a.measurements;
+  const closedSum = allMeasurements
+    .filter((m) => m.closed)
+    .reduce((s, m) => s + (m.quantExec || 0), 0);
+  const hasClosed = allMeasurements.some((m) => m.closed);
+  const inlineDisabled = hasClosed && !a.openMeasurement;
+  const [qty, setQty] = useState(a.quantExec ? String(a.quantExec) : "");
   const [pct, setPct] = useState(a.percent ? a.percent.toFixed(2) : "");
 
   useEffect(() => {
-    setQty(evolution?.quantExec ? String(evolution.quantExec) : "");
-    setPct(evolution?.quantExec && row.quantidade > 0
-      ? ((evolution.quantExec / row.quantidade) * 100).toFixed(2)
+    setQty(a.quantExec ? String(a.quantExec) : "");
+    setPct(a.quantExec && row.quantidade > 0
+      ? ((a.quantExec / row.quantidade) * 100).toFixed(2)
       : "");
-  }, [evolution, row.quantidade]);
+  }, [a.quantExec, row.quantidade]);
 
   function commit(q: number) {
-    const clamped = Math.max(0, q);
-    const prev = evolution?.quantExec ?? 0;
-    if (Math.abs(clamped - prev) < 1e-6) return;
-    onUpdate(row.item, {
-      quantExec: clamped,
-      dataExec: evolution?.dataExec ?? new Date().toISOString().slice(0, 10),
-      observacoes: evolution?.observacoes ?? "",
-    });
+    const newAcc = Math.max(0, q);
+    if (Math.abs(newAcc - a.quantExec) < 1e-6) return;
+    if (row.quantidade > 0 && newAcc < closedSum - 1e-6) {
+      toast.error(
+        `Acumulado mínimo é ${fmtNum(closedSum)} ${row.und} (medições fechadas).`,
+      );
+      setQty(String(a.quantExec));
+      setPct(a.percent.toFixed(2));
+      return;
+    }
+    if (row.quantidade > 0 && newAcc > row.quantidade + 1e-6) {
+      toast.warning(
+        `Acumulado limitado ao total previsto: ${fmtNum(row.quantidade)} ${row.und}.`,
+      );
+    }
+    const { evo } = setAccumulatedQty(evolution, row, newAcc);
+    onUpdate(row.item, evo);
   }
 
   function onQtyBlur() {
