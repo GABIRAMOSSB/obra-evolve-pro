@@ -1507,27 +1507,27 @@ function ServiceRow({
   const closedSum = allMeasurements
     .filter((m) => m.closed)
     .reduce((s, m) => s + (m.quantExec || 0), 0);
-  const [qty, setQty] = useState(a.quantExec ? String(a.quantExec) : "");
-  const [pct, setPct] = useState(a.percent ? a.percent.toFixed(2) : "");
+  // Quantidade do período (medição aberta atual) — começa vazio em cada nova medição.
+  const openMeas = allMeasurements.find((m) => !m.closed && m.number === currentMeasurement);
+  const periodoQty = openMeas?.quantExec || 0;
+  const [qty, setQty] = useState(periodoQty ? String(periodoQty) : "");
+  const [pct, setPct] = useState(
+    periodoQty && row.quantidade > 0 ? ((periodoQty / row.quantidade) * 100).toFixed(2) : "",
+  );
 
   useEffect(() => {
-    setQty(a.quantExec ? String(a.quantExec) : "");
-    setPct(a.quantExec && row.quantidade > 0
-      ? ((a.quantExec / row.quantidade) * 100).toFixed(2)
-      : "");
-  }, [a.quantExec, row.quantidade]);
+    setQty(periodoQty ? String(periodoQty) : "");
+    setPct(
+      periodoQty && row.quantidade > 0
+        ? ((periodoQty / row.quantidade) * 100).toFixed(2)
+        : "",
+    );
+  }, [periodoQty, row.quantidade]);
 
-  function commit(q: number) {
-    const newAcc = Math.max(0, q);
-    if (Math.abs(newAcc - a.quantExec) < 1e-6) return;
-    if (row.quantidade > 0 && newAcc < closedSum - 1e-6) {
-      toast.error(
-        `Acumulado mínimo é ${fmtNum(closedSum)} ${row.und} (medições fechadas).`,
-      );
-      setQty(String(a.quantExec));
-      setPct(a.percent.toFixed(2));
-      return;
-    }
+  function commit(periodo: number) {
+    const p = Math.max(0, periodo);
+    const newAcc = closedSum + p;
+    if (Math.abs(p - periodoQty) < 1e-6) return;
     if (row.quantidade > 0 && newAcc > row.quantidade + 1e-6) {
       toast.warning(
         `Acumulado limitado ao total previsto: ${fmtNum(row.quantidade)} ${row.und}.`,
@@ -1538,23 +1538,36 @@ function ServiceRow({
   }
 
   function onQtyBlur() {
-    const n = parseFloat(qty.replace(",", ".")) || 0;
+    const trimmed = qty.trim();
+    if (trimmed === "") {
+      commit(0);
+      return;
+    }
+    const n = parseFloat(trimmed.replace(",", ".")) || 0;
     commit(n);
   }
   function onPctBlur() {
-    const n = parseFloat(pct.replace(",", ".")) || 0;
+    const trimmed = pct.trim();
+    if (trimmed === "") {
+      commit(0);
+      return;
+    }
+    const n = parseFloat(trimmed.replace(",", ".")) || 0;
     commit((n / 100) * row.quantidade);
   }
   function syncFromQty(v: string) {
     setQty(v);
+    if (v.trim() === "") { setPct(""); return; }
     const n = parseFloat(v.replace(",", "."));
     if (!isNaN(n) && row.quantidade > 0) setPct(((n / row.quantidade) * 100).toFixed(2));
   }
   function syncFromPct(v: string) {
     setPct(v);
+    if (v.trim() === "") { setQty(""); return; }
     const n = parseFloat(v.replace(",", "."));
     if (!isNaN(n)) setQty(((n / 100) * row.quantidade).toFixed(4));
   }
+
 
   const excesso = a.quantExec - row.quantidade;
   const temExcesso = row.quantidade > 0 && excesso > 0.0001;
