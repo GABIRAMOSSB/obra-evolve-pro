@@ -1808,24 +1808,98 @@ function EvolutionDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Quantidade executada</Label>
-              <Input value={quantExec} onChange={(e) => handleQuant(e.target.value)} />
+          {/* Histórico de medições */}
+          {measurements.length > 0 && (
+            <div className="border rounded-md overflow-hidden">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/60">
+                  <tr>
+                    <th className="px-2 py-1.5 text-left">Medição</th>
+                    <th className="px-2 py-1.5 text-right">Qtd. Exec.</th>
+                    <th className="px-2 py-1.5 text-right">% Exec.</th>
+                    <th className="px-2 py-1.5 text-right">Valor Executado</th>
+                    <th className="px-2 py-1.5 text-center">Status</th>
+                    <th className="px-2 py-1.5 text-left">Data</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {measurements.map((m) => {
+                    const pct = row.quantidade > 0 ? (m.quantExec / row.quantidade) * 100 : 0;
+                    const val = (pct / 100) * (row.total || 0);
+                    return (
+                      <tr key={m.id} className="border-t">
+                        <td className="px-2 py-1.5 font-medium">M{m.number}</td>
+                        <td className="px-2 py-1.5 text-right">{fmtNum(m.quantExec)} {row.und}</td>
+                        <td className="px-2 py-1.5 text-right">{fmtNum(pct)}%</td>
+                        <td className="px-2 py-1.5 text-right">{fmtBRL(val)}</td>
+                        <td className="px-2 py-1.5 text-center">
+                          {m.closed ? (
+                            <Badge variant="outline" className="text-[10px]">🔒 Bloqueada</Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-[10px]">Em aberto</Badge>
+                          )}
+                        </td>
+                        <td className="px-2 py-1.5">{m.dataExec ? fmtDate(m.dataExec) : "—"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-            <div>
-              <Label>% Executado</Label>
-              <Input value={percentInput} onChange={(e) => handlePercent(e.target.value)} />
+          )}
+
+          {/* Editor da medição em aberto */}
+          <div className="border rounded-md p-3 bg-primary/5">
+            <div className="text-sm font-semibold mb-2">
+              {openMeasurement ? `Editando Medição M${openMeasurement.number}` : `Nova Medição M${nextNumber}`}
+              <span className="ml-2 text-xs text-muted-foreground">
+                · Saldo disponível: {fmtNum(maxPeriodo)} {row.und}
+              </span>
             </div>
-            <div>
-              <Label>Data da execução</Label>
-              <Input type="date" value={dataExec} onChange={(e) => setDataExec(e.target.value)} />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Quantidade desta medição</Label>
+                <Input value={periodo} onChange={(e) => handleQuant(e.target.value)} inputMode="decimal" />
+              </div>
+              <div>
+                <Label>% Executado nesta medição</Label>
+                <Input value={percentInput} onChange={(e) => handlePercent(e.target.value)} inputMode="decimal" />
+              </div>
+              <div>
+                <Label>Data da execução</Label>
+                <Input type="date" value={dataExec} onChange={(e) => setDataExec(e.target.value)} />
+              </div>
+            </div>
+            <div className="mt-3">
+              <Label>Observações desta medição</Label>
+              <Textarea value={obs} onChange={(e) => setObs(e.target.value)} rows={2} />
             </div>
           </div>
-          <div>
-            <Label>Observações</Label>
-            <Textarea value={obs} onChange={(e) => setObs(e.target.value)} />
+
+          {/* Acumulado previsto após salvar */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm bg-muted/40 p-3 rounded-md">
+            <div>
+              <div className="text-muted-foreground text-xs">Qtd. Acumulada</div>
+              <div className="font-medium">{fmtNum(acumuladoPrev)} {row.und}</div>
+            </div>
+            <div>
+              <div className="text-muted-foreground text-xs">% Acumulado</div>
+              <div className="font-medium">{fmtNum(percentPrev)}%</div>
+            </div>
+            <div>
+              <div className="text-muted-foreground text-xs">Valor Acumulado</div>
+              <div className="font-medium">{fmtBRL(valorPrev)}</div>
+            </div>
+            <div>
+              <div className="text-muted-foreground text-xs">Qtd. Restante</div>
+              <div className="font-medium">{fmtNum(Math.max(0, row.quantidade - acumuladoPrev))} {row.und}</div>
+            </div>
+            <div>
+              <div className="text-muted-foreground text-xs">Valor Restante</div>
+              <div className="font-medium">{fmtBRL(Math.max(0, (row.total || 0) - valorPrev))}</div>
+            </div>
           </div>
+
 
           <div className="border-t pt-4">
             <label className="flex items-center gap-2 mb-4 cursor-pointer">
