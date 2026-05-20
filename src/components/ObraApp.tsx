@@ -1617,15 +1617,8 @@ function ServiceRow({
           placeholder="0"
         />
       </td>
-      <td className="px-2 py-1 text-right bg-primary/5">
-        <Input
-          value={pct}
-          onChange={(e) => syncFromPct(e.target.value)}
-          onBlur={onPctBlur}
-          inputMode="decimal"
-          className="h-7 text-right text-xs"
-          placeholder="0"
-        />
+      <td className="px-2 py-1.5 text-right bg-primary/5 font-medium">
+        {row.quantidade > 0 ? `${fmtNum((a.quantExec / row.quantidade) * 100)} %` : "—"}
       </td>
       <td className="px-2 py-1.5 text-right bg-primary/5">{fmtBRL(a.valorExec)}</td>
       <td className="px-2 py-1.5 text-center bg-primary/5">
