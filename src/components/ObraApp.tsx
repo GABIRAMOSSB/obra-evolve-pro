@@ -1464,7 +1464,9 @@ function ActivitiesTable({
                   peso={pesoOf(r)}
                   obraId={obraId}
                   currentMeasurement={currentMeasurement}
+                  closedNumbers={closedNumbers}
                 />
+
               );
             })}
           </tbody>
