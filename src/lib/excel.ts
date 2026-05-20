@@ -170,11 +170,22 @@ export async function parseExcel(file: File): Promise<ParseResult> {
     const codigo = String(row[headerMap.codigo] ?? "").trim();
     const und = String(row[headerMap.und] ?? "").trim();
     const quantidade = toNumber(row[headerMap.quantidade]);
-    const total = toNumber(row[headerMap.total]);
-    // Regra de classificação: é ETAPA/SUBETAPA quando faltar QUALQUER
-    // um dos campos executáveis (código, unidade, quantidade ou total).
-    // Itens executáveis precisam possuir TODOS esses campos.
-    const isGroup = !codigo || !und || !quantidade || !total;
+    const valorUnit = toNumber(row[headerMap.valorUnit]);
+    const valorUnitBDI = toNumber(row[headerMap.valorUnitBDI]);
+    const totalRaw = toNumber(row[headerMap.total]);
+    // Regra: TOTAL deve ser sempre V.Unit c/ BDI × Quantidade quando ambos
+    // existirem. Caso a coluna BDI não exista, cai para V.Unit × Quantidade.
+    // Só usa o valor da coluna "Total" da planilha quando não há nem unit
+    // nem BDI preenchido (linhas de grupo, p.ex.).
+    const unitForTotal = valorUnitBDI > 0 ? valorUnitBDI : valorUnit;
+    const total =
+      unitForTotal > 0 && quantidade > 0
+        ? unitForTotal * quantidade
+        : totalRaw;
+    // Regra de classificação: ITEM EXECUTÁVEL = possui CÓDIGO preenchido.
+    // Demais linhas são etapas/subetapas (ou serão descartadas adiante se
+    // não tiverem filhos).
+    const isGroup = !codigo;
 
     // Effective level: count only non-zero segments so "1.2.0.0.1" reads as
     // depth 3 (etapa 1 → sub 1.2 → serviço 1.2.0.0.1) for indentation purposes.
@@ -188,8 +199,8 @@ export async function parseExcel(file: File): Promise<ParseResult> {
       descricao,
       und,
       quantidade,
-      valorUnit: toNumber(row[headerMap.valorUnit]),
-      valorUnitBDI: toNumber(row[headerMap.valorUnitBDI]),
+      valorUnit,
+      valorUnitBDI,
       total,
       peso: toNumber(row[headerMap.peso]),
       isGroup,
