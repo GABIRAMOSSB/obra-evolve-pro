@@ -13,7 +13,7 @@ import {
 } from "@/lib/documents";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   Folder,
   FolderOpen,
