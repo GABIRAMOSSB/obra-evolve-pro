@@ -1025,6 +1025,7 @@ function Dashboard({
             <TabsTrigger value="diario">
               Diário de obra ({data.diaries.length})
             </TabsTrigger>
+            <TabsTrigger value="documentos">Documentos</TabsTrigger>
           </TabsList>
 
           <TabsContent value="atividades" className="space-y-4">
