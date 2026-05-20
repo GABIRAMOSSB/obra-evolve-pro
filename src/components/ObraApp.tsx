@@ -1487,6 +1487,7 @@ function ServiceRow({
   peso = 0,
   obraId,
   currentMeasurement,
+  closedNumbers = [],
 }: {
   row: BudgetRow;
   allRows: BudgetRow[];
@@ -1498,7 +1499,9 @@ function ServiceRow({
   peso?: number;
   obraId: string;
   currentMeasurement: number;
+  closedNumbers?: number[];
 }) {
+
   const a = activityMetrics(row, evolution);
   const allMeasurements = a.measurements;
   const closedSum = allMeasurements
