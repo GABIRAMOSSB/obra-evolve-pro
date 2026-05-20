@@ -1268,6 +1268,7 @@ function ActivitiesTable({
   collapsed = {},
   onToggleCollapse,
   obraId,
+  currentMeasurement,
 }: {
   rows: BudgetRow[];
   allRows: BudgetRow[];
@@ -1278,6 +1279,7 @@ function ActivitiesTable({
   collapsed?: Record<string, boolean>;
   onToggleCollapse?: (item: string) => void;
   obraId: string;
+  currentMeasurement: number;
 }) {
   if (rows.length === 0) {
     return (
