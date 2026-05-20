@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { ProjectData, BudgetRow, Evolution, DiaryEntry, Workspace, ObraInfo, DiaryPhoto } from "@/lib/types";
+import type { ProjectData, BudgetRow, Evolution, Measurement, DiaryEntry, Workspace, ObraInfo, DiaryPhoto } from "@/lib/types";
 import { loadWorkspaceCloud, saveWorkspaceCloud, newObraId, detectMigration, markMigrated, type MigrationPlan } from "@/lib/storage";
 import { useAuth } from "@/hooks/use-auth";
 import { useCompany } from "@/hooks/use-company";
