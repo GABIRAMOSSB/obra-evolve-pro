@@ -426,7 +426,7 @@ export function ObraApp() {
               <Link to="/equipe"><Users className="mr-2 w-4 h-4" /> Gerenciar equipe</Link>
             </Button>
             <div className="flex items-center justify-between text-xs text-muted-foreground border-t pt-4">
-              <span className="truncate">{user?.email} • {company.role === "admin" ? "Admin" : "Membro"}</span>
+              <span className="truncate">{user?.email} • {company.role === "admin" ? "Admin" : company.role === "editor" ? "Editor" : "Membro"}</span>
               <Button variant="ghost" size="sm" onClick={handleSignOut}>
                 <LogOut className="w-3.5 h-3.5 mr-1" /> Sair
               </Button>
