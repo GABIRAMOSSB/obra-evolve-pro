@@ -18,7 +18,7 @@ function toNumber(v: unknown): number {
   return isNaN(n) ? 0 : n;
 }
 
-const REQUIRED_HEADERS = ["item", "descricao", "und", "total"];
+const REQUIRED_HEADERS = ["item", "banco", "descricao", "und", "quantidade", "total"];
 
 export interface SkippedRow {
   rowIndex: number; // 1-based as in Excel
@@ -202,21 +202,35 @@ export async function parseExcel(file: File): Promise<ParseResult> {
   // Structural re-classification: an item is a group if any other parsed
   // item starts with `${item}.` — this preserves the spreadsheet hierarchy
   // even when intermediate groups carry totals/quantities.
-  const itemSet = new Set(rows.map((r) => r.item));
   for (const r of rows) {
     const hasChild = rows.some((o) => o.item !== r.item && o.item.startsWith(r.item + "."));
     if (hasChild) r.isGroup = true;
   }
-  // Avoid unused warning
-  void itemSet;
 
-  if (rows.length === 0) {
+  // Remove non-executable rows that are NOT real etapas/subetapas
+  // (i.e. they have no children) — these are títulos, observações,
+  // textos informativos, subtítulos, totais gerais, etc.
+  const filtered = rows.filter((r) => {
+    const isExecutable = !!r.codigo && !!r.und && r.quantidade > 0 && r.total > 0;
+    const hasChild = rows.some((o) => o.item !== r.item && o.item.startsWith(r.item + "."));
+    if (isExecutable) return true;
+    if (hasChild) return true;
+    // Track skip
+    skipped.push({
+      rowIndex: parsed.find((p) => p.row === r)?.rowIndex ?? 0,
+      cells: [r.item, r.codigo, r.descricao, r.und, String(r.quantidade), String(r.total)],
+      reason: "Linha não executável e sem subitens (título/observação/total)",
+    });
+    return false;
+  });
+
+  if (filtered.length === 0) {
     throw new Error("Nenhum item válido encontrado na planilha.");
   }
 
   return {
-    rows,
-    parsed,
+    rows: filtered,
+    parsed: parsed.filter((p) => filtered.includes(p.row)),
     skipped,
     headerRowIndex: headerRow + 1,
     headerLabels,
