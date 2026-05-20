@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { ProjectData, BudgetRow, Evolution, DiaryEntry, Workspace, ObraInfo, DiaryPhoto } from "@/lib/types";
+import type { ProjectData, BudgetRow, Evolution, Measurement, DiaryEntry, Workspace, ObraInfo, DiaryPhoto } from "@/lib/types";
 import { loadWorkspaceCloud, saveWorkspaceCloud, newObraId, detectMigration, markMigrated, type MigrationPlan } from "@/lib/storage";
 import { useAuth } from "@/hooks/use-auth";
 import { useCompany } from "@/hooks/use-company";
@@ -13,6 +13,7 @@ import {
   fmtBRL,
   fmtDate,
   fmtNum,
+  getMeasurements,
   groupMetrics,
   isChildOf,
   projectMetrics,
@@ -68,6 +69,53 @@ function statusVariant(status: string): "default" | "secondary" | "outline" {
   if (status === "Concluída") return "default";
   if (status === "Em andamento") return "secondary";
   return "outline";
+}
+
+/** Normaliza para o novo formato com `measurements`. */
+function normalizeEvolution(evo?: Evolution): Evolution {
+  const list = getMeasurements(evo);
+  return { measurements: list };
+}
+
+/** Garante que exista uma medição aberta (cria M1 ou Mn+1). */
+function ensureOpenMeasurement(evo?: Evolution): { evo: Evolution; open: Measurement } {
+  const base = normalizeEvolution(evo);
+  const list = base.measurements ?? [];
+  const open = list.find((m) => !m.closed);
+  if (open) return { evo: base, open };
+  const nextNumber = list.reduce((max, m) => Math.max(max, m.number), 0) + 1;
+  const novo: Measurement = {
+    id: crypto.randomUUID(),
+    number: nextNumber,
+    quantExec: 0,
+    dataExec: new Date().toISOString().slice(0, 10),
+    observacoes: "",
+    closed: false,
+  };
+  return { evo: { measurements: [...list, novo] }, open: novo };
+}
+
+/** Atualiza o acumulado ajustando a medição em aberto. */
+function setAccumulatedQty(
+  evo: Evolution | undefined,
+  row: BudgetRow,
+  newAcc: number,
+): { evo: Evolution; clamped: boolean } {
+  const { evo: ev, open } = ensureOpenMeasurement(evo);
+  const list = ev.measurements ?? [];
+  const closedSum = list
+    .filter((m) => m.closed)
+    .reduce((s, m) => s + (m.quantExec || 0), 0);
+  const max = row.quantidade > 0 ? row.quantidade : Number.POSITIVE_INFINITY;
+  const target = Math.max(closedSum, Math.min(newAcc, max));
+  const clamped = newAcc > max || newAcc < closedSum;
+  const periodo = Math.max(0, target - closedSum);
+  const next = list.map((m) =>
+    m.id === open.id
+      ? { ...m, quantExec: periodo, dataExec: m.dataExec || new Date().toISOString().slice(0, 10) }
+      : m,
+  );
+  return { evo: { measurements: next }, clamped };
 }
 
 export function ObraApp() {
@@ -695,7 +743,11 @@ function Dashboard({
 
   const updateEvolution = (item: string, evo: Evolution) => {
     const next = { ...data.evolutions, [item]: evo };
-    if (!evo.quantExec && !evo.dataExec && !evo.observacoes) delete next[item];
+    const list = evo.measurements ?? [];
+    const empty =
+      list.length === 0 ||
+      (list.length === 1 && !list[0].closed && !list[0].quantExec && !list[0].observacoes);
+    if (empty) delete next[item];
     setData({ ...data, evolutions: next });
   };
 
@@ -1367,25 +1419,38 @@ function ServiceRow({
   obraId: string;
 }) {
   const a = activityMetrics(row, evolution);
-  const [qty, setQty] = useState(evolution?.quantExec ? String(evolution.quantExec) : "");
+  const allMeasurements = a.measurements;
+  const closedSum = allMeasurements
+    .filter((m) => m.closed)
+    .reduce((s, m) => s + (m.quantExec || 0), 0);
+  const [qty, setQty] = useState(a.quantExec ? String(a.quantExec) : "");
   const [pct, setPct] = useState(a.percent ? a.percent.toFixed(2) : "");
 
   useEffect(() => {
-    setQty(evolution?.quantExec ? String(evolution.quantExec) : "");
-    setPct(evolution?.quantExec && row.quantidade > 0
-      ? ((evolution.quantExec / row.quantidade) * 100).toFixed(2)
+    setQty(a.quantExec ? String(a.quantExec) : "");
+    setPct(a.quantExec && row.quantidade > 0
+      ? ((a.quantExec / row.quantidade) * 100).toFixed(2)
       : "");
-  }, [evolution, row.quantidade]);
+  }, [a.quantExec, row.quantidade]);
 
   function commit(q: number) {
-    const clamped = Math.max(0, q);
-    const prev = evolution?.quantExec ?? 0;
-    if (Math.abs(clamped - prev) < 1e-6) return;
-    onUpdate(row.item, {
-      quantExec: clamped,
-      dataExec: evolution?.dataExec ?? new Date().toISOString().slice(0, 10),
-      observacoes: evolution?.observacoes ?? "",
-    });
+    const newAcc = Math.max(0, q);
+    if (Math.abs(newAcc - a.quantExec) < 1e-6) return;
+    if (row.quantidade > 0 && newAcc < closedSum - 1e-6) {
+      toast.error(
+        `Acumulado mínimo é ${fmtNum(closedSum)} ${row.und} (medições fechadas).`,
+      );
+      setQty(String(a.quantExec));
+      setPct(a.percent.toFixed(2));
+      return;
+    }
+    if (row.quantidade > 0 && newAcc > row.quantidade + 1e-6) {
+      toast.warning(
+        `Acumulado limitado ao total previsto: ${fmtNum(row.quantidade)} ${row.und}.`,
+      );
+    }
+    const { evo } = setAccumulatedQty(evolution, row, newAcc);
+    onUpdate(row.item, evo);
   }
 
   function onQtyBlur() {
@@ -1457,9 +1522,19 @@ function ServiceRow({
       </td>
       <td className="px-2 py-1.5 text-right bg-primary/5">{fmtBRL(a.valorExec)}</td>
       <td className="px-2 py-1.5 text-center bg-primary/5">
-        <Badge variant={statusVariant(a.status)} className="text-[10px]">
-          {a.status}
-        </Badge>
+        <div className="flex flex-col items-center gap-0.5">
+          <Badge variant={statusVariant(a.status)} className="text-[10px]">
+            {a.status}
+          </Badge>
+          {a.measurements.length > 0 && (
+            <span
+              className="text-[9px] text-muted-foreground"
+              title={`${a.measurements.length} medição(ões) · ${a.closedCount} fechada(s)`}
+            >
+              {a.closedCount}/{a.measurements.length} M
+            </span>
+          )}
+        </div>
       </td>
       <td className="px-2 py-1.5 text-center bg-primary/5">
         <div className="flex items-center justify-center gap-1">
@@ -1531,12 +1606,19 @@ function EvolutionDialog({
   obraId: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [quantExec, setQuantExec] = useState<string>(evolution?.quantExec?.toString() ?? "");
+  const metrics = activityMetrics(row, evolution);
+  const measurements = metrics.measurements;
+  const closedMeasurements = measurements.filter((m) => m.closed);
+  const openMeasurement = metrics.openMeasurement;
+  const nextNumber = (measurements.reduce((max, m) => Math.max(max, m.number), 0) || 0) + (openMeasurement ? 0 : 1);
+  const closedAccum = closedMeasurements.reduce((s, m) => s + (m.quantExec || 0), 0);
+  const maxPeriodo = Math.max(0, row.quantidade - closedAccum);
+
+  // Estado local da medição em aberto (editável).
+  const [periodo, setPeriodo] = useState<string>("");
   const [percentInput, setPercentInput] = useState<string>("");
-  const [dataExec, setDataExec] = useState(
-    evolution?.dataExec ?? new Date().toISOString().slice(0, 10),
-  );
-  const [obs, setObs] = useState(evolution?.observacoes ?? "");
+  const [dataExec, setDataExec] = useState(new Date().toISOString().slice(0, 10));
+  const [obs, setObs] = useState("");
 
   // diary
   const [criarDiario, setCriarDiario] = useState(true);
@@ -1552,21 +1634,21 @@ function EvolutionDialog({
 
   useEffect(() => {
     if (open) {
-      const q = evolution?.quantExec ?? 0;
-      setQuantExec(q ? String(q) : "");
+      const q = openMeasurement?.quantExec ?? 0;
+      setPeriodo(q ? String(q) : "");
       setPercentInput(
         q && row.quantidade > 0 ? ((q / row.quantidade) * 100).toFixed(2) : "",
       );
-      setDataExec(evolution?.dataExec ?? new Date().toISOString().slice(0, 10));
-      setObs(evolution?.observacoes ?? "");
+      setDataExec(openMeasurement?.dataExec ?? new Date().toISOString().slice(0, 10));
+      setObs(openMeasurement?.observacoes ?? "");
       setFotos([]);
       setPendencias("");
       setStatusDia("Normal");
     }
-  }, [open, evolution, row.quantidade]);
+  }, [open, openMeasurement, row.quantidade]);
 
   function handleQuant(v: string) {
-    setQuantExec(v);
+    setPeriodo(v);
     const n = parseFloat(v.replace(",", "."));
     if (isNaN(n) || !v.trim()) {
       setPercentInput("");
@@ -1578,54 +1660,132 @@ function EvolutionDialog({
     setPercentInput(v);
     const n = parseFloat(v.replace(",", "."));
     if (isNaN(n) || !v.trim()) {
-      setQuantExec("");
+      setPeriodo("");
     } else {
-      setQuantExec(((n / 100) * row.quantidade).toFixed(4));
+      setPeriodo(((n / 100) * row.quantidade).toFixed(4));
     }
   }
 
-  function save() {
-    const q = parseFloat(quantExec.replace(",", ".")) || 0;
-    onSave({ quantExec: q, dataExec, observacoes: obs });
-
-    if (criarDiario && q > 0) {
-      const etapa = (() => {
-        const top = row.item.split(".")[0];
-        const g = allRows.find((r) => r.item === top && r.isGroup);
-        return g ? `${g.item} — ${g.descricao}` : row.item;
-      })();
-      const texto = gerarTextoDiario({
-        etapa,
-        descricao: row.descricao,
-        quantExec: q,
-        unidade: row.und,
-        quantTotal: row.quantidade,
-      });
-      onAddDiary({
-        id: crypto.randomUUID(),
-        itemKey: row.item,
-        data: dataExec,
-        horaInicio,
-        horaFim,
-        statusDia,
-        clima,
-        equipe,
-        equipamentos,
-        pendencias,
-        observacoes: diarioObs,
-        quantExec: q,
-        etapa,
-        atividade: row.descricao,
-        texto,
-        fotos,
-        createdAt: new Date().toISOString(),
-      });
-      toast.success("Evolução e diário registrados");
-    } else {
-      toast.success("Evolução registrada");
+  /** Constrói o novo Evolution com a medição aberta atualizada. */
+  function buildEvolution(closeIt: boolean): { evo: Evolution; periodo: number } {
+    let q = parseFloat(periodo.replace(",", ".")) || 0;
+    if (q < 0) q = 0;
+    if (row.quantidade > 0 && q > maxPeriodo + 1e-6) {
+      q = maxPeriodo;
+      toast.warning(
+        `Limitado a ${fmtNum(maxPeriodo)} ${row.und} (acumulado não pode exceder ${fmtNum(row.quantidade)}).`,
+      );
     }
+    const nowIso = new Date().toISOString();
+    let novaLista: Measurement[];
+    if (openMeasurement) {
+      novaLista = measurements.map((m) =>
+        m.id === openMeasurement.id
+          ? {
+              ...m,
+              quantExec: q,
+              dataExec,
+              observacoes: obs,
+              closed: closeIt,
+              closedAt: closeIt ? nowIso : undefined,
+            }
+          : m,
+      );
+    } else {
+      novaLista = [
+        ...measurements,
+        {
+          id: crypto.randomUUID(),
+          number: nextNumber,
+          quantExec: q,
+          dataExec,
+          observacoes: obs,
+          closed: closeIt,
+          closedAt: closeIt ? nowIso : undefined,
+        },
+      ];
+    }
+    // Ao fechar, cria automaticamente a próxima medição em aberto (se ainda houver saldo).
+    if (closeIt) {
+      const totalAcumulado = novaLista.reduce((s, m) => s + (m.quantExec || 0), 0);
+      const saldo = row.quantidade > 0 ? row.quantidade - totalAcumulado : 1;
+      if (saldo > 1e-6) {
+        novaLista = [
+          ...novaLista,
+          {
+            id: crypto.randomUUID(),
+            number: novaLista.reduce((max, m) => Math.max(max, m.number), 0) + 1,
+            quantExec: 0,
+            dataExec: new Date().toISOString().slice(0, 10),
+            observacoes: "",
+            closed: false,
+          },
+        ];
+      }
+    }
+    return { evo: { measurements: novaLista }, periodo: q };
+  }
+
+  function gerarDiario(q: number) {
+    if (!criarDiario || q <= 0) return;
+    const etapa = (() => {
+      const top = row.item.split(".")[0];
+      const g = allRows.find((r) => r.item === top && r.isGroup);
+      return g ? `${g.item} — ${g.descricao}` : row.item;
+    })();
+    const texto = gerarTextoDiario({
+      etapa,
+      descricao: row.descricao,
+      quantExec: q,
+      unidade: row.und,
+      quantTotal: row.quantidade,
+    });
+    onAddDiary({
+      id: crypto.randomUUID(),
+      itemKey: row.item,
+      data: dataExec,
+      horaInicio,
+      horaFim,
+      statusDia,
+      clima,
+      equipe,
+      equipamentos,
+      pendencias,
+      observacoes: diarioObs,
+      quantExec: q,
+      etapa,
+      atividade: row.descricao,
+      texto,
+      fotos,
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  function salvarParcial() {
+    const { evo, periodo: q } = buildEvolution(false);
+    onSave(evo);
+    gerarDiario(q);
+    toast.success(criarDiario && q > 0 ? "Medição e diário registrados" : "Medição registrada");
     setOpen(false);
   }
+
+  function fecharMedicao() {
+    const numero = openMeasurement?.number ?? nextNumber;
+    const ok = confirm(
+      `Fechar a Medição ${numero}? Após o fechamento, os dados não poderão mais ser alterados.`,
+    );
+    if (!ok) return;
+    const { evo, periodo: q } = buildEvolution(true);
+    onSave(evo);
+    gerarDiario(q);
+    toast.success(`Medição ${numero} fechada. Próxima medição criada automaticamente.`);
+    setOpen(false);
+  }
+
+  const periodoNum = parseFloat(periodo.replace(",", ".")) || 0;
+  const acumuladoPrev = closedAccum + Math.max(0, Math.min(periodoNum, maxPeriodo));
+  const percentPrev = row.quantidade > 0 ? (acumuladoPrev / row.quantidade) * 100 : 0;
+  const valorPrev = (percentPrev / 100) * (row.total || 0);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -1658,24 +1818,98 @@ function EvolutionDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Quantidade executada</Label>
-              <Input value={quantExec} onChange={(e) => handleQuant(e.target.value)} />
+          {/* Histórico de medições */}
+          {measurements.length > 0 && (
+            <div className="border rounded-md overflow-hidden">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/60">
+                  <tr>
+                    <th className="px-2 py-1.5 text-left">Medição</th>
+                    <th className="px-2 py-1.5 text-right">Qtd. Exec.</th>
+                    <th className="px-2 py-1.5 text-right">% Exec.</th>
+                    <th className="px-2 py-1.5 text-right">Valor Executado</th>
+                    <th className="px-2 py-1.5 text-center">Status</th>
+                    <th className="px-2 py-1.5 text-left">Data</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {measurements.map((m) => {
+                    const pct = row.quantidade > 0 ? (m.quantExec / row.quantidade) * 100 : 0;
+                    const val = (pct / 100) * (row.total || 0);
+                    return (
+                      <tr key={m.id} className="border-t">
+                        <td className="px-2 py-1.5 font-medium">M{m.number}</td>
+                        <td className="px-2 py-1.5 text-right">{fmtNum(m.quantExec)} {row.und}</td>
+                        <td className="px-2 py-1.5 text-right">{fmtNum(pct)}%</td>
+                        <td className="px-2 py-1.5 text-right">{fmtBRL(val)}</td>
+                        <td className="px-2 py-1.5 text-center">
+                          {m.closed ? (
+                            <Badge variant="outline" className="text-[10px]">🔒 Bloqueada</Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-[10px]">Em aberto</Badge>
+                          )}
+                        </td>
+                        <td className="px-2 py-1.5">{m.dataExec ? fmtDate(m.dataExec) : "—"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-            <div>
-              <Label>% Executado</Label>
-              <Input value={percentInput} onChange={(e) => handlePercent(e.target.value)} />
+          )}
+
+          {/* Editor da medição em aberto */}
+          <div className="border rounded-md p-3 bg-primary/5">
+            <div className="text-sm font-semibold mb-2">
+              {openMeasurement ? `Editando Medição M${openMeasurement.number}` : `Nova Medição M${nextNumber}`}
+              <span className="ml-2 text-xs text-muted-foreground">
+                · Saldo disponível: {fmtNum(maxPeriodo)} {row.und}
+              </span>
             </div>
-            <div>
-              <Label>Data da execução</Label>
-              <Input type="date" value={dataExec} onChange={(e) => setDataExec(e.target.value)} />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Quantidade desta medição</Label>
+                <Input value={periodo} onChange={(e) => handleQuant(e.target.value)} inputMode="decimal" />
+              </div>
+              <div>
+                <Label>% Executado nesta medição</Label>
+                <Input value={percentInput} onChange={(e) => handlePercent(e.target.value)} inputMode="decimal" />
+              </div>
+              <div>
+                <Label>Data da execução</Label>
+                <Input type="date" value={dataExec} onChange={(e) => setDataExec(e.target.value)} />
+              </div>
+            </div>
+            <div className="mt-3">
+              <Label>Observações desta medição</Label>
+              <Textarea value={obs} onChange={(e) => setObs(e.target.value)} rows={2} />
             </div>
           </div>
-          <div>
-            <Label>Observações</Label>
-            <Textarea value={obs} onChange={(e) => setObs(e.target.value)} />
+
+          {/* Acumulado previsto após salvar */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm bg-muted/40 p-3 rounded-md">
+            <div>
+              <div className="text-muted-foreground text-xs">Qtd. Acumulada</div>
+              <div className="font-medium">{fmtNum(acumuladoPrev)} {row.und}</div>
+            </div>
+            <div>
+              <div className="text-muted-foreground text-xs">% Acumulado</div>
+              <div className="font-medium">{fmtNum(percentPrev)}%</div>
+            </div>
+            <div>
+              <div className="text-muted-foreground text-xs">Valor Acumulado</div>
+              <div className="font-medium">{fmtBRL(valorPrev)}</div>
+            </div>
+            <div>
+              <div className="text-muted-foreground text-xs">Qtd. Restante</div>
+              <div className="font-medium">{fmtNum(Math.max(0, row.quantidade - acumuladoPrev))} {row.und}</div>
+            </div>
+            <div>
+              <div className="text-muted-foreground text-xs">Valor Restante</div>
+              <div className="font-medium">{fmtBRL(Math.max(0, (row.total || 0) - valorPrev))}</div>
+            </div>
           </div>
+
 
           <div className="border-t pt-4">
             <label className="flex items-center gap-2 mb-4 cursor-pointer">
@@ -1826,11 +2060,16 @@ function EvolutionDialog({
             )}
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancelar
           </Button>
-          <Button onClick={save}>Salvar</Button>
+          <Button variant="secondary" onClick={salvarParcial}>
+            Salvar parcial
+          </Button>
+          <Button onClick={fecharMedicao}>
+            🔒 Fechar Medição
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
