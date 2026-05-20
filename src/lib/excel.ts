@@ -173,15 +173,17 @@ export async function parseExcel(file: File): Promise<ParseResult> {
     const valorUnit = toNumber(row[headerMap.valorUnit]);
     const valorUnitBDI = toNumber(row[headerMap.valorUnitBDI]);
     const totalRaw = toNumber(row[headerMap.total]);
-    // Regra: TOTAL deve ser sempre V.Unit c/ BDI × Quantidade quando ambos
-    // existirem. Caso a coluna BDI não exista, cai para V.Unit × Quantidade.
-    // Só usa o valor da coluna "Total" da planilha quando não há nem unit
-    // nem BDI preenchido (linhas de grupo, p.ex.).
+    // TOTAL: prioriza o valor da coluna "Total" da planilha (já vem com
+    // a precisão original, sem perda por arredondamento de V.Unit c/ BDI).
+    // Só recalcula (V.Unit c/ BDI × Quantidade) quando a coluna Total
+    // estiver vazia/zerada.
     const unitForTotal = valorUnitBDI > 0 ? valorUnitBDI : valorUnit;
     const total =
-      unitForTotal > 0 && quantidade > 0
-        ? unitForTotal * quantidade
-        : totalRaw;
+      totalRaw > 0
+        ? totalRaw
+        : unitForTotal > 0 && quantidade > 0
+          ? unitForTotal * quantidade
+          : 0;
     // Regra de classificação: ITEM EXECUTÁVEL = possui CÓDIGO preenchido.
     // Demais linhas são etapas/subetapas (ou serão descartadas adiante se
     // não tiverem filhos).
