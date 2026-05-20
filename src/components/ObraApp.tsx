@@ -1356,19 +1356,27 @@ function ActivitiesTable({
               if (r.isGroup) {
                 const g = groupMetrics(r, allRows, evolutions);
                 const isEtapa = r.level === 1;
+                const isSub = r.level === 2;
                 const indent = Math.max(0, r.level - 1) * 14;
                 const peso = pesoOf(r, g.total);
+                const tipoLabel = isEtapa
+                  ? "ETAPA"
+                  : isSub
+                    ? "SUBETAPA"
+                    : `SUBETAPA ${r.level - 1}`;
                 return (
                   <tr
                     key={r.item}
                     className={
                       isEtapa
                         ? "bg-primary/15 border-y-2 border-primary/30 font-bold"
-                        : "bg-primary/5 border-t font-semibold"
+                        : isSub
+                          ? "bg-primary/10 border-t border-primary/20 font-semibold"
+                          : "bg-muted/40 border-t font-medium"
                     }
                   >
                     <td
-                      className={`px-2 py-1.5 font-mono ${isEtapa ? "text-primary" : ""}`}
+                      className={`px-2 py-1.5 font-mono ${isEtapa ? "text-primary" : isSub ? "text-primary/80" : ""}`}
                       style={{ paddingLeft: 8 + indent }}
                     >
                       <button
@@ -1388,7 +1396,7 @@ function ActivitiesTable({
                     <td className="px-2 py-1.5">{r.codigo}</td>
                     <td className="px-2 py-1.5">{r.banco}</td>
                     <td
-                      className={`px-2 py-1.5 ${isEtapa ? "uppercase tracking-wide" : ""}`}
+                      className={`px-2 py-1.5 ${isEtapa ? "uppercase tracking-wide" : isSub ? "uppercase tracking-wide text-sm" : ""}`}
                       style={{ paddingLeft: 8 + indent }}
                     >
                       {r.descricao}
@@ -1405,10 +1413,14 @@ function ActivitiesTable({
                       {fmtBRL(g.exec)}
                     </td>
                     <td className="px-2 py-1.5 text-center">
-                      <Badge variant={r.banco === "MANUAL" ? "secondary" : "outline"} className="text-[10px]">
-                        {r.banco === "MANUAL" ? "MANUAL" : isEtapa ? "ETAPA" : "SUB"}
+                      <Badge
+                        variant={isEtapa ? "default" : "secondary"}
+                        className="text-[10px]"
+                      >
+                        {r.banco === "MANUAL" ? "MANUAL" : tipoLabel}
                       </Badge>
                     </td>
+
                     <td className="px-2 py-1.5 text-center">
                       {r.banco === "MANUAL" && (
                         <Button
