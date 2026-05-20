@@ -1522,9 +1522,19 @@ function ServiceRow({
       </td>
       <td className="px-2 py-1.5 text-right bg-primary/5">{fmtBRL(a.valorExec)}</td>
       <td className="px-2 py-1.5 text-center bg-primary/5">
-        <Badge variant={statusVariant(a.status)} className="text-[10px]">
-          {a.status}
-        </Badge>
+        <div className="flex flex-col items-center gap-0.5">
+          <Badge variant={statusVariant(a.status)} className="text-[10px]">
+            {a.status}
+          </Badge>
+          {a.measurements.length > 0 && (
+            <span
+              className="text-[9px] text-muted-foreground"
+              title={`${a.measurements.length} medição(ões) · ${a.closedCount} fechada(s)`}
+            >
+              {a.closedCount}/{a.measurements.length} M
+            </span>
+          )}
+        </div>
       </td>
       <td className="px-2 py-1.5 text-center bg-primary/5">
         <div className="flex items-center justify-center gap-1">
