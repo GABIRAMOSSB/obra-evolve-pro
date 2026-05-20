@@ -1481,7 +1481,7 @@ function ServiceRow({
         `Acumulado limitado ao total previsto: ${fmtNum(row.quantidade)} ${row.und}.`,
       );
     }
-    const { evo } = setAccumulatedQty(evolution, row, newAcc);
+    const { evo } = setAccumulatedQty(evolution, row, newAcc, currentMeasurement);
     onUpdate(row.item, evo);
   }
 
