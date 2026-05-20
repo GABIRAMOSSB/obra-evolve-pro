@@ -74,7 +74,7 @@ export default function DocumentsTab({ obraId }: Props) {
     try {
       setItems(await listDocuments(companyId, obraId, folder));
     } catch (e) {
-      toast({ title: "Erro ao listar", description: String((e as Error).message), variant: "destructive" });
+      toast.error("Erro ao listar", { description: String((e as Error).message) });
     } finally {
       setLoading(false);
     }
@@ -109,7 +109,7 @@ export default function DocumentsTab({ obraId }: Props) {
       const url = await getDocumentUrl(item.path);
       window.open(url, "_blank", "noopener,noreferrer");
     } catch (e) {
-      toast({ title: "Erro", description: String((e as Error).message), variant: "destructive" });
+      toast.error("Erro", { description: String((e as Error).message) });
     }
   };
 
@@ -117,14 +117,10 @@ export default function DocumentsTab({ obraId }: Props) {
     if (!confirm(`Excluir "${item.name}"? Esta ação não pode ser desfeita.`)) return;
     try {
       await deleteDocument(item.path);
-      toast({ title: "Documento excluído" });
+      toast("Documento excluído");
       if (active) await openFolder(active);
     } catch (e) {
-      toast({
-        title: "Erro ao excluir",
-        description: String((e as Error).message) + " (apenas administradores podem excluir)",
-        variant: "destructive",
-      });
+      toast.error("Erro ao excluir", { description: String((e as Error).message) + " (apenas administradores podem excluir)" });
     }
   };
 
