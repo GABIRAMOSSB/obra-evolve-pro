@@ -46,6 +46,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import DocumentsTab from "@/components/DocumentsTab";
+import { MeasurementClosure } from "@/components/MeasurementClosure";
 import {
   Upload,
   HardHat,
@@ -1024,6 +1025,15 @@ function Dashboard({
 
 
       <main className="max-w-[1600px] mx-auto px-6 py-6 space-y-6">
+        <MeasurementClosure
+          data={data}
+          setData={setData}
+          companyId={companyId}
+          userId={userId}
+          userEmail={userEmail}
+          isAdmin={isAdmin}
+        />
+
         {/* Resumo */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <SummaryCard label="Valor total" value={fmtBRL(m.total)} />
