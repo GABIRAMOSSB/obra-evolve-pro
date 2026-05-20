@@ -22,6 +22,7 @@ function LoginPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { redirect } = Route.useSearch();
+  const safeRedirect = redirect && redirect.startsWith("/") ? redirect : undefined;
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,13 +30,13 @@ function LoginPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      if (redirect && redirect.startsWith("/")) {
-        window.location.href = redirect;
+      if (safeRedirect) {
+        window.location.href = safeRedirect;
       } else {
         navigate({ to: "/" });
       }
     }
-  }, [user, loading, navigate, redirect]);
+  }, [user, loading, navigate, safeRedirect]);
 
   // Detecta erro de OAuth retornado pelo Google / broker
   useEffect(() => {
@@ -50,9 +51,13 @@ function LoginPage() {
         ? "Falha na autenticação com o Google. O código expirou ou já foi usado. Tente novamente em uma aba anônima e não recarregue durante o redirecionamento."
         : decoded;
       toast.error(friendly, { duration: 8000 });
-      window.history.replaceState({}, "", window.location.pathname);
+      const cleanUrl = new URL(window.location.origin + window.location.pathname);
+      if (safeRedirect) {
+        cleanUrl.searchParams.set("redirect", safeRedirect);
+      }
+      window.history.replaceState({}, "", cleanUrl.toString());
     }
-  }, []);
+  }, [safeRedirect]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -78,12 +83,38 @@ function LoginPage() {
   }
 
   async function onGoogle() {
-    setBusy(true);
-    const res = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.href,
-    });
-    if (res.error) {
-      toast.error(res.error.message ?? "Falha no login com Google");
+    try {
+      setBusy(true);
+      const callbackUrl = new URL("/login", window.location.origin);
+      if (safeRedirect) {
+        callbackUrl.searchParams.set("redirect", safeRedirect);
+      }
+
+      const res = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: callbackUrl.toString(),
+        extraParams: {
+          prompt: "select_account",
+          ...(email.trim() ? { login_hint: email.trim() } : {}),
+        },
+      });
+
+      if (res.redirected) {
+        return;
+      }
+
+      if (res.error) {
+        toast.error(res.error.message ?? "Falha no login com Google");
+        return;
+      }
+
+      if (safeRedirect) {
+        window.location.href = safeRedirect;
+      } else {
+        navigate({ to: "/" });
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha no login com Google");
+    } finally {
       setBusy(false);
     }
   }
