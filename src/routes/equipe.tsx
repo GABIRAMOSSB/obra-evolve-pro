@@ -163,14 +163,33 @@ function EquipePage() {
     reload();
   }
 
+  function inviteUrl(token: string) {
+    return `${window.location.origin}/invite/${token}`;
+  }
+
+  function inviteMessage(email: string, token: string) {
+    const companyN = company?.name ?? "nossa empresa";
+    return `Olá! Você foi convidado para fazer parte da equipe de ${companyN} no app de Acompanhamento de Obras.\n\nAcesse o link abaixo para entrar (use o e-mail ${email}):\n${inviteUrl(token)}`;
+  }
+
   async function copyInviteLink(token: string) {
-    const url = `${window.location.origin}/invite/${token}`;
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(inviteUrl(token));
       toast.success("Link copiado");
     } catch {
-      toast.message(url);
+      toast.message(inviteUrl(token));
     }
+  }
+
+  function shareWhatsApp(email: string, token: string) {
+    const text = encodeURIComponent(inviteMessage(email, token));
+    window.open(`https://wa.me/?text=${text}`, "_blank", "noopener,noreferrer");
+  }
+
+  function shareEmail(email: string, token: string) {
+    const subject = encodeURIComponent(`Convite para ${company?.name ?? "nossa equipe"}`);
+    const body = encodeURIComponent(inviteMessage(email, token));
+    window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
   }
 
   async function changeRole(userId: string, role: Role) {
