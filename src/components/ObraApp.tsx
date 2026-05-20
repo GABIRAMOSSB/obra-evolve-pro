@@ -185,6 +185,10 @@ export function ObraApp() {
 
   async function runMigration() {
     if (!company || !migration || !migration.plan.local) return;
+    if (company.role !== "admin") {
+      toast.error("Apenas administradores podem migrar dados");
+      return;
+    }
     const plan = migration.plan;
     const local = migration.plan.local!;
     setMigration({ stage: "running", plan });
