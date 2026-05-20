@@ -228,7 +228,7 @@ export function ObraApp() {
       skipNextSave.current = false;
       return;
     }
-    if (company.role !== "admin") return; // somente leitura para membros
+    if (company.role !== "admin" && company.role !== "editor") return; // somente leitura para membros
     if (saveTimer.current) clearTimeout(saveTimer.current);
     setSaving(true);
     saveTimer.current = setTimeout(async () => {
@@ -426,7 +426,7 @@ export function ObraApp() {
               <Link to="/equipe"><Users className="mr-2 w-4 h-4" /> Gerenciar equipe</Link>
             </Button>
             <div className="flex items-center justify-between text-xs text-muted-foreground border-t pt-4">
-              <span className="truncate">{user?.email} • {company.role === "admin" ? "Admin" : "Membro"}</span>
+              <span className="truncate">{user?.email} • {company.role === "admin" ? "Admin" : company.role === "editor" ? "Editor" : "Membro"}</span>
               <Button variant="ghost" size="sm" onClick={handleSignOut}>
                 <LogOut className="w-3.5 h-3.5 mr-1" /> Sair
               </Button>
@@ -458,7 +458,7 @@ export function ObraApp() {
         userId={user?.id ?? ""}
         companyId={company.id}
         companyName={company.name}
-        isAdmin={company.role === "admin"}
+        isAdmin={company.role === "admin" || company.role === "editor"}
         onSignOut={handleSignOut}
       />
       <ImportPreviewDialog
@@ -907,7 +907,7 @@ function Dashboard({
     <div className="min-h-screen bg-muted/40">
       {!isAdmin && (
         <div className="bg-amber-100 border-b border-amber-300 text-amber-900 text-xs text-center py-1.5 px-4">
-          Modo somente leitura — apenas administradores podem editar obras, diários e medições.
+          Modo somente leitura — peça a um administrador para alterar seu papel para Editor ou Admin se precisar editar.
         </div>
       )}
       <header className="bg-card border-b sticky top-0 z-30">

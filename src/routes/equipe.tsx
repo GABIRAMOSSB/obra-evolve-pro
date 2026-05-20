@@ -22,7 +22,7 @@ export const Route = createFileRoute("/equipe")({
   component: EquipePage,
 });
 
-type Role = "admin" | "member";
+type Role = "admin" | "editor" | "member";
 
 interface Member {
   user_id: string;
@@ -287,12 +287,13 @@ function EquipePage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="editor">Editor</SelectItem>
                         <SelectItem value="member">Membro</SelectItem>
                       </SelectContent>
                     </Select>
                   ) : (
                     <Badge variant={m.role === "admin" ? "default" : "secondary"}>
-                      {m.role === "admin" ? <><Shield className="w-3 h-3 mr-1" /> Admin</> : "Membro"}
+                      {m.role === "admin" ? <><Shield className="w-3 h-3 mr-1" /> Admin</> : m.role === "editor" ? "Editor" : "Membro"}
                     </Badge>
                   )}
                   {isAdmin && m.user_id !== user.id && (
@@ -321,8 +322,9 @@ function EquipePage() {
               <Select value={newRole} onValueChange={(v) => setNewRole(v as Role)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="member">Membro</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="member">Membro (somente leitura)</SelectItem>
+                  <SelectItem value="editor">Editor (edita conteúdo)</SelectItem>
+                  <SelectItem value="admin">Admin (edita e gerencia equipe)</SelectItem>
                 </SelectContent>
               </Select>
               <Button onClick={sendInvite} disabled={busy}>Convidar</Button>
@@ -339,7 +341,7 @@ function EquipePage() {
                     <div className="min-w-0">
                       <div className="truncate">{i.email}</div>
                       <div className="text-xs text-muted-foreground">
-                        {i.role === "admin" ? "Admin" : "Membro"} • expira em {new Date(i.expires_at).toLocaleDateString("pt-BR")}
+                        {i.role === "admin" ? "Admin" : i.role === "editor" ? "Editor" : "Membro"} • expira em {new Date(i.expires_at).toLocaleDateString("pt-BR")}
                       </div>
                     </div>
                     <div className="flex gap-1">

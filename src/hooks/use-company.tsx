@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 export interface CompanyInfo {
   id: string;
   name: string;
-  role: "admin" | "member";
+  role: "admin" | "editor" | "member";
 }
 
 export function useCompany() {
@@ -35,7 +35,7 @@ export function useCompany() {
         setCompany({
           id: co.id,
           name: co.name,
-          role: memberships.role as "admin" | "member",
+          role: memberships.role as "admin" | "editor" | "member",
         });
       }
     } catch (e) {
