@@ -202,57 +202,39 @@ export function MeasurementClosure({
     }
   }
 
-  return (
-    <Card className="p-5">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-            <FileText className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-foreground">
-                Medição atual: M{current}
-              </h3>
-              <Badge variant="secondary">Em aberto</Badge>
-            </div>
-            <p className="text-sm text-muted-foreground mt-1">
-              {summary.itensLancados} item(ns) lançado(s) no período • Valor do período:{" "}
-              <strong className="text-foreground">{fmtBRL(summary.valorPeriodo)}</strong> •
-              Acumulado da obra: <strong className="text-foreground">{fmtNum(summary.percentGeral)}%</strong>
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setHistoryOpen(true)}
-            title="Histórico de medições"
-          >
-            <History className="w-4 h-4 mr-1" /> Histórico ({log.length})
-          </Button>
-          {isAdmin && current > 1 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setReopenOpen(true)}
-              title="Reabrir medição anterior"
-            >
-              <LockOpen className="w-4 h-4 mr-1" /> Reabrir M{current - 1}
-            </Button>
-          )}
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => setConfirmOpen(true)}
-            disabled={busy}
-          >
-            <Lock className="w-4 h-4 mr-1" /> Fechar Medição M{current}
-          </Button>
-        </div>
-      </div>
+  const actions = (
+    <div className="flex items-center gap-2 flex-wrap">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setHistoryOpen(true)}
+        title="Histórico de medições"
+      >
+        <History className="w-4 h-4 mr-1" /> Histórico ({log.length})
+      </Button>
+      {isAdmin && current > 1 && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setReopenOpen(true)}
+          title="Reabrir medição anterior"
+        >
+          <LockOpen className="w-4 h-4 mr-1" /> Reabrir M{current - 1}
+        </Button>
+      )}
+      <Button
+        variant="default"
+        size="sm"
+        onClick={() => setConfirmOpen(true)}
+        disabled={busy}
+      >
+        <Lock className="w-4 h-4 mr-1" /> Fechar Medição M{current}
+      </Button>
+    </div>
+  );
 
+  const dialogs = (
+    <>
       {/* Confirm close */}
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent>
