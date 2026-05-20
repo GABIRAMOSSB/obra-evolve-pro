@@ -1320,16 +1320,20 @@ function ActivitiesTable({
     return (t / projectTotal) * 100;
   };
 
+  const closedNumbers: number[] = [];
+  for (let n = 1; n < currentMeasurement; n++) closedNumbers.push(n);
+  const histCols = closedNumbers.length;
+
   return (
     <Card className="overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full text-xs border-collapse" style={{ minWidth: 1500 }}>
+        <table className="w-full text-xs border-collapse" style={{ minWidth: 1500 + histCols * 90 }}>
           <thead className="bg-muted text-muted-foreground uppercase sticky top-0 z-10">
             <tr className="text-[10px]">
               <th colSpan={10} className="px-3 py-1 text-center border-b bg-muted/80 font-semibold tracking-wider">
                 Planejamento (planilha orçamentária)
               </th>
-              <th colSpan={5} className="px-3 py-1 text-center border-b bg-primary/10 text-primary font-semibold tracking-wider">
+              <th colSpan={5 + histCols} className="px-3 py-1 text-center border-b bg-primary/10 text-primary font-semibold tracking-wider">
                 Execução
               </th>
             </tr>
@@ -1344,13 +1348,19 @@ function ActivitiesTable({
               <th className="px-2 py-2 text-right w-28 border-b">V. Unit c/ BDI</th>
               <th className="px-2 py-2 text-right w-28 border-b">Total</th>
               <th className="px-2 py-2 text-right w-20 border-b">Peso (%)</th>
-              <th className="px-2 py-2 text-right w-28 border-b bg-primary/5">Qtd exec.</th>
+              {closedNumbers.map((n) => (
+                <th key={`mh-${n}`} className="px-2 py-2 text-right w-24 border-b bg-muted/60" title={`Medição ${n} (fechada)`}>
+                  M{n}
+                </th>
+              ))}
+              <th className="px-2 py-2 text-right w-28 border-b bg-primary/5">M{currentMeasurement} (atual)</th>
               <th className="px-2 py-2 text-right w-24 border-b bg-primary/5">% Exec.</th>
               <th className="px-2 py-2 text-right w-28 border-b bg-primary/5">V. executado</th>
               <th className="px-2 py-2 text-center w-28 border-b bg-primary/5">Status</th>
               <th className="px-2 py-2 text-center w-24 border-b bg-primary/5">Ações</th>
             </tr>
           </thead>
+
           <tbody>
             {rows.map((r) => {
               if (r.isGroup) {
@@ -1407,7 +1417,11 @@ function ActivitiesTable({
                     <td className="px-2 py-1.5"></td>
                     <td className="px-2 py-1.5 text-right">{fmtBRL(g.total)}</td>
                     <td className="px-2 py-1.5 text-right">{fmtNum(peso)} %</td>
+                    {closedNumbers.map((n) => (
+                      <td key={`gh-${n}`} className="px-2 py-1.5 bg-muted/30"></td>
+                    ))}
                     <td className="px-2 py-1.5"></td>
+
                     <td className="px-2 py-1.5 text-right">{fmtNum(g.percent)}%</td>
                     <td className="px-2 py-1.5 text-right text-[var(--success)]">
                       {fmtBRL(g.exec)}
@@ -1450,7 +1464,9 @@ function ActivitiesTable({
                   peso={pesoOf(r)}
                   obraId={obraId}
                   currentMeasurement={currentMeasurement}
+                  closedNumbers={closedNumbers}
                 />
+
               );
             })}
           </tbody>
@@ -1471,6 +1487,7 @@ function ServiceRow({
   peso = 0,
   obraId,
   currentMeasurement,
+  closedNumbers = [],
 }: {
   row: BudgetRow;
   allRows: BudgetRow[];
@@ -1482,7 +1499,9 @@ function ServiceRow({
   peso?: number;
   obraId: string;
   currentMeasurement: number;
+  closedNumbers?: number[];
 }) {
+
   const a = activityMetrics(row, evolution);
   const allMeasurements = a.measurements;
   const closedSum = allMeasurements
@@ -1565,7 +1584,17 @@ function ServiceRow({
       <td className="px-2 py-1.5 text-right text-muted-foreground">
         {peso ? `${fmtNum(peso)} %` : ""}
       </td>
+      {closedNumbers.map((n) => {
+        const m = allMeasurements.find((x) => x.number === n && x.closed);
+        const v = m?.quantExec || 0;
+        return (
+          <td key={`mc-${n}`} className="px-2 py-1.5 text-right bg-muted/30 text-muted-foreground" title={`Medição ${n} (fechada)`}>
+            {v ? fmtNum(v) : "—"}
+          </td>
+        );
+      })}
       <td className="px-2 py-1 text-right bg-primary/5">
+
         <Input
           value={qty}
           onChange={(e) => syncFromQty(e.target.value)}
@@ -1640,7 +1669,11 @@ function ServiceRow({
         <td className="px-2 py-1.5 text-right">{row.valorUnitBDI ? fmtBRL(row.valorUnitBDI) : ""}</td>
         <td className="px-2 py-1.5 text-right font-semibold">{fmtBRL(valorExcesso)}</td>
         <td className="px-2 py-1.5 text-right">{peso ? `${fmtNum(peso)} %` : ""}</td>
+        {closedNumbers.map((n) => (
+          <td key={`xh-${n}`} className="px-2 py-1.5"></td>
+        ))}
         <td className="px-2 py-1.5 text-right font-semibold">{fmtNum(excesso)}</td>
+
         <td className="px-2 py-1.5 text-right font-semibold">
           {row.quantidade > 0 ? `${fmtNum((excesso / row.quantidade) * 100)} %` : ""}
         </td>
