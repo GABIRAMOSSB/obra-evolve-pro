@@ -58,6 +58,10 @@ export async function parseExcel(file: File): Promise<ParseResult> {
     const normalized = cells.map(norm);
     const map: Record<string, number> = {};
     normalized.forEach((cell, idx) => {
+      // Ignora sub-cabeçalhos M.O. / MAT. (planilhas com 2 níveis sob "V.Unit c/BDI" e "Total")
+      const isMO = cell.endsWith("mo");
+      const isMAT = cell === "mat" || cell.endsWith("mat");
+
       if (cell.startsWith("item") && map.item === undefined) map.item = idx;
       else if (cell === "codigo" || cell === "cod") map.codigo = idx;
       else if (cell === "banco" || cell === "fonte") map.banco = idx;
@@ -70,18 +74,28 @@ export async function parseExcel(file: File): Promise<ParseResult> {
         map.quantidade === undefined
       )
         map.quantidade = idx;
-      else if (cell.includes("valorunit") && cell.includes("bdi")) map.valorUnitBDI = idx;
-      else if (cell.includes("vunit") && cell.includes("bdi")) map.valorUnitBDI = idx;
+      else if (cell.includes("valorunit") && cell.includes("bdi") && !isMO && !isMAT) map.valorUnitBDI = idx;
+      else if (cell.includes("vunit") && cell.includes("bdi") && !isMO && !isMAT) map.valorUnitBDI = idx;
       else if (
         (cell.includes("valorunit") || cell.includes("vunit") || cell === "preunit" || cell === "precounitario") &&
+        !cell.includes("bdi") && !isMO && !isMAT &&
         map.valorUnit === undefined
       )
         map.valorUnit = idx;
-      else if (cell === "total" || cell.includes("valortotal") || cell === "precototal")
+      else if (
+        (cell === "total" || cell.includes("valortotal") || cell === "precototal") &&
+        !cell.includes("bdi") && !isMO && !isMAT
+      )
         map.total = idx;
       else if (cell.includes("peso")) map.peso = idx;
     });
     return map;
+  };
+
+  // Detecta sub-cabeçalho M.O./MAT./Total na linha seguinte (planilhas de 2 níveis)
+  const hasSubheader = (row: string[]) => {
+    const ns = row.map(norm);
+    return ns.includes("mo") && ns.includes("mat") && ns.includes("total");
   };
 
   for (let i = 0; i < matrix.length; i++) {
@@ -90,13 +104,16 @@ export async function parseExcel(file: File): Promise<ParseResult> {
     const cells = row.map((c) => String(c ?? ""));
     let map = buildMap(cells);
     let consumed = 1;
-    // Try merging with next row if not all required headers found
-    if (!REQUIRED_HEADERS.every((h) => map[h] !== undefined) && matrix[i + 1]) {
-      const next = matrix[i + 1].map((c) => String(c ?? ""));
-      const maxLen = Math.max(cells.length, next.length);
+    const nextRowRaw = matrix[i + 1];
+    const nextCells = nextRowRaw ? nextRowRaw.map((c) => String(c ?? "")) : null;
+    // Força mesclagem se a linha seguinte for sub-cabeçalho M.O./MAT./Total,
+    // ou se a linha atual sozinha não fechar os campos obrigatórios.
+    const forceMerge = nextCells ? hasSubheader(nextCells) : false;
+    if ((forceMerge || !REQUIRED_HEADERS.every((h) => map[h] !== undefined)) && nextCells) {
+      const maxLen = Math.max(cells.length, nextCells.length);
       const merged: string[] = [];
       for (let k = 0; k < maxLen; k++) {
-        merged.push(`${cells[k] ?? ""} ${next[k] ?? ""}`.trim());
+        merged.push(`${cells[k] ?? ""} ${nextCells[k] ?? ""}`.trim());
       }
       const mergedMap = buildMap(merged);
       if (REQUIRED_HEADERS.every((h) => mergedMap[h] !== undefined)) {
