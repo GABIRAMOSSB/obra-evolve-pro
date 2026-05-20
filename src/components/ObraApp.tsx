@@ -1423,8 +1423,6 @@ function ServiceRow({
   const closedSum = allMeasurements
     .filter((m) => m.closed)
     .reduce((s, m) => s + (m.quantExec || 0), 0);
-  const hasClosed = allMeasurements.some((m) => m.closed);
-  const inlineDisabled = hasClosed && !a.openMeasurement;
   const [qty, setQty] = useState(a.quantExec ? String(a.quantExec) : "");
   const [pct, setPct] = useState(a.percent ? a.percent.toFixed(2) : "");
 
