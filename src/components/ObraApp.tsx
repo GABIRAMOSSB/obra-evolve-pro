@@ -71,6 +71,53 @@ function statusVariant(status: string): "default" | "secondary" | "outline" {
   return "outline";
 }
 
+/** Normaliza para o novo formato com `measurements`. */
+function normalizeEvolution(evo?: Evolution): Evolution {
+  const list = getMeasurements(evo);
+  return { measurements: list };
+}
+
+/** Garante que exista uma medição aberta (cria M1 ou Mn+1). */
+function ensureOpenMeasurement(evo?: Evolution): { evo: Evolution; open: Measurement } {
+  const base = normalizeEvolution(evo);
+  const list = base.measurements ?? [];
+  const open = list.find((m) => !m.closed);
+  if (open) return { evo: base, open };
+  const nextNumber = list.reduce((max, m) => Math.max(max, m.number), 0) + 1;
+  const novo: Measurement = {
+    id: crypto.randomUUID(),
+    number: nextNumber,
+    quantExec: 0,
+    dataExec: new Date().toISOString().slice(0, 10),
+    observacoes: "",
+    closed: false,
+  };
+  return { evo: { measurements: [...list, novo] }, open: novo };
+}
+
+/** Atualiza o acumulado ajustando a medição em aberto. */
+function setAccumulatedQty(
+  evo: Evolution | undefined,
+  row: BudgetRow,
+  newAcc: number,
+): { evo: Evolution; clamped: boolean } {
+  const { evo: ev, open } = ensureOpenMeasurement(evo);
+  const list = ev.measurements ?? [];
+  const closedSum = list
+    .filter((m) => m.closed)
+    .reduce((s, m) => s + (m.quantExec || 0), 0);
+  const max = row.quantidade > 0 ? row.quantidade : Number.POSITIVE_INFINITY;
+  const target = Math.max(closedSum, Math.min(newAcc, max));
+  const clamped = newAcc > max || newAcc < closedSum;
+  const periodo = Math.max(0, target - closedSum);
+  const next = list.map((m) =>
+    m.id === open.id
+      ? { ...m, quantExec: periodo, dataExec: m.dataExec || new Date().toISOString().slice(0, 10) }
+      : m,
+  );
+  return { evo: { measurements: next }, clamped };
+}
+
 export function ObraApp() {
   const { user, signOut } = useAuth();
   const { company, loading: companyLoading } = useCompany();
