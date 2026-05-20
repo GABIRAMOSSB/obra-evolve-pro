@@ -1596,12 +1596,19 @@ function EvolutionDialog({
   obraId: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [quantExec, setQuantExec] = useState<string>(evolution?.quantExec?.toString() ?? "");
+  const metrics = activityMetrics(row, evolution);
+  const measurements = metrics.measurements;
+  const closedMeasurements = measurements.filter((m) => m.closed);
+  const openMeasurement = metrics.openMeasurement;
+  const nextNumber = (measurements.reduce((max, m) => Math.max(max, m.number), 0) || 0) + (openMeasurement ? 0 : 1);
+  const closedAccum = closedMeasurements.reduce((s, m) => s + (m.quantExec || 0), 0);
+  const maxPeriodo = Math.max(0, row.quantidade - closedAccum);
+
+  // Estado local da medição em aberto (editável).
+  const [periodo, setPeriodo] = useState<string>("");
   const [percentInput, setPercentInput] = useState<string>("");
-  const [dataExec, setDataExec] = useState(
-    evolution?.dataExec ?? new Date().toISOString().slice(0, 10),
-  );
-  const [obs, setObs] = useState(evolution?.observacoes ?? "");
+  const [dataExec, setDataExec] = useState(new Date().toISOString().slice(0, 10));
+  const [obs, setObs] = useState("");
 
   // diary
   const [criarDiario, setCriarDiario] = useState(true);
@@ -1617,21 +1624,21 @@ function EvolutionDialog({
 
   useEffect(() => {
     if (open) {
-      const q = evolution?.quantExec ?? 0;
-      setQuantExec(q ? String(q) : "");
+      const q = openMeasurement?.quantExec ?? 0;
+      setPeriodo(q ? String(q) : "");
       setPercentInput(
         q && row.quantidade > 0 ? ((q / row.quantidade) * 100).toFixed(2) : "",
       );
-      setDataExec(evolution?.dataExec ?? new Date().toISOString().slice(0, 10));
-      setObs(evolution?.observacoes ?? "");
+      setDataExec(openMeasurement?.dataExec ?? new Date().toISOString().slice(0, 10));
+      setObs(openMeasurement?.observacoes ?? "");
       setFotos([]);
       setPendencias("");
       setStatusDia("Normal");
     }
-  }, [open, evolution, row.quantidade]);
+  }, [open, openMeasurement, row.quantidade]);
 
   function handleQuant(v: string) {
-    setQuantExec(v);
+    setPeriodo(v);
     const n = parseFloat(v.replace(",", "."));
     if (isNaN(n) || !v.trim()) {
       setPercentInput("");
@@ -1643,54 +1650,132 @@ function EvolutionDialog({
     setPercentInput(v);
     const n = parseFloat(v.replace(",", "."));
     if (isNaN(n) || !v.trim()) {
-      setQuantExec("");
+      setPeriodo("");
     } else {
-      setQuantExec(((n / 100) * row.quantidade).toFixed(4));
+      setPeriodo(((n / 100) * row.quantidade).toFixed(4));
     }
   }
 
-  function save() {
-    const q = parseFloat(quantExec.replace(",", ".")) || 0;
-    onSave({ quantExec: q, dataExec, observacoes: obs });
-
-    if (criarDiario && q > 0) {
-      const etapa = (() => {
-        const top = row.item.split(".")[0];
-        const g = allRows.find((r) => r.item === top && r.isGroup);
-        return g ? `${g.item} — ${g.descricao}` : row.item;
-      })();
-      const texto = gerarTextoDiario({
-        etapa,
-        descricao: row.descricao,
-        quantExec: q,
-        unidade: row.und,
-        quantTotal: row.quantidade,
-      });
-      onAddDiary({
-        id: crypto.randomUUID(),
-        itemKey: row.item,
-        data: dataExec,
-        horaInicio,
-        horaFim,
-        statusDia,
-        clima,
-        equipe,
-        equipamentos,
-        pendencias,
-        observacoes: diarioObs,
-        quantExec: q,
-        etapa,
-        atividade: row.descricao,
-        texto,
-        fotos,
-        createdAt: new Date().toISOString(),
-      });
-      toast.success("Evolução e diário registrados");
-    } else {
-      toast.success("Evolução registrada");
+  /** Constrói o novo Evolution com a medição aberta atualizada. */
+  function buildEvolution(closeIt: boolean): { evo: Evolution; periodo: number } {
+    let q = parseFloat(periodo.replace(",", ".")) || 0;
+    if (q < 0) q = 0;
+    if (row.quantidade > 0 && q > maxPeriodo + 1e-6) {
+      q = maxPeriodo;
+      toast.warning(
+        `Limitado a ${fmtNum(maxPeriodo)} ${row.und} (acumulado não pode exceder ${fmtNum(row.quantidade)}).`,
+      );
     }
+    const nowIso = new Date().toISOString();
+    let novaLista: Measurement[];
+    if (openMeasurement) {
+      novaLista = measurements.map((m) =>
+        m.id === openMeasurement.id
+          ? {
+              ...m,
+              quantExec: q,
+              dataExec,
+              observacoes: obs,
+              closed: closeIt,
+              closedAt: closeIt ? nowIso : undefined,
+            }
+          : m,
+      );
+    } else {
+      novaLista = [
+        ...measurements,
+        {
+          id: crypto.randomUUID(),
+          number: nextNumber,
+          quantExec: q,
+          dataExec,
+          observacoes: obs,
+          closed: closeIt,
+          closedAt: closeIt ? nowIso : undefined,
+        },
+      ];
+    }
+    // Ao fechar, cria automaticamente a próxima medição em aberto (se ainda houver saldo).
+    if (closeIt) {
+      const totalAcumulado = novaLista.reduce((s, m) => s + (m.quantExec || 0), 0);
+      const saldo = row.quantidade > 0 ? row.quantidade - totalAcumulado : 1;
+      if (saldo > 1e-6) {
+        novaLista = [
+          ...novaLista,
+          {
+            id: crypto.randomUUID(),
+            number: novaLista.reduce((max, m) => Math.max(max, m.number), 0) + 1,
+            quantExec: 0,
+            dataExec: new Date().toISOString().slice(0, 10),
+            observacoes: "",
+            closed: false,
+          },
+        ];
+      }
+    }
+    return { evo: { measurements: novaLista }, periodo: q };
+  }
+
+  function gerarDiario(q: number) {
+    if (!criarDiario || q <= 0) return;
+    const etapa = (() => {
+      const top = row.item.split(".")[0];
+      const g = allRows.find((r) => r.item === top && r.isGroup);
+      return g ? `${g.item} — ${g.descricao}` : row.item;
+    })();
+    const texto = gerarTextoDiario({
+      etapa,
+      descricao: row.descricao,
+      quantExec: q,
+      unidade: row.und,
+      quantTotal: row.quantidade,
+    });
+    onAddDiary({
+      id: crypto.randomUUID(),
+      itemKey: row.item,
+      data: dataExec,
+      horaInicio,
+      horaFim,
+      statusDia,
+      clima,
+      equipe,
+      equipamentos,
+      pendencias,
+      observacoes: diarioObs,
+      quantExec: q,
+      etapa,
+      atividade: row.descricao,
+      texto,
+      fotos,
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  function salvarParcial() {
+    const { evo, periodo: q } = buildEvolution(false);
+    onSave(evo);
+    gerarDiario(q);
+    toast.success(criarDiario && q > 0 ? "Medição e diário registrados" : "Medição registrada");
     setOpen(false);
   }
+
+  function fecharMedicao() {
+    const numero = openMeasurement?.number ?? nextNumber;
+    const ok = confirm(
+      `Fechar a Medição ${numero}? Após o fechamento, os dados não poderão mais ser alterados.`,
+    );
+    if (!ok) return;
+    const { evo, periodo: q } = buildEvolution(true);
+    onSave(evo);
+    gerarDiario(q);
+    toast.success(`Medição ${numero} fechada. Próxima medição criada automaticamente.`);
+    setOpen(false);
+  }
+
+  const periodoNum = parseFloat(periodo.replace(",", ".")) || 0;
+  const acumuladoPrev = closedAccum + Math.max(0, Math.min(periodoNum, maxPeriodo));
+  const percentPrev = row.quantidade > 0 ? (acumuladoPrev / row.quantidade) * 100 : 0;
+  const valorPrev = (percentPrev / 100) * (row.total || 0);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
