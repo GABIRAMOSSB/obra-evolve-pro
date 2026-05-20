@@ -1,68 +1,85 @@
-# Empresa/Equipe compartilhada
+## Objetivo
 
-## Modelo de dados (novas tabelas)
+Substituir o modelo atual de uma única `Evolution` por item por uma **lista de medições sequenciais** (M1, M2, M3...). Cada medição registra a quantidade executada **no período**, e os acumulados são calculados a partir da soma. Apenas a medição **mais recente** é editável; as anteriores ficam **bloqueadas** após "Fechar Medição", e o sistema cria automaticamente a próxima medição em aberto.
 
-- **companies** — `id`, `name`, `owner_id`, `created_at`
-- **company_members** — `company_id` + `user_id` (PK composta), `role` (`admin` | `member`), `joined_at`
-- **company_invites** — `id`, `company_id`, `email`, `role`, `token` (uuid único, vai no link), `invited_by`, `created_at`, `expires_at` (7 dias), `accepted_at`
-- **company_workspaces** — `company_id` (PK), `workspace` (jsonb com obras/diários/fotos), `updated_at` — substitui o `user_workspaces` por dado compartilhado da empresa
+## Modelo de dados (`src/lib/types.ts`)
 
-Funções `security definer` para evitar recursão em RLS:
-- `is_company_member(_user, _company)`
-- `has_company_role(_user, _company, _role)`
-- `current_user_company()` — retorna a única empresa do usuário (uma empresa por usuário)
+```ts
+export interface Measurement {
+  id: string;
+  number: number;        // M1, M2, M3...
+  quantExec: number;     // quantidade do período (não acumulada)
+  dataExec: string;
+  observacoes: string;
+  closed: boolean;       // bloqueada após "Fechar Medição"
+  closedAt?: string;
+}
 
-## Regras de acesso (RLS)
+export interface Evolution {
+  measurements: Measurement[];   // ordenadas por number
+  // campos legados mantidos por compatibilidade na leitura (migração)
+}
+```
 
-- **companies**: membro vê; só admin atualiza nome; ninguém deleta direto (usar função).
-- **company_members**: membros vêem a lista; só admin insere/remove/muda papel; usuário pode sair (deletar a si mesmo se não for o último admin).
-- **company_invites**: admin gerencia (CRUD); convidado vê pelo token via função pública `accept_invite(token)`.
-- **company_workspaces**: qualquer membro lê e escreve a workspace da empresa.
+**Migração in-memory ao carregar workspace**: se `evolution.quantExec` existir (formato antigo), converter em uma única medição fechada `M1`.
 
-## Migração automática dos dados atuais
+## Cálculos (`src/lib/calc.ts`)
 
-Migration faz, para cada linha em `user_workspaces`:
-1. Cria `companies` com nome "Minha Empresa" e `owner_id = user_id`.
-2. Insere `company_members` com role `admin`.
-3. Copia `workspace` para `company_workspaces`.
+- `quantAcum = soma(measurements.quantExec)` — limitado a `row.quantidade`
+- `percent = quantAcum / row.quantidade * 100` (cap 100)
+- `valorExec = (percent/100) * row.total`
+- `quantRestante = row.quantidade - quantAcum`
+- `valorRestante = row.total - valorExec`
+- **Status**:
+  - `Não iniciada`: `percent === 0` (qualquer item com qty 0 fica aqui)
+  - `Em andamento`: `0 < percent < 100`
+  - `Concluída`: `percent >= 100 && valorExec > 0`
+- Itens com `quantidade === 0` ou `total === 0` ficam sempre em "Não iniciada".
+- Todos os cálculos derivados (`groupMetrics`, `projectMetrics`, filtros, painel, PDF, exportação Excel) consomem a mesma função `activityMetrics(row, evo)` — recálculo automático ao abrir obra, alterar medição, filtrar, gerar relatório ou exportar.
 
-Trigger em `auth.users` (novo cadastro):
-- Se o e-mail tem convite pendente válido → entra como `member` na empresa que convidou (aceita automaticamente).
-- Senão → cria uma nova empresa "Minha Empresa" e vira `admin`.
+## Validação
 
-## Convite por e-mail
+Ao salvar a quantidade da medição em aberto:
+- `quantExecPeriodo <= row.quantidade - quantAcumAnteriores`
+- Se exceder, exibir toast em PT-BR e clipar no máximo permitido.
 
-- Admin abre **Equipe** → digita e-mail + papel → app cria `company_invites` com token único.
-- App mostra **link copiável** `/invite/<token>` e (se a infra de e-mail estiver ativa) envia automaticamente; senão o admin compartilha o link. Posso ativar envio automático depois.
-- Rota `/invite/<token>`:
-  - Logado e e-mail bate → aceita e entra na empresa.
-  - Não logado → manda pro login/cadastro; depois do login aceita.
+## UI — Dialog de medição (`EvolutionDialog`)
 
-> Como cada usuário só pode estar em uma empresa, aceitar convite enquanto já é admin solo da própria empresa: pergunta se quer sair da atual e entrar na nova (ou recusar). Se a empresa antiga ficar sem membros, é removida.
+Reformular para mostrar **tabela de medições** do item com colunas: `Medição | Qtd. Exec. | % Exec. | Valor Executado | Status | Data`.
 
-## UI
+- Linhas fechadas: somente leitura, com badge "Bloqueada".
+- Linha em aberto (sempre a última): inputs editáveis (qty, data, obs).
+- Rodapé com acumulados: Qtd. Acum., % Acum., Valor Acum., Qtd. Restante, Valor Restante.
+- Botões:
+  - **Salvar parcial** — grava sem fechar.
+  - **Fechar Medição** — marca `closed=true`, registra `closedAt`, cria automaticamente a próxima medição em aberto (com qty 0). Confirmação antes ("Após fechar, esta medição não poderá ser alterada").
+- Botão de excluir só na medição em aberto (apaga a linha aberta atual; nunca uma fechada).
 
-- **Header**: mostra nome da empresa e link "Equipe".
-- **Página Equipe** (`/equipe`):
-  - Nome da empresa (admin pode editar).
-  - Lista de membros com papel; admin pode promover/rebaixar/remover.
-  - Lista de convites pendentes com botão "Copiar link" e "Cancelar".
-  - Form de novo convite (e-mail + papel).
-  - Botão "Sair da empresa" (não aparece se for último admin).
-- **Obras**: sem mudança visual — só passa a vir da empresa, não do usuário.
+## UI — Tabela principal
 
-## Código
+A coluna existente de "Qtd. Exec." continua mostrando o **acumulado** (soma das medições). Tooltip indica quantas medições existem (ex.: "3 medições · 1 em aberto"). Botão de editar abre o novo dialog. ProgressBar e status seguem `activityMetrics`.
 
-- `src/lib/storage.ts`: usa `company_workspaces` em vez de `user_workspaces`; busca `company_id` via `current_user_company()` no carregamento.
-- Novo `src/hooks/use-company.tsx` (carrega empresa, membros, papel do usuário).
-- Novo `src/routes/_authenticated/equipe.tsx`.
-- Nova rota pública `src/routes/invite.$token.tsx`.
-- Migração da workspace local (banner já existente) continua funcionando — agora grava na empresa do usuário.
+## Painel resumo
 
-## Fora do escopo desta entrega
+O painel já existente passa a usar os mesmos cálculos. Garantir que mostre:
+- Valor total da obra · Valor executado · Valor restante
+- % executado + barra de progresso
+- Qtd. concluída · Qtd. em andamento (com a regra "itens zerados nunca contam")
 
-- Envio automático de e-mail (precisa configurar domínio de e-mail; faço como próximo passo se quiser).
-- Múltiplas empresas por usuário (decidido: uma só).
-- Permissões granulares por obra (todos os membros vêem todas as obras).
+## Persistência
 
-Confirmando, sigo com a migração SQL + código.
+`Workspace` é serializado em JSON (tabelas `user_workspaces` / `company_workspaces`). Como `Evolution` muda de forma, a migração roda no load (`ObraApp` ao hidratar) e na primeira gravação o formato novo é persistido. Sem mudança de schema.
+
+## Arquivos afetados
+
+- `src/lib/types.ts` — novo tipo `Measurement`, novo formato de `Evolution`.
+- `src/lib/calc.ts` — `activityMetrics` lê de `measurements`.
+- `src/lib/excel.ts` — exportação usa acumulado (apenas leitura).
+- `src/lib/pdf.ts` — relatório usa acumulado.
+- `src/components/ObraApp.tsx` — migração no load, `updateEvolution` aceita lista, novo dialog, ações "Fechar Medição".
+
+## Fora de escopo desta entrega
+
+- Sincronização cross-device em tempo real das medições (continua via save do workspace).
+- Histórico de auditoria por usuário/timestamp em cada medição fechada (apenas `closedAt`).
+- Reabrir medição fechada (intencional — bloqueio é regra do negócio).
