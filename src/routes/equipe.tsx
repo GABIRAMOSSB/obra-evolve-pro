@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, Copy, Trash2, UserPlus, LogOut, Shield, Users } from "lucide-react";
+import { ArrowLeft, Copy, Trash2, UserPlus, LogOut, Shield, Users, MessageCircle, Mail } from "lucide-react";
 
 export const Route = createFileRoute("/equipe")({
   component: EquipePage,
