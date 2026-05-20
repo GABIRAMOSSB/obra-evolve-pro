@@ -27,6 +27,7 @@ interface Props {
   userId: string;
   userEmail: string;
   isAdmin: boolean;
+  variant?: "card" | "inline";
 }
 
 function currentNumber(p: ProjectData): number {
@@ -47,6 +48,7 @@ export function MeasurementClosure({
   userId,
   userEmail,
   isAdmin,
+  variant = "card",
 }: Props) {
   const current = currentNumber(data);
   const [confirmOpen, setConfirmOpen] = useState(false);
