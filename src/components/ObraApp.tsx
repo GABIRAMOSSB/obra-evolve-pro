@@ -1584,7 +1584,17 @@ function ServiceRow({
       <td className="px-2 py-1.5 text-right text-muted-foreground">
         {peso ? `${fmtNum(peso)} %` : ""}
       </td>
+      {closedNumbers.map((n) => {
+        const m = allMeasurements.find((x) => x.number === n && x.closed);
+        const v = m?.quantExec || 0;
+        return (
+          <td key={`mc-${n}`} className="px-2 py-1.5 text-right bg-muted/30 text-muted-foreground" title={`Medição ${n} (fechada)`}>
+            {v ? fmtNum(v) : "—"}
+          </td>
+        );
+      })}
       <td className="px-2 py-1 text-right bg-primary/5">
+
         <Input
           value={qty}
           onChange={(e) => syncFromQty(e.target.value)}
