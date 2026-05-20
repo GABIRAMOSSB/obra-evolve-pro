@@ -185,6 +185,10 @@ export function ObraApp() {
 
   async function runMigration() {
     if (!company || !migration || !migration.plan.local) return;
+    if (company.role !== "admin") {
+      toast.error("Apenas administradores podem migrar dados");
+      return;
+    }
     const plan = migration.plan;
     const local = migration.plan.local!;
     setMigration({ stage: "running", plan });
@@ -224,6 +228,7 @@ export function ObraApp() {
       skipNextSave.current = false;
       return;
     }
+    if (company.role !== "admin") return; // somente leitura para membros
     if (saveTimer.current) clearTimeout(saveTimer.current);
     setSaving(true);
     saveTimer.current = setTimeout(async () => {
@@ -900,6 +905,11 @@ function Dashboard({
 
   return (
     <div className="min-h-screen bg-muted/40">
+      {!isAdmin && (
+        <div className="bg-amber-100 border-b border-amber-300 text-amber-900 text-xs text-center py-1.5 px-4">
+          Modo somente leitura — apenas administradores podem editar obras, diários e medições.
+        </div>
+      )}
       <header className="bg-card border-b sticky top-0 z-30">
         <div className="max-w-[1600px] mx-auto px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
