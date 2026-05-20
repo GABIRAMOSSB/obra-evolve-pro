@@ -743,7 +743,11 @@ function Dashboard({
 
   const updateEvolution = (item: string, evo: Evolution) => {
     const next = { ...data.evolutions, [item]: evo };
-    if (!evo.quantExec && !evo.dataExec && !evo.observacoes) delete next[item];
+    const list = evo.measurements ?? [];
+    const empty =
+      list.length === 0 ||
+      (list.length === 1 && !list[0].closed && !list[0].quantExec && !list[0].observacoes);
+    if (empty) delete next[item];
     setData({ ...data, evolutions: next });
   };
 
