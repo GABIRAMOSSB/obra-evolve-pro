@@ -449,7 +449,10 @@ export function ObraApp() {
         onImportFile={handleFile}
         saving={saving}
         userEmail={user?.email ?? ""}
+        userId={user?.id ?? ""}
+        companyId={company.id}
         companyName={company.name}
+        isAdmin={company.role === "admin"}
         onSignOut={handleSignOut}
       />
       <ImportPreviewDialog
@@ -666,7 +669,10 @@ function Dashboard({
   onImportFile,
   saving,
   userEmail,
+  userId,
+  companyId,
   companyName,
+  isAdmin,
   onSignOut,
 }: {
   data: ProjectData;
@@ -679,7 +685,10 @@ function Dashboard({
   onImportFile: (file: File) => void;
   saving: boolean;
   userEmail: string;
+  userId: string;
+  companyId: string;
   companyName: string;
+  isAdmin: boolean;
   onSignOut: () => void;
 }) {
 
