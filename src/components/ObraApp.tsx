@@ -228,7 +228,7 @@ export function ObraApp() {
       skipNextSave.current = false;
       return;
     }
-    if (company.role !== "admin") return; // somente leitura para membros
+    if (company.role !== "admin" && company.role !== "editor") return; // somente leitura para membros
     if (saveTimer.current) clearTimeout(saveTimer.current);
     setSaving(true);
     saveTimer.current = setTimeout(async () => {
