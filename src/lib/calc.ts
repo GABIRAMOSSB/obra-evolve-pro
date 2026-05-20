@@ -71,7 +71,7 @@ export function groupMetrics(
     }
   }
   const percent = total > 0 ? (exec / total) * 100 : 0;
-  return { total, exec, percent, status: getStatus(percent) };
+  return { total, exec, percent, status: getStatus(percent, exec) };
 }
 
 export function projectMetrics(rows: BudgetRow[], evolutions: Record<string, Evolution>) {
