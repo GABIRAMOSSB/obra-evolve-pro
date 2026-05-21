@@ -1334,7 +1334,7 @@ function BMField({
   progress,
 }: {
   label: string;
-  value: React.ReactNode;
+  value: ReactNode;
   strong?: boolean;
   wide?: boolean;
   tone?: "primary" | "success" | "measure";
