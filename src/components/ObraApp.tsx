@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { ProjectData, BudgetRow, Evolution, Measurement, DiaryEntry, Workspace, ObraInfo, DiaryPhoto } from "@/lib/types";
 import { loadWorkspaceCloud, saveWorkspaceCloud, newObraId, detectMigration, markMigrated, type MigrationPlan } from "@/lib/storage";
 import { useAuth } from "@/hooks/use-auth";
@@ -903,32 +903,48 @@ function Dashboard({
     toast.success(`${item} removido`);
   }
 
+  // Métricas da medição atual (período aberto) — separadas do acumulado total.
+  const currentMeasNumber = getCurrentMeasurement(data);
+  const valorPeriodo = useMemo(() => {
+    let v = 0;
+    for (const r of data.rows) {
+      if (r.isGroup) continue;
+      const evo = data.evolutions[r.item];
+      const open = evo?.measurements?.find((mm) => !mm.closed && mm.number === currentMeasNumber);
+      if (open) v += (open.quantExec || 0) * (r.valorUnitBDI || 0);
+    }
+    return v;
+  }, [data.rows, data.evolutions, currentMeasNumber]);
+
+  const info = data.info ?? {};
+  const dataMedicao = new Date().toLocaleDateString("pt-BR");
+
   return (
-    <div className="min-h-screen bg-muted/40">
+    <div className="min-h-screen bg-background">
       {!isAdmin && (
-        <div className="bg-amber-100 border-b border-amber-300 text-amber-900 text-xs text-center py-1.5 px-4">
+        <div className="bg-warning/20 border-b border-warning text-foreground text-xs text-center py-1.5 px-4">
           Modo somente leitura — peça a um administrador para alterar seu papel para Editor ou Admin se precisar editar.
         </div>
       )}
-      <header className="bg-card border-b sticky top-0 z-30">
-        <div className="max-w-[1600px] mx-auto px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
+      <header className="bg-card border-b border-border sticky top-0 z-30 shadow-[var(--shadow-card)]">
+        <div className="max-w-[1600px] mx-auto px-6 py-3 flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center">
-              <HardHat className="w-5 h-5" />
+            <div className="w-11 h-11 rounded-lg bg-[var(--measure)] text-[var(--measure-foreground)] flex items-center justify-center font-extrabold text-lg tracking-tight shadow-sm">
+              BM
             </div>
             <div>
-              <h1 className="font-bold text-foreground leading-tight">
+              <h1 className="font-bold text-foreground leading-tight text-lg">
                 Acompanhamento de Obras
               </h1>
-              <p className="text-xs text-muted-foreground">{data.fileName}</p>
+              <p className="text-xs text-muted-foreground font-medium">{data.nome} <span className="text-border mx-1">•</span> {data.fileName}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1.5 bg-muted/50 rounded-md px-2 py-1">
-              <Building2 className="w-4 h-4 text-muted-foreground" />
+            <div className="flex items-center gap-1.5 bg-muted rounded-md px-2 py-1 border border-border">
+              <Building2 className="w-4 h-4 text-primary" />
               <Select value={activeId} onValueChange={onSelectObra}>
-                <SelectTrigger className="h-8 min-w-[200px] border-0 bg-transparent focus:ring-0">
+                <SelectTrigger className="h-8 min-w-[180px] border-0 bg-transparent focus:ring-0 text-sm font-medium">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -942,6 +958,22 @@ function Dashboard({
               <ObraInfoDialog nome={data.nome} info={data.info} onSave={handleSaveInfo} />
             </div>
 
+            <Button variant="outline" size="sm" className="border-border" onClick={() => exportAcompanhamentoXlsx(filteredRows, data.evolutions)}>
+              <FileSpreadsheet className="w-4 h-4 mr-1 text-success" /> Excel
+            </Button>
+            <Button variant="outline" size="sm" className="border-border" onClick={() => exportRelatorioPdf(filteredRows, data.evolutions, data.fileName)}>
+              <FileText className="w-4 h-4 mr-1 text-destructive" /> PDF
+            </Button>
+            <MeasurementClosure
+              data={data}
+              setData={setData}
+              companyId={companyId}
+              userId={userId}
+              userEmail={userEmail}
+              isAdmin={isAdmin}
+              variant="inline"
+            />
+
             <label>
               <input
                 type="file"
@@ -953,7 +985,7 @@ function Dashboard({
                   if (f) onImportFile(f);
                 }}
               />
-              <Button asChild variant="default" size="sm">
+              <Button asChild size="sm" className="bg-[var(--measure)] hover:bg-[var(--measure-soft)] text-[var(--measure-foreground)] shadow-sm">
                 <span className="cursor-pointer">
                   <Plus className="w-4 h-4 mr-1" /> Nova obra
                 </span>
@@ -976,100 +1008,76 @@ function Dashboard({
                     let kept = 0;
                     let dropped = 0;
                     for (const [k, v] of Object.entries(data.evolutions)) {
-                      if (validKeys.has(k)) {
-                        keptEvolutions[k] = v;
-                        kept++;
-                      } else dropped++;
+                      if (validKeys.has(k)) { keptEvolutions[k] = v; kept++; } else dropped++;
                     }
-                    setData({
-                      ...data,
-                      fileName: f.name,
-                      importedAt: new Date().toISOString(),
-                      rows: result.rows,
-                      evolutions: keptEvolutions,
-                    });
-                    toast.success(
-                      `Planilha atualizada: ${result.rows.length} linhas. ${kept} evolução(ões) preservada(s)${dropped ? `, ${dropped} descartada(s)` : ""}.`,
-                    );
-                  } catch (err) {
-                    toast.error((err as Error).message);
-                  }
+                    setData({ ...data, fileName: f.name, importedAt: new Date().toISOString(), rows: result.rows, evolutions: keptEvolutions });
+                    toast.success(`Planilha atualizada: ${result.rows.length} linhas. ${kept} evolução(ões) preservada(s)${dropped ? `, ${dropped} descartada(s)` : ""}.`);
+                  } catch (err) { toast.error((err as Error).message); }
                 }}
               />
-              <Button asChild variant="outline" size="sm">
-                <span className="cursor-pointer">
-                  <Upload className="w-4 h-4 mr-1" /> Reimportar
-                </span>
+              <Button asChild variant="ghost" size="sm">
+                <span className="cursor-pointer"><Upload className="w-4 h-4 mr-1" /> Reimportar</span>
               </Button>
             </label>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => exportAcompanhamentoXlsx(filteredRows, data.evolutions)}
-            >
-              <FileSpreadsheet className="w-4 h-4 mr-1" /> Excel
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => exportRelatorioPdf(filteredRows, data.evolutions, data.fileName)}
-            >
-              <FileText className="w-4 h-4 mr-1" /> PDF
-            </Button>
-            <MeasurementClosure
-              data={data}
-              setData={setData}
-              companyId={companyId}
-              userId={userId}
-              userEmail={userEmail}
-              isAdmin={isAdmin}
-              variant="inline"
-            />
             <Button variant="ghost" size="sm" onClick={removeObra} title="Excluir esta obra">
-              <Trash2 className="w-4 h-4 mr-1 text-destructive" /> Excluir
+              <Trash2 className="w-4 h-4 text-destructive" />
             </Button>
-            {saving && (
-              <span className="text-xs text-muted-foreground px-2">Salvando...</span>
-            )}
+            {saving && <span className="text-xs text-muted-foreground px-2">Salvando...</span>}
             <Button asChild variant="ghost" size="sm" title={`Equipe (${companyName})`}>
               <Link to="/equipe"><Users className="w-4 h-4 mr-1" /> {companyName}</Link>
             </Button>
             <Button variant="ghost" size="sm" onClick={onSignOut} title={`Sair (${userEmail})`}>
-              <LogOut className="w-4 h-4 mr-1" /> Sair
+              <LogOut className="w-4 h-4" />
             </Button>
           </div>
         </div>
       </header>
 
 
-      <main className="max-w-[1600px] mx-auto px-6 py-6 space-y-6">
-        {/* Resumo */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <SummaryCard label="Valor total" value={fmtBRL(m.total)} />
-          <SummaryCard label="Valor executado" value={fmtBRL(m.exec)} tone="success" />
-          <SummaryCard label="Valor restante" value={fmtBRL(m.restante)} />
-          <SummaryCard label="% Geral executado" value={`${fmtNum(m.percent)}%`} tone="primary" />
+      <main className="max-w-[1600px] mx-auto px-6 py-6 space-y-5">
+        {/* 5 Cards de resumo */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+          <SummaryCard label="Valor total da obra" value={fmtBRL(m.total)} icon="total" />
+          <SummaryCard label="Valor medido nesta medição" value={fmtBRL(valorPeriodo)} icon="measure" tone="measure" />
+          <SummaryCard label="Acumulado executado" value={fmtBRL(m.exec)} icon="trend" tone="success" />
+          <SummaryCard label="Saldo restante" value={fmtBRL(m.restante)} icon="balance" tone="warning" />
+          <SummaryCard label="Percentual acumulado" value={`${fmtNum(m.percent)}%`} icon="percent" tone="primary" progress={m.percent} />
         </div>
 
-        <Card className="p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-foreground">Progresso geral da obra</span>
-            <span className="text-sm text-muted-foreground">{fmtNum(m.percent)}%</span>
+        {/* BOLETIM DE MEDIÇÃO */}
+        <Card className="overflow-hidden border-border shadow-[var(--shadow-card)] p-0">
+          <div className="bg-primary text-primary-foreground text-center py-2.5 font-bold tracking-[0.2em] text-sm">
+            BOLETIM DE MEDIÇÃO
           </div>
-          <Progress value={m.percent} className="h-3" />
-          <div className="flex gap-4 mt-4 text-sm">
-            <span className="text-foreground">
-              ✅ Concluídas: <strong>{m.concluidas}</strong>
-            </span>
-            <span className="text-foreground">
-              🔧 Em andamento: <strong>{m.andamento}</strong>
-            </span>
-            <span className="text-muted-foreground">
-              ⏳ Não iniciadas: <strong>{m.naoIniciadas}</strong>
-            </span>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 divide-x divide-y divide-border border-b border-border text-xs">
+            <BMField label="Licitador" value={info.cliente || "—"} />
+            <BMField label="Empresa Executora" value={info.empresaExecutora || "—"} />
+            <BMField label="CNPJ" value={info.artRrt || "—"} />
+            <BMField label="Obra" value={data.nome} />
+            <BMField label="Endereço da Obra" value={info.endereco || "—"} wide />
+            <BMField label="Contrato" value={info.numeroContrato || "—"} />
+            <BMField label="Nº da Medição" value={`${currentMeasNumber}ª Medição`} />
+            <BMField label="Data da Medição" value={dataMedicao} />
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 divide-x divide-y divide-border text-xs">
+            <BMField label="Valor total do contrato" value={fmtBRL(m.total)} strong />
+            <BMField label="Valor desta medição" value={fmtBRL(valorPeriodo)} strong tone="measure" />
+            <BMField label="Valor acumulado" value={fmtBRL(m.exec)} strong tone="success" />
+            <BMField label="Percentual acumulado" value={`${fmtNum(m.percent)}%`} strong tone="primary" progress={m.percent} />
+            <BMField label="Saldo restante" value={fmtBRL(m.restante)} strong />
+            <BMField label="Próxima medição" value={`${currentMeasNumber + 1}ª Medição`} />
+            <BMField
+              label="Status da medição"
+              value={
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-success/15 text-success font-semibold text-[11px]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-success" /> Aberta
+                </span>
+              }
+            />
           </div>
         </Card>
+
 
         <Tabs defaultValue="atividades">
           <TabsList>
@@ -1270,24 +1278,86 @@ function SummaryCard({
   label,
   value,
   tone,
+  icon,
+  progress,
 }: {
   label: string;
   value: string;
-  tone?: "primary" | "success";
+  tone?: "primary" | "success" | "measure" | "warning";
+  icon?: "total" | "measure" | "trend" | "balance" | "percent";
+  progress?: number;
 }) {
   const toneClass =
-    tone === "primary"
-      ? "text-primary"
-      : tone === "success"
-        ? "text-[var(--success)]"
-        : "text-foreground";
+    tone === "primary" ? "text-primary"
+    : tone === "success" ? "text-success"
+    : tone === "measure" ? "text-[var(--measure)]"
+    : tone === "warning" ? "text-foreground"
+    : "text-foreground";
+  const iconBg =
+    tone === "primary" ? "bg-primary/10 text-primary"
+    : tone === "success" ? "bg-success/10 text-success"
+    : tone === "measure" ? "bg-[var(--measure)]/10 text-[var(--measure)]"
+    : tone === "warning" ? "bg-warning/20 text-foreground"
+    : "bg-primary/10 text-primary";
+  const Icon =
+    icon === "measure" ? FileText
+    : icon === "trend" ? CloudUpload
+    : icon === "balance" ? Wrench
+    : icon === "percent" ? CheckCircle2
+    : Building2;
   return (
-    <Card className="p-5">
-      <div className="text-xs text-muted-foreground uppercase tracking-wide">{label}</div>
-      <div className={`text-2xl font-bold mt-2 ${toneClass}`}>{value}</div>
+    <Card className="p-4 border-border shadow-[var(--shadow-card)] hover:shadow-md transition-shadow">
+      <div className="flex items-start gap-3">
+        <div className={`w-9 h-9 rounded-md flex items-center justify-center shrink-0 ${iconBg}`}>
+          <Icon className="w-4 h-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[11px] text-muted-foreground font-medium leading-tight">{label}</div>
+          <div className={`text-xl font-bold mt-1 leading-tight truncate ${toneClass}`}>{value}</div>
+          {typeof progress === "number" && (
+            <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
+              <div className="h-full bg-success transition-all" style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} />
+            </div>
+          )}
+        </div>
+      </div>
     </Card>
   );
 }
+
+function BMField({
+  label,
+  value,
+  strong,
+  wide,
+  tone,
+  progress,
+}: {
+  label: string;
+  value: ReactNode;
+  strong?: boolean;
+  wide?: boolean;
+  tone?: "primary" | "success" | "measure";
+  progress?: number;
+}) {
+  const valueClass =
+    tone === "primary" ? "text-primary"
+    : tone === "success" ? "text-success"
+    : tone === "measure" ? "text-[var(--measure)]"
+    : "text-foreground";
+  return (
+    <div className={`px-3 py-2 ${wide ? "md:col-span-2" : ""}`}>
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{label}</div>
+      <div className={`mt-1 ${strong ? "font-bold text-sm" : "text-sm font-medium"} ${valueClass} truncate`}>{value}</div>
+      {typeof progress === "number" && (
+        <div className="mt-1.5 h-1 rounded-full bg-muted overflow-hidden">
+          <div className="h-full bg-success" style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 function ActivitiesTable({
   rows,
@@ -1335,41 +1405,45 @@ function ActivitiesTable({
   const histCols = closedNumbers.length;
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden border-border shadow-[var(--shadow-card)]">
       <div className="overflow-x-auto">
         <table className="w-full text-xs border-collapse" style={{ minWidth: 1500 + histCols * 90 }}>
-          <thead className="bg-muted text-muted-foreground uppercase sticky top-0 z-10">
-            <tr className="text-[10px]">
-              <th colSpan={10} className="px-3 py-1 text-center border-b bg-muted/80 font-semibold tracking-wider">
-                Planejamento (planilha orçamentária)
+          <thead className="uppercase sticky top-0 z-10">
+            <tr className="text-[10px] tracking-[0.15em]">
+              <th colSpan={10} className="px-3 py-2 text-center border-b border-border bg-primary text-primary-foreground font-bold">
+                PLANEJAMENTO — PLANILHA ORÇAMENTÁRIA
               </th>
-              <th colSpan={5 + histCols} className="px-3 py-1 text-center border-b bg-primary/10 text-primary font-semibold tracking-wider">
-                Execução
+              <th colSpan={4 + histCols} className="px-3 py-2 text-center border-b border-border bg-[var(--measure)] text-[var(--measure-foreground)] font-bold">
+                MEDIÇÃO — EXECUÇÃO DO PERÍODO
+              </th>
+              <th className="px-3 py-2 text-center border-b border-border bg-primary text-primary-foreground font-bold">
+                AÇÕES
               </th>
             </tr>
-            <tr>
-              <th className="px-2 py-2 text-left w-24 border-b">Item</th>
-              <th className="px-2 py-2 text-left w-20 border-b">Código</th>
-              <th className="px-2 py-2 text-left w-20 border-b">Banco</th>
-              <th className="px-2 py-2 text-left border-b min-w-[280px]">Descrição</th>
-              <th className="px-2 py-2 text-left w-14 border-b">Und</th>
-              <th className="px-2 py-2 text-right w-20 border-b">Quant.</th>
-              <th className="px-2 py-2 text-right w-24 border-b">Valor Unit</th>
-              <th className="px-2 py-2 text-right w-28 border-b">V. Unit c/ BDI</th>
-              <th className="px-2 py-2 text-right w-28 border-b">Total</th>
-              <th className="px-2 py-2 text-right w-20 border-b">Peso (%)</th>
+            <tr className="bg-muted text-foreground">
+              <th className="px-2 py-2 text-left w-24 border-b border-border">Item</th>
+              <th className="px-2 py-2 text-left w-20 border-b border-border">Código</th>
+              <th className="px-2 py-2 text-left w-20 border-b border-border">Banco</th>
+              <th className="px-2 py-2 text-left border-b border-border min-w-[280px]">Descrição</th>
+              <th className="px-2 py-2 text-left w-14 border-b border-border">Und</th>
+              <th className="px-2 py-2 text-right w-20 border-b border-border">Quant.</th>
+              <th className="px-2 py-2 text-right w-24 border-b border-border">Valor Unit</th>
+              <th className="px-2 py-2 text-right w-28 border-b border-border">V. Unit c/ BDI</th>
+              <th className="px-2 py-2 text-right w-28 border-b border-border">Total</th>
+              <th className="px-2 py-2 text-right w-20 border-b border-border">Peso (%)</th>
               {closedNumbers.map((n) => (
-                <th key={`mh-${n}`} className="px-2 py-2 text-right w-24 border-b bg-muted/60" title={`Medição ${n} (fechada)`}>
+                <th key={`mh-${n}`} className="px-2 py-2 text-right w-24 border-b border-border bg-[var(--measure)]/10" title={`Medição ${n} (fechada)`}>
                   M{n}
                 </th>
               ))}
-              <th className="px-2 py-2 text-right w-28 border-b bg-primary/5">M{currentMeasurement} (atual)</th>
-              <th className="px-2 py-2 text-right w-24 border-b bg-primary/5">% Exec.</th>
-              <th className="px-2 py-2 text-right w-28 border-b bg-primary/5">V. executado</th>
-              <th className="px-2 py-2 text-center w-28 border-b bg-primary/5">Status</th>
-              <th className="px-2 py-2 text-center w-24 border-b bg-primary/5">Ações</th>
+              <th className="px-2 py-2 text-right w-28 border-b border-border bg-[var(--measure)]/15">M{currentMeasurement} (atual)</th>
+              <th className="px-2 py-2 text-right w-24 border-b border-border bg-[var(--measure)]/15">% Exec.</th>
+              <th className="px-2 py-2 text-right w-28 border-b border-border bg-[var(--measure)]/15">V. Medido</th>
+              <th className="px-2 py-2 text-center w-28 border-b border-border bg-[var(--measure)]/15">Status</th>
+              <th className="px-2 py-2 text-center w-24 border-b border-border bg-muted">Ações</th>
             </tr>
           </thead>
+
 
           <tbody>
             {rows.map((r) => {
@@ -1480,11 +1554,47 @@ function ActivitiesTable({
               );
             })}
           </tbody>
+          {(() => {
+            const nonGroup = allRows.filter((r) => !r.isGroup);
+            const tTotal = nonGroup.reduce((s, r) => s + (r.total || 0), 0);
+            let tPeriodo = 0;
+            let tAcum = 0;
+            for (const r of nonGroup) {
+              const evo = evolutions[r.item];
+              const am = activityMetrics(r, evo);
+              tAcum += am.valorExec;
+              const open = evo?.measurements?.find((mm) => !mm.closed && mm.number === currentMeasurement);
+              if (open) tPeriodo += (open.quantExec || 0) * (r.valorUnitBDI || 0);
+            }
+            const pctTotal = tTotal > 0 ? (tAcum / tTotal) * 100 : 0;
+            return (
+              <tfoot>
+                <tr className="bg-primary text-primary-foreground font-bold uppercase tracking-wider text-[11px]">
+                  <td className="px-3 py-2.5" colSpan={8}>TOTAL GERAL</td>
+                  <td className="px-2 py-2.5 text-right">{fmtBRL(tTotal)}</td>
+                  <td className="px-2 py-2.5 text-right">100,00 %</td>
+                  {closedNumbers.map((n) => (<td key={`tf-${n}`} className="px-2 py-2.5" />))}
+                  <td className="px-2 py-2.5 text-right bg-[var(--measure)] text-[var(--measure-foreground)]">{fmtBRL(tPeriodo)}</td>
+                  <td className="px-2 py-2.5 text-right bg-[var(--measure)] text-[var(--measure-foreground)]">{fmtNum(pctTotal)}%</td>
+                  <td className="px-2 py-2.5 text-right bg-[var(--measure)] text-[var(--measure-foreground)]">{fmtBRL(tAcum)}</td>
+                  <td className="px-2 py-2.5 text-center bg-[var(--measure)] text-[var(--measure-foreground)]">{fmtBRL(tTotal - tAcum)}</td>
+                  <td className="px-2 py-2.5" />
+                </tr>
+              </tfoot>
+            );
+          })()}
         </table>
+      </div>
+      <div className="border-t border-border bg-muted/40 px-4 py-3 flex items-start gap-2 text-[11px] text-muted-foreground">
+        <CheckCircle2 className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />
+        <span>
+          Os valores desta medição estão de acordo com o cronograma físico-financeiro e com as condições contratuais estabelecidas.
+        </span>
       </div>
     </Card>
   );
 }
+
 
 function ServiceRow({
   row,
