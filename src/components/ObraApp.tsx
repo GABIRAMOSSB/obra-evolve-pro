@@ -1278,24 +1278,86 @@ function SummaryCard({
   label,
   value,
   tone,
+  icon,
+  progress,
 }: {
   label: string;
   value: string;
-  tone?: "primary" | "success";
+  tone?: "primary" | "success" | "measure" | "warning";
+  icon?: "total" | "measure" | "trend" | "balance" | "percent";
+  progress?: number;
 }) {
   const toneClass =
-    tone === "primary"
-      ? "text-primary"
-      : tone === "success"
-        ? "text-[var(--success)]"
-        : "text-foreground";
+    tone === "primary" ? "text-primary"
+    : tone === "success" ? "text-success"
+    : tone === "measure" ? "text-[var(--measure)]"
+    : tone === "warning" ? "text-foreground"
+    : "text-foreground";
+  const iconBg =
+    tone === "primary" ? "bg-primary/10 text-primary"
+    : tone === "success" ? "bg-success/10 text-success"
+    : tone === "measure" ? "bg-[var(--measure)]/10 text-[var(--measure)]"
+    : tone === "warning" ? "bg-warning/20 text-foreground"
+    : "bg-primary/10 text-primary";
+  const Icon =
+    icon === "measure" ? FileText
+    : icon === "trend" ? CloudUpload
+    : icon === "balance" ? Wrench
+    : icon === "percent" ? CheckCircle2
+    : Building2;
   return (
-    <Card className="p-5">
-      <div className="text-xs text-muted-foreground uppercase tracking-wide">{label}</div>
-      <div className={`text-2xl font-bold mt-2 ${toneClass}`}>{value}</div>
+    <Card className="p-4 border-border shadow-[var(--shadow-card)] hover:shadow-md transition-shadow">
+      <div className="flex items-start gap-3">
+        <div className={`w-9 h-9 rounded-md flex items-center justify-center shrink-0 ${iconBg}`}>
+          <Icon className="w-4 h-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[11px] text-muted-foreground font-medium leading-tight">{label}</div>
+          <div className={`text-xl font-bold mt-1 leading-tight truncate ${toneClass}`}>{value}</div>
+          {typeof progress === "number" && (
+            <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
+              <div className="h-full bg-success transition-all" style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} />
+            </div>
+          )}
+        </div>
+      </div>
     </Card>
   );
 }
+
+function BMField({
+  label,
+  value,
+  strong,
+  wide,
+  tone,
+  progress,
+}: {
+  label: string;
+  value: React.ReactNode;
+  strong?: boolean;
+  wide?: boolean;
+  tone?: "primary" | "success" | "measure";
+  progress?: number;
+}) {
+  const valueClass =
+    tone === "primary" ? "text-primary"
+    : tone === "success" ? "text-success"
+    : tone === "measure" ? "text-[var(--measure)]"
+    : "text-foreground";
+  return (
+    <div className={`px-3 py-2 ${wide ? "md:col-span-2" : ""}`}>
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{label}</div>
+      <div className={`mt-1 ${strong ? "font-bold text-sm" : "text-sm font-medium"} ${valueClass} truncate`}>{value}</div>
+      {typeof progress === "number" && (
+        <div className="mt-1.5 h-1 rounded-full bg-muted overflow-hidden">
+          <div className="h-full bg-success" style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 function ActivitiesTable({
   rows,
