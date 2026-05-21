@@ -1554,11 +1554,47 @@ function ActivitiesTable({
               );
             })}
           </tbody>
+          {(() => {
+            const nonGroup = allRows.filter((r) => !r.isGroup);
+            const tTotal = nonGroup.reduce((s, r) => s + (r.total || 0), 0);
+            let tPeriodo = 0;
+            let tAcum = 0;
+            for (const r of nonGroup) {
+              const evo = evolutions[r.item];
+              const am = activityMetrics(r, evo);
+              tAcum += am.valorExec;
+              const open = evo?.measurements?.find((mm) => !mm.closed && mm.number === currentMeasurement);
+              if (open) tPeriodo += (open.quantExec || 0) * (r.valorUnitBDI || 0);
+            }
+            const pctTotal = tTotal > 0 ? (tAcum / tTotal) * 100 : 0;
+            return (
+              <tfoot>
+                <tr className="bg-primary text-primary-foreground font-bold uppercase tracking-wider text-[11px]">
+                  <td className="px-3 py-2.5" colSpan={8}>TOTAL GERAL</td>
+                  <td className="px-2 py-2.5 text-right">{fmtBRL(tTotal)}</td>
+                  <td className="px-2 py-2.5 text-right">100,00 %</td>
+                  {closedNumbers.map((n) => (<td key={`tf-${n}`} className="px-2 py-2.5" />))}
+                  <td className="px-2 py-2.5 text-right bg-[var(--measure)] text-[var(--measure-foreground)]">{fmtBRL(tPeriodo)}</td>
+                  <td className="px-2 py-2.5 text-right bg-[var(--measure)] text-[var(--measure-foreground)]">{fmtNum(pctTotal)}%</td>
+                  <td className="px-2 py-2.5 text-right bg-[var(--measure)] text-[var(--measure-foreground)]">{fmtBRL(tAcum)}</td>
+                  <td className="px-2 py-2.5 text-center bg-[var(--measure)] text-[var(--measure-foreground)]">{fmtBRL(tTotal - tAcum)}</td>
+                  <td className="px-2 py-2.5" />
+                </tr>
+              </tfoot>
+            );
+          })()}
         </table>
+      </div>
+      <div className="border-t border-border bg-muted/40 px-4 py-3 flex items-start gap-2 text-[11px] text-muted-foreground">
+        <CheckCircle2 className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />
+        <span>
+          Os valores desta medição estão de acordo com o cronograma físico-financeiro e com as condições contratuais estabelecidas.
+        </span>
       </div>
     </Card>
   );
 }
+
 
 function ServiceRow({
   row,
