@@ -1405,41 +1405,45 @@ function ActivitiesTable({
   const histCols = closedNumbers.length;
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden border-border shadow-[var(--shadow-card)]">
       <div className="overflow-x-auto">
         <table className="w-full text-xs border-collapse" style={{ minWidth: 1500 + histCols * 90 }}>
-          <thead className="bg-muted text-muted-foreground uppercase sticky top-0 z-10">
-            <tr className="text-[10px]">
-              <th colSpan={10} className="px-3 py-1 text-center border-b bg-muted/80 font-semibold tracking-wider">
-                Planejamento (planilha orçamentária)
+          <thead className="uppercase sticky top-0 z-10">
+            <tr className="text-[10px] tracking-[0.15em]">
+              <th colSpan={10} className="px-3 py-2 text-center border-b border-border bg-primary text-primary-foreground font-bold">
+                PLANEJAMENTO — PLANILHA ORÇAMENTÁRIA
               </th>
-              <th colSpan={5 + histCols} className="px-3 py-1 text-center border-b bg-primary/10 text-primary font-semibold tracking-wider">
-                Execução
+              <th colSpan={4 + histCols} className="px-3 py-2 text-center border-b border-border bg-[var(--measure)] text-[var(--measure-foreground)] font-bold">
+                MEDIÇÃO — EXECUÇÃO DO PERÍODO
+              </th>
+              <th className="px-3 py-2 text-center border-b border-border bg-primary text-primary-foreground font-bold">
+                AÇÕES
               </th>
             </tr>
-            <tr>
-              <th className="px-2 py-2 text-left w-24 border-b">Item</th>
-              <th className="px-2 py-2 text-left w-20 border-b">Código</th>
-              <th className="px-2 py-2 text-left w-20 border-b">Banco</th>
-              <th className="px-2 py-2 text-left border-b min-w-[280px]">Descrição</th>
-              <th className="px-2 py-2 text-left w-14 border-b">Und</th>
-              <th className="px-2 py-2 text-right w-20 border-b">Quant.</th>
-              <th className="px-2 py-2 text-right w-24 border-b">Valor Unit</th>
-              <th className="px-2 py-2 text-right w-28 border-b">V. Unit c/ BDI</th>
-              <th className="px-2 py-2 text-right w-28 border-b">Total</th>
-              <th className="px-2 py-2 text-right w-20 border-b">Peso (%)</th>
+            <tr className="bg-muted text-foreground">
+              <th className="px-2 py-2 text-left w-24 border-b border-border">Item</th>
+              <th className="px-2 py-2 text-left w-20 border-b border-border">Código</th>
+              <th className="px-2 py-2 text-left w-20 border-b border-border">Banco</th>
+              <th className="px-2 py-2 text-left border-b border-border min-w-[280px]">Descrição</th>
+              <th className="px-2 py-2 text-left w-14 border-b border-border">Und</th>
+              <th className="px-2 py-2 text-right w-20 border-b border-border">Quant.</th>
+              <th className="px-2 py-2 text-right w-24 border-b border-border">Valor Unit</th>
+              <th className="px-2 py-2 text-right w-28 border-b border-border">V. Unit c/ BDI</th>
+              <th className="px-2 py-2 text-right w-28 border-b border-border">Total</th>
+              <th className="px-2 py-2 text-right w-20 border-b border-border">Peso (%)</th>
               {closedNumbers.map((n) => (
-                <th key={`mh-${n}`} className="px-2 py-2 text-right w-24 border-b bg-muted/60" title={`Medição ${n} (fechada)`}>
+                <th key={`mh-${n}`} className="px-2 py-2 text-right w-24 border-b border-border bg-[var(--measure)]/10" title={`Medição ${n} (fechada)`}>
                   M{n}
                 </th>
               ))}
-              <th className="px-2 py-2 text-right w-28 border-b bg-primary/5">M{currentMeasurement} (atual)</th>
-              <th className="px-2 py-2 text-right w-24 border-b bg-primary/5">% Exec.</th>
-              <th className="px-2 py-2 text-right w-28 border-b bg-primary/5">V. executado</th>
-              <th className="px-2 py-2 text-center w-28 border-b bg-primary/5">Status</th>
-              <th className="px-2 py-2 text-center w-24 border-b bg-primary/5">Ações</th>
+              <th className="px-2 py-2 text-right w-28 border-b border-border bg-[var(--measure)]/15">M{currentMeasurement} (atual)</th>
+              <th className="px-2 py-2 text-right w-24 border-b border-border bg-[var(--measure)]/15">% Exec.</th>
+              <th className="px-2 py-2 text-right w-28 border-b border-border bg-[var(--measure)]/15">V. Medido</th>
+              <th className="px-2 py-2 text-center w-28 border-b border-border bg-[var(--measure)]/15">Status</th>
+              <th className="px-2 py-2 text-center w-24 border-b border-border bg-muted">Ações</th>
             </tr>
           </thead>
+
 
           <tbody>
             {rows.map((r) => {
