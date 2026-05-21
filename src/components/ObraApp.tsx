@@ -903,32 +903,48 @@ function Dashboard({
     toast.success(`${item} removido`);
   }
 
+  // Métricas da medição atual (período aberto) — separadas do acumulado total.
+  const currentMeasNumber = getCurrentMeasurement(data);
+  const valorPeriodo = useMemo(() => {
+    let v = 0;
+    for (const r of data.rows) {
+      if (r.isGroup) continue;
+      const evo = data.evolutions[r.item];
+      const open = evo?.measurements?.find((mm) => !mm.closed && mm.number === currentMeasNumber);
+      if (open) v += (open.quantExec || 0) * (r.valorUnitBDI || 0);
+    }
+    return v;
+  }, [data.rows, data.evolutions, currentMeasNumber]);
+
+  const info = data.info ?? {};
+  const dataMedicao = new Date().toLocaleDateString("pt-BR");
+
   return (
-    <div className="min-h-screen bg-muted/40">
+    <div className="min-h-screen bg-background">
       {!isAdmin && (
-        <div className="bg-amber-100 border-b border-amber-300 text-amber-900 text-xs text-center py-1.5 px-4">
+        <div className="bg-warning/20 border-b border-warning text-foreground text-xs text-center py-1.5 px-4">
           Modo somente leitura — peça a um administrador para alterar seu papel para Editor ou Admin se precisar editar.
         </div>
       )}
-      <header className="bg-card border-b sticky top-0 z-30">
-        <div className="max-w-[1600px] mx-auto px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
+      <header className="bg-card border-b border-border sticky top-0 z-30 shadow-[var(--shadow-card)]">
+        <div className="max-w-[1600px] mx-auto px-6 py-3 flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center">
-              <HardHat className="w-5 h-5" />
+            <div className="w-11 h-11 rounded-lg bg-[var(--measure)] text-[var(--measure-foreground)] flex items-center justify-center font-extrabold text-lg tracking-tight shadow-sm">
+              BM
             </div>
             <div>
-              <h1 className="font-bold text-foreground leading-tight">
+              <h1 className="font-bold text-foreground leading-tight text-lg">
                 Acompanhamento de Obras
               </h1>
-              <p className="text-xs text-muted-foreground">{data.fileName}</p>
+              <p className="text-xs text-muted-foreground font-medium">{data.nome} <span className="text-border mx-1">•</span> {data.fileName}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1.5 bg-muted/50 rounded-md px-2 py-1">
-              <Building2 className="w-4 h-4 text-muted-foreground" />
+            <div className="flex items-center gap-1.5 bg-muted rounded-md px-2 py-1 border border-border">
+              <Building2 className="w-4 h-4 text-primary" />
               <Select value={activeId} onValueChange={onSelectObra}>
-                <SelectTrigger className="h-8 min-w-[200px] border-0 bg-transparent focus:ring-0">
+                <SelectTrigger className="h-8 min-w-[180px] border-0 bg-transparent focus:ring-0 text-sm font-medium">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -942,6 +958,22 @@ function Dashboard({
               <ObraInfoDialog nome={data.nome} info={data.info} onSave={handleSaveInfo} />
             </div>
 
+            <Button variant="outline" size="sm" className="border-border" onClick={() => exportAcompanhamentoXlsx(filteredRows, data.evolutions)}>
+              <FileSpreadsheet className="w-4 h-4 mr-1 text-success" /> Excel
+            </Button>
+            <Button variant="outline" size="sm" className="border-border" onClick={() => exportRelatorioPdf(filteredRows, data.evolutions, data.fileName)}>
+              <FileText className="w-4 h-4 mr-1 text-destructive" /> PDF
+            </Button>
+            <MeasurementClosure
+              data={data}
+              setData={setData}
+              companyId={companyId}
+              userId={userId}
+              userEmail={userEmail}
+              isAdmin={isAdmin}
+              variant="inline"
+            />
+
             <label>
               <input
                 type="file"
@@ -953,7 +985,7 @@ function Dashboard({
                   if (f) onImportFile(f);
                 }}
               />
-              <Button asChild variant="default" size="sm">
+              <Button asChild size="sm" className="bg-[var(--measure)] hover:bg-[var(--measure-soft)] text-[var(--measure-foreground)] shadow-sm">
                 <span className="cursor-pointer">
                   <Plus className="w-4 h-4 mr-1" /> Nova obra
                 </span>
@@ -976,100 +1008,76 @@ function Dashboard({
                     let kept = 0;
                     let dropped = 0;
                     for (const [k, v] of Object.entries(data.evolutions)) {
-                      if (validKeys.has(k)) {
-                        keptEvolutions[k] = v;
-                        kept++;
-                      } else dropped++;
+                      if (validKeys.has(k)) { keptEvolutions[k] = v; kept++; } else dropped++;
                     }
-                    setData({
-                      ...data,
-                      fileName: f.name,
-                      importedAt: new Date().toISOString(),
-                      rows: result.rows,
-                      evolutions: keptEvolutions,
-                    });
-                    toast.success(
-                      `Planilha atualizada: ${result.rows.length} linhas. ${kept} evolução(ões) preservada(s)${dropped ? `, ${dropped} descartada(s)` : ""}.`,
-                    );
-                  } catch (err) {
-                    toast.error((err as Error).message);
-                  }
+                    setData({ ...data, fileName: f.name, importedAt: new Date().toISOString(), rows: result.rows, evolutions: keptEvolutions });
+                    toast.success(`Planilha atualizada: ${result.rows.length} linhas. ${kept} evolução(ões) preservada(s)${dropped ? `, ${dropped} descartada(s)` : ""}.`);
+                  } catch (err) { toast.error((err as Error).message); }
                 }}
               />
-              <Button asChild variant="outline" size="sm">
-                <span className="cursor-pointer">
-                  <Upload className="w-4 h-4 mr-1" /> Reimportar
-                </span>
+              <Button asChild variant="ghost" size="sm">
+                <span className="cursor-pointer"><Upload className="w-4 h-4 mr-1" /> Reimportar</span>
               </Button>
             </label>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => exportAcompanhamentoXlsx(filteredRows, data.evolutions)}
-            >
-              <FileSpreadsheet className="w-4 h-4 mr-1" /> Excel
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => exportRelatorioPdf(filteredRows, data.evolutions, data.fileName)}
-            >
-              <FileText className="w-4 h-4 mr-1" /> PDF
-            </Button>
-            <MeasurementClosure
-              data={data}
-              setData={setData}
-              companyId={companyId}
-              userId={userId}
-              userEmail={userEmail}
-              isAdmin={isAdmin}
-              variant="inline"
-            />
             <Button variant="ghost" size="sm" onClick={removeObra} title="Excluir esta obra">
-              <Trash2 className="w-4 h-4 mr-1 text-destructive" /> Excluir
+              <Trash2 className="w-4 h-4 text-destructive" />
             </Button>
-            {saving && (
-              <span className="text-xs text-muted-foreground px-2">Salvando...</span>
-            )}
+            {saving && <span className="text-xs text-muted-foreground px-2">Salvando...</span>}
             <Button asChild variant="ghost" size="sm" title={`Equipe (${companyName})`}>
               <Link to="/equipe"><Users className="w-4 h-4 mr-1" /> {companyName}</Link>
             </Button>
             <Button variant="ghost" size="sm" onClick={onSignOut} title={`Sair (${userEmail})`}>
-              <LogOut className="w-4 h-4 mr-1" /> Sair
+              <LogOut className="w-4 h-4" />
             </Button>
           </div>
         </div>
       </header>
 
 
-      <main className="max-w-[1600px] mx-auto px-6 py-6 space-y-6">
-        {/* Resumo */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <SummaryCard label="Valor total" value={fmtBRL(m.total)} />
-          <SummaryCard label="Valor executado" value={fmtBRL(m.exec)} tone="success" />
-          <SummaryCard label="Valor restante" value={fmtBRL(m.restante)} />
-          <SummaryCard label="% Geral executado" value={`${fmtNum(m.percent)}%`} tone="primary" />
+      <main className="max-w-[1600px] mx-auto px-6 py-6 space-y-5">
+        {/* 5 Cards de resumo */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+          <SummaryCard label="Valor total da obra" value={fmtBRL(m.total)} icon="total" />
+          <SummaryCard label="Valor medido nesta medição" value={fmtBRL(valorPeriodo)} icon="measure" tone="measure" />
+          <SummaryCard label="Acumulado executado" value={fmtBRL(m.exec)} icon="trend" tone="success" />
+          <SummaryCard label="Saldo restante" value={fmtBRL(m.restante)} icon="balance" tone="warning" />
+          <SummaryCard label="Percentual acumulado" value={`${fmtNum(m.percent)}%`} icon="percent" tone="primary" progress={m.percent} />
         </div>
 
-        <Card className="p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-foreground">Progresso geral da obra</span>
-            <span className="text-sm text-muted-foreground">{fmtNum(m.percent)}%</span>
+        {/* BOLETIM DE MEDIÇÃO */}
+        <Card className="overflow-hidden border-border shadow-[var(--shadow-card)] p-0">
+          <div className="bg-primary text-primary-foreground text-center py-2.5 font-bold tracking-[0.2em] text-sm">
+            BOLETIM DE MEDIÇÃO
           </div>
-          <Progress value={m.percent} className="h-3" />
-          <div className="flex gap-4 mt-4 text-sm">
-            <span className="text-foreground">
-              ✅ Concluídas: <strong>{m.concluidas}</strong>
-            </span>
-            <span className="text-foreground">
-              🔧 Em andamento: <strong>{m.andamento}</strong>
-            </span>
-            <span className="text-muted-foreground">
-              ⏳ Não iniciadas: <strong>{m.naoIniciadas}</strong>
-            </span>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 divide-x divide-y divide-border border-b border-border text-xs">
+            <BMField label="Licitador" value={info.cliente || "—"} />
+            <BMField label="Empresa Executora" value={info.empresaExecutora || "—"} />
+            <BMField label="CNPJ" value={info.artRrt || "—"} />
+            <BMField label="Obra" value={data.nome} />
+            <BMField label="Endereço da Obra" value={info.endereco || "—"} wide />
+            <BMField label="Contrato" value={info.numeroContrato || "—"} />
+            <BMField label="Nº da Medição" value={`${currentMeasNumber}ª Medição`} />
+            <BMField label="Data da Medição" value={dataMedicao} />
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 divide-x divide-y divide-border text-xs">
+            <BMField label="Valor total do contrato" value={fmtBRL(m.total)} strong />
+            <BMField label="Valor desta medição" value={fmtBRL(valorPeriodo)} strong tone="measure" />
+            <BMField label="Valor acumulado" value={fmtBRL(m.exec)} strong tone="success" />
+            <BMField label="Percentual acumulado" value={`${fmtNum(m.percent)}%`} strong tone="primary" progress={m.percent} />
+            <BMField label="Saldo restante" value={fmtBRL(m.restante)} strong />
+            <BMField label="Próxima medição" value={`${currentMeasNumber + 1}ª Medição`} />
+            <BMField
+              label="Status da medição"
+              value={
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-success/15 text-success font-semibold text-[11px]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-success" /> Aberta
+                </span>
+              }
+            />
           </div>
         </Card>
+
 
         <Tabs defaultValue="atividades">
           <TabsList>
