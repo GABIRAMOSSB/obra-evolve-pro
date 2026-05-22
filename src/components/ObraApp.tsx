@@ -1065,36 +1065,50 @@ function Dashboard({
 
         {/* BOLETIM DE MEDIÇÃO */}
         <Card className="overflow-hidden border-border shadow-[var(--shadow-card)] p-0">
-          <div className="bg-primary text-primary-foreground text-center py-2.5 font-bold tracking-[0.2em] text-sm">
-            BOLETIM DE MEDIÇÃO
+          <div className="bg-primary text-primary-foreground flex items-center justify-between gap-3 px-4 py-2.5">
+            <div className="font-mono text-[11px] tracking-[0.2em] opacity-80">{bmCodigo}</div>
+            <div className="font-bold tracking-[0.25em] text-sm text-center flex-1">BOLETIM DE MEDIÇÃO</div>
+            <div className="font-mono text-[11px] tracking-[0.15em] opacity-80 text-right">
+              Período: {periodoLabel}
+            </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 divide-x divide-y divide-border border-b border-border text-xs">
+          {/* Linha 1 — Identificação */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 divide-x divide-y divide-border border-b border-border text-xs">
             <BMField label="Licitador" value={info.cliente || "—"} />
+            <BMField label="Contratante" value={info.contratante || "—"} />
             <BMField label="Empresa Executora" value={info.empresaExecutora || "—"} />
-            <BMField label="CNPJ" value={info.artRrt || "—"} />
-            <BMField label="Obra" value={data.nome} />
-            <BMField label="Endereço da Obra" value={info.endereco || "—"} wide />
-            <BMField label="Contrato" value={info.numeroContrato || "—"} />
-            <BMField label="Nº da Medição" value={`${currentMeasNumber}ª Medição`} />
-            <BMField label="Data da Medição" value={dataMedicao} />
+            <BMField label="CNPJ" value={info.cnpj || "—"} />
+            <BMField label="Nº Contrato" value={info.numeroContrato || "—"} />
+            <BMField label="Nº Licitação" value={info.numeroLicitacao || "—"} />
           </div>
+          {/* Linha 2 — Obra e localização */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 divide-x divide-y divide-border border-b border-border text-xs">
+            <BMField label="Obra" value={data.nome} wide />
+            <BMField label="Endereço" value={info.endereco || "—"} wide />
+            <BMField label="Município" value={info.municipio || "—"} />
+            <BMField label="UF" value={info.estado || "—"} />
+          </div>
+          {/* Linha 3 — Responsabilidade técnica */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 divide-x divide-y divide-border border-b border-border text-xs">
+            <BMField label="Responsável Técnico" value={info.responsavelTecnico || "—"} />
+            <BMField label="CREA / CAU" value={info.crea || "—"} />
+            <BMField label="ART / RRT" value={info.artRrt || "—"} />
+            <BMField label="Fiscal da Obra" value={info.fiscal || "—"} />
+            <BMField label="Início da Obra" value={info.dataInicioObra ? new Date(info.dataInicioObra + "T00:00:00").toLocaleDateString("pt-BR") : "—"} />
+            <BMField label="Prazo (dias)" value={info.prazoContratualDias ? String(info.prazoContratualDias) : "—"} />
+          </div>
+          {/* Linha 4 — Resumo financeiro da medição */}
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 divide-x divide-y divide-border text-xs">
+            <BMField label="Nº do BM" value={`${bmCodigo} (${currentMeasNumber}ª Medição)`} strong tone="primary" />
+            <BMField label="Data da Medição" value={dataMedicao} />
             <BMField label="Valor total do contrato" value={fmtBRL(m.total)} strong />
             <BMField label="Valor desta medição" value={fmtBRL(valorPeriodo)} strong tone="measure" />
             <BMField label="Valor acumulado" value={fmtBRL(m.exec)} strong tone="success" />
-            <BMField label="Percentual acumulado" value={`${fmtNum(m.percent)}%`} strong tone="primary" progress={m.percent} />
+            <BMField label="% Acumulado" value={`${fmtNum(m.percent)}%`} strong tone="primary" progress={m.percent} />
             <BMField label="Saldo restante" value={fmtBRL(m.restante)} strong />
-            <BMField label="Próxima medição" value={`${currentMeasNumber + 1}ª Medição`} />
-            <BMField
-              label="Status da medição"
-              value={
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-success/15 text-success font-semibold text-[11px]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-success" /> Aberta
-                </span>
-              }
-            />
           </div>
         </Card>
+
 
 
         <Tabs defaultValue="atividades">
