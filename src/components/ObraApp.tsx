@@ -1525,6 +1525,11 @@ function ActivitiesTable({
                         {r.banco === "MANUAL" ? "MANUAL" : tipoLabel}
                       </Badge>
                     </td>
+                    <td className="px-2 py-1.5 bg-primary/5"></td>
+                    <td className="px-2 py-1.5 text-right bg-primary/5 font-medium text-[var(--success)]">{fmtBRL(g.exec)}</td>
+                    <td className="px-2 py-1.5 bg-primary/5"></td>
+                    <td className="px-2 py-1.5 text-right bg-primary/5 font-medium">{fmtBRL(Math.max(0, g.total - g.exec))}</td>
+
 
                     <td className="px-2 py-1.5 text-center">
                       {r.banco === "MANUAL" && (
