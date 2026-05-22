@@ -918,6 +918,24 @@ function Dashboard({
 
   const info = data.info ?? {};
   const dataMedicao = new Date().toLocaleDateString("pt-BR");
+  const bmCodigo = `BM-${String(currentMeasNumber).padStart(2, "0")}`;
+  // Período da medição: do fechamento da medição anterior (ou data de início da obra) até hoje
+  const periodoInicio = useMemo(() => {
+    let last: string | undefined;
+    for (const evo of Object.values(data.evolutions)) {
+      for (const mm of evo?.measurements ?? []) {
+        if (mm.closed && mm.closedAt && (!last || mm.closedAt > last)) last = mm.closedAt;
+      }
+    }
+    if (last) return new Date(last);
+    if (info.dataInicioObra) return new Date(info.dataInicioObra + "T00:00:00");
+    return null;
+  }, [data.evolutions, info.dataInicioObra]);
+  const periodoFim = new Date();
+  const periodoLabel = periodoInicio
+    ? `${periodoInicio.toLocaleDateString("pt-BR")} a ${periodoFim.toLocaleDateString("pt-BR")}`
+    : `até ${periodoFim.toLocaleDateString("pt-BR")}`;
+
 
   return (
     <div className="min-h-screen bg-background">
