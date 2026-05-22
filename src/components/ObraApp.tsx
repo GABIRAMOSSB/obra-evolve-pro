@@ -1416,6 +1416,9 @@ function ActivitiesTable({
               <th colSpan={4 + histCols} className="px-3 py-2 text-center border-b border-border bg-[var(--measure)] text-[var(--measure-foreground)] font-bold">
                 MEDIÇÃO — EXECUÇÃO DO PERÍODO
               </th>
+              <th colSpan={4} className="px-3 py-2 text-center border-b border-border bg-[var(--primary-soft)] text-primary-foreground font-bold">
+                ACUMULADO E SALDO
+              </th>
               <th className="px-3 py-2 text-center border-b border-border bg-primary text-primary-foreground font-bold">
                 AÇÕES
               </th>
@@ -1440,6 +1443,10 @@ function ActivitiesTable({
               <th className="px-2 py-2 text-right w-24 border-b border-border bg-[var(--measure)]/15">% Exec.</th>
               <th className="px-2 py-2 text-right w-28 border-b border-border bg-[var(--measure)]/15">V. Medido</th>
               <th className="px-2 py-2 text-center w-28 border-b border-border bg-[var(--measure)]/15">Status</th>
+              <th className="px-2 py-2 text-right w-24 border-b border-border bg-primary/10">Qtd Acum.</th>
+              <th className="px-2 py-2 text-right w-28 border-b border-border bg-primary/10">V. Acum.</th>
+              <th className="px-2 py-2 text-right w-24 border-b border-border bg-primary/10">Saldo Qtd.</th>
+              <th className="px-2 py-2 text-right w-28 border-b border-border bg-primary/10">Saldo Valor</th>
               <th className="px-2 py-2 text-center w-24 border-b border-border bg-muted">Ações</th>
             </tr>
           </thead>
@@ -1518,6 +1525,11 @@ function ActivitiesTable({
                         {r.banco === "MANUAL" ? "MANUAL" : tipoLabel}
                       </Badge>
                     </td>
+                    <td className="px-2 py-1.5 bg-primary/5"></td>
+                    <td className="px-2 py-1.5 text-right bg-primary/5 font-medium text-[var(--success)]">{fmtBRL(g.exec)}</td>
+                    <td className="px-2 py-1.5 bg-primary/5"></td>
+                    <td className="px-2 py-1.5 text-right bg-primary/5 font-medium">{fmtBRL(Math.max(0, g.total - g.exec))}</td>
+
 
                     <td className="px-2 py-1.5 text-center">
                       {r.banco === "MANUAL" && (
@@ -1574,10 +1586,14 @@ function ActivitiesTable({
                   <td className="px-2 py-2.5 text-right">{fmtBRL(tTotal)}</td>
                   <td className="px-2 py-2.5 text-right">100,00 %</td>
                   {closedNumbers.map((n) => (<td key={`tf-${n}`} className="px-2 py-2.5" />))}
-                  <td className="px-2 py-2.5 text-right bg-[var(--measure)] text-[var(--measure-foreground)]">{fmtBRL(tPeriodo)}</td>
+                  <td className="px-2 py-2.5 bg-[var(--measure)] text-[var(--measure-foreground)]" />
                   <td className="px-2 py-2.5 text-right bg-[var(--measure)] text-[var(--measure-foreground)]">{fmtNum(pctTotal)}%</td>
-                  <td className="px-2 py-2.5 text-right bg-[var(--measure)] text-[var(--measure-foreground)]">{fmtBRL(tAcum)}</td>
-                  <td className="px-2 py-2.5 text-center bg-[var(--measure)] text-[var(--measure-foreground)]">{fmtBRL(tTotal - tAcum)}</td>
+                  <td className="px-2 py-2.5 text-right bg-[var(--measure)] text-[var(--measure-foreground)]">{fmtBRL(tPeriodo)}</td>
+                  <td className="px-2 py-2.5 bg-[var(--measure)] text-[var(--measure-foreground)]" />
+                  <td className="px-2 py-2.5 bg-[var(--primary-soft)]" />
+                  <td className="px-2 py-2.5 text-right bg-[var(--primary-soft)]">{fmtBRL(tAcum)}</td>
+                  <td className="px-2 py-2.5 bg-[var(--primary-soft)]" />
+                  <td className="px-2 py-2.5 text-right bg-[var(--primary-soft)]">{fmtBRL(Math.max(0, tTotal - tAcum))}</td>
                   <td className="px-2 py-2.5" />
                 </tr>
               </tfoot>
@@ -1756,6 +1772,10 @@ function ServiceRow({
           )}
         </div>
       </td>
+      <td className="px-2 py-1.5 text-right bg-[var(--primary-soft)]/10 font-medium">{row.quantidade > 0 ? fmtNum(a.quantExec) : "—"}</td>
+      <td className="px-2 py-1.5 text-right bg-[var(--primary-soft)]/10 font-medium text-[var(--success)]">{fmtBRL(a.valorExec)}</td>
+      <td className="px-2 py-1.5 text-right bg-[var(--primary-soft)]/10">{row.quantidade > 0 ? fmtNum(a.quantRestante) : "—"}</td>
+      <td className="px-2 py-1.5 text-right bg-[var(--primary-soft)]/10 font-medium">{fmtBRL(a.valorRestante)}</td>
       <td className="px-2 py-1.5 text-center bg-primary/5">
         <div className="flex items-center justify-center gap-1">
           <EvolutionDialog
@@ -1807,6 +1827,10 @@ function ServiceRow({
         <td className="px-2 py-1.5 text-center">
           <Badge variant="destructive" className="text-[10px]">EXCEDIDO</Badge>
         </td>
+        <td className="px-2 py-1.5"></td>
+        <td className="px-2 py-1.5"></td>
+        <td className="px-2 py-1.5"></td>
+        <td className="px-2 py-1.5"></td>
         <td className="px-2 py-1.5"></td>
       </tr>
     )}
