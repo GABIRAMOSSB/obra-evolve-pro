@@ -1664,10 +1664,9 @@ function ServiceRow({
   onAddDiary,
   onRemove,
   indent = 0,
-  peso = 0,
   obraId,
   currentMeasurement,
-  closedNumbers = [],
+  contratoTotal,
 }: {
   row: BudgetRow;
   allRows: BudgetRow[];
@@ -1676,211 +1675,123 @@ function ServiceRow({
   onAddDiary: (e: DiaryEntry) => void;
   onRemove?: (item: string) => void;
   indent?: number;
-  peso?: number;
   obraId: string;
   currentMeasurement: number;
-  closedNumbers?: number[];
+  contratoTotal: number;
 }) {
-
   const a = activityMetrics(row, evolution);
   const allMeasurements = a.measurements;
   const closedSum = allMeasurements
     .filter((m) => m.closed)
     .reduce((s, m) => s + (m.quantExec || 0), 0);
-  // Quantidade do período (medição aberta atual) — começa vazio em cada nova medição.
   const openMeas = allMeasurements.find((m) => !m.closed && m.number === currentMeasurement);
   const periodoQty = openMeas?.quantExec || 0;
   const [qty, setQty] = useState(periodoQty ? String(periodoQty) : "");
-  const [pct, setPct] = useState(
-    periodoQty && row.quantidade > 0 ? ((periodoQty / row.quantidade) * 100).toFixed(2) : "",
-  );
 
   useEffect(() => {
     setQty(periodoQty ? String(periodoQty) : "");
-    setPct(
-      periodoQty && row.quantidade > 0
-        ? ((periodoQty / row.quantidade) * 100).toFixed(2)
-        : "",
-    );
-  }, [periodoQty, row.quantidade]);
+  }, [periodoQty]);
 
   function commit(periodo: number) {
     const p = Math.max(0, periodo);
     const newAcc = closedSum + p;
     if (Math.abs(p - periodoQty) < 1e-6) return;
     if (row.quantidade > 0 && newAcc > row.quantidade + 1e-6) {
-      toast.warning(
-        `Acumulado limitado ao total previsto: ${fmtNum(row.quantidade)} ${row.und}.`,
-      );
+      toast.warning(`Acumulado limitado ao total previsto: ${fmtNum(row.quantidade)} ${row.und}.`);
     }
     const { evo } = setAccumulatedQty(evolution, row, newAcc, currentMeasurement);
     onUpdate(row.item, evo);
   }
-
   function onQtyBlur() {
     const trimmed = qty.trim();
-    if (trimmed === "") {
-      commit(0);
-      return;
-    }
-    const n = parseFloat(trimmed.replace(",", ".")) || 0;
-    commit(n);
-  }
-  function onPctBlur() {
-    const trimmed = pct.trim();
-    if (trimmed === "") {
-      commit(0);
-      return;
-    }
-    const n = parseFloat(trimmed.replace(",", ".")) || 0;
-    commit((n / 100) * row.quantidade);
-  }
-  function syncFromQty(v: string) {
-    setQty(v);
-    if (v.trim() === "") { setPct(""); return; }
-    const n = parseFloat(v.replace(",", "."));
-    if (!isNaN(n) && row.quantidade > 0) setPct(((n / row.quantidade) * 100).toFixed(2));
-  }
-  function syncFromPct(v: string) {
-    setPct(v);
-    if (v.trim() === "") { setQty(""); return; }
-    const n = parseFloat(v.replace(",", "."));
-    if (!isNaN(n)) setQty(((n / 100) * row.quantidade).toFixed(4));
+    if (trimmed === "") { commit(0); return; }
+    commit(parseFloat(trimmed.replace(",", ".")) || 0);
   }
 
+  const vu = row.valorUnitBDI || 0;
+  const qtdAnterior = closedSum;
+  const qtdAtual = closedSum + periodoQty;
+  const finAnterior = qtdAnterior * vu;
+  const finPeriodo = periodoQty * vu;
+  const finAtual = qtdAtual * vu;
+  const desvio = contratoTotal > 0 ? (finAtual / contratoTotal) * 100 : 0;
 
   const excesso = a.quantExec - row.quantidade;
   const temExcesso = row.quantidade > 0 && excesso > 0.0001;
-  const valorExcesso = excesso * (row.valorUnitBDI || row.valorUnit || 0);
 
   return (
     <>
-    <tr className="border-t hover:bg-muted/30">
-      <td
-        className="px-2 py-1.5 font-mono whitespace-nowrap"
-        style={{ paddingLeft: 8 + indent }}
-      >
-        {row.item}
-      </td>
-      <td className="px-2 py-1.5 text-muted-foreground">{row.codigo}</td>
-      <td className="px-2 py-1.5 text-muted-foreground">{row.banco}</td>
-      <td className="px-2 py-1.5 max-w-md" style={{ paddingLeft: 8 + indent }}>
-        {row.descricao}
-      </td>
-      <td className="px-2 py-1.5">{row.und}</td>
-      <td className="px-2 py-1.5 text-right">{row.quantidade ? fmtNum(row.quantidade) : ""}</td>
-      <td className="px-2 py-1.5 text-right">{row.valorUnit ? fmtBRL(row.valorUnit) : ""}</td>
-      <td className="px-2 py-1.5 text-right">
-        {row.valorUnitBDI ? fmtBRL(row.valorUnitBDI) : ""}
-      </td>
-      <td className="px-2 py-1.5 text-right font-medium">{fmtBRL(row.total)}</td>
-      <td className="px-2 py-1.5 text-right text-muted-foreground">
-        {peso ? `${fmtNum(peso)} %` : ""}
-      </td>
-      {closedNumbers.map((n) => {
-        const m = allMeasurements.find((x) => x.number === n && x.closed);
-        const v = m?.quantExec || 0;
-        return (
-          <td key={`mc-${n}`} className="px-2 py-1.5 text-right bg-muted/30 text-muted-foreground" title={`Medição ${n} (fechada)`}>
-            {v ? fmtNum(v) : "—"}
-          </td>
-        );
-      })}
-      <td className="px-2 py-1 text-right bg-primary/5">
-
-        <Input
-          value={qty}
-          onChange={(e) => syncFromQty(e.target.value)}
-          onBlur={onQtyBlur}
-          inputMode="decimal"
-          className="h-7 text-right text-xs"
-          placeholder="0"
-        />
-      </td>
-      <td className="px-2 py-1.5 text-right bg-primary/5 font-medium">
-        {row.quantidade > 0 ? `${fmtNum((a.quantExec / row.quantidade) * 100)} %` : "—"}
-      </td>
-      <td className="px-2 py-1.5 text-right bg-primary/5">{fmtBRL(a.valorExec)}</td>
-      <td className="px-2 py-1.5 text-center bg-primary/5">
-        <div className="flex flex-col items-center gap-0.5">
-          <Badge variant={statusVariant(a.status)} className="text-[10px]">
-            {a.status}
-          </Badge>
-          {a.measurements.length > 0 && (
-            <span
-              className="text-[9px] text-muted-foreground"
-              title={`${a.measurements.length} medição(ões) · ${a.closedCount} fechada(s)`}
-            >
-              {a.closedCount}/{a.measurements.length} M
-            </span>
-          )}
-        </div>
-      </td>
-      <td className="px-2 py-1.5 text-right bg-[var(--primary-soft)]/10 font-medium">{row.quantidade > 0 ? fmtNum(a.quantExec) : "—"}</td>
-      <td className="px-2 py-1.5 text-right bg-[var(--primary-soft)]/10 font-medium text-[var(--success)]">{fmtBRL(a.valorExec)}</td>
-      <td className="px-2 py-1.5 text-right bg-[var(--primary-soft)]/10">{row.quantidade > 0 ? fmtNum(a.quantRestante) : "—"}</td>
-      <td className="px-2 py-1.5 text-right bg-[var(--primary-soft)]/10 font-medium">{fmtBRL(a.valorRestante)}</td>
-      <td className="px-2 py-1.5 text-center bg-primary/5">
-        <div className="flex items-center justify-center gap-1">
-          <EvolutionDialog
-            row={row}
-            allRows={allRows}
-            evolution={evolution}
-            onSave={(e) => onUpdate(row.item, e)}
-            onAddDiary={onAddDiary}
-            obraId={obraId}
-          />
-          {row.banco === "MANUAL" && onRemove && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => onRemove(row.item)}
-              title="Remover serviço"
-            >
-              <Trash2 className="w-3.5 h-3.5 text-destructive" />
-            </Button>
-          )}
-        </div>
-      </td>
-    </tr>
-    {temExcesso && (
-      <tr className="border-t bg-destructive/10 text-destructive">
+      <tr className="border-t hover:bg-muted/30">
         <td className="px-2 py-1.5 font-mono whitespace-nowrap" style={{ paddingLeft: 8 + indent }}>
           {row.item}
         </td>
-        <td className="px-2 py-1.5">{row.codigo}</td>
-        <td className="px-2 py-1.5">{row.banco}</td>
-        <td className="px-2 py-1.5 max-w-md font-medium" style={{ paddingLeft: 8 + indent }}>
-          ⚠ EXCESSO ({row.quantidade > 0 ? fmtNum((excesso / row.quantidade) * 100) : "0,00"}% acima do previsto) — {row.descricao}
+        <td className="px-2 py-1.5 sticky left-0 bg-card z-[4]" style={{ paddingLeft: 8 + indent }}>
+          {row.descricao}
         </td>
         <td className="px-2 py-1.5">{row.und}</td>
-        <td className="px-2 py-1.5 text-right font-semibold">{fmtNum(excesso)}</td>
-        <td className="px-2 py-1.5 text-right">{row.valorUnit ? fmtBRL(row.valorUnit) : ""}</td>
-        <td className="px-2 py-1.5 text-right">{row.valorUnitBDI ? fmtBRL(row.valorUnitBDI) : ""}</td>
-        <td className="px-2 py-1.5 text-right font-semibold">{fmtBRL(valorExcesso)}</td>
-        <td className="px-2 py-1.5 text-right">{peso ? `${fmtNum(peso)} %` : ""}</td>
-        {closedNumbers.map((n) => (
-          <td key={`xh-${n}`} className="px-2 py-1.5"></td>
-        ))}
-        <td className="px-2 py-1.5 text-right font-semibold">{fmtNum(excesso)}</td>
-
-        <td className="px-2 py-1.5 text-right font-semibold">
-          {row.quantidade > 0 ? `${fmtNum((excesso / row.quantidade) * 100)} %` : ""}
+        <td className="px-2 py-1.5 text-right">{row.quantidade ? fmtNum(row.quantidade) : ""}</td>
+        <td className="px-2 py-1.5 text-right">{vu ? fmtBRL(vu) : ""}</td>
+        <td className="px-2 py-1.5 text-right font-medium border-r border-border">{fmtBRL(row.total)}</td>
+        <td className="px-2 py-1.5 text-right bg-[var(--measure)]/5 text-muted-foreground">
+          {qtdAnterior > 0 ? fmtNum(qtdAnterior) : "—"}
         </td>
-        <td className="px-2 py-1.5 text-right font-semibold">{fmtBRL(valorExcesso)}</td>
+        <td className="px-1 py-1 bg-[var(--measure)]/10">
+          <Input
+            value={qty}
+            onChange={(e) => setQty(e.target.value)}
+            onBlur={onQtyBlur}
+            inputMode="decimal"
+            className="h-7 text-right text-xs bg-card"
+            placeholder="0"
+          />
+        </td>
+        <td className="px-2 py-1.5 text-right font-semibold border-r border-border bg-[var(--measure)]/5">
+          {qtdAtual > 0 ? fmtNum(qtdAtual) : "—"}
+        </td>
+        <td className="px-2 py-1.5 text-right bg-[var(--primary-soft)]/5 text-muted-foreground">{fmtBRL(finAnterior)}</td>
+        <td className="px-2 py-1.5 text-right bg-[var(--primary-soft)]/10 text-[var(--measure)] font-medium">{fmtBRL(finPeriodo)}</td>
+        <td className="px-2 py-1.5 text-right font-semibold border-r border-border bg-[var(--primary-soft)]/5 text-[var(--success)]">{fmtBRL(finAtual)}</td>
+        <td className="px-2 py-1.5 text-right font-medium border-r border-border bg-success/5">{fmtNum(desvio)}%</td>
         <td className="px-2 py-1.5 text-center">
-          <Badge variant="destructive" className="text-[10px]">EXCEDIDO</Badge>
+          <div className="flex items-center justify-center gap-1">
+            <Badge variant={statusVariant(a.status)} className="text-[9px] hidden xl:inline-flex">
+              {a.status}
+            </Badge>
+            <EvolutionDialog
+              row={row}
+              allRows={allRows}
+              evolution={evolution}
+              onSave={(e) => onUpdate(row.item, e)}
+              onAddDiary={onAddDiary}
+              obraId={obraId}
+            />
+            {row.banco === "MANUAL" && onRemove && (
+              <Button size="sm" variant="ghost" onClick={() => onRemove(row.item)} title="Remover serviço">
+                <Trash2 className="w-3.5 h-3.5 text-destructive" />
+              </Button>
+            )}
+          </div>
         </td>
-        <td className="px-2 py-1.5"></td>
-        <td className="px-2 py-1.5"></td>
-        <td className="px-2 py-1.5"></td>
-        <td className="px-2 py-1.5"></td>
-        <td className="px-2 py-1.5"></td>
       </tr>
-    )}
+      {temExcesso && (
+        <tr className="border-t bg-destructive/10 text-destructive text-[11px]">
+          <td className="px-2 py-1 font-mono" style={{ paddingLeft: 8 + indent }}>{row.item}</td>
+          <td className="px-2 py-1 sticky left-0 bg-destructive/10 z-[4] font-medium" style={{ paddingLeft: 8 + indent }}>
+            ⚠ EXCESSO ({row.quantidade > 0 ? fmtNum((excesso / row.quantidade) * 100) : "0,00"}% acima do previsto)
+          </td>
+          <td className="px-2 py-1">{row.und}</td>
+          <td className="px-2 py-1 text-right font-semibold">{fmtNum(excesso)}</td>
+          <td className="px-2 py-1 text-right">{vu ? fmtBRL(vu) : ""}</td>
+          <td className="px-2 py-1 text-right font-semibold border-r border-border">{fmtBRL(excesso * vu)}</td>
+          <td colSpan={8} className="px-2 py-1 text-right">
+            <Badge variant="destructive" className="text-[10px]">EXCEDIDO</Badge>
+          </td>
+        </tr>
+      )}
     </>
   );
 }
+
 
 function EvolutionDialog({
   row,
