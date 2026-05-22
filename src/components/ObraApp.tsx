@@ -1586,10 +1586,14 @@ function ActivitiesTable({
                   <td className="px-2 py-2.5 text-right">{fmtBRL(tTotal)}</td>
                   <td className="px-2 py-2.5 text-right">100,00 %</td>
                   {closedNumbers.map((n) => (<td key={`tf-${n}`} className="px-2 py-2.5" />))}
-                  <td className="px-2 py-2.5 text-right bg-[var(--measure)] text-[var(--measure-foreground)]">{fmtBRL(tPeriodo)}</td>
+                  <td className="px-2 py-2.5 bg-[var(--measure)] text-[var(--measure-foreground)]" />
                   <td className="px-2 py-2.5 text-right bg-[var(--measure)] text-[var(--measure-foreground)]">{fmtNum(pctTotal)}%</td>
-                  <td className="px-2 py-2.5 text-right bg-[var(--measure)] text-[var(--measure-foreground)]">{fmtBRL(tAcum)}</td>
-                  <td className="px-2 py-2.5 text-center bg-[var(--measure)] text-[var(--measure-foreground)]">{fmtBRL(tTotal - tAcum)}</td>
+                  <td className="px-2 py-2.5 text-right bg-[var(--measure)] text-[var(--measure-foreground)]">{fmtBRL(tPeriodo)}</td>
+                  <td className="px-2 py-2.5 bg-[var(--measure)] text-[var(--measure-foreground)]" />
+                  <td className="px-2 py-2.5 bg-[var(--primary-soft)]" />
+                  <td className="px-2 py-2.5 text-right bg-[var(--primary-soft)]">{fmtBRL(tAcum)}</td>
+                  <td className="px-2 py-2.5 bg-[var(--primary-soft)]" />
+                  <td className="px-2 py-2.5 text-right bg-[var(--primary-soft)]">{fmtBRL(Math.max(0, tTotal - tAcum))}</td>
                   <td className="px-2 py-2.5" />
                 </tr>
               </tfoot>
