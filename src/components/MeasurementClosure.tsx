@@ -96,6 +96,28 @@ export function MeasurementClosure({
       });
       return;
     }
+    // Validação dos campos obrigatórios da obra
+    const info = data.info ?? {};
+    const required: Array<[keyof typeof info, string]> = [
+      ["cliente", "Licitador"],
+      ["contratante", "Contratante"],
+      ["empresaExecutora", "Empresa executora"],
+      ["cnpj", "CNPJ"],
+      ["endereco", "Endereço"],
+      ["municipio", "Município"],
+      ["estado", "UF"],
+      ["numeroContrato", "Nº contrato"],
+      ["responsavelTecnico", "Responsável técnico"],
+      ["crea", "CREA/CAU"],
+      ["dataInicioObra", "Data de início"],
+    ];
+    const missing = required.filter(([k]) => !info[k] || String(info[k]).trim() === "");
+    if (missing.length > 0) {
+      toast.error("Cadastro da obra incompleto.", {
+        description: `Preencha em Dados da obra: ${missing.map(([, l]) => l).join(", ")}.`,
+      });
+      return;
+    }
     setBusy(true);
     try {
       const closedAt = new Date();

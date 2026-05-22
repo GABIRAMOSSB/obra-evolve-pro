@@ -918,6 +918,24 @@ function Dashboard({
 
   const info = data.info ?? {};
   const dataMedicao = new Date().toLocaleDateString("pt-BR");
+  const bmCodigo = `BM-${String(currentMeasNumber).padStart(2, "0")}`;
+  // Período da medição: do fechamento da medição anterior (ou data de início da obra) até hoje
+  const periodoInicio = useMemo(() => {
+    let last: string | undefined;
+    for (const evo of Object.values(data.evolutions)) {
+      for (const mm of evo?.measurements ?? []) {
+        if (mm.closed && mm.closedAt && (!last || mm.closedAt > last)) last = mm.closedAt;
+      }
+    }
+    if (last) return new Date(last);
+    if (info.dataInicioObra) return new Date(info.dataInicioObra + "T00:00:00");
+    return null;
+  }, [data.evolutions, info.dataInicioObra]);
+  const periodoFim = new Date();
+  const periodoLabel = periodoInicio
+    ? `${periodoInicio.toLocaleDateString("pt-BR")} a ${periodoFim.toLocaleDateString("pt-BR")}`
+    : `até ${periodoFim.toLocaleDateString("pt-BR")}`;
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -1045,38 +1063,80 @@ function Dashboard({
           <SummaryCard label="Percentual acumulado" value={`${fmtNum(m.percent)}%`} icon="percent" tone="primary" progress={m.percent} />
         </div>
 
+        {/* Alerta — campos obrigatórios da obra ausentes */}
+        {(() => {
+          const required: Array<[keyof typeof info, string]> = [
+            ["cliente", "Licitador"],
+            ["contratante", "Contratante"],
+            ["empresaExecutora", "Empresa executora"],
+            ["cnpj", "CNPJ"],
+            ["endereco", "Endereço"],
+            ["municipio", "Município"],
+            ["estado", "UF"],
+            ["numeroContrato", "Nº contrato"],
+            ["responsavelTecnico", "Responsável técnico"],
+            ["crea", "CREA/CAU"],
+            ["dataInicioObra", "Data de início"],
+          ];
+          const missing = required.filter(([k]) => !info[k] || String(info[k]).trim() === "");
+          if (missing.length === 0) return null;
+          return (
+            <div className="rounded-md border border-warning bg-warning/10 text-foreground px-3 py-2 text-xs flex items-start gap-2">
+              <span className="font-bold text-warning-foreground bg-warning rounded px-1.5 py-0.5 uppercase tracking-wider text-[10px]">Atenção</span>
+              <span>
+                Campos obrigatórios da obra pendentes para liberar o fechamento da medição:{" "}
+                <strong>{missing.map(([, label]) => label).join(", ")}</strong>. Acesse <em>Dados da obra</em> para preencher.
+              </span>
+            </div>
+          );
+        })()}
+
         {/* BOLETIM DE MEDIÇÃO */}
         <Card className="overflow-hidden border-border shadow-[var(--shadow-card)] p-0">
-          <div className="bg-primary text-primary-foreground text-center py-2.5 font-bold tracking-[0.2em] text-sm">
-            BOLETIM DE MEDIÇÃO
+          <div className="bg-primary text-primary-foreground flex items-center justify-between gap-3 px-4 py-2.5">
+            <div className="font-mono text-[11px] tracking-[0.2em] opacity-80">{bmCodigo}</div>
+            <div className="font-bold tracking-[0.25em] text-sm text-center flex-1">BOLETIM DE MEDIÇÃO</div>
+            <div className="font-mono text-[11px] tracking-[0.15em] opacity-80 text-right">
+              Período: {periodoLabel}
+            </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 divide-x divide-y divide-border border-b border-border text-xs">
+          {/* Linha 1 — Identificação */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 divide-x divide-y divide-border border-b border-border text-xs">
             <BMField label="Licitador" value={info.cliente || "—"} />
+            <BMField label="Contratante" value={info.contratante || "—"} />
             <BMField label="Empresa Executora" value={info.empresaExecutora || "—"} />
-            <BMField label="CNPJ" value={info.artRrt || "—"} />
-            <BMField label="Obra" value={data.nome} />
-            <BMField label="Endereço da Obra" value={info.endereco || "—"} wide />
-            <BMField label="Contrato" value={info.numeroContrato || "—"} />
-            <BMField label="Nº da Medição" value={`${currentMeasNumber}ª Medição`} />
-            <BMField label="Data da Medição" value={dataMedicao} />
+            <BMField label="CNPJ" value={info.cnpj || "—"} />
+            <BMField label="Nº Contrato" value={info.numeroContrato || "—"} />
+            <BMField label="Nº Licitação" value={info.numeroLicitacao || "—"} />
           </div>
+          {/* Linha 2 — Obra e localização */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 divide-x divide-y divide-border border-b border-border text-xs">
+            <BMField label="Obra" value={data.nome} wide />
+            <BMField label="Endereço" value={info.endereco || "—"} wide />
+            <BMField label="Município" value={info.municipio || "—"} />
+            <BMField label="UF" value={info.estado || "—"} />
+          </div>
+          {/* Linha 3 — Responsabilidade técnica */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 divide-x divide-y divide-border border-b border-border text-xs">
+            <BMField label="Responsável Técnico" value={info.responsavelTecnico || "—"} />
+            <BMField label="CREA / CAU" value={info.crea || "—"} />
+            <BMField label="ART / RRT" value={info.artRrt || "—"} />
+            <BMField label="Fiscal da Obra" value={info.fiscal || "—"} />
+            <BMField label="Início da Obra" value={info.dataInicioObra ? new Date(info.dataInicioObra + "T00:00:00").toLocaleDateString("pt-BR") : "—"} />
+            <BMField label="Prazo (dias)" value={info.prazoContratualDias ? String(info.prazoContratualDias) : "—"} />
+          </div>
+          {/* Linha 4 — Resumo financeiro da medição */}
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 divide-x divide-y divide-border text-xs">
+            <BMField label="Nº do BM" value={`${bmCodigo} (${currentMeasNumber}ª Medição)`} strong tone="primary" />
+            <BMField label="Data da Medição" value={dataMedicao} />
             <BMField label="Valor total do contrato" value={fmtBRL(m.total)} strong />
             <BMField label="Valor desta medição" value={fmtBRL(valorPeriodo)} strong tone="measure" />
             <BMField label="Valor acumulado" value={fmtBRL(m.exec)} strong tone="success" />
-            <BMField label="Percentual acumulado" value={`${fmtNum(m.percent)}%`} strong tone="primary" progress={m.percent} />
+            <BMField label="% Acumulado" value={`${fmtNum(m.percent)}%`} strong tone="primary" progress={m.percent} />
             <BMField label="Saldo restante" value={fmtBRL(m.restante)} strong />
-            <BMField label="Próxima medição" value={`${currentMeasNumber + 1}ª Medição`} />
-            <BMField
-              label="Status da medição"
-              value={
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-success/15 text-success font-semibold text-[11px]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-success" /> Aberta
-                </span>
-              }
-            />
           </div>
         </Card>
+
 
 
         <Tabs defaultValue="atividades">
@@ -1393,64 +1453,84 @@ function ActivitiesTable({
   const projectTotal = allRows
     .filter((r) => !r.isGroup)
     .reduce((s, r) => s + (r.total || 0), 0);
-  const pesoOf = (r: BudgetRow, computedTotal?: number) => {
-    if (r.peso) return r.peso;
-    if (!projectTotal) return 0;
-    const t = computedTotal ?? r.total ?? 0;
-    return (t / projectTotal) * 100;
-  };
+  void allRows; // pesoOf removido — colunas peso/histórico não mais usadas
 
-  const closedNumbers: number[] = [];
-  for (let n = 1; n < currentMeasurement; n++) closedNumbers.push(n);
-  const histCols = closedNumbers.length;
+
+  // Total geral do contrato (usado em "Desvio %")
+  const contratoTotal = projectTotal;
+  // Acumulado financeiro do projeto até período anterior (medições fechadas) e total
+  const tFinAnterior = allRows
+    .filter((r) => !r.isGroup)
+    .reduce((s, r) => {
+      const list = evolutions[r.item]?.measurements ?? [];
+      const qtdAnt = list.filter((m) => m.closed).reduce((a, m) => a + (m.quantExec || 0), 0);
+      return s + qtdAnt * (r.valorUnitBDI || 0);
+    }, 0);
+  const tFinPeriodo = allRows
+    .filter((r) => !r.isGroup)
+    .reduce((s, r) => {
+      const open = evolutions[r.item]?.measurements?.find(
+        (m) => !m.closed && m.number === currentMeasurement,
+      );
+      return s + (open ? (open.quantExec || 0) * (r.valorUnitBDI || 0) : 0);
+    }, 0);
+  const tFinAtual = tFinAnterior + tFinPeriodo;
 
   return (
     <Card className="overflow-hidden border-border shadow-[var(--shadow-card)]">
       <div className="overflow-x-auto">
-        <table className="w-full text-xs border-collapse" style={{ minWidth: 1500 + histCols * 90 }}>
+        <table className="w-full text-xs border-collapse" style={{ minWidth: 1400 }}>
+          <colgroup>
+            <col style={{ width: 96 }} />
+            <col style={{ minWidth: 320 }} />
+            <col style={{ width: 56 }} />
+            <col style={{ width: 90 }} />
+            <col style={{ width: 110 }} />
+            <col style={{ width: 120 }} />
+            <col style={{ width: 100 }} />
+            <col style={{ width: 100 }} />
+            <col style={{ width: 100 }} />
+            <col style={{ width: 120 }} />
+            <col style={{ width: 120 }} />
+            <col style={{ width: 120 }} />
+            <col style={{ width: 80 }} />
+            <col style={{ width: 90 }} />
+          </colgroup>
           <thead className="uppercase sticky top-0 z-10">
             <tr className="text-[10px] tracking-[0.15em]">
-              <th colSpan={10} className="px-3 py-2 text-center border-b border-border bg-primary text-primary-foreground font-bold">
-                PLANEJAMENTO — PLANILHA ORÇAMENTÁRIA
+              <th colSpan={6} className="px-3 py-2 text-center border-b border-r border-border bg-primary text-primary-foreground font-bold">
+                PLANEJAMENTO — ORÇAMENTO CONTRATADO
               </th>
-              <th colSpan={4 + histCols} className="px-3 py-2 text-center border-b border-border bg-[var(--measure)] text-[var(--measure-foreground)] font-bold">
-                MEDIÇÃO — EXECUÇÃO DO PERÍODO
+              <th colSpan={3} className="px-3 py-2 text-center border-b border-r border-border bg-[var(--measure)] text-[var(--measure-foreground)] font-bold">
+                EXECUTADO FÍSICO (Quantidade)
               </th>
-              <th colSpan={4} className="px-3 py-2 text-center border-b border-border bg-[var(--primary-soft)] text-primary-foreground font-bold">
-                ACUMULADO E SALDO
+              <th colSpan={3} className="px-3 py-2 text-center border-b border-r border-border bg-[var(--primary-soft)] text-primary-foreground font-bold">
+                EXECUTADO FINANCEIRO (R$)
+              </th>
+              <th className="px-3 py-2 text-center border-b border-r border-border bg-success text-success-foreground font-bold">
+                DESVIO
               </th>
               <th className="px-3 py-2 text-center border-b border-border bg-primary text-primary-foreground font-bold">
                 AÇÕES
               </th>
             </tr>
-            <tr className="bg-muted text-foreground">
-              <th className="px-2 py-2 text-left w-24 border-b border-border">Item</th>
-              <th className="px-2 py-2 text-left w-20 border-b border-border">Código</th>
-              <th className="px-2 py-2 text-left w-20 border-b border-border">Banco</th>
-              <th className="px-2 py-2 text-left border-b border-border min-w-[280px]">Descrição</th>
-              <th className="px-2 py-2 text-left w-14 border-b border-border">Und</th>
-              <th className="px-2 py-2 text-right w-20 border-b border-border">Quant.</th>
-              <th className="px-2 py-2 text-right w-24 border-b border-border">Valor Unit</th>
-              <th className="px-2 py-2 text-right w-28 border-b border-border">V. Unit c/ BDI</th>
-              <th className="px-2 py-2 text-right w-28 border-b border-border">Total</th>
-              <th className="px-2 py-2 text-right w-20 border-b border-border">Peso (%)</th>
-              {closedNumbers.map((n) => (
-                <th key={`mh-${n}`} className="px-2 py-2 text-right w-24 border-b border-border bg-[var(--measure)]/10" title={`Medição ${n} (fechada)`}>
-                  M{n}
-                </th>
-              ))}
-              <th className="px-2 py-2 text-right w-28 border-b border-border bg-[var(--measure)]/15">M{currentMeasurement} (atual)</th>
-              <th className="px-2 py-2 text-right w-24 border-b border-border bg-[var(--measure)]/15">% Exec.</th>
-              <th className="px-2 py-2 text-right w-28 border-b border-border bg-[var(--measure)]/15">V. Medido</th>
-              <th className="px-2 py-2 text-center w-28 border-b border-border bg-[var(--measure)]/15">Status</th>
-              <th className="px-2 py-2 text-right w-24 border-b border-border bg-primary/10">Qtd Acum.</th>
-              <th className="px-2 py-2 text-right w-28 border-b border-border bg-primary/10">V. Acum.</th>
-              <th className="px-2 py-2 text-right w-24 border-b border-border bg-primary/10">Saldo Qtd.</th>
-              <th className="px-2 py-2 text-right w-28 border-b border-border bg-primary/10">Saldo Valor</th>
-              <th className="px-2 py-2 text-center w-24 border-b border-border bg-muted">Ações</th>
+            <tr className="bg-muted text-foreground text-[10px]">
+              <th className="px-2 py-2 text-left border-b border-border">Item</th>
+              <th className="px-2 py-2 text-left border-b border-border sticky left-0 bg-muted z-[5]">Descrição</th>
+              <th className="px-2 py-2 text-left border-b border-border">Und</th>
+              <th className="px-2 py-2 text-right border-b border-border">Quant.</th>
+              <th className="px-2 py-2 text-right border-b border-border">V. Unit c/ BDI</th>
+              <th className="px-2 py-2 text-right border-r border-b border-border">Total</th>
+              <th className="px-2 py-2 text-right border-b border-border bg-[var(--measure)]/10">Acum. anterior</th>
+              <th className="px-2 py-2 text-right border-b border-border bg-[var(--measure)]/20">Período</th>
+              <th className="px-2 py-2 text-right border-r border-b border-border bg-[var(--measure)]/10">Acum. atual</th>
+              <th className="px-2 py-2 text-right border-b border-border bg-[var(--primary-soft)]/10">Acum. anterior</th>
+              <th className="px-2 py-2 text-right border-b border-border bg-[var(--primary-soft)]/20">Período</th>
+              <th className="px-2 py-2 text-right border-r border-b border-border bg-[var(--primary-soft)]/10">Acum. atual</th>
+              <th className="px-2 py-2 text-right border-r border-b border-border bg-success/10">%</th>
+              <th className="px-2 py-2 text-center border-b border-border">Ações</th>
             </tr>
           </thead>
-
 
           <tbody>
             {rows.map((r) => {
@@ -1459,25 +1539,29 @@ function ActivitiesTable({
                 const isEtapa = r.level === 1;
                 const isSub = r.level === 2;
                 const indent = Math.max(0, r.level - 1) * 14;
-                const peso = pesoOf(r, g.total);
-                const tipoLabel = isEtapa
-                  ? "ETAPA"
+                // Agregar acumulado anterior + período do grupo
+                let gFinAnt = 0;
+                let gFinPer = 0;
+                for (const child of allRows) {
+                  if (child.isGroup) continue;
+                  if (child.item !== r.item && !child.item.startsWith(r.item + ".")) continue;
+                  const list = evolutions[child.item]?.measurements ?? [];
+                  const qAnt = list.filter((m) => m.closed).reduce((a, m) => a + (m.quantExec || 0), 0);
+                  const open = list.find((m) => !m.closed && m.number === currentMeasurement);
+                  gFinAnt += qAnt * (child.valorUnitBDI || 0);
+                  if (open) gFinPer += (open.quantExec || 0) * (child.valorUnitBDI || 0);
+                }
+                const gFinAtual = gFinAnt + gFinPer;
+                const gDesvio = contratoTotal > 0 ? (gFinAtual / contratoTotal) * 100 : 0;
+                const rowCls = isEtapa
+                  ? "bg-primary/15 border-y-2 border-primary/30 font-bold text-primary"
                   : isSub
-                    ? "SUBETAPA"
-                    : `SUBETAPA ${r.level - 1}`;
+                    ? "bg-primary/8 border-t border-primary/20 font-semibold"
+                    : "bg-muted/50 border-t font-medium";
                 return (
-                  <tr
-                    key={r.item}
-                    className={
-                      isEtapa
-                        ? "bg-primary/15 border-y-2 border-primary/30 font-bold"
-                        : isSub
-                          ? "bg-primary/10 border-t border-primary/20 font-semibold"
-                          : "bg-muted/40 border-t font-medium"
-                    }
-                  >
+                  <tr key={r.item} className={rowCls}>
                     <td
-                      className={`px-2 py-1.5 font-mono ${isEtapa ? "text-primary" : isSub ? "text-primary/80" : ""}`}
+                      className="px-2 py-1.5 font-mono"
                       style={{ paddingLeft: 8 + indent }}
                     >
                       <button
@@ -1486,18 +1570,12 @@ function ActivitiesTable({
                         className="inline-flex items-center gap-1 hover:opacity-70 transition"
                         title={collapsed[r.item] ? "Expandir" : "Colapsar"}
                       >
-                        {collapsed[r.item] ? (
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        ) : (
-                          <ChevronDown className="w-3.5 h-3.5" />
-                        )}
+                        {collapsed[r.item] ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                         <span>{r.item}</span>
                       </button>
                     </td>
-                    <td className="px-2 py-1.5">{r.codigo}</td>
-                    <td className="px-2 py-1.5">{r.banco}</td>
                     <td
-                      className={`px-2 py-1.5 ${isEtapa ? "uppercase tracking-wide" : isSub ? "uppercase tracking-wide text-sm" : ""}`}
+                      className={`px-2 py-1.5 sticky left-0 z-[4] ${rowCls} ${isEtapa ? "uppercase tracking-wide" : isSub ? "uppercase tracking-wide" : ""}`}
                       style={{ paddingLeft: 8 + indent }}
                     >
                       {r.descricao}
@@ -1505,40 +1583,17 @@ function ActivitiesTable({
                     <td className="px-2 py-1.5"></td>
                     <td className="px-2 py-1.5"></td>
                     <td className="px-2 py-1.5"></td>
-                    <td className="px-2 py-1.5"></td>
-                    <td className="px-2 py-1.5 text-right">{fmtBRL(g.total)}</td>
-                    <td className="px-2 py-1.5 text-right">{fmtNum(peso)} %</td>
-                    {closedNumbers.map((n) => (
-                      <td key={`gh-${n}`} className="px-2 py-1.5 bg-muted/30"></td>
-                    ))}
-                    <td className="px-2 py-1.5"></td>
-
-                    <td className="px-2 py-1.5 text-right">{fmtNum(g.percent)}%</td>
-                    <td className="px-2 py-1.5 text-right text-[var(--success)]">
-                      {fmtBRL(g.exec)}
-                    </td>
-                    <td className="px-2 py-1.5 text-center">
-                      <Badge
-                        variant={isEtapa ? "default" : "secondary"}
-                        className="text-[10px]"
-                      >
-                        {r.banco === "MANUAL" ? "MANUAL" : tipoLabel}
-                      </Badge>
-                    </td>
-                    <td className="px-2 py-1.5 bg-primary/5"></td>
-                    <td className="px-2 py-1.5 text-right bg-primary/5 font-medium text-[var(--success)]">{fmtBRL(g.exec)}</td>
-                    <td className="px-2 py-1.5 bg-primary/5"></td>
-                    <td className="px-2 py-1.5 text-right bg-primary/5 font-medium">{fmtBRL(Math.max(0, g.total - g.exec))}</td>
-
-
+                    <td className="px-2 py-1.5 text-right border-r border-border">{fmtBRL(g.total)}</td>
+                    <td className="px-2 py-1.5 bg-[var(--measure)]/5"></td>
+                    <td className="px-2 py-1.5 bg-[var(--measure)]/10"></td>
+                    <td className="px-2 py-1.5 border-r border-border bg-[var(--measure)]/5"></td>
+                    <td className="px-2 py-1.5 text-right bg-[var(--primary-soft)]/5">{fmtBRL(gFinAnt)}</td>
+                    <td className="px-2 py-1.5 text-right bg-[var(--primary-soft)]/10 text-[var(--measure)] font-medium">{fmtBRL(gFinPer)}</td>
+                    <td className="px-2 py-1.5 text-right border-r border-border bg-[var(--primary-soft)]/5 text-[var(--success)] font-semibold">{fmtBRL(gFinAtual)}</td>
+                    <td className="px-2 py-1.5 text-right border-r border-border bg-success/5 font-medium">{fmtNum(gDesvio)}%</td>
                     <td className="px-2 py-1.5 text-center">
                       {r.banco === "MANUAL" && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => onRemove(r.item)}
-                          title="Remover"
-                        >
+                        <Button size="sm" variant="ghost" onClick={() => onRemove(r.item)} title="Remover">
                           <Trash2 className="w-3.5 h-3.5 text-destructive" />
                         </Button>
                       )}
@@ -1557,48 +1612,27 @@ function ActivitiesTable({
                   onAddDiary={onAddDiary}
                   onRemove={onRemove}
                   indent={indent}
-                  peso={pesoOf(r)}
                   obraId={obraId}
                   currentMeasurement={currentMeasurement}
-                  closedNumbers={closedNumbers}
+                  contratoTotal={contratoTotal}
                 />
-
               );
             })}
           </tbody>
-          {(() => {
-            const nonGroup = allRows.filter((r) => !r.isGroup);
-            const tTotal = nonGroup.reduce((s, r) => s + (r.total || 0), 0);
-            let tPeriodo = 0;
-            let tAcum = 0;
-            for (const r of nonGroup) {
-              const evo = evolutions[r.item];
-              const am = activityMetrics(r, evo);
-              tAcum += am.valorExec;
-              const open = evo?.measurements?.find((mm) => !mm.closed && mm.number === currentMeasurement);
-              if (open) tPeriodo += (open.quantExec || 0) * (r.valorUnitBDI || 0);
-            }
-            const pctTotal = tTotal > 0 ? (tAcum / tTotal) * 100 : 0;
-            return (
-              <tfoot>
-                <tr className="bg-primary text-primary-foreground font-bold uppercase tracking-wider text-[11px]">
-                  <td className="px-3 py-2.5" colSpan={8}>TOTAL GERAL</td>
-                  <td className="px-2 py-2.5 text-right">{fmtBRL(tTotal)}</td>
-                  <td className="px-2 py-2.5 text-right">100,00 %</td>
-                  {closedNumbers.map((n) => (<td key={`tf-${n}`} className="px-2 py-2.5" />))}
-                  <td className="px-2 py-2.5 bg-[var(--measure)] text-[var(--measure-foreground)]" />
-                  <td className="px-2 py-2.5 text-right bg-[var(--measure)] text-[var(--measure-foreground)]">{fmtNum(pctTotal)}%</td>
-                  <td className="px-2 py-2.5 text-right bg-[var(--measure)] text-[var(--measure-foreground)]">{fmtBRL(tPeriodo)}</td>
-                  <td className="px-2 py-2.5 bg-[var(--measure)] text-[var(--measure-foreground)]" />
-                  <td className="px-2 py-2.5 bg-[var(--primary-soft)]" />
-                  <td className="px-2 py-2.5 text-right bg-[var(--primary-soft)]">{fmtBRL(tAcum)}</td>
-                  <td className="px-2 py-2.5 bg-[var(--primary-soft)]" />
-                  <td className="px-2 py-2.5 text-right bg-[var(--primary-soft)]">{fmtBRL(Math.max(0, tTotal - tAcum))}</td>
-                  <td className="px-2 py-2.5" />
-                </tr>
-              </tfoot>
-            );
-          })()}
+          <tfoot>
+            <tr className="bg-primary text-primary-foreground font-bold uppercase tracking-wider text-[11px]">
+              <td className="px-3 py-2.5" colSpan={5}>TOTAL GERAL</td>
+              <td className="px-2 py-2.5 text-right border-r border-primary-foreground/20">{fmtBRL(contratoTotal)}</td>
+              <td className="px-2 py-2.5 bg-[var(--measure)] text-[var(--measure-foreground)]" colSpan={3}></td>
+              <td className="px-2 py-2.5 text-right bg-[var(--primary-soft)]">{fmtBRL(tFinAnterior)}</td>
+              <td className="px-2 py-2.5 text-right bg-[var(--primary-soft)]">{fmtBRL(tFinPeriodo)}</td>
+              <td className="px-2 py-2.5 text-right border-r border-primary-foreground/20 bg-[var(--primary-soft)]">{fmtBRL(tFinAtual)}</td>
+              <td className="px-2 py-2.5 text-right border-r border-primary-foreground/20 bg-success text-success-foreground">
+                {fmtNum(contratoTotal > 0 ? (tFinAtual / contratoTotal) * 100 : 0)}%
+              </td>
+              <td className="px-2 py-2.5" />
+            </tr>
+          </tfoot>
         </table>
       </div>
       <div className="border-t border-border bg-muted/40 px-4 py-3 flex items-start gap-2 text-[11px] text-muted-foreground">
@@ -1612,6 +1646,8 @@ function ActivitiesTable({
 }
 
 
+
+
 function ServiceRow({
   row,
   allRows,
@@ -1620,10 +1656,9 @@ function ServiceRow({
   onAddDiary,
   onRemove,
   indent = 0,
-  peso = 0,
   obraId,
   currentMeasurement,
-  closedNumbers = [],
+  contratoTotal,
 }: {
   row: BudgetRow;
   allRows: BudgetRow[];
@@ -1632,211 +1667,123 @@ function ServiceRow({
   onAddDiary: (e: DiaryEntry) => void;
   onRemove?: (item: string) => void;
   indent?: number;
-  peso?: number;
   obraId: string;
   currentMeasurement: number;
-  closedNumbers?: number[];
+  contratoTotal: number;
 }) {
-
   const a = activityMetrics(row, evolution);
   const allMeasurements = a.measurements;
   const closedSum = allMeasurements
     .filter((m) => m.closed)
     .reduce((s, m) => s + (m.quantExec || 0), 0);
-  // Quantidade do período (medição aberta atual) — começa vazio em cada nova medição.
   const openMeas = allMeasurements.find((m) => !m.closed && m.number === currentMeasurement);
   const periodoQty = openMeas?.quantExec || 0;
   const [qty, setQty] = useState(periodoQty ? String(periodoQty) : "");
-  const [pct, setPct] = useState(
-    periodoQty && row.quantidade > 0 ? ((periodoQty / row.quantidade) * 100).toFixed(2) : "",
-  );
 
   useEffect(() => {
     setQty(periodoQty ? String(periodoQty) : "");
-    setPct(
-      periodoQty && row.quantidade > 0
-        ? ((periodoQty / row.quantidade) * 100).toFixed(2)
-        : "",
-    );
-  }, [periodoQty, row.quantidade]);
+  }, [periodoQty]);
 
   function commit(periodo: number) {
     const p = Math.max(0, periodo);
     const newAcc = closedSum + p;
     if (Math.abs(p - periodoQty) < 1e-6) return;
     if (row.quantidade > 0 && newAcc > row.quantidade + 1e-6) {
-      toast.warning(
-        `Acumulado limitado ao total previsto: ${fmtNum(row.quantidade)} ${row.und}.`,
-      );
+      toast.warning(`Acumulado limitado ao total previsto: ${fmtNum(row.quantidade)} ${row.und}.`);
     }
     const { evo } = setAccumulatedQty(evolution, row, newAcc, currentMeasurement);
     onUpdate(row.item, evo);
   }
-
   function onQtyBlur() {
     const trimmed = qty.trim();
-    if (trimmed === "") {
-      commit(0);
-      return;
-    }
-    const n = parseFloat(trimmed.replace(",", ".")) || 0;
-    commit(n);
-  }
-  function onPctBlur() {
-    const trimmed = pct.trim();
-    if (trimmed === "") {
-      commit(0);
-      return;
-    }
-    const n = parseFloat(trimmed.replace(",", ".")) || 0;
-    commit((n / 100) * row.quantidade);
-  }
-  function syncFromQty(v: string) {
-    setQty(v);
-    if (v.trim() === "") { setPct(""); return; }
-    const n = parseFloat(v.replace(",", "."));
-    if (!isNaN(n) && row.quantidade > 0) setPct(((n / row.quantidade) * 100).toFixed(2));
-  }
-  function syncFromPct(v: string) {
-    setPct(v);
-    if (v.trim() === "") { setQty(""); return; }
-    const n = parseFloat(v.replace(",", "."));
-    if (!isNaN(n)) setQty(((n / 100) * row.quantidade).toFixed(4));
+    if (trimmed === "") { commit(0); return; }
+    commit(parseFloat(trimmed.replace(",", ".")) || 0);
   }
 
+  const vu = row.valorUnitBDI || 0;
+  const qtdAnterior = closedSum;
+  const qtdAtual = closedSum + periodoQty;
+  const finAnterior = qtdAnterior * vu;
+  const finPeriodo = periodoQty * vu;
+  const finAtual = qtdAtual * vu;
+  const desvio = contratoTotal > 0 ? (finAtual / contratoTotal) * 100 : 0;
 
   const excesso = a.quantExec - row.quantidade;
   const temExcesso = row.quantidade > 0 && excesso > 0.0001;
-  const valorExcesso = excesso * (row.valorUnitBDI || row.valorUnit || 0);
 
   return (
     <>
-    <tr className="border-t hover:bg-muted/30">
-      <td
-        className="px-2 py-1.5 font-mono whitespace-nowrap"
-        style={{ paddingLeft: 8 + indent }}
-      >
-        {row.item}
-      </td>
-      <td className="px-2 py-1.5 text-muted-foreground">{row.codigo}</td>
-      <td className="px-2 py-1.5 text-muted-foreground">{row.banco}</td>
-      <td className="px-2 py-1.5 max-w-md" style={{ paddingLeft: 8 + indent }}>
-        {row.descricao}
-      </td>
-      <td className="px-2 py-1.5">{row.und}</td>
-      <td className="px-2 py-1.5 text-right">{row.quantidade ? fmtNum(row.quantidade) : ""}</td>
-      <td className="px-2 py-1.5 text-right">{row.valorUnit ? fmtBRL(row.valorUnit) : ""}</td>
-      <td className="px-2 py-1.5 text-right">
-        {row.valorUnitBDI ? fmtBRL(row.valorUnitBDI) : ""}
-      </td>
-      <td className="px-2 py-1.5 text-right font-medium">{fmtBRL(row.total)}</td>
-      <td className="px-2 py-1.5 text-right text-muted-foreground">
-        {peso ? `${fmtNum(peso)} %` : ""}
-      </td>
-      {closedNumbers.map((n) => {
-        const m = allMeasurements.find((x) => x.number === n && x.closed);
-        const v = m?.quantExec || 0;
-        return (
-          <td key={`mc-${n}`} className="px-2 py-1.5 text-right bg-muted/30 text-muted-foreground" title={`Medição ${n} (fechada)`}>
-            {v ? fmtNum(v) : "—"}
-          </td>
-        );
-      })}
-      <td className="px-2 py-1 text-right bg-primary/5">
-
-        <Input
-          value={qty}
-          onChange={(e) => syncFromQty(e.target.value)}
-          onBlur={onQtyBlur}
-          inputMode="decimal"
-          className="h-7 text-right text-xs"
-          placeholder="0"
-        />
-      </td>
-      <td className="px-2 py-1.5 text-right bg-primary/5 font-medium">
-        {row.quantidade > 0 ? `${fmtNum((a.quantExec / row.quantidade) * 100)} %` : "—"}
-      </td>
-      <td className="px-2 py-1.5 text-right bg-primary/5">{fmtBRL(a.valorExec)}</td>
-      <td className="px-2 py-1.5 text-center bg-primary/5">
-        <div className="flex flex-col items-center gap-0.5">
-          <Badge variant={statusVariant(a.status)} className="text-[10px]">
-            {a.status}
-          </Badge>
-          {a.measurements.length > 0 && (
-            <span
-              className="text-[9px] text-muted-foreground"
-              title={`${a.measurements.length} medição(ões) · ${a.closedCount} fechada(s)`}
-            >
-              {a.closedCount}/{a.measurements.length} M
-            </span>
-          )}
-        </div>
-      </td>
-      <td className="px-2 py-1.5 text-right bg-[var(--primary-soft)]/10 font-medium">{row.quantidade > 0 ? fmtNum(a.quantExec) : "—"}</td>
-      <td className="px-2 py-1.5 text-right bg-[var(--primary-soft)]/10 font-medium text-[var(--success)]">{fmtBRL(a.valorExec)}</td>
-      <td className="px-2 py-1.5 text-right bg-[var(--primary-soft)]/10">{row.quantidade > 0 ? fmtNum(a.quantRestante) : "—"}</td>
-      <td className="px-2 py-1.5 text-right bg-[var(--primary-soft)]/10 font-medium">{fmtBRL(a.valorRestante)}</td>
-      <td className="px-2 py-1.5 text-center bg-primary/5">
-        <div className="flex items-center justify-center gap-1">
-          <EvolutionDialog
-            row={row}
-            allRows={allRows}
-            evolution={evolution}
-            onSave={(e) => onUpdate(row.item, e)}
-            onAddDiary={onAddDiary}
-            obraId={obraId}
-          />
-          {row.banco === "MANUAL" && onRemove && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => onRemove(row.item)}
-              title="Remover serviço"
-            >
-              <Trash2 className="w-3.5 h-3.5 text-destructive" />
-            </Button>
-          )}
-        </div>
-      </td>
-    </tr>
-    {temExcesso && (
-      <tr className="border-t bg-destructive/10 text-destructive">
+      <tr className="border-t hover:bg-muted/30">
         <td className="px-2 py-1.5 font-mono whitespace-nowrap" style={{ paddingLeft: 8 + indent }}>
           {row.item}
         </td>
-        <td className="px-2 py-1.5">{row.codigo}</td>
-        <td className="px-2 py-1.5">{row.banco}</td>
-        <td className="px-2 py-1.5 max-w-md font-medium" style={{ paddingLeft: 8 + indent }}>
-          ⚠ EXCESSO ({row.quantidade > 0 ? fmtNum((excesso / row.quantidade) * 100) : "0,00"}% acima do previsto) — {row.descricao}
+        <td className="px-2 py-1.5 sticky left-0 bg-card z-[4]" style={{ paddingLeft: 8 + indent }}>
+          {row.descricao}
         </td>
         <td className="px-2 py-1.5">{row.und}</td>
-        <td className="px-2 py-1.5 text-right font-semibold">{fmtNum(excesso)}</td>
-        <td className="px-2 py-1.5 text-right">{row.valorUnit ? fmtBRL(row.valorUnit) : ""}</td>
-        <td className="px-2 py-1.5 text-right">{row.valorUnitBDI ? fmtBRL(row.valorUnitBDI) : ""}</td>
-        <td className="px-2 py-1.5 text-right font-semibold">{fmtBRL(valorExcesso)}</td>
-        <td className="px-2 py-1.5 text-right">{peso ? `${fmtNum(peso)} %` : ""}</td>
-        {closedNumbers.map((n) => (
-          <td key={`xh-${n}`} className="px-2 py-1.5"></td>
-        ))}
-        <td className="px-2 py-1.5 text-right font-semibold">{fmtNum(excesso)}</td>
-
-        <td className="px-2 py-1.5 text-right font-semibold">
-          {row.quantidade > 0 ? `${fmtNum((excesso / row.quantidade) * 100)} %` : ""}
+        <td className="px-2 py-1.5 text-right">{row.quantidade ? fmtNum(row.quantidade) : ""}</td>
+        <td className="px-2 py-1.5 text-right">{vu ? fmtBRL(vu) : ""}</td>
+        <td className="px-2 py-1.5 text-right font-medium border-r border-border">{fmtBRL(row.total)}</td>
+        <td className="px-2 py-1.5 text-right bg-[var(--measure)]/5 text-muted-foreground">
+          {qtdAnterior > 0 ? fmtNum(qtdAnterior) : "—"}
         </td>
-        <td className="px-2 py-1.5 text-right font-semibold">{fmtBRL(valorExcesso)}</td>
+        <td className="px-1 py-1 bg-[var(--measure)]/10">
+          <Input
+            value={qty}
+            onChange={(e) => setQty(e.target.value)}
+            onBlur={onQtyBlur}
+            inputMode="decimal"
+            className="h-7 text-right text-xs bg-card"
+            placeholder="0"
+          />
+        </td>
+        <td className="px-2 py-1.5 text-right font-semibold border-r border-border bg-[var(--measure)]/5">
+          {qtdAtual > 0 ? fmtNum(qtdAtual) : "—"}
+        </td>
+        <td className="px-2 py-1.5 text-right bg-[var(--primary-soft)]/5 text-muted-foreground">{fmtBRL(finAnterior)}</td>
+        <td className="px-2 py-1.5 text-right bg-[var(--primary-soft)]/10 text-[var(--measure)] font-medium">{fmtBRL(finPeriodo)}</td>
+        <td className="px-2 py-1.5 text-right font-semibold border-r border-border bg-[var(--primary-soft)]/5 text-[var(--success)]">{fmtBRL(finAtual)}</td>
+        <td className="px-2 py-1.5 text-right font-medium border-r border-border bg-success/5">{fmtNum(desvio)}%</td>
         <td className="px-2 py-1.5 text-center">
-          <Badge variant="destructive" className="text-[10px]">EXCEDIDO</Badge>
+          <div className="flex items-center justify-center gap-1">
+            <Badge variant={statusVariant(a.status)} className="text-[9px] hidden xl:inline-flex">
+              {a.status}
+            </Badge>
+            <EvolutionDialog
+              row={row}
+              allRows={allRows}
+              evolution={evolution}
+              onSave={(e) => onUpdate(row.item, e)}
+              onAddDiary={onAddDiary}
+              obraId={obraId}
+            />
+            {row.banco === "MANUAL" && onRemove && (
+              <Button size="sm" variant="ghost" onClick={() => onRemove(row.item)} title="Remover serviço">
+                <Trash2 className="w-3.5 h-3.5 text-destructive" />
+              </Button>
+            )}
+          </div>
         </td>
-        <td className="px-2 py-1.5"></td>
-        <td className="px-2 py-1.5"></td>
-        <td className="px-2 py-1.5"></td>
-        <td className="px-2 py-1.5"></td>
-        <td className="px-2 py-1.5"></td>
       </tr>
-    )}
+      {temExcesso && (
+        <tr className="border-t bg-destructive/10 text-destructive text-[11px]">
+          <td className="px-2 py-1 font-mono" style={{ paddingLeft: 8 + indent }}>{row.item}</td>
+          <td className="px-2 py-1 sticky left-0 bg-destructive/10 z-[4] font-medium" style={{ paddingLeft: 8 + indent }}>
+            ⚠ EXCESSO ({row.quantidade > 0 ? fmtNum((excesso / row.quantidade) * 100) : "0,00"}% acima do previsto)
+          </td>
+          <td className="px-2 py-1">{row.und}</td>
+          <td className="px-2 py-1 text-right font-semibold">{fmtNum(excesso)}</td>
+          <td className="px-2 py-1 text-right">{vu ? fmtBRL(vu) : ""}</td>
+          <td className="px-2 py-1 text-right font-semibold border-r border-border">{fmtBRL(excesso * vu)}</td>
+          <td colSpan={8} className="px-2 py-1 text-right">
+            <Badge variant="destructive" className="text-[10px]">EXCEDIDO</Badge>
+          </td>
+        </tr>
+      )}
     </>
   );
 }
+
 
 function EvolutionDialog({
   row,

@@ -42,13 +42,19 @@ export function ObraInfoDialog({ nome, info, onSave }: Props) {
     toast.success("Dados da obra atualizados");
   }
 
-  function field(key: keyof ObraInfo, label: string, placeholder?: string) {
+  function field(key: keyof ObraInfo, label: string, placeholder?: string, type: "text" | "number" | "date" = "text") {
     return (
       <div>
         <Label className="text-xs">{label}</Label>
         <Input
-          value={data[key] ?? ""}
-          onChange={(e) => setData({ ...data, [key]: e.target.value })}
+          type={type}
+          value={(data[key] as string | number | undefined) ?? ""}
+          onChange={(e) =>
+            setData({
+              ...data,
+              [key]: type === "number" ? (e.target.value === "" ? undefined : Number(e.target.value)) : e.target.value,
+            })
+          }
           placeholder={placeholder}
         />
       </div>
@@ -62,22 +68,56 @@ export function ObraInfoDialog({ nome, info, onSave }: Props) {
           <Building2 className="w-4 h-4 mr-1" /> Dados da obra
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Identificação da obra</DialogTitle>
         </DialogHeader>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="sm:col-span-2">
-            <Label className="text-xs">Nome da obra</Label>
-            <Input value={n} onChange={(e) => setN(e.target.value)} />
-          </div>
-          {field("cliente", "Cliente")}
-          {field("empresaExecutora", "Empresa executora")}
-          <div className="sm:col-span-2">{field("endereco", "Endereço")}</div>
-          {field("responsavelTecnico", "Responsável técnico")}
-          {field("artRrt", "ART / RRT", "Nº ART ou RRT")}
-          {field("numeroContrato", "Número do contrato")}
+
+        <div className="space-y-4">
+          <section>
+            <h4 className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground mb-2">Identificação</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="sm:col-span-2">
+                <Label className="text-xs">Nome da obra *</Label>
+                <Input value={n} onChange={(e) => setN(e.target.value)} />
+              </div>
+              {field("cliente", "Licitador")}
+              {field("contratante", "Contratante")}
+              {field("empresaExecutora", "Empresa executora")}
+              {field("cnpj", "CNPJ", "00.000.000/0000-00")}
+            </div>
+          </section>
+
+          <section>
+            <h4 className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground mb-2">Localização</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="sm:col-span-2">{field("endereco", "Endereço da obra")}</div>
+              {field("municipio", "Município")}
+              {field("estado", "Estado (UF)", "Ex.: SP")}
+            </div>
+          </section>
+
+          <section>
+            <h4 className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground mb-2">Contrato</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {field("numeroContrato", "Número do contrato")}
+              {field("numeroLicitacao", "Número da licitação")}
+              {field("dataInicioObra", "Data de início da obra", undefined, "date")}
+              {field("prazoContratualDias", "Prazo contratual (dias)", "Ex.: 180", "number")}
+            </div>
+          </section>
+
+          <section>
+            <h4 className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground mb-2">Responsabilidade técnica</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {field("responsavelTecnico", "Responsável técnico")}
+              {field("crea", "CREA / CAU")}
+              {field("artRrt", "ART / RRT")}
+              {field("fiscal", "Fiscal da obra")}
+            </div>
+          </section>
         </div>
+
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancelar

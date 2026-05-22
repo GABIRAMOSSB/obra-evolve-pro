@@ -62,11 +62,20 @@ export interface DiaryEntry {
 
 export interface ObraInfo {
   cliente?: string;
+  contratante?: string;
   endereco?: string;
+  municipio?: string;
+  estado?: string;
   responsavelTecnico?: string;
+  crea?: string;
+  fiscal?: string;
   artRrt?: string;
   empresaExecutora?: string;
+  cnpj?: string;
   numeroContrato?: string;
+  numeroLicitacao?: string;
+  dataInicioObra?: string; // yyyy-mm-dd
+  prazoContratualDias?: number;
 }
 
 export interface MeasurementAuditEntry {
