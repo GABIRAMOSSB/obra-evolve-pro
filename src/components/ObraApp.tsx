@@ -1824,6 +1824,10 @@ function ServiceRow({
           <Badge variant="destructive" className="text-[10px]">EXCEDIDO</Badge>
         </td>
         <td className="px-2 py-1.5"></td>
+        <td className="px-2 py-1.5"></td>
+        <td className="px-2 py-1.5"></td>
+        <td className="px-2 py-1.5"></td>
+        <td className="px-2 py-1.5"></td>
       </tr>
     )}
     </>
