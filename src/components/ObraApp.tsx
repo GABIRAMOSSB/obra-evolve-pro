@@ -1453,16 +1453,8 @@ function ActivitiesTable({
   const projectTotal = allRows
     .filter((r) => !r.isGroup)
     .reduce((s, r) => s + (r.total || 0), 0);
-  const pesoOf = (r: BudgetRow, computedTotal?: number) => {
-    if (r.peso) return r.peso;
-    if (!projectTotal) return 0;
-    const t = computedTotal ?? r.total ?? 0;
-    return (t / projectTotal) * 100;
-  };
+  void allRows; // pesoOf removido — colunas peso/histórico não mais usadas
 
-  const closedNumbers: number[] = [];
-  for (let n = 1; n < currentMeasurement; n++) closedNumbers.push(n);
-  const histCols = closedNumbers.length;
 
   // Total geral do contrato (usado em "Desvio %")
   const contratoTotal = projectTotal;
