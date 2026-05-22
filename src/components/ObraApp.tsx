@@ -1063,6 +1063,34 @@ function Dashboard({
           <SummaryCard label="Percentual acumulado" value={`${fmtNum(m.percent)}%`} icon="percent" tone="primary" progress={m.percent} />
         </div>
 
+        {/* Alerta — campos obrigatórios da obra ausentes */}
+        {(() => {
+          const required: Array<[keyof typeof info, string]> = [
+            ["cliente", "Licitador"],
+            ["contratante", "Contratante"],
+            ["empresaExecutora", "Empresa executora"],
+            ["cnpj", "CNPJ"],
+            ["endereco", "Endereço"],
+            ["municipio", "Município"],
+            ["estado", "UF"],
+            ["numeroContrato", "Nº contrato"],
+            ["responsavelTecnico", "Responsável técnico"],
+            ["crea", "CREA/CAU"],
+            ["dataInicioObra", "Data de início"],
+          ];
+          const missing = required.filter(([k]) => !info[k] || String(info[k]).trim() === "");
+          if (missing.length === 0) return null;
+          return (
+            <div className="rounded-md border border-warning bg-warning/10 text-foreground px-3 py-2 text-xs flex items-start gap-2">
+              <span className="font-bold text-warning-foreground bg-warning rounded px-1.5 py-0.5 uppercase tracking-wider text-[10px]">Atenção</span>
+              <span>
+                Campos obrigatórios da obra pendentes para liberar o fechamento da medição:{" "}
+                <strong>{missing.map(([, label]) => label).join(", ")}</strong>. Acesse <em>Dados da obra</em> para preencher.
+              </span>
+            </div>
+          );
+        })()}
+
         {/* BOLETIM DE MEDIÇÃO */}
         <Card className="overflow-hidden border-border shadow-[var(--shadow-card)] p-0">
           <div className="bg-primary text-primary-foreground flex items-center justify-between gap-3 px-4 py-2.5">
