@@ -1416,6 +1416,9 @@ function ActivitiesTable({
               <th colSpan={4 + histCols} className="px-3 py-2 text-center border-b border-border bg-[var(--measure)] text-[var(--measure-foreground)] font-bold">
                 MEDIÇÃO — EXECUÇÃO DO PERÍODO
               </th>
+              <th colSpan={4} className="px-3 py-2 text-center border-b border-border bg-[var(--primary-soft)] text-primary-foreground font-bold">
+                ACUMULADO E SALDO
+              </th>
               <th className="px-3 py-2 text-center border-b border-border bg-primary text-primary-foreground font-bold">
                 AÇÕES
               </th>
@@ -1440,6 +1443,10 @@ function ActivitiesTable({
               <th className="px-2 py-2 text-right w-24 border-b border-border bg-[var(--measure)]/15">% Exec.</th>
               <th className="px-2 py-2 text-right w-28 border-b border-border bg-[var(--measure)]/15">V. Medido</th>
               <th className="px-2 py-2 text-center w-28 border-b border-border bg-[var(--measure)]/15">Status</th>
+              <th className="px-2 py-2 text-right w-24 border-b border-border bg-primary/10">Qtd Acum.</th>
+              <th className="px-2 py-2 text-right w-28 border-b border-border bg-primary/10">V. Acum.</th>
+              <th className="px-2 py-2 text-right w-24 border-b border-border bg-primary/10">Saldo Qtd.</th>
+              <th className="px-2 py-2 text-right w-28 border-b border-border bg-primary/10">Saldo Valor</th>
               <th className="px-2 py-2 text-center w-24 border-b border-border bg-muted">Ações</th>
             </tr>
           </thead>
