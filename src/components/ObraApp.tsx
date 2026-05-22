@@ -1768,6 +1768,10 @@ function ServiceRow({
           )}
         </div>
       </td>
+      <td className="px-2 py-1.5 text-right bg-[var(--primary-soft)]/10 font-medium">{row.quantidade > 0 ? fmtNum(a.quantExec) : "—"}</td>
+      <td className="px-2 py-1.5 text-right bg-[var(--primary-soft)]/10 font-medium text-[var(--success)]">{fmtBRL(a.valorExec)}</td>
+      <td className="px-2 py-1.5 text-right bg-[var(--primary-soft)]/10">{row.quantidade > 0 ? fmtNum(a.quantRestante) : "—"}</td>
+      <td className="px-2 py-1.5 text-right bg-[var(--primary-soft)]/10 font-medium">{fmtBRL(a.valorRestante)}</td>
       <td className="px-2 py-1.5 text-center bg-primary/5">
         <div className="flex items-center justify-center gap-1">
           <EvolutionDialog
