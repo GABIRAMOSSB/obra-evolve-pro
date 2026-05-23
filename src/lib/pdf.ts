@@ -169,7 +169,8 @@ export function exportRelatorioPdf(
 
 /**
  * Gera um PDF da medição (snapshot do período fechado) e retorna como Blob,
- * para upload na pasta "Medições da Obra".
+ * para upload na pasta "Medições da Obra". A4 paisagem, cabeçalho corporativo,
+ * dados da obra e área de assinaturas com dados do cadastro.
  */
 export function buildMeasurementPdfBlob(
   rows: BudgetRow[],
@@ -177,87 +178,185 @@ export function buildMeasurementPdfBlob(
   measurementNumber: number,
   projectName: string,
   closedAt: Date = new Date(),
+  info: ObraInfo = {},
+  periodoInicio?: Date,
 ): Blob {
-  const doc = new jsPDF({ orientation: "landscape" });
-  doc.setFontSize(16);
-  doc.text(`Medição ${measurementNumber} — ${projectName}`, 14, 15);
+  const doc = new jsPDF({ orientation: "landscape", format: "a4", unit: "mm" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const navy: [number, number, number] = [8, 43, 92];
+  const orange: [number, number, number] = [201, 75, 22];
+  const green: [number, number, number] = [21, 128, 61];
+  const bm = `BM-${String(measurementNumber).padStart(2, "0")}`;
+  const periodoLabel = periodoInicio
+    ? `${fmtDateBR(periodoInicio)} a ${fmtDateBR(closedAt)}`
+    : `até ${fmtDateBR(closedAt)}`;
+
+  // Header banner
+  doc.setFillColor(navy[0], navy[1], navy[2]);
+  doc.rect(0, 0, pageW, 14, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
-  doc.text(`Fechada em ${closedAt.toLocaleString("pt-BR")}`, 14, 22);
+  doc.text(bm, 8, 9);
+  doc.setFontSize(13);
+  doc.text("BOLETIM DE MEDIÇÃO", pageW / 2, 9.5, { align: "center" });
+  doc.setFontSize(9);
+  doc.text(`Período: ${periodoLabel}`, pageW - 8, 9, { align: "right" });
+  doc.setTextColor(0, 0, 0);
 
-  const m = projectMetrics(rows, evolutions);
-  doc.text(
-    [
-      `Valor total: ${fmtBRL(m.total)}`,
-      `Acumulado executado: ${fmtBRL(m.exec)}`,
-      `Saldo restante: ${fmtBRL(m.restante)}`,
-      `% Geral: ${fmtNum(m.percent)}%`,
-    ].join("    "),
-    14,
-    28,
-  );
+  // Dados da obra (3 lines)
+  const dy = (lbl: string, val: string, x: number, yy: number, w: number) => {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(6.5);
+    doc.setTextColor(110);
+    doc.text(lbl.toUpperCase(), x, yy);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(20);
+    const lines = doc.splitTextToSize(val || "—", w);
+    doc.text(lines[0] ?? "—", x, yy + 3.5);
+  };
+  let y = 18;
+  const col = (pageW - 16) / 4;
+  dy("Licitador", info.cliente || "—", 8, y, col - 2);
+  dy("Contratante", info.contratante || "—", 8 + col, y, col - 2);
+  dy("Empresa Executora", info.empresaExecutora || "—", 8 + 2 * col, y, col - 2);
+  dy("CNPJ", info.cnpj || "—", 8 + 3 * col, y, col - 2);
+  y += 7.5;
+  dy("Obra", projectName, 8, y, col * 2 - 2);
+  dy("Endereço", info.endereco || "—", 8 + 2 * col, y, col - 2);
+  dy("Município / UF", `${info.municipio || "—"}${info.estado ? " / " + info.estado : ""}`, 8 + 3 * col, y, col - 2);
+  y += 7.5;
+  dy("Nº Contrato", info.numeroContrato || "—", 8, y, col - 2);
+  dy("Nº Licitação", info.numeroLicitacao || "—", 8 + col, y, col - 2);
+  dy("Resp. Técnico", `${info.responsavelTecnico || "—"}${info.crea ? " — " + info.crea : ""}`, 8 + 2 * col, y, col - 2);
+  dy("Fiscal", info.fiscal || "—", 8 + 3 * col, y, col - 2);
+  y += 8;
 
+  // Tabela
   const body: (string | number)[][] = [];
   let totalPeriodo = 0;
+  let totalContrato = 0;
+  let totalAcum = 0;
   for (const r of rows) {
     if (r.isGroup) continue;
+    totalContrato += r.total || 0;
     const evo = evolutions[r.item];
-    const med = evo?.measurements?.find((mm) => mm.number === measurementNumber);
+    const list = evo?.measurements ?? [];
+    const qAnt = list.filter((m) => m.closed && m.number < measurementNumber).reduce((s, m) => s + (m.quantExec || 0), 0);
+    const med = list.find((mm) => mm.number === measurementNumber);
     const qPeriodo = med?.quantExec ?? 0;
-    if (qPeriodo <= 0) continue;
-    const a = activityMetrics(r, evo);
-    const valorPeriodo =
-      r.quantidade > 0 ? (qPeriodo / r.quantidade) * (r.total || 0) : 0;
-    totalPeriodo += valorPeriodo;
+    const qAtual = qAnt + qPeriodo;
+    const vu = r.valorUnitBDI || r.valorUnit || 0;
+    const finPer = qPeriodo * vu;
+    const finAtual = qAtual * vu;
+    totalPeriodo += finPer;
+    totalAcum += finAtual;
+    if (qAtual <= 0) continue;
+    const pct = r.total > 0 ? (finAtual / r.total) * 100 : 0;
     body.push([
       r.item,
       r.descricao,
       r.und,
       fmtNum(r.quantidade),
+      fmtBRL(r.total),
+      fmtNum(qAnt),
       fmtNum(qPeriodo),
-      fmtNum(a.quantExec),
-      `${fmtNum(a.percent)}%`,
-      fmtBRL(valorPeriodo),
-      a.status,
+      fmtNum(qAtual),
+      fmtBRL(finAtual),
+      `${fmtNum(pct)}%`,
     ]);
   }
 
   autoTable(doc, {
-    head: [
-      [
-        "Item",
-        "Descrição",
-        "Und",
-        "Quant. Total",
-        "Qtd no Período",
-        "Acumulado",
-        "% Acum.",
-        "Valor no Período",
-        "Status",
-      ],
-    ],
-    body: body.length
-      ? body
-      : [["—", "Sem lançamentos neste período", "", "", "", "", "", "", ""]],
-    startY: 35,
-    styles: { fontSize: 7 },
-    headStyles: { fillColor: [194, 102, 38] },
-    columnStyles: { 1: { cellWidth: 90 } },
-    foot: [
-      [
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "Total no período:",
-        fmtBRL(totalPeriodo),
-        "",
-      ],
-    ],
-    footStyles: { fontStyle: "bold", fillColor: [240, 240, 240], textColor: 20 },
+    head: [[
+      "Item", "Descrição", "Und", "Quant.", "Total Contrato",
+      "Acum. Ant.", "Período", "Acum. Atual", "Valor Acum.", "%",
+    ]],
+    body: body.length ? body : [["—", "Sem lançamentos neste período", "", "", "", "", "", "", "", ""]],
+    startY: y,
+    margin: { left: 8, right: 8, top: 10 },
+    styles: { fontSize: 7, cellPadding: 1.5, lineColor: [200, 200, 200], lineWidth: 0.1 },
+    headStyles: { fillColor: navy, textColor: 255, fontStyle: "bold", halign: "center", fontSize: 7 },
+    columnStyles: {
+      0: { cellWidth: 18, fontStyle: "bold" },
+      1: { cellWidth: 75 },
+      2: { cellWidth: 12, halign: "center" },
+      3: { cellWidth: 18, halign: "right" },
+      4: { cellWidth: 26, halign: "right" },
+      5: { cellWidth: 20, halign: "right" },
+      6: { cellWidth: 20, halign: "right", fillColor: [253, 235, 220] },
+      7: { cellWidth: 20, halign: "right" },
+      8: { cellWidth: 28, halign: "right", textColor: green },
+      9: { cellWidth: 14, halign: "right" },
+    },
+    foot: [[
+      { content: "TOTAL GERAL", colSpan: 4, styles: { halign: "left", fontStyle: "bold" } },
+      { content: fmtBRL(totalContrato), styles: { halign: "right", fontStyle: "bold" } },
+      { content: "", colSpan: 1 },
+      { content: fmtBRL(totalPeriodo), styles: { halign: "right", fontStyle: "bold", textColor: orange } },
+      { content: "", colSpan: 1 },
+      { content: fmtBRL(totalAcum), styles: { halign: "right", fontStyle: "bold", textColor: green } },
+      { content: `${fmtNum(totalContrato > 0 ? (totalAcum / totalContrato) * 100 : 0)}%`, styles: { halign: "right", fontStyle: "bold" } },
+    ]],
+    footStyles: { fillColor: navy, textColor: 255 },
   });
 
+  type AutoTableDoc = jsPDF & { lastAutoTable?: { finalY: number } };
+  let endY = ((doc as AutoTableDoc).lastAutoTable?.finalY ?? y) + 8;
+  const pageH = doc.internal.pageSize.getHeight();
+  if (endY > pageH - 60) {
+    doc.addPage();
+    endY = 20;
+  }
+
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(8);
+  doc.setTextColor(80);
+  doc.text(
+    "Os valores desta medição estão de acordo com o cronograma físico-financeiro e com as condições contratuais estabelecidas.",
+    pageW / 2, endY, { align: "center", maxWidth: pageW - 20 },
+  );
+  endY += 14;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(20);
+  const local = info.municipio ? `${info.municipio}${info.estado ? "/" + info.estado : ""}` : "____________________";
+  doc.text(`${local}, ${closedAt.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}.`, pageW / 2, endY, { align: "center" });
+  endY += 20;
+
+  const sigW = 90;
+  const xL = pageW / 4 - sigW / 2;
+  const xR = (3 * pageW) / 4 - sigW / 2;
+  doc.setDrawColor(20);
+  doc.line(xL, endY, xL + sigW, endY);
+  doc.line(xR, endY, xR + sigW, endY);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.text(info.responsavelTecnico || "Responsável Técnico", xL + sigW / 2, endY + 5, { align: "center" });
+  doc.text(info.fiscal || "Fiscal da Obra", xR + sigW / 2, endY + 5, { align: "center" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(80);
+  doc.text(
+    `${info.cargoResponsavel || "Responsável Técnico"}${info.crea ? " — CREA/CAU " + info.crea : ""}`,
+    xL + sigW / 2, endY + 10, { align: "center" },
+  );
+  if (info.artRrt) doc.text(`ART/RRT: ${info.artRrt}`, xL + sigW / 2, endY + 14, { align: "center" });
+  doc.text(
+    `${info.cargoFiscal || "Fiscal da Obra"}${info.cpfFiscal ? " — CPF " + info.cpfFiscal : ""}`,
+    xR + sigW / 2, endY + 10, { align: "center" },
+  );
+
+  doc.setFontSize(7);
+  doc.setTextColor(140);
+  doc.text(
+    `${projectName} • ${bm} • Fechada em ${closedAt.toLocaleString("pt-BR")}`,
+    pageW / 2, pageH - 5, { align: "center" },
+  );
+
+  void projectMetrics;
   return doc.output("blob");
 }
 
