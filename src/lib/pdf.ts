@@ -397,73 +397,146 @@ export function buildMeasurementPdfBlob(
   dy("Fiscal", info.fiscal || "—", 8 + 3 * col, y, col - 2);
   y += 8;
 
-  // Tabela
-  const body: (string | number)[][] = [];
-  let totalPeriodo = 0;
+  // Tabela — 14 colunas igual ao Excel/tela
+  type CellDef = string | number | { content: string; colSpan?: number; rowSpan?: number; styles?: Record<string, unknown> };
+  const body: CellDef[][] = [];
   let totalContrato = 0;
-  let totalAcum = 0;
+  let totalFisicoAnt = 0;
+  let totalFisicoPer = 0;
+  let totalFisicoAtual = 0;
+  let totalFinAnt = 0;
+  let totalFinPer = 0;
+  let totalFinAtual = 0;
+
   for (const r of rows) {
-    if (r.isGroup) continue;
-    totalContrato += r.total || 0;
+    if (r.isGroup) {
+      body.push([
+        { content: r.item, styles: { fontStyle: "bold", halign: "center", fillColor: [232, 238, 247], textColor: navy } },
+        { content: r.descricao.toUpperCase(), colSpan: 12, styles: { fontStyle: "bold", halign: "left", fillColor: [232, 238, 247], textColor: navy } },
+        { content: "ETAPA", styles: { fontStyle: "bold", halign: "center", fillColor: [232, 238, 247], textColor: navy } },
+      ]);
+      continue;
+    }
     const evo = evolutions[r.item];
     const list = evo?.measurements ?? [];
     const qAnt = list.filter((m) => m.closed && m.number < measurementNumber).reduce((s, m) => s + (m.quantExec || 0), 0);
     const med = list.find((mm) => mm.number === measurementNumber);
-    const qPeriodo = med?.quantExec ?? 0;
-    const qAtual = qAnt + qPeriodo;
+    const qPer = med?.quantExec ?? 0;
+    const qAtual = qAnt + qPer;
     const vu = r.valorUnitBDI || r.valorUnit || 0;
-    const finPer = qPeriodo * vu;
+    const finAnt = qAnt * vu;
+    const finPer = qPer * vu;
     const finAtual = qAtual * vu;
-    totalPeriodo += finPer;
-    totalAcum += finAtual;
-    if (qAtual <= 0) continue;
+    totalContrato += r.total || 0;
+    totalFisicoAnt += qAnt;
+    totalFisicoPer += qPer;
+    totalFisicoAtual += qAtual;
+    totalFinAnt += finAnt;
+    totalFinPer += finPer;
+    totalFinAtual += finAtual;
+    const a = activityMetrics(r, evo);
     const pct = r.total > 0 ? (finAtual / r.total) * 100 : 0;
     body.push([
-      r.item,
-      r.descricao,
-      r.und,
-      fmtNum(r.quantidade),
-      fmtBRL(r.total),
-      fmtNum(qAnt),
-      fmtNum(qPeriodo),
-      fmtNum(qAtual),
-      fmtBRL(finAtual),
-      `${fmtNum(pct)}%`,
+      { content: r.item, styles: { fontStyle: "bold", halign: "center" } },
+      { content: r.descricao, styles: { halign: "left" } },
+      { content: r.und, styles: { halign: "center" } },
+      { content: fmtNum(r.quantidade), styles: { halign: "right" } },
+      { content: fmtBRL(vu), styles: { halign: "right" } },
+      { content: fmtBRL(r.total), styles: { halign: "right" } },
+      { content: fmtNum(qAnt), styles: { halign: "right" } },
+      { content: fmtNum(qPer), styles: { halign: "right", fillColor: [253, 235, 220] } },
+      { content: fmtNum(qAtual), styles: { halign: "right", fontStyle: "bold" } },
+      { content: fmtBRL(finAnt), styles: { halign: "right" } },
+      { content: fmtBRL(finPer), styles: { halign: "right", fillColor: [253, 235, 220], textColor: orange, fontStyle: "bold" } },
+      { content: fmtBRL(finAtual), styles: { halign: "right", fillColor: [220, 252, 231], textColor: green, fontStyle: "bold" } },
+      { content: `${fmtNum(pct)}%`, styles: { halign: "right" } },
+      { content: a.status, styles: { halign: "center", fontSize: 6 } },
     ]);
   }
 
+  const totalPctGeral = totalContrato > 0 ? (totalFinAtual / totalContrato) * 100 : 0;
+
   autoTable(doc, {
-    head: [[
-      "Item", "Descrição", "Und", "Quant.", "Total Contrato",
-      "Acum. Ant.", "Período", "Acum. Atual", "Valor Acum.", "%",
-    ]],
-    body: body.length ? body : [["—", "Sem lançamentos neste período", "", "", "", "", "", "", "", ""]],
+    head: [
+      [
+        { content: "PLANEJAMENTO", colSpan: 6, styles: { fillColor: navy, textColor: 255, halign: "center", fontStyle: "bold" } },
+        { content: "EXECUTADO FÍSICO", colSpan: 3, styles: { fillColor: [180, 83, 9], textColor: 255, halign: "center", fontStyle: "bold" } },
+        { content: "EXECUTADO FINANCEIRO (R$)", colSpan: 3, styles: { fillColor: [22, 101, 52], textColor: 255, halign: "center", fontStyle: "bold" } },
+        { content: "DESVIO", rowSpan: 2, styles: { fillColor: navy, textColor: 255, halign: "center", fontStyle: "bold", valign: "middle" } },
+        { content: "STATUS", rowSpan: 2, styles: { fillColor: navy, textColor: 255, halign: "center", fontStyle: "bold", valign: "middle" } },
+      ],
+      [
+        { content: "Item", styles: { fillColor: [215, 226, 240], textColor: 20, halign: "center" } },
+        { content: "Descrição", styles: { fillColor: [215, 226, 240], textColor: 20, halign: "center" } },
+        { content: "Und", styles: { fillColor: [215, 226, 240], textColor: 20, halign: "center" } },
+        { content: "Quant.", styles: { fillColor: [215, 226, 240], textColor: 20, halign: "center" } },
+        { content: "V.Unit c/BDI", styles: { fillColor: [215, 226, 240], textColor: 20, halign: "center" } },
+        { content: "Total", styles: { fillColor: [215, 226, 240], textColor: 20, halign: "center" } },
+        { content: "Acum. Ant.", styles: { fillColor: [215, 226, 240], textColor: 20, halign: "center" } },
+        { content: "Período", styles: { fillColor: [253, 235, 220], textColor: orange, halign: "center", fontStyle: "bold" } },
+        { content: "Acum. Atual", styles: { fillColor: [215, 226, 240], textColor: 20, halign: "center" } },
+        { content: "Acum. Ant.", styles: { fillColor: [215, 226, 240], textColor: 20, halign: "center" } },
+        { content: "Período", styles: { fillColor: [253, 235, 220], textColor: orange, halign: "center", fontStyle: "bold" } },
+        { content: "Acum. Atual", styles: { fillColor: [220, 252, 231], textColor: green, halign: "center", fontStyle: "bold" } },
+      ],
+    ],
+    body: body.length ? body : [[{ content: "Sem lançamentos neste período", colSpan: 14, styles: { halign: "center", fontStyle: "italic", textColor: 120 } }]],
     startY: y,
-    margin: { left: 8, right: 8, top: 10 },
-    styles: { fontSize: 7, cellPadding: 1.5, lineColor: [200, 200, 200], lineWidth: 0.1 },
-    headStyles: { fillColor: navy, textColor: 255, fontStyle: "bold", halign: "center", fontSize: 7 },
+    margin: { left: 6, right: 6, top: 18, bottom: 14 },
+    styles: { fontSize: 6.5, cellPadding: 1.2, lineColor: [200, 207, 219], lineWidth: 0.1, overflow: "linebreak" },
+    headStyles: { fontSize: 7, lineColor: [180, 187, 200], lineWidth: 0.15 },
     columnStyles: {
-      0: { cellWidth: 18, fontStyle: "bold" },
-      1: { cellWidth: 75 },
-      2: { cellWidth: 12, halign: "center" },
-      3: { cellWidth: 18, halign: "right" },
-      4: { cellWidth: 26, halign: "right" },
-      5: { cellWidth: 20, halign: "right" },
-      6: { cellWidth: 20, halign: "right", fillColor: [253, 235, 220] },
-      7: { cellWidth: 20, halign: "right" },
-      8: { cellWidth: 28, halign: "right", textColor: green },
-      9: { cellWidth: 14, halign: "right" },
+      0: { cellWidth: 16 },
+      1: { cellWidth: 62 },
+      2: { cellWidth: 10 },
+      3: { cellWidth: 16 },
+      4: { cellWidth: 18 },
+      5: { cellWidth: 20 },
+      6: { cellWidth: 17 },
+      7: { cellWidth: 17 },
+      8: { cellWidth: 17 },
+      9: { cellWidth: 20 },
+      10: { cellWidth: 20 },
+      11: { cellWidth: 22 },
+      12: { cellWidth: 12 },
+      13: { cellWidth: 18 },
     },
     foot: [[
-      { content: "TOTAL GERAL", colSpan: 4, styles: { halign: "left", fontStyle: "bold" } },
+      { content: "TOTAL GERAL", colSpan: 5, styles: { halign: "left", fontStyle: "bold" } },
       { content: fmtBRL(totalContrato), styles: { halign: "right", fontStyle: "bold" } },
-      { content: "", colSpan: 1 },
-      { content: fmtBRL(totalPeriodo), styles: { halign: "right", fontStyle: "bold", textColor: orange } },
-      { content: "", colSpan: 1 },
-      { content: fmtBRL(totalAcum), styles: { halign: "right", fontStyle: "bold", textColor: green } },
-      { content: `${fmtNum(totalContrato > 0 ? (totalAcum / totalContrato) * 100 : 0)}%`, styles: { halign: "right", fontStyle: "bold" } },
+      { content: fmtNum(totalFisicoAnt), styles: { halign: "right", fontStyle: "bold" } },
+      { content: fmtNum(totalFisicoPer), styles: { halign: "right", fontStyle: "bold", fillColor: [253, 235, 220], textColor: orange } },
+      { content: fmtNum(totalFisicoAtual), styles: { halign: "right", fontStyle: "bold" } },
+      { content: fmtBRL(totalFinAnt), styles: { halign: "right", fontStyle: "bold" } },
+      { content: fmtBRL(totalFinPer), styles: { halign: "right", fontStyle: "bold", fillColor: [253, 235, 220], textColor: orange } },
+      { content: fmtBRL(totalFinAtual), styles: { halign: "right", fontStyle: "bold", fillColor: [220, 252, 231], textColor: green } },
+      { content: `${fmtNum(totalPctGeral)}%`, styles: { halign: "right", fontStyle: "bold" } },
+      { content: "", styles: {} },
     ]],
-    footStyles: { fillColor: navy, textColor: 255 },
+    footStyles: { fillColor: navy, textColor: 255, fontSize: 7 },
+    // Cabeçalho do BM repetido em todas as páginas (a partir da pág. 2)
+    didDrawPage: (data) => {
+      if (data.pageNumber > 1) {
+        doc.setFillColor(navy[0], navy[1], navy[2]);
+        doc.rect(0, 0, pageW, 14, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.text(bm, 8, 9);
+        doc.setFontSize(13);
+        doc.text("BOLETIM DE MEDIÇÃO", pageW / 2, 9.5, { align: "center" });
+        doc.setFontSize(9);
+        doc.text(`Período: ${periodoLabel}`, pageW - 8, 9, { align: "right" });
+        doc.setTextColor(0, 0, 0);
+      }
+      const pH = doc.internal.pageSize.getHeight();
+      doc.setFontSize(7);
+      doc.setTextColor(140);
+      doc.text(
+        `${projectName} • ${bm} • Página ${data.pageNumber}`,
+        pageW / 2, pH - 5, { align: "center" },
+      );
+    },
   });
 
   type AutoTableDoc = jsPDF & { lastAutoTable?: { finalY: number } };
