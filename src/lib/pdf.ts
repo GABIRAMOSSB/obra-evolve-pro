@@ -12,53 +12,107 @@ function fmtDateBR(d: Date) {
 export function exportAcompanhamentoXlsx(
   rows: BudgetRow[],
   evolutions: Record<string, Evolution>,
-  fileName = "acompanhamento.xlsx",
+  info: ObraInfo = {},
+  projectName = "Obra",
+  measurementNumber = 1,
+  fileName?: string,
 ) {
-  const data = rows.map((r) => {
-    if (r.isGroup) {
-      return {
-        Item: r.item,
-        Código: r.codigo,
-        Banco: r.banco,
-        Descrição: r.descricao,
-        Und: "",
-        "Quant. Total": "",
-        "Valor Unit. c/ BDI": "",
-        "Valor Total": "",
-        "Peso %": r.peso || "",
-        "Quant. Executada": "",
-        "% Executado": "",
-        "Valor Executado": "",
-        Status: "ETAPA",
-        "Data Execução": "",
-        Observações: "",
-      };
-    }
-    const m = activityMetrics(r, evolutions[r.item]);
-    const evo = evolutions[r.item];
-    return {
-      Item: r.item,
-      Código: r.codigo,
-      Banco: r.banco,
-      Descrição: r.descricao,
-      Und: r.und,
-      "Quant. Total": r.quantidade,
-      "Valor Unit. c/ BDI": r.valorUnitBDI || r.valorUnit,
-      "Valor Total": r.total,
-      "Peso %": r.peso,
-      "Quant. Executada": m.quantExec,
-      "% Executado": Number(m.percent.toFixed(2)),
-      "Valor Executado": Number(m.valorExec.toFixed(2)),
-      Status: m.status,
-      "Data Execução": evo?.dataExec ?? "",
-      Observações: evo?.observacoes ?? "",
-    };
-  });
-  const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Acompanhamento");
-  XLSX.writeFile(wb, fileName);
+  const aoa: (string | number | { f: string } | null)[][] = [];
+
+  // Header banner
+  aoa.push([`BM-${String(measurementNumber).padStart(2, "0")}`, "BOLETIM DE MEDIÇÃO", "", "", "", "", "", "", "", "", "", "", "", new Date().toLocaleDateString("pt-BR")]);
+  aoa.push([]);
+  aoa.push(["Licitador:", info.cliente || "—", "", "Contratante:", info.contratante || "—", "", "Empresa Executora:", info.empresaExecutora || "—", "", "CNPJ:", info.cnpj || "—", "", "Nº Contrato:", info.numeroContrato || "—"]);
+  aoa.push(["Obra:", projectName, "", "Endereço:", info.endereco || "—", "", "Município:", info.municipio || "—", "", "UF:", info.estado || "—", "", "Nº Licitação:", info.numeroLicitacao || "—"]);
+  aoa.push(["Resp. Técnico:", info.responsavelTecnico || "—", "", "CREA/CAU:", info.crea || "—", "", "ART/RRT:", info.artRrt || "—", "", "Fiscal:", info.fiscal || "—", "", "CPF Fiscal:", info.cpfFiscal || "—"]);
+  aoa.push([]);
+
+  // Table headers (2 lines)
+  aoa.push(["PLANEJAMENTO", "", "", "", "", "", "EXECUTADO FÍSICO", "", "", "EXECUTADO FINANCEIRO (R$)", "", "", "DESVIO", "STATUS"]);
+  aoa.push(["Item", "Descrição", "Und", "Quant.", "V. Unit c/ BDI", "Total", "Acum. Anterior", "Período", "Acum. Atual", "Acum. Anterior", "Período", "Acum. Atual", "%", "Status"]);
+
+  const dataStart = aoa.length + 1; // 1-based row of first data row
+  let r = dataStart;
+  const itemRows: number[] = [];
+  for (const row of rows) {
+    if (row.isGroup) {
+      aoa.push([row.item, row.descricao.toUpperCase(), "", "", "", "", "", "", "", "", "", "", "", "ETAPA"]);
+    } else {
+      const list = evolutions[row.item]?.measurements ?? [];
+      const qAnt = list.filter((m) => m.closed).reduce((s, m) => s + (m.quantExec || 0), 0);
+      const open = list.find((m) => !m.closed);
+      const qPer = open?.quantExec || 0;
+      const a = activityMetrics(row, evolutions[row.item]);
+      // Cells with formulas: G=qAnt(value), H=qPer(value), I=G+H, J=G*E, K=H*E, L=I*E, M=L/total*100
+      aoa.push([
+        row.item,
+        row.descricao,
+        row.und,
+        row.quantidade,
+        row.valorUnitBDI || row.valorUnit,
+        { f: `D${r}*E${r}` },
+        qAnt,
+        qPer,
+        { f: `G${r}+H${r}` },
+        { f: `G${r}*E${r}` },
+        { f: `H${r}*E${r}` },
+        { f: `I${r}*E${r}` },
+        { f: `IF(F${r}=0,0,L${r}/F${r}*100)` },
+        a.status,
+      ]);
+      itemRows.push(r);
+    }
+    r++;
+  }
+
+  // Total row with formulas
+  const totalRow = r;
+  if (itemRows.length > 0) {
+    const first = itemRows[0];
+    const last = itemRows[itemRows.length - 1];
+    aoa.push([
+      "TOTAL GERAL", "", "", "", "",
+      { f: `SUM(F${first}:F${last})` },
+      { f: `SUM(G${first}:G${last})` },
+      { f: `SUM(H${first}:H${last})` },
+      { f: `SUM(I${first}:I${last})` },
+      { f: `SUM(J${first}:J${last})` },
+      { f: `SUM(K${first}:K${last})` },
+      { f: `SUM(L${first}:L${last})` },
+      { f: `IF(F${totalRow}=0,0,L${totalRow}/F${totalRow}*100)` },
+      "",
+    ]);
+    r++;
+  }
+
+  aoa.push([]);
+  aoa.push(["Os valores desta medição estão de acordo com o cronograma físico-financeiro e com as condições contratuais estabelecidas."]);
+  aoa.push([]);
+  aoa.push([]);
+  aoa.push(["", "____________________________________", "", "", "", "", "", "", "____________________________________"]);
+  aoa.push(["", info.responsavelTecnico || "Responsável Técnico", "", "", "", "", "", "", info.fiscal || "Fiscal da Obra"]);
+  aoa.push(["", `${info.cargoResponsavel || "Responsável Técnico"}${info.crea ? " — CREA/CAU " + info.crea : ""}`, "", "", "", "", "", "", `${info.cargoFiscal || "Fiscal da Obra"}${info.cpfFiscal ? " — CPF " + info.cpfFiscal : ""}`]);
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws["!cols"] = [
+    { wch: 10 }, { wch: 50 }, { wch: 8 }, { wch: 10 }, { wch: 14 }, { wch: 14 },
+    { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 14 },
+    { wch: 8 }, { wch: 14 },
+  ];
+  ws["!freeze"] = { xSplit: 0, ySplit: 7 } as never;
+  ws["!merges"] = [
+    { s: { r: 0, c: 1 }, e: { r: 0, c: 12 } }, // Title centered
+    { s: { r: 5, c: 0 }, e: { r: 5, c: 5 } },  // PLANEJAMENTO
+    { s: { r: 5, c: 6 }, e: { r: 5, c: 8 } },  // EXEC FÍSICO
+    { s: { r: 5, c: 9 }, e: { r: 5, c: 11 } }, // EXEC FINANCEIRO
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, `BM-${String(measurementNumber).padStart(2, "0")}`);
+  const finalName = fileName || `boletim-medicao-${String(measurementNumber).padStart(2, "0")}-${projectName}.xlsx`;
+  XLSX.writeFile(wb, finalName);
 }
+
 
 export function exportRelatorioPdf(
   rows: BudgetRow[],
