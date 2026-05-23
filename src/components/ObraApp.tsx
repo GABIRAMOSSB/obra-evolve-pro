@@ -1319,7 +1319,10 @@ function Dashboard({
               obraId={data.id}
               currentMeasurement={getCurrentMeasurement(data)}
             />
+
+            <SignatureBlock info={info} municipio={info.municipio} />
           </TabsContent>
+
 
           <TabsContent value="diario">
             <DiaryPanel obraId={data.id} diaries={data.diaries} onUpdate={updateDiary} onRemove={removeDiary} />
