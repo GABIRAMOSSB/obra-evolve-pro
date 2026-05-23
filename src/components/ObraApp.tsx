@@ -1728,15 +1728,25 @@ function ServiceRow({
           {qtdAnterior > 0 ? fmtNum(qtdAnterior) : "—"}
         </td>
         <td className="px-1 py-1 bg-[var(--measure)]/10">
-          <Input
-            value={qty}
-            onChange={(e) => setQty(e.target.value)}
-            onBlur={onQtyBlur}
-            inputMode="decimal"
-            className="h-7 text-right text-xs bg-card"
-            placeholder="0"
-          />
+          {row.quantidade > 0 && qtdAnterior >= row.quantidade - 1e-6 ? (
+            <div
+              className="h-7 flex items-center justify-end px-2 text-right text-xs rounded bg-muted text-muted-foreground cursor-not-allowed select-none"
+              title="Item concluído — campo bloqueado"
+            >
+              —
+            </div>
+          ) : (
+            <Input
+              value={qty}
+              onChange={(e) => setQty(e.target.value)}
+              onBlur={onQtyBlur}
+              inputMode="decimal"
+              className="h-7 text-right text-xs bg-card"
+              placeholder="0"
+            />
+          )}
         </td>
+
         <td className="px-2 py-1.5 text-right font-semibold border-r border-border bg-[var(--measure)]/5">
           {qtdAtual > 0 ? fmtNum(qtdAtual) : "—"}
         </td>
