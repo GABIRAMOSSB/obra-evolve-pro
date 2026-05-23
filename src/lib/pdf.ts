@@ -9,6 +9,49 @@ function fmtDateBR(d: Date) {
 }
 
 
+type Cell = string | number | { f: string } | null;
+type StyledCell = { v?: string | number; f?: string; t?: string; s?: Record<string, unknown> };
+
+const NAVY = "082B5C";
+const ORANGE = "C94B16";
+const GREEN = "15803D";
+const LIGHT_ORANGE = "FDEBDC";
+const LIGHT_GREEN = "DCFCE7";
+const GROUP_BG = "E8EEF7";
+const HEADER_BG = "0F3D7A";
+const SUBHEADER_BG = "D7E2F0";
+const BORDER = { style: "thin", color: { rgb: "B0B7C3" } };
+const ALL_BORDERS = { top: BORDER, bottom: BORDER, left: BORDER, right: BORDER };
+
+function styleHeader(bg: string, color = "FFFFFF", size = 11): Record<string, unknown> {
+  return {
+    font: { bold: true, color: { rgb: color }, sz: size, name: "Calibri" },
+    fill: { fgColor: { rgb: bg } },
+    alignment: { horizontal: "center", vertical: "center", wrapText: true },
+    border: ALL_BORDERS,
+  };
+}
+
+function styleCell(opts: {
+  bold?: boolean; align?: "left" | "center" | "right"; bg?: string;
+  color?: string; numFmt?: string; locked?: boolean; italic?: boolean; size?: number;
+} = {}): Record<string, unknown> {
+  return {
+    font: {
+      bold: opts.bold ?? false,
+      italic: opts.italic ?? false,
+      color: { rgb: opts.color ?? "1F2937" },
+      sz: opts.size ?? 10,
+      name: "Calibri",
+    },
+    fill: opts.bg ? { fgColor: { rgb: opts.bg } } : undefined,
+    alignment: { horizontal: opts.align ?? "left", vertical: "center", wrapText: true },
+    border: ALL_BORDERS,
+    numFmt: opts.numFmt,
+    protection: { locked: opts.locked ?? true },
+  };
+}
+
 export function exportAcompanhamentoXlsx(
   rows: BudgetRow[],
   evolutions: Record<string, Evolution>,
@@ -18,33 +61,36 @@ export function exportAcompanhamentoXlsx(
   fileName?: string,
 ) {
   const wb = XLSX.utils.book_new();
-  const aoa: (string | number | { f: string } | null)[][] = [];
+  const aoa: Cell[][] = [];
 
-  // Header banner
+  // Header banner (row 1)
   aoa.push([`BM-${String(measurementNumber).padStart(2, "0")}`, "BOLETIM DE MEDIÇÃO", "", "", "", "", "", "", "", "", "", "", "", new Date().toLocaleDateString("pt-BR")]);
   aoa.push([]);
+  // Metadata (rows 3-5)
   aoa.push(["Licitador:", info.cliente || "—", "", "Contratante:", info.contratante || "—", "", "Empresa Executora:", info.empresaExecutora || "—", "", "CNPJ:", info.cnpj || "—", "", "Nº Contrato:", info.numeroContrato || "—"]);
   aoa.push(["Obra:", projectName, "", "Endereço:", info.endereco || "—", "", "Município:", info.municipio || "—", "", "UF:", info.estado || "—", "", "Nº Licitação:", info.numeroLicitacao || "—"]);
   aoa.push(["Resp. Técnico:", info.responsavelTecnico || "—", "", "CREA/CAU:", info.crea || "—", "", "ART/RRT:", info.artRrt || "—", "", "Fiscal:", info.fiscal || "—", "", "CPF Fiscal:", info.cpfFiscal || "—"]);
   aoa.push([]);
 
-  // Table headers (2 lines)
+  // Table headers (rows 7 & 8)
   aoa.push(["PLANEJAMENTO", "", "", "", "", "", "EXECUTADO FÍSICO", "", "", "EXECUTADO FINANCEIRO (R$)", "", "", "DESVIO", "STATUS"]);
   aoa.push(["Item", "Descrição", "Und", "Quant.", "V. Unit c/ BDI", "Total", "Acum. Anterior", "Período", "Acum. Atual", "Acum. Anterior", "Período", "Acum. Atual", "%", "Status"]);
 
   const dataStart = aoa.length + 1; // 1-based row of first data row
   let r = dataStart;
   const itemRows: number[] = [];
+  const groupRows: number[] = [];
+  const periodEditableRows: number[] = []; // unlocked cells (H column)
   for (const row of rows) {
     if (row.isGroup) {
       aoa.push([row.item, row.descricao.toUpperCase(), "", "", "", "", "", "", "", "", "", "", "", "ETAPA"]);
+      groupRows.push(r);
     } else {
       const list = evolutions[row.item]?.measurements ?? [];
       const qAnt = list.filter((m) => m.closed).reduce((s, m) => s + (m.quantExec || 0), 0);
       const open = list.find((m) => !m.closed);
       const qPer = open?.quantExec || 0;
       const a = activityMetrics(row, evolutions[row.item]);
-      // Cells with formulas: G=qAnt(value), H=qPer(value), I=G+H, J=G*E, K=H*E, L=I*E, M=L/total*100
       aoa.push([
         row.item,
         row.descricao,
@@ -62,6 +108,8 @@ export function exportAcompanhamentoXlsx(
         a.status,
       ]);
       itemRows.push(r);
+      // Lock "Período" (col H) only when item already 100% measured
+      if (qAnt < row.quantidade) periodEditableRows.push(r);
     }
     r++;
   }
@@ -94,24 +142,140 @@ export function exportAcompanhamentoXlsx(
   aoa.push(["", info.responsavelTecnico || "Responsável Técnico", "", "", "", "", "", "", info.fiscal || "Fiscal da Obra"]);
   aoa.push(["", `${info.cargoResponsavel || "Responsável Técnico"}${info.crea ? " — CREA/CAU " + info.crea : ""}`, "", "", "", "", "", "", `${info.cargoFiscal || "Fiscal da Obra"}${info.cpfFiscal ? " — CPF " + info.cpfFiscal : ""}`]);
 
-  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const ws = XLSX.utils.aoa_to_sheet(aoa as (string | number | null)[][]);
+
+  // === Styling ===
+  const setStyle = (addr: string, style: Record<string, unknown>) => {
+    if (!ws[addr]) ws[addr] = { t: "s", v: "" };
+    (ws[addr] as StyledCell).s = style;
+  };
+  const col = (n: number) => XLSX.utils.encode_col(n);
+  const addr = (rowIdx1: number, colIdx0: number) => `${col(colIdx0)}${rowIdx1}`;
+
+  // Banner row 1
+  for (let c = 0; c < 14; c++) {
+    setStyle(addr(1, c), {
+      font: { bold: true, color: { rgb: "FFFFFF" }, sz: 14, name: "Calibri" },
+      fill: { fgColor: { rgb: NAVY } },
+      alignment: { horizontal: c === 0 ? "left" : c === 13 ? "right" : "center", vertical: "center" },
+      border: ALL_BORDERS,
+    });
+  }
+  // Metadata rows 3-5: labels bold, values normal
+  for (let row1 = 3; row1 <= 5; row1++) {
+    for (let c = 0; c < 14; c++) {
+      const isLabel = c % 3 === 0;
+      setStyle(addr(row1, c), styleCell({
+        bold: isLabel,
+        color: isLabel ? "475569" : "0F172A",
+        bg: isLabel ? "F1F5F9" : "FFFFFF",
+        size: 9,
+      }));
+    }
+  }
+
+  // Group header row 7
+  for (let c = 0; c < 14; c++) {
+    let bg = HEADER_BG;
+    if (c >= 6 && c <= 8) bg = "B45309"; // orange-ish for executado físico
+    if (c >= 9 && c <= 11) bg = "166534"; // green for financeiro
+    setStyle(addr(7, c), styleHeader(bg));
+  }
+  // Sub-header row 8
+  for (let c = 0; c < 14; c++) {
+    setStyle(addr(8, c), styleHeader(SUBHEADER_BG, "0F172A", 10));
+  }
+
+  // Data rows
+  for (let row1 = dataStart; row1 < totalRow; row1++) {
+    const isGroup = groupRows.includes(row1);
+    for (let c = 0; c < 14; c++) {
+      if (isGroup) {
+        setStyle(addr(row1, c), styleCell({
+          bold: true, bg: GROUP_BG, color: "082B5C", size: 10,
+          align: c === 0 ? "center" : c === 1 ? "left" : "center",
+        }));
+      } else {
+        let numFmt: string | undefined;
+        let align: "left" | "center" | "right" = "right";
+        let bg: string | undefined;
+        let color: string | undefined;
+        let bold = false;
+        if (c === 0) { align = "center"; bold = true; }
+        else if (c === 1) { align = "left"; }
+        else if (c === 2) { align = "center"; }
+        else if (c === 3 || c === 6 || c === 8) numFmt = "#,##0.00";
+        else if (c === 7) { numFmt = "#,##0.00"; bg = LIGHT_ORANGE; }
+        else if (c === 4 || c === 5 || c === 9) numFmt = "R$ #,##0.00";
+        else if (c === 10) { numFmt = "R$ #,##0.00"; bg = LIGHT_ORANGE; color = ORANGE; bold = true; }
+        else if (c === 11) { numFmt = "R$ #,##0.00"; bg = LIGHT_GREEN; color = GREEN; bold = true; }
+        else if (c === 12) { numFmt = '0.0"%"'; }
+        else if (c === 13) align = "center";
+        const locked = !(c === 7 && periodEditableRows.includes(row1));
+        setStyle(addr(row1, c), styleCell({ bold, align, bg, color, numFmt, locked }));
+      }
+    }
+  }
+  // Total row
+  if (itemRows.length > 0) {
+    for (let c = 0; c < 14; c++) {
+      let numFmt: string | undefined;
+      if (c === 3 || c === 6 || c === 7 || c === 8) numFmt = "#,##0.00";
+      else if (c >= 4 && c <= 11) numFmt = "R$ #,##0.00";
+      else if (c === 12) numFmt = '0.0"%"';
+      setStyle(addr(totalRow, c), {
+        font: { bold: true, color: { rgb: "FFFFFF" }, sz: 11, name: "Calibri" },
+        fill: { fgColor: { rgb: NAVY } },
+        alignment: { horizontal: c <= 2 ? "left" : "right", vertical: "center" },
+        border: ALL_BORDERS,
+        numFmt,
+      });
+    }
+  }
+
+  // Column widths
   ws["!cols"] = [
-    { wch: 10 }, { wch: 50 }, { wch: 8 }, { wch: 10 }, { wch: 14 }, { wch: 14 },
-    { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 14 },
-    { wch: 8 }, { wch: 14 },
+    { wch: 10 }, { wch: 50 }, { wch: 8 }, { wch: 12 }, { wch: 16 }, { wch: 16 },
+    { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 16 }, { wch: 16 }, { wch: 16 },
+    { wch: 10 }, { wch: 14 },
   ];
-  ws["!freeze"] = { xSplit: 0, ySplit: 7 } as never;
+  // Row heights
+  ws["!rows"] = [];
+  ws["!rows"][0] = { hpt: 26 }; // banner
+  ws["!rows"][6] = { hpt: 22 }; // group header
+  ws["!rows"][7] = { hpt: 28 }; // sub-header
+
+  // Freeze first 8 rows (banner + metadata + headers) and first 2 cols (Item + Descrição)
+  ws["!freeze"] = { xSplit: 2, ySplit: 8 } as never;
+  (ws as Record<string, unknown>)["!protect"] = {
+    password: "",
+    selectLockedCells: true,
+    selectUnlockedCells: true,
+    formatCells: false,
+    formatColumns: true,
+    formatRows: true,
+    sort: true,
+    autoFilter: true,
+  };
   ws["!merges"] = [
     { s: { r: 0, c: 1 }, e: { r: 0, c: 12 } }, // Title centered
-    { s: { r: 5, c: 0 }, e: { r: 5, c: 5 } },  // PLANEJAMENTO
-    { s: { r: 5, c: 6 }, e: { r: 5, c: 8 } },  // EXEC FÍSICO
-    { s: { r: 5, c: 9 }, e: { r: 5, c: 11 } }, // EXEC FINANCEIRO
+    { s: { r: 6, c: 0 }, e: { r: 6, c: 5 } },  // PLANEJAMENTO
+    { s: { r: 6, c: 6 }, e: { r: 6, c: 8 } },  // EXEC FÍSICO
+    { s: { r: 6, c: 9 }, e: { r: 6, c: 11 } }, // EXEC FINANCEIRO
+    { s: { r: 6, c: 12 }, e: { r: 7, c: 12 } }, // DESVIO spans 2
+    { s: { r: 6, c: 13 }, e: { r: 7, c: 13 } }, // STATUS spans 2
   ];
+
+  // Print setup: A4 landscape, fit to 1 page wide, repeat headers
+  (ws as Record<string, unknown>)["!pageSetup"] = { orientation: "landscape", paperSize: 9, fitToWidth: 1, fitToHeight: 0 };
+  (ws as Record<string, unknown>)["!printHeader"] = [1, 8]; // repeat rows 1-8 on each printed page
+  (ws as Record<string, unknown>)["!margins"] = { left: 0.3, right: 0.3, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 };
 
   XLSX.utils.book_append_sheet(wb, ws, `BM-${String(measurementNumber).padStart(2, "0")}`);
   const finalName = fileName || `boletim-medicao-${String(measurementNumber).padStart(2, "0")}-${projectName}.xlsx`;
   XLSX.writeFile(wb, finalName);
 }
+
 
 
 export function exportRelatorioPdf(
