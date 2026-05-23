@@ -108,14 +108,18 @@ export function ObraInfoDialog({ nome, info, onSave }: Props) {
           </section>
 
           <section>
-            <h4 className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground mb-2">Responsabilidade técnica</h4>
+            <h4 className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground mb-2">Responsáveis da obra</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {field("responsavelTecnico", "Responsável técnico")}
+              {field("responsavelTecnico", "Responsável técnico / Engenheiro")}
               {field("crea", "CREA / CAU")}
+              {field("cargoResponsavel", "Cargo / Função do engenheiro")}
               {field("artRrt", "ART / RRT")}
               {field("fiscal", "Fiscal da obra")}
+              {field("cpfFiscal", "CPF do fiscal", "000.000.000-00")}
+              {field("cargoFiscal", "Cargo / Função do fiscal")}
             </div>
           </section>
+
         </div>
 
         <DialogFooter>
