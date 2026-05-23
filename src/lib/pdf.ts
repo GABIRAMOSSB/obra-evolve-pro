@@ -1,6 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import * as XLSX from "xlsx";
+import XLSX from "xlsx-js-style";
 import type { BudgetRow, DiaryEntry, Evolution, ObraInfo } from "./types";
 import { activityMetrics, fmtBRL, fmtNum, projectMetrics } from "./calc";
 
