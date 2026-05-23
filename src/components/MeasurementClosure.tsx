@@ -163,7 +163,9 @@ export function MeasurementClosure({
           current,
           data.nome,
           closedAt,
+          data.info ?? {},
         );
+
         await uploadDocumentBlob(
           companyId,
           data.id,
