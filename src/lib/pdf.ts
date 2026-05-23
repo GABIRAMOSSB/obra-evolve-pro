@@ -586,16 +586,10 @@ export function buildMeasurementPdfBlob(
     xR + sigW / 2, endY + 10, { align: "center" },
   );
 
-  doc.setFontSize(7);
-  doc.setTextColor(140);
-  doc.text(
-    `${projectName} • ${bm} • Fechada em ${closedAt.toLocaleString("pt-BR")}`,
-    pageW / 2, pageH - 5, { align: "center" },
-  );
-
   void projectMetrics;
   return doc.output("blob");
 }
+
 
 async function loadImageAsDataUrl(url: string): Promise<{ dataUrl: string; w: number; h: number } | null> {
   try {
