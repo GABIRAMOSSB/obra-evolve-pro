@@ -1,8 +1,13 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
-import type { BudgetRow, DiaryEntry, Evolution } from "./types";
+import type { BudgetRow, DiaryEntry, Evolution, ObraInfo } from "./types";
 import { activityMetrics, fmtBRL, fmtNum, projectMetrics } from "./calc";
+
+function fmtDateBR(d: Date) {
+  return d.toLocaleDateString("pt-BR");
+}
+
 
 export function exportAcompanhamentoXlsx(
   rows: BudgetRow[],
