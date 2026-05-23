@@ -68,7 +68,10 @@ export interface ObraInfo {
   estado?: string;
   responsavelTecnico?: string;
   crea?: string;
+  cargoResponsavel?: string;
   fiscal?: string;
+  cpfFiscal?: string;
+  cargoFiscal?: string;
   artRrt?: string;
   empresaExecutora?: string;
   cnpj?: string;
@@ -77,6 +80,7 @@ export interface ObraInfo {
   dataInicioObra?: string; // yyyy-mm-dd
   prazoContratualDias?: number;
 }
+
 
 export interface MeasurementAuditEntry {
   number: number;
