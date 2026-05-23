@@ -1421,6 +1421,41 @@ function BMField({
   );
 }
 
+function SignatureBlock({ info, municipio }: { info: ObraInfo; municipio?: string }) {
+  const hoje = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+  const local = municipio ? `${municipio}${info.estado ? "/" + info.estado : ""}` : "____________________";
+  return (
+    <Card className="overflow-hidden border-border shadow-[var(--shadow-card)] p-0 print:break-inside-avoid">
+      <div className="bg-primary text-primary-foreground px-4 py-2 text-[11px] font-bold uppercase tracking-[0.2em]">
+        Assinaturas
+      </div>
+      <div className="px-6 py-6 space-y-8">
+        <div className="text-xs text-foreground">
+          {local}, {hoje}.
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 pt-10">
+          <div className="text-center">
+            <div className="border-t border-foreground/70 mx-6 mb-2" />
+            <div className="text-sm font-bold uppercase">{info.responsavelTecnico || "____________________"}</div>
+            <div className="text-[11px] text-muted-foreground mt-0.5">
+              {info.cargoResponsavel || "Responsável Técnico"} {info.crea ? `• CREA/CAU ${info.crea}` : ""}
+            </div>
+            {info.artRrt ? <div className="text-[10px] text-muted-foreground">ART/RRT: {info.artRrt}</div> : null}
+          </div>
+          <div className="text-center">
+            <div className="border-t border-foreground/70 mx-6 mb-2" />
+            <div className="text-sm font-bold uppercase">{info.fiscal || "____________________"}</div>
+            <div className="text-[11px] text-muted-foreground mt-0.5">
+              {info.cargoFiscal || "Fiscal da Obra"} {info.cpfFiscal ? `• CPF ${info.cpfFiscal}` : ""}
+            </div>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+
 
 function ActivitiesTable({
   rows,
