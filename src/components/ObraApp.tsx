@@ -989,6 +989,33 @@ function Dashboard({
             <Button variant="outline" size="sm" className="border-border" onClick={() => exportRelatorioPdf(filteredRows, data.evolutions, data.fileName)}>
               <FileText className="w-4 h-4 mr-1 text-destructive" /> PDF
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-border"
+              onClick={() => {
+                const blob = buildMeasurementPdfBlob(
+                  filteredRows,
+                  data.evolutions,
+                  currentMeasNumber,
+                  data.nome,
+                  new Date(),
+                  info,
+                  periodoInicio ?? undefined,
+                );
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `BM-${String(currentMeasNumber).padStart(2, "0")}-${data.nome.replace(/[^a-z0-9-_]+/gi, "_")}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                toast.success(`Boletim BM-${String(currentMeasNumber).padStart(2, "0")} exportado`);
+              }}
+            >
+              <FileText className="w-4 h-4 mr-1 text-primary" /> Boletim PDF
+            </Button>
             <MeasurementClosure
               data={data}
               setData={setData}
