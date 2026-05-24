@@ -706,6 +706,7 @@ function Dashboard({
   const [filterItem, setFilterItem] = useState("");
   const [filterDesc, setFilterDesc] = useState("");
   const [filterPercMin, setFilterPercMin] = useState("");
+  const [filterMeasurements, setFilterMeasurements] = useState<string[]>([]);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const toggleCollapse = (item: string) =>
     setCollapsed((c) => ({ ...c, [item]: !c[item] }));
