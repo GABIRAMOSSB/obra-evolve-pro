@@ -1308,6 +1308,7 @@ function Dashboard({
                       setFilterItem("");
                       setFilterDesc("");
                       setFilterPercMin("");
+                      setFilterMeasurements([]);
                     }}
                   >
                     Limpar todos
