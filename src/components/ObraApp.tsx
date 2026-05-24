@@ -1261,6 +1261,13 @@ function Dashboard({
                   onRemove: () => setFilterExec(filterExec.filter((x) => x !== e)),
                 }),
               );
+              filterMeasurements.forEach((m) =>
+                chips.push({
+                  label: `Medição: BM-${String(m).padStart(2, "0")}`,
+                  onRemove: () =>
+                    setFilterMeasurements(filterMeasurements.filter((x) => x !== m)),
+                }),
+              );
               if (filterItem.trim())
                 chips.push({ label: `Item: ${filterItem}`, onRemove: () => setFilterItem("") });
               if (filterDesc.trim())
