@@ -706,6 +706,7 @@ function Dashboard({
   const [filterItem, setFilterItem] = useState("");
   const [filterDesc, setFilterDesc] = useState("");
   const [filterPercMin, setFilterPercMin] = useState("");
+  const [filterMeasurements, setFilterMeasurements] = useState<string[]>([]);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const toggleCollapse = (item: string) =>
     setCollapsed((c) => ({ ...c, [item]: !c[item] }));
@@ -729,10 +730,11 @@ function Dashboard({
   );
 
   const hasRowFilters =
-    filterStatuses.length > 0 || !!filterPercMin || filterExec.length > 0;
+    filterStatuses.length > 0 || !!filterPercMin || filterExec.length > 0 || filterMeasurements.length > 0;
 
   // Rows that match filters (ignoring collapse) — used for metrics & exports.
   const filteredRows = useMemo(() => {
+    const measNums = filterMeasurements.map((n) => parseInt(n, 10)).filter((n) => !isNaN(n));
     return data.rows.filter((r) => {
       if (filterEtapas.length > 0) {
         const inEtapa = filterEtapas.some(
@@ -757,12 +759,17 @@ function Dashboard({
             (filterExec.includes("nao") && !executado);
           if (!matches) return false;
         }
+        if (measNums.length > 0) {
+          const ms = a.measurements ?? [];
+          const hit = ms.some((m) => measNums.includes(m.number) && (m.quantExec || 0) > 0);
+          if (!hit) return false;
+        }
       } else if (hasRowFilters) {
         return false;
       }
       return true;
     });
-  }, [data, filterEtapas, itemTokens, filterDesc, filterStatuses, filterPercMin, filterExec, hasRowFilters]);
+  }, [data, filterEtapas, itemTokens, filterDesc, filterStatuses, filterPercMin, filterExec, filterMeasurements, hasRowFilters]);
 
   // Visible rows additionally hide descendants of collapsed groups.
   const visibleRows = useMemo(() => {
@@ -1150,7 +1157,7 @@ function Dashboard({
 
           <TabsContent value="atividades" className="space-y-4">
             <Card className="p-4">
-              <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
                 <div>
                   <Label className="text-xs">Etapa</Label>
                   <MultiSelect
@@ -1162,6 +1169,18 @@ function Dashboard({
                     onChange={setFilterEtapas}
                     placeholder="Todas as etapas"
                     searchable
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Medição</Label>
+                  <MultiSelect
+                    options={Array.from({ length: currentMeasNumber }, (_, i) => {
+                      const n = i + 1;
+                      return { value: String(n), label: `BM-${String(n).padStart(2, "0")}` };
+                    })}
+                    value={filterMeasurements}
+                    onChange={setFilterMeasurements}
+                    placeholder="Todas as medições"
                   />
                 </div>
                 <div>
@@ -1242,6 +1261,13 @@ function Dashboard({
                   onRemove: () => setFilterExec(filterExec.filter((x) => x !== e)),
                 }),
               );
+              filterMeasurements.forEach((m) =>
+                chips.push({
+                  label: `Medição: BM-${String(m).padStart(2, "0")}`,
+                  onRemove: () =>
+                    setFilterMeasurements(filterMeasurements.filter((x) => x !== m)),
+                }),
+              );
               if (filterItem.trim())
                 chips.push({ label: `Item: ${filterItem}`, onRemove: () => setFilterItem("") });
               if (filterDesc.trim())
@@ -1282,6 +1308,7 @@ function Dashboard({
                       setFilterItem("");
                       setFilterDesc("");
                       setFilterPercMin("");
+                      setFilterMeasurements([]);
                     }}
                   >
                     Limpar todos
