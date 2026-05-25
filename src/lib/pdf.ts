@@ -2,7 +2,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import XLSX from "xlsx-js-style";
 import type { BudgetRow, DiaryEntry, Evolution, ObraInfo } from "./types";
-import { activityMetrics, fmtBRL, fmtNum, projectMetrics } from "./calc";
+import { activityMetrics, calcularResumoCabecalhoBM, fmtBRL, fmtNum, projectMetrics } from "./calc";
 
 function fmtDateBR(d: Date) {
   return d.toLocaleDateString("pt-BR");
