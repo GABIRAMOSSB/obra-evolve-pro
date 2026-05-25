@@ -1152,7 +1152,7 @@ function Dashboard({
             <BMField label="Nº do BM" value={resumoBM.descricaoBM} strong tone="primary" />
             <BMField label="Data da Medição" value={resumoBM.dataMedicao} />
             <BMField label="Valor total do contrato" value={fmtBRL(resumoBM.valorTotalObra)} strong />
-            <BMField label="Valor desta medição" value={fmtBRL(resumoBM.valorDestaMedicao)} strong tone={resumoBM.valorDestaMedicao > 0 ? "measure" : "destructive"} />
+            <BMField label="Valor desta medição" value={fmtBRL(resumoBM.valorDestaMedicao)} strong tone="measure" />
             <BMField label="Valor acumulado" value={fmtBRL(resumoBM.valorAcumulado)} strong tone="success" />
             <BMField label="% Acumulado" value={`${fmtNum(resumoBM.percentualAcumulado)}%`} strong tone="primary" progress={resumoBM.percentualAcumulado} />
             <BMField label="Saldo restante" value={fmtBRL(resumoBM.saldoRestante)} strong />
