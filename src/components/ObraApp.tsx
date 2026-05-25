@@ -1077,11 +1077,12 @@ function Dashboard({
       <main className="max-w-[1600px] mx-auto px-6 py-6 space-y-5">
         {/* 5 Cards de resumo */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-          <SummaryCard label="Valor total da obra" value={fmtBRL(m.total)} icon="total" />
-          <SummaryCard label="Valor medido nesta medição" value={fmtBRL(valorPeriodo)} icon="measure" tone="measure" />
-          <SummaryCard label="Acumulado executado" value={fmtBRL(m.exec)} icon="trend" tone="success" />
-          <SummaryCard label="Saldo restante" value={fmtBRL(m.restante)} icon="balance" tone="warning" />
-          <SummaryCard label="Percentual acumulado" value={`${fmtNum(m.percent)}%`} icon="percent" tone="primary" progress={m.percent} />
+          <SummaryCard label="Valor total da obra" value={fmtBRL(resumoBM.valorTotalObra)} icon="total" />
+          <SummaryCard label="Valor medido nesta medição" value={fmtBRL(resumoBM.valorDestaMedicao)} icon="measure" tone="measure" />
+          <SummaryCard label="Acumulado executado" value={fmtBRL(resumoBM.valorAcumulado)} icon="trend" tone="success" />
+          <SummaryCard label="Saldo restante" value={fmtBRL(resumoBM.saldoRestante)} icon="balance" tone="warning" />
+          <SummaryCard label="Percentual acumulado" value={`${fmtNum(resumoBM.percentualAcumulado)}%`} icon="percent" tone="primary" progress={resumoBM.percentualAcumulado} />
+
         </div>
 
         {/* Alerta — campos obrigatórios da obra ausentes */}
