@@ -17,6 +17,7 @@ import {
   groupMetrics,
   isChildOf,
   projectMetrics,
+  calcularResumoCabecalhoBM,
 } from "@/lib/calc";
 import {
   exportAcompanhamentoXlsx,
@@ -910,38 +911,24 @@ function Dashboard({
     toast.success(`${item} removido`);
   }
 
-  // Métricas da medição atual (período aberto) — separadas do acumulado total.
+  // BM selecionado: se o filtro de medição estiver ativo, usa o maior número
+  // selecionado; caso contrário, usa a medição atualmente em aberto.
   const currentMeasNumber = getCurrentMeasurement(data);
-  const valorPeriodo = useMemo(() => {
-    let v = 0;
-    for (const r of data.rows) {
-      if (r.isGroup) continue;
-      const evo = data.evolutions[r.item];
-      const open = evo?.measurements?.find((mm) => !mm.closed && mm.number === currentMeasNumber);
-      if (open) v += (open.quantExec || 0) * (r.valorUnitBDI || 0);
-    }
-    return v;
-  }, [data.rows, data.evolutions, currentMeasNumber]);
+  const selectedBM = useMemo(() => {
+    const nums = filterMeasurements.map((n) => parseInt(n, 10)).filter((n) => !isNaN(n));
+    return nums.length > 0 ? Math.max(...nums) : currentMeasNumber;
+  }, [filterMeasurements, currentMeasNumber]);
+
+  // Resumo do cabeçalho — sempre com TODAS as linhas (data.rows), nunca com
+  // filteredRows: os totais globais não podem mudar com filtros de tela.
+  const resumoBM = useMemo(
+    () => calcularResumoCabecalhoBM(data.rows, data.evolutions, selectedBM, data.info ?? {}),
+    [data.rows, data.evolutions, data.info, selectedBM],
+  );
 
   const info = data.info ?? {};
-  const dataMedicao = new Date().toLocaleDateString("pt-BR");
-  const bmCodigo = `BM-${String(currentMeasNumber).padStart(2, "0")}`;
-  // Período da medição: do fechamento da medição anterior (ou data de início da obra) até hoje
-  const periodoInicio = useMemo(() => {
-    let last: string | undefined;
-    for (const evo of Object.values(data.evolutions)) {
-      for (const mm of evo?.measurements ?? []) {
-        if (mm.closed && mm.closedAt && (!last || mm.closedAt > last)) last = mm.closedAt;
-      }
-    }
-    if (last) return new Date(last);
-    if (info.dataInicioObra) return new Date(info.dataInicioObra + "T00:00:00");
-    return null;
-  }, [data.evolutions, info.dataInicioObra]);
-  const periodoFim = new Date();
-  const periodoLabel = periodoInicio
-    ? `${periodoInicio.toLocaleDateString("pt-BR")} a ${periodoFim.toLocaleDateString("pt-BR")}`
-    : `até ${periodoFim.toLocaleDateString("pt-BR")}`;
+  const periodoInicio = resumoBM.periodoInicio ? new Date(resumoBM.periodoInicio + "T00:00:00") : null;
+
 
 
   return (
@@ -983,7 +970,7 @@ function Dashboard({
               <ObraInfoDialog nome={data.nome} info={data.info} onSave={handleSaveInfo} />
             </div>
 
-            <Button variant="outline" size="sm" className="border-border" onClick={() => exportAcompanhamentoXlsx(filteredRows, data.evolutions, info, data.nome, currentMeasNumber)}>
+            <Button variant="outline" size="sm" className="border-border" onClick={() => exportAcompanhamentoXlsx(filteredRows, data.evolutions, info, data.nome, selectedBM, undefined, data.rows)}>
               <FileSpreadsheet className="w-4 h-4 mr-1 text-success" /> Excel
             </Button>
             <Button variant="outline" size="sm" className="border-border" onClick={() => exportRelatorioPdf(filteredRows, data.evolutions, data.fileName)}>
@@ -997,21 +984,22 @@ function Dashboard({
                 const blob = buildMeasurementPdfBlob(
                   filteredRows,
                   data.evolutions,
-                  currentMeasNumber,
+                  selectedBM,
                   data.nome,
                   new Date(),
                   info,
                   periodoInicio ?? undefined,
+                  data.rows,
                 );
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
                 a.href = url;
-                a.download = `BM-${String(currentMeasNumber).padStart(2, "0")}-${data.nome.replace(/[^a-z0-9-_]+/gi, "_")}.pdf`;
+                a.download = `${resumoBM.codigoBM}-${data.nome.replace(/[^a-z0-9-_]+/gi, "_")}.pdf`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
-                toast.success(`Boletim BM-${String(currentMeasNumber).padStart(2, "0")} exportado`);
+                toast.success(`Boletim ${resumoBM.codigoBM} exportado`);
               }}
             >
               <FileText className="w-4 h-4 mr-1 text-primary" /> Boletim PDF
@@ -1090,11 +1078,12 @@ function Dashboard({
       <main className="max-w-[1600px] mx-auto px-6 py-6 space-y-5">
         {/* 5 Cards de resumo */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-          <SummaryCard label="Valor total da obra" value={fmtBRL(m.total)} icon="total" />
-          <SummaryCard label="Valor medido nesta medição" value={fmtBRL(valorPeriodo)} icon="measure" tone="measure" />
-          <SummaryCard label="Acumulado executado" value={fmtBRL(m.exec)} icon="trend" tone="success" />
-          <SummaryCard label="Saldo restante" value={fmtBRL(m.restante)} icon="balance" tone="warning" />
-          <SummaryCard label="Percentual acumulado" value={`${fmtNum(m.percent)}%`} icon="percent" tone="primary" progress={m.percent} />
+          <SummaryCard label="Valor total da obra" value={fmtBRL(resumoBM.valorTotalObra)} icon="total" />
+          <SummaryCard label="Valor medido nesta medição" value={fmtBRL(resumoBM.valorDestaMedicao)} icon="measure" tone="measure" />
+          <SummaryCard label="Acumulado executado" value={fmtBRL(resumoBM.valorAcumulado)} icon="trend" tone="success" />
+          <SummaryCard label="Saldo restante" value={fmtBRL(resumoBM.saldoRestante)} icon="balance" tone="warning" />
+          <SummaryCard label="Percentual acumulado" value={`${fmtNum(resumoBM.percentualAcumulado)}%`} icon="percent" tone="primary" progress={resumoBM.percentualAcumulado} />
+
         </div>
 
         {/* Alerta — campos obrigatórios da obra ausentes */}
@@ -1128,10 +1117,10 @@ function Dashboard({
         {/* BOLETIM DE MEDIÇÃO */}
         <Card className="overflow-hidden border-border shadow-[var(--shadow-card)] p-0">
           <div className="bg-primary text-primary-foreground flex items-center justify-between gap-3 px-4 py-2.5">
-            <div className="font-mono text-[11px] tracking-[0.2em] opacity-80">{bmCodigo}</div>
+            <div className="font-mono text-[11px] tracking-[0.2em] opacity-80">{resumoBM.codigoBM}</div>
             <div className="font-bold tracking-[0.25em] text-sm text-center flex-1">BOLETIM DE MEDIÇÃO</div>
             <div className="font-mono text-[11px] tracking-[0.15em] opacity-80 text-right">
-              Período: {periodoLabel}
+              Período: {resumoBM.periodoLabel}
             </div>
           </div>
           {/* Linha 1 — Identificação */}
@@ -1161,13 +1150,13 @@ function Dashboard({
           </div>
           {/* Linha 4 — Resumo financeiro da medição */}
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 divide-x divide-y divide-border text-xs">
-            <BMField label="Nº do BM" value={`${bmCodigo} (${currentMeasNumber}ª Medição)`} strong tone="primary" />
-            <BMField label="Data da Medição" value={dataMedicao} />
-            <BMField label="Valor total do contrato" value={fmtBRL(m.total)} strong />
-            <BMField label="Valor desta medição" value={fmtBRL(valorPeriodo)} strong tone="measure" />
-            <BMField label="Valor acumulado" value={fmtBRL(m.exec)} strong tone="success" />
-            <BMField label="% Acumulado" value={`${fmtNum(m.percent)}%`} strong tone="primary" progress={m.percent} />
-            <BMField label="Saldo restante" value={fmtBRL(m.restante)} strong />
+            <BMField label="Nº do BM" value={resumoBM.descricaoBM} strong tone="primary" />
+            <BMField label="Data da Medição" value={resumoBM.dataMedicao} />
+            <BMField label="Valor total do contrato" value={fmtBRL(resumoBM.valorTotalObra)} strong />
+            <BMField label="Valor desta medição" value={fmtBRL(resumoBM.valorDestaMedicao)} strong tone="measure" />
+            <BMField label="Valor acumulado" value={fmtBRL(resumoBM.valorAcumulado)} strong tone="success" />
+            <BMField label="% Acumulado" value={`${fmtNum(resumoBM.percentualAcumulado)}%`} strong tone="primary" progress={resumoBM.percentualAcumulado} />
+            <BMField label="Saldo restante" value={fmtBRL(resumoBM.saldoRestante)} strong />
           </div>
         </Card>
 

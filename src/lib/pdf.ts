@@ -2,7 +2,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import XLSX from "xlsx-js-style";
 import type { BudgetRow, DiaryEntry, Evolution, ObraInfo } from "./types";
-import { activityMetrics, fmtBRL, fmtNum, projectMetrics } from "./calc";
+import { activityMetrics, calcularResumoCabecalhoBM, fmtBRL, fmtNum, projectMetrics } from "./calc";
 
 function fmtDateBR(d: Date) {
   return d.toLocaleDateString("pt-BR");
@@ -59,17 +59,40 @@ export function exportAcompanhamentoXlsx(
   projectName = "Obra",
   measurementNumber = 1,
   fileName?: string,
+  allRows?: BudgetRow[],
 ) {
   const wb = XLSX.utils.book_new();
   const aoa: Cell[][] = [];
 
+  // Resumo do cabeçalho — usa SEMPRE allRows (lista completa), para que os
+  // totais globais não mudem com filtros aplicados na tela.
+  const resumo = calcularResumoCabecalhoBM(
+    allRows ?? rows,
+    evolutions,
+    measurementNumber,
+    info,
+  );
+
   // Header banner (row 1)
-  aoa.push([`BM-${String(measurementNumber).padStart(2, "0")}`, "BOLETIM DE MEDIÇÃO", "", "", "", "", "", "", "", "", "", "", "", new Date().toLocaleDateString("pt-BR")]);
+  aoa.push([resumo.codigoBM, "BOLETIM DE MEDIÇÃO", "", "", "", "", "", "", "", "", "", "", `Período: ${resumo.periodoLabel}`, resumo.dataMedicao]);
   aoa.push([]);
   // Metadata (rows 3-5)
   aoa.push(["Licitador:", info.cliente || "—", "", "Contratante:", info.contratante || "—", "", "Empresa Executora:", info.empresaExecutora || "—", "", "CNPJ:", info.cnpj || "—", "", "Nº Contrato:", info.numeroContrato || "—"]);
   aoa.push(["Obra:", projectName, "", "Endereço:", info.endereco || "—", "", "Município:", info.municipio || "—", "", "UF:", info.estado || "—", "", "Nº Licitação:", info.numeroLicitacao || "—"]);
   aoa.push(["Resp. Técnico:", info.responsavelTecnico || "—", "", "CREA/CAU:", info.crea || "—", "", "ART/RRT:", info.artRrt || "—", "", "Fiscal:", info.fiscal || "—", "", "CPF Fiscal:", info.cpfFiscal || "—"]);
+  // Linha de resumo financeiro (idêntica à tela e ao PDF)
+  aoa.push([
+    "Nº do BM:", resumo.descricaoBM, "",
+    "Data:", resumo.dataMedicao, "",
+    "Valor Total da Obra:", resumo.valorTotalObra, "",
+    "Valor desta Medição:", resumo.valorDestaMedicao, "",
+    "Valor Acumulado:", resumo.valorAcumulado,
+  ]);
+  aoa.push([
+    "% Acumulado:", resumo.percentualAcumulado / 100, "",
+    "Saldo Restante:", resumo.saldoRestante, "",
+    "", "", "", "", "", "", "", "",
+  ]);
   aoa.push([]);
 
   // Table headers (rows 7 & 8)
@@ -174,16 +197,37 @@ export function exportAcompanhamentoXlsx(
     }
   }
 
-  // Group header row 7
+  // Financial summary rows 6-7 (Nº do BM, Data, Valor Total da Obra...)
+  for (let row1 = 6; row1 <= 7; row1++) {
+    for (let c = 0; c < 14; c++) {
+      const isLabel = c % 3 === 0;
+      const isMoney = !isLabel && (c === 7 || c === 10 || c === 13 || (row1 === 7 && c === 4));
+      const isPercent = row1 === 7 && c === 1;
+      let bg = isLabel ? "F1F5F9" : "FFFFFF";
+      let color = isLabel ? "475569" : "0F172A";
+      if (row1 === 6 && c === 10) { bg = "FDEBDC"; color = ORANGE; } // Valor desta medição
+      if (row1 === 6 && c === 13) { bg = "DCFCE7"; color = GREEN; } // Valor acumulado
+      setStyle(addr(row1, c), styleCell({
+        bold: isLabel || isMoney || isPercent,
+        color,
+        bg,
+        size: 9,
+        align: isLabel ? "left" : "right",
+        numFmt: isMoney ? "R$ #,##0.00" : isPercent ? "0.0%" : undefined,
+      }));
+    }
+  }
+
+  // Group header row 9
   for (let c = 0; c < 14; c++) {
     let bg = HEADER_BG;
     if (c >= 6 && c <= 8) bg = "B45309"; // orange-ish for executado físico
     if (c >= 9 && c <= 11) bg = "166534"; // green for financeiro
-    setStyle(addr(7, c), styleHeader(bg));
+    setStyle(addr(9, c), styleHeader(bg));
   }
-  // Sub-header row 8
+  // Sub-header row 10
   for (let c = 0; c < 14; c++) {
-    setStyle(addr(8, c), styleHeader(SUBHEADER_BG, "0F172A", 10));
+    setStyle(addr(10, c), styleHeader(SUBHEADER_BG, "0F172A", 10));
   }
 
   // Data rows
@@ -242,11 +286,11 @@ export function exportAcompanhamentoXlsx(
   // Row heights
   ws["!rows"] = [];
   ws["!rows"][0] = { hpt: 26 }; // banner
-  ws["!rows"][6] = { hpt: 22 }; // group header
-  ws["!rows"][7] = { hpt: 28 }; // sub-header
+  ws["!rows"][8] = { hpt: 22 }; // group header
+  ws["!rows"][9] = { hpt: 28 }; // sub-header
 
-  // Freeze first 8 rows (banner + metadata + headers) and first 2 cols (Item + Descrição)
-  ws["!freeze"] = { xSplit: 2, ySplit: 8 } as never;
+  // Freeze first 10 rows (banner + metadata + resumo + headers) and first 2 cols
+  ws["!freeze"] = { xSplit: 2, ySplit: 10 } as never;
   (ws as Record<string, unknown>)["!protect"] = {
     password: "",
     selectLockedCells: true,
@@ -258,18 +302,19 @@ export function exportAcompanhamentoXlsx(
     autoFilter: true,
   };
   ws["!merges"] = [
-    { s: { r: 0, c: 1 }, e: { r: 0, c: 12 } }, // Title centered
-    { s: { r: 6, c: 0 }, e: { r: 6, c: 5 } },  // PLANEJAMENTO
-    { s: { r: 6, c: 6 }, e: { r: 6, c: 8 } },  // EXEC FÍSICO
-    { s: { r: 6, c: 9 }, e: { r: 6, c: 11 } }, // EXEC FINANCEIRO
-    { s: { r: 6, c: 12 }, e: { r: 7, c: 12 } }, // DESVIO spans 2
-    { s: { r: 6, c: 13 }, e: { r: 7, c: 13 } }, // STATUS spans 2
+    { s: { r: 0, c: 1 }, e: { r: 0, c: 11 } }, // Title centered
+    { s: { r: 8, c: 0 }, e: { r: 8, c: 5 } },  // PLANEJAMENTO
+    { s: { r: 8, c: 6 }, e: { r: 8, c: 8 } },  // EXEC FÍSICO
+    { s: { r: 8, c: 9 }, e: { r: 8, c: 11 } }, // EXEC FINANCEIRO
+    { s: { r: 8, c: 12 }, e: { r: 9, c: 12 } }, // DESVIO spans 2
+    { s: { r: 8, c: 13 }, e: { r: 9, c: 13 } }, // STATUS spans 2
   ];
 
   // Print setup: A4 landscape, fit to 1 page wide, repeat headers
   (ws as Record<string, unknown>)["!pageSetup"] = { orientation: "landscape", paperSize: 9, fitToWidth: 1, fitToHeight: 0 };
-  (ws as Record<string, unknown>)["!printHeader"] = [1, 8]; // repeat rows 1-8 on each printed page
+  (ws as Record<string, unknown>)["!printHeader"] = [1, 10]; // repeat rows 1-10 on each printed page
   (ws as Record<string, unknown>)["!margins"] = { left: 0.3, right: 0.3, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 };
+
 
   XLSX.utils.book_append_sheet(wb, ws, `BM-${String(measurementNumber).padStart(2, "0")}`);
   const finalName = fileName || `boletim-medicao-${String(measurementNumber).padStart(2, "0")}-${projectName}.xlsx`;
@@ -344,16 +389,18 @@ export function buildMeasurementPdfBlob(
   closedAt: Date = new Date(),
   info: ObraInfo = {},
   periodoInicio?: Date,
+  allRows?: BudgetRow[],
 ): Blob {
   const doc = new jsPDF({ orientation: "landscape", format: "a4", unit: "mm" });
   const pageW = doc.internal.pageSize.getWidth();
   const navy: [number, number, number] = [8, 43, 92];
   const orange: [number, number, number] = [201, 75, 22];
   const green: [number, number, number] = [21, 128, 61];
-  const bm = `BM-${String(measurementNumber).padStart(2, "0")}`;
-  const periodoLabel = periodoInicio
-    ? `${fmtDateBR(periodoInicio)} a ${fmtDateBR(closedAt)}`
-    : `até ${fmtDateBR(closedAt)}`;
+  // Resumo do cabeçalho — usa SEMPRE allRows (lista completa), nunca a
+  // lista filtrada. Garante que os totais do cabeçalho não mudem com filtros.
+  const resumo = calcularResumoCabecalhoBM(allRows ?? rows, evolutions, measurementNumber, info);
+  const bm = resumo.codigoBM;
+  const periodoLabel = resumo.periodoLabel;
 
   // Header banner
   doc.setFillColor(navy[0], navy[1], navy[2]);
@@ -396,6 +443,34 @@ export function buildMeasurementPdfBlob(
   dy("Resp. Técnico", `${info.responsavelTecnico || "—"}${info.crea ? " — " + info.crea : ""}`, 8 + 2 * col, y, col - 2);
   dy("Fiscal", info.fiscal || "—", 8 + 3 * col, y, col - 2);
   y += 8;
+
+  // Resumo financeiro do BM (faixa única — 7 colunas, como na tela)
+  const col7 = (pageW - 16) / 7;
+  doc.setFillColor(240, 244, 250);
+  doc.rect(8, y - 4, pageW - 16, 10, "F");
+  doc.setDrawColor(200, 207, 219);
+  doc.rect(8, y - 4, pageW - 16, 10, "S");
+  const cell = (lbl: string, val: string, idx: number, color?: [number, number, number]) => {
+    const x = 8 + idx * col7 + 1;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(6.2);
+    doc.setTextColor(110);
+    doc.text(lbl.toUpperCase(), x, y - 1);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    if (color) doc.setTextColor(color[0], color[1], color[2]);
+    else doc.setTextColor(20);
+    doc.text(val, x, y + 4);
+  };
+  cell("Nº do BM", resumo.descricaoBM, 0, navy);
+  cell("Data da Medição", resumo.dataMedicao, 1);
+  cell("Valor total do contrato", fmtBRL(resumo.valorTotalObra), 2);
+  cell("Valor desta medição", fmtBRL(resumo.valorDestaMedicao), 3, orange);
+  cell("Valor acumulado", fmtBRL(resumo.valorAcumulado), 4, green);
+  cell("% Acumulado", `${fmtNum(resumo.percentualAcumulado)}%`, 5, navy);
+  cell("Saldo restante", fmtBRL(resumo.saldoRestante), 6);
+  doc.setTextColor(0, 0, 0);
+  y += 10;
 
   // Tabela — 14 colunas igual ao Excel/tela
   type CellDef = string | number | { content: string; colSpan?: number; rowSpan?: number; styles?: Record<string, unknown> };
