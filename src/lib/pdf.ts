@@ -59,17 +59,40 @@ export function exportAcompanhamentoXlsx(
   projectName = "Obra",
   measurementNumber = 1,
   fileName?: string,
+  allRows?: BudgetRow[],
 ) {
   const wb = XLSX.utils.book_new();
   const aoa: Cell[][] = [];
 
+  // Resumo do cabeçalho — usa SEMPRE allRows (lista completa), para que os
+  // totais globais não mudem com filtros aplicados na tela.
+  const resumo = calcularResumoCabecalhoBM(
+    allRows ?? rows,
+    evolutions,
+    measurementNumber,
+    info,
+  );
+
   // Header banner (row 1)
-  aoa.push([`BM-${String(measurementNumber).padStart(2, "0")}`, "BOLETIM DE MEDIÇÃO", "", "", "", "", "", "", "", "", "", "", "", new Date().toLocaleDateString("pt-BR")]);
+  aoa.push([resumo.codigoBM, "BOLETIM DE MEDIÇÃO", "", "", "", "", "", "", "", "", "", "", `Período: ${resumo.periodoLabel}`, resumo.dataMedicao]);
   aoa.push([]);
   // Metadata (rows 3-5)
   aoa.push(["Licitador:", info.cliente || "—", "", "Contratante:", info.contratante || "—", "", "Empresa Executora:", info.empresaExecutora || "—", "", "CNPJ:", info.cnpj || "—", "", "Nº Contrato:", info.numeroContrato || "—"]);
   aoa.push(["Obra:", projectName, "", "Endereço:", info.endereco || "—", "", "Município:", info.municipio || "—", "", "UF:", info.estado || "—", "", "Nº Licitação:", info.numeroLicitacao || "—"]);
   aoa.push(["Resp. Técnico:", info.responsavelTecnico || "—", "", "CREA/CAU:", info.crea || "—", "", "ART/RRT:", info.artRrt || "—", "", "Fiscal:", info.fiscal || "—", "", "CPF Fiscal:", info.cpfFiscal || "—"]);
+  // Linha de resumo financeiro (idêntica à tela e ao PDF)
+  aoa.push([
+    "Nº do BM:", resumo.descricaoBM, "",
+    "Data:", resumo.dataMedicao, "",
+    "Valor Total da Obra:", resumo.valorTotalObra, "",
+    "Valor desta Medição:", resumo.valorDestaMedicao, "",
+    "Valor Acumulado:", resumo.valorAcumulado,
+  ]);
+  aoa.push([
+    "% Acumulado:", resumo.percentualAcumulado / 100, "",
+    "Saldo Restante:", resumo.saldoRestante, "",
+    "", "", "", "", "", "", "", "",
+  ]);
   aoa.push([]);
 
   // Table headers (rows 7 & 8)
