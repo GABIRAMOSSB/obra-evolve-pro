@@ -970,7 +970,7 @@ function Dashboard({
               <ObraInfoDialog nome={data.nome} info={data.info} onSave={handleSaveInfo} />
             </div>
 
-            <Button variant="outline" size="sm" className="border-border" onClick={() => exportAcompanhamentoXlsx(filteredRows, data.evolutions, info, data.nome, currentMeasNumber)}>
+            <Button variant="outline" size="sm" className="border-border" onClick={() => exportAcompanhamentoXlsx(filteredRows, data.evolutions, info, data.nome, selectedBM, undefined, data.rows)}>
               <FileSpreadsheet className="w-4 h-4 mr-1 text-success" /> Excel
             </Button>
             <Button variant="outline" size="sm" className="border-border" onClick={() => exportRelatorioPdf(filteredRows, data.evolutions, data.fileName)}>
@@ -984,21 +984,22 @@ function Dashboard({
                 const blob = buildMeasurementPdfBlob(
                   filteredRows,
                   data.evolutions,
-                  currentMeasNumber,
+                  selectedBM,
                   data.nome,
                   new Date(),
                   info,
                   periodoInicio ?? undefined,
+                  data.rows,
                 );
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
                 a.href = url;
-                a.download = `BM-${String(currentMeasNumber).padStart(2, "0")}-${data.nome.replace(/[^a-z0-9-_]+/gi, "_")}.pdf`;
+                a.download = `${resumoBM.codigoBM}-${data.nome.replace(/[^a-z0-9-_]+/gi, "_")}.pdf`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
-                toast.success(`Boletim BM-${String(currentMeasNumber).padStart(2, "0")} exportado`);
+                toast.success(`Boletim ${resumoBM.codigoBM} exportado`);
               }}
             >
               <FileText className="w-4 h-4 mr-1 text-primary" /> Boletim PDF
