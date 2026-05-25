@@ -1116,10 +1116,10 @@ function Dashboard({
         {/* BOLETIM DE MEDIÇÃO */}
         <Card className="overflow-hidden border-border shadow-[var(--shadow-card)] p-0">
           <div className="bg-primary text-primary-foreground flex items-center justify-between gap-3 px-4 py-2.5">
-            <div className="font-mono text-[11px] tracking-[0.2em] opacity-80">{bmCodigo}</div>
+            <div className="font-mono text-[11px] tracking-[0.2em] opacity-80">{resumoBM.codigoBM}</div>
             <div className="font-bold tracking-[0.25em] text-sm text-center flex-1">BOLETIM DE MEDIÇÃO</div>
             <div className="font-mono text-[11px] tracking-[0.15em] opacity-80 text-right">
-              Período: {periodoLabel}
+              Período: {resumoBM.periodoLabel}
             </div>
           </div>
           {/* Linha 1 — Identificação */}
