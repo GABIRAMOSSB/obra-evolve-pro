@@ -197,16 +197,37 @@ export function exportAcompanhamentoXlsx(
     }
   }
 
-  // Group header row 7
+  // Financial summary rows 6-7 (Nº do BM, Data, Valor Total da Obra...)
+  for (let row1 = 6; row1 <= 7; row1++) {
+    for (let c = 0; c < 14; c++) {
+      const isLabel = c % 3 === 0;
+      const isMoney = !isLabel && (c === 7 || c === 10 || c === 13 || (row1 === 7 && c === 4));
+      const isPercent = row1 === 7 && c === 1;
+      let bg = isLabel ? "F1F5F9" : "FFFFFF";
+      let color = isLabel ? "475569" : "0F172A";
+      if (row1 === 6 && c === 10) { bg = "FDEBDC"; color = ORANGE; } // Valor desta medição
+      if (row1 === 6 && c === 13) { bg = "DCFCE7"; color = GREEN; } // Valor acumulado
+      setStyle(addr(row1, c), styleCell({
+        bold: isLabel || isMoney || isPercent,
+        color,
+        bg,
+        size: 9,
+        align: isLabel ? "left" : "right",
+        numFmt: isMoney ? "R$ #,##0.00" : isPercent ? "0.0%" : undefined,
+      }));
+    }
+  }
+
+  // Group header row 9
   for (let c = 0; c < 14; c++) {
     let bg = HEADER_BG;
     if (c >= 6 && c <= 8) bg = "B45309"; // orange-ish for executado físico
     if (c >= 9 && c <= 11) bg = "166534"; // green for financeiro
-    setStyle(addr(7, c), styleHeader(bg));
+    setStyle(addr(9, c), styleHeader(bg));
   }
-  // Sub-header row 8
+  // Sub-header row 10
   for (let c = 0; c < 14; c++) {
-    setStyle(addr(8, c), styleHeader(SUBHEADER_BG, "0F172A", 10));
+    setStyle(addr(10, c), styleHeader(SUBHEADER_BG, "0F172A", 10));
   }
 
   // Data rows
@@ -265,11 +286,11 @@ export function exportAcompanhamentoXlsx(
   // Row heights
   ws["!rows"] = [];
   ws["!rows"][0] = { hpt: 26 }; // banner
-  ws["!rows"][6] = { hpt: 22 }; // group header
-  ws["!rows"][7] = { hpt: 28 }; // sub-header
+  ws["!rows"][8] = { hpt: 22 }; // group header
+  ws["!rows"][9] = { hpt: 28 }; // sub-header
 
-  // Freeze first 8 rows (banner + metadata + headers) and first 2 cols (Item + Descrição)
-  ws["!freeze"] = { xSplit: 2, ySplit: 8 } as never;
+  // Freeze first 10 rows (banner + metadata + resumo + headers) and first 2 cols
+  ws["!freeze"] = { xSplit: 2, ySplit: 10 } as never;
   (ws as Record<string, unknown>)["!protect"] = {
     password: "",
     selectLockedCells: true,
@@ -281,18 +302,19 @@ export function exportAcompanhamentoXlsx(
     autoFilter: true,
   };
   ws["!merges"] = [
-    { s: { r: 0, c: 1 }, e: { r: 0, c: 12 } }, // Title centered
-    { s: { r: 6, c: 0 }, e: { r: 6, c: 5 } },  // PLANEJAMENTO
-    { s: { r: 6, c: 6 }, e: { r: 6, c: 8 } },  // EXEC FÍSICO
-    { s: { r: 6, c: 9 }, e: { r: 6, c: 11 } }, // EXEC FINANCEIRO
-    { s: { r: 6, c: 12 }, e: { r: 7, c: 12 } }, // DESVIO spans 2
-    { s: { r: 6, c: 13 }, e: { r: 7, c: 13 } }, // STATUS spans 2
+    { s: { r: 0, c: 1 }, e: { r: 0, c: 11 } }, // Title centered
+    { s: { r: 8, c: 0 }, e: { r: 8, c: 5 } },  // PLANEJAMENTO
+    { s: { r: 8, c: 6 }, e: { r: 8, c: 8 } },  // EXEC FÍSICO
+    { s: { r: 8, c: 9 }, e: { r: 8, c: 11 } }, // EXEC FINANCEIRO
+    { s: { r: 8, c: 12 }, e: { r: 9, c: 12 } }, // DESVIO spans 2
+    { s: { r: 8, c: 13 }, e: { r: 9, c: 13 } }, // STATUS spans 2
   ];
 
   // Print setup: A4 landscape, fit to 1 page wide, repeat headers
   (ws as Record<string, unknown>)["!pageSetup"] = { orientation: "landscape", paperSize: 9, fitToWidth: 1, fitToHeight: 0 };
-  (ws as Record<string, unknown>)["!printHeader"] = [1, 8]; // repeat rows 1-8 on each printed page
+  (ws as Record<string, unknown>)["!printHeader"] = [1, 10]; // repeat rows 1-10 on each printed page
   (ws as Record<string, unknown>)["!margins"] = { left: 0.3, right: 0.3, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 };
+
 
   XLSX.utils.book_append_sheet(wb, ws, `BM-${String(measurementNumber).padStart(2, "0")}`);
   const finalName = fileName || `boletim-medicao-${String(measurementNumber).padStart(2, "0")}-${projectName}.xlsx`;
