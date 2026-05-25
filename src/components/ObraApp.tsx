@@ -17,6 +17,7 @@ import {
   groupMetrics,
   isChildOf,
   projectMetrics,
+  calcularResumoCabecalhoBM,
 } from "@/lib/calc";
 import {
   exportAcompanhamentoXlsx,
