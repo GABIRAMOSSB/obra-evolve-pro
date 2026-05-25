@@ -911,38 +911,24 @@ function Dashboard({
     toast.success(`${item} removido`);
   }
 
-  // Métricas da medição atual (período aberto) — separadas do acumulado total.
+  // BM selecionado: se o filtro de medição estiver ativo, usa o maior número
+  // selecionado; caso contrário, usa a medição atualmente em aberto.
   const currentMeasNumber = getCurrentMeasurement(data);
-  const valorPeriodo = useMemo(() => {
-    let v = 0;
-    for (const r of data.rows) {
-      if (r.isGroup) continue;
-      const evo = data.evolutions[r.item];
-      const open = evo?.measurements?.find((mm) => !mm.closed && mm.number === currentMeasNumber);
-      if (open) v += (open.quantExec || 0) * (r.valorUnitBDI || 0);
-    }
-    return v;
-  }, [data.rows, data.evolutions, currentMeasNumber]);
+  const selectedBM = useMemo(() => {
+    const nums = filterMeasurements.map((n) => parseInt(n, 10)).filter((n) => !isNaN(n));
+    return nums.length > 0 ? Math.max(...nums) : currentMeasNumber;
+  }, [filterMeasurements, currentMeasNumber]);
+
+  // Resumo do cabeçalho — sempre com TODAS as linhas (data.rows), nunca com
+  // filteredRows: os totais globais não podem mudar com filtros de tela.
+  const resumoBM = useMemo(
+    () => calcularResumoCabecalhoBM(data.rows, data.evolutions, selectedBM, data.info ?? {}),
+    [data.rows, data.evolutions, data.info, selectedBM],
+  );
 
   const info = data.info ?? {};
-  const dataMedicao = new Date().toLocaleDateString("pt-BR");
-  const bmCodigo = `BM-${String(currentMeasNumber).padStart(2, "0")}`;
-  // Período da medição: do fechamento da medição anterior (ou data de início da obra) até hoje
-  const periodoInicio = useMemo(() => {
-    let last: string | undefined;
-    for (const evo of Object.values(data.evolutions)) {
-      for (const mm of evo?.measurements ?? []) {
-        if (mm.closed && mm.closedAt && (!last || mm.closedAt > last)) last = mm.closedAt;
-      }
-    }
-    if (last) return new Date(last);
-    if (info.dataInicioObra) return new Date(info.dataInicioObra + "T00:00:00");
-    return null;
-  }, [data.evolutions, info.dataInicioObra]);
-  const periodoFim = new Date();
-  const periodoLabel = periodoInicio
-    ? `${periodoInicio.toLocaleDateString("pt-BR")} a ${periodoFim.toLocaleDateString("pt-BR")}`
-    : `até ${periodoFim.toLocaleDateString("pt-BR")}`;
+  const periodoInicio = resumoBM.periodoInicio ? new Date(resumoBM.periodoInicio + "T00:00:00") : null;
+
 
 
   return (
