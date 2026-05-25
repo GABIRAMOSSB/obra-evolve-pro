@@ -1,4 +1,92 @@
-import type { BudgetRow, Evolution, Measurement } from "./types";
+import type { BudgetRow, Evolution, Measurement, ObraInfo } from "./types";
+
+export interface ResumoCabecalhoBM {
+  numeroBM: number;
+  codigoBM: string;
+  descricaoBM: string;
+  periodoInicio?: string; // ISO yyyy-mm-dd
+  periodoFim?: string; // ISO yyyy-mm-dd
+  periodoLabel: string;
+  dataMedicao: string; // dd/mm/yyyy
+  valorTotalObra: number;
+  valorDestaMedicao: number;
+  valorAcumulado: number;
+  percentualAcumulado: number;
+  saldoRestante: number;
+}
+
+/**
+ * Função única de cálculo do resumo do cabeçalho do Boletim de Medição.
+ * IMPORTANTE: sempre receber **TODAS** as linhas (data.rows) — nunca a lista
+ * filtrada — para que os totais globais não mudem com filtros de tela.
+ */
+export function calcularResumoCabecalhoBM(
+  allRows: BudgetRow[],
+  evolutions: Record<string, Evolution>,
+  selectedBM: number,
+  info: ObraInfo = {},
+): ResumoCabecalhoBM {
+  let valorTotalObra = 0;
+  let valorDestaMedicao = 0;
+  let valorAcumulado = 0;
+
+  for (const r of allRows) {
+    if (r.isGroup) continue;
+    valorTotalObra += r.total || 0;
+    const vu = r.valorUnitBDI || r.valorUnit || 0;
+    const list = evolutions[r.item]?.measurements ?? [];
+    for (const mm of list) {
+      const q = mm.quantExec || 0;
+      if (mm.number === selectedBM) valorDestaMedicao += q * vu;
+      if (mm.number <= selectedBM) valorAcumulado += q * vu;
+    }
+  }
+
+  // Datas: fim = closedAt da medição selecionada (ou hoje, se em aberto)
+  //        início = closedAt da medição anterior (ou data de início da obra)
+  let prevClose: string | undefined;
+  let thisClose: string | undefined;
+  for (const evo of Object.values(evolutions)) {
+    for (const mm of evo?.measurements ?? []) {
+      if (!mm.closed || !mm.closedAt) continue;
+      if (mm.number === selectedBM - 1 && (!prevClose || mm.closedAt > prevClose)) prevClose = mm.closedAt;
+      if (mm.number === selectedBM && (!thisClose || mm.closedAt > thisClose)) thisClose = mm.closedAt;
+    }
+  }
+  const periodoInicio = prevClose ?? info.dataInicioObra;
+  const periodoFim = thisClose;
+  const toBR = (iso?: string) => {
+    if (!iso) return "";
+    const [y, m, d] = iso.split("-");
+    return y && m && d ? `${d}/${m}/${y}` : iso;
+  };
+  const periodoLabel = periodoInicio && periodoFim
+    ? `${toBR(periodoInicio)} a ${toBR(periodoFim)}`
+    : periodoInicio
+      ? `${toBR(periodoInicio)} a ${new Date().toLocaleDateString("pt-BR")}`
+      : `até ${new Date().toLocaleDateString("pt-BR")}`;
+  const dataMedicao = periodoFim ? toBR(periodoFim) : new Date().toLocaleDateString("pt-BR");
+
+  if (valorAcumulado > valorTotalObra) valorAcumulado = valorTotalObra;
+  const percentualAcumulado = valorTotalObra > 0 ? (valorAcumulado / valorTotalObra) * 100 : 0;
+  const saldoRestante = Math.max(0, valorTotalObra - valorAcumulado);
+  const codigoBM = `BM-${String(selectedBM).padStart(2, "0")}`;
+
+  return {
+    numeroBM: selectedBM,
+    codigoBM,
+    descricaoBM: `${codigoBM} (${selectedBM}ª Medição)`,
+    periodoInicio,
+    periodoFim,
+    periodoLabel,
+    dataMedicao,
+    valorTotalObra,
+    valorDestaMedicao,
+    valorAcumulado,
+    percentualAcumulado,
+    saldoRestante,
+  };
+}
 
 export type Status = "Não iniciada" | "Em andamento" | "Concluída";
 
