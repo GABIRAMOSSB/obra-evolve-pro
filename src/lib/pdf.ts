@@ -389,16 +389,18 @@ export function buildMeasurementPdfBlob(
   closedAt: Date = new Date(),
   info: ObraInfo = {},
   periodoInicio?: Date,
+  allRows?: BudgetRow[],
 ): Blob {
   const doc = new jsPDF({ orientation: "landscape", format: "a4", unit: "mm" });
   const pageW = doc.internal.pageSize.getWidth();
   const navy: [number, number, number] = [8, 43, 92];
   const orange: [number, number, number] = [201, 75, 22];
   const green: [number, number, number] = [21, 128, 61];
-  const bm = `BM-${String(measurementNumber).padStart(2, "0")}`;
-  const periodoLabel = periodoInicio
-    ? `${fmtDateBR(periodoInicio)} a ${fmtDateBR(closedAt)}`
-    : `até ${fmtDateBR(closedAt)}`;
+  // Resumo do cabeçalho — usa SEMPRE allRows (lista completa), nunca a
+  // lista filtrada. Garante que os totais do cabeçalho não mudem com filtros.
+  const resumo = calcularResumoCabecalhoBM(allRows ?? rows, evolutions, measurementNumber, info);
+  const bm = resumo.codigoBM;
+  const periodoLabel = resumo.periodoLabel;
 
   // Header banner
   doc.setFillColor(navy[0], navy[1], navy[2]);
