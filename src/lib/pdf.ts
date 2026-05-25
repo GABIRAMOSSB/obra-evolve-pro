@@ -444,6 +444,34 @@ export function buildMeasurementPdfBlob(
   dy("Fiscal", info.fiscal || "—", 8 + 3 * col, y, col - 2);
   y += 8;
 
+  // Resumo financeiro do BM (faixa única — 7 colunas, como na tela)
+  const col7 = (pageW - 16) / 7;
+  doc.setFillColor(240, 244, 250);
+  doc.rect(8, y - 4, pageW - 16, 10, "F");
+  doc.setDrawColor(200, 207, 219);
+  doc.rect(8, y - 4, pageW - 16, 10, "S");
+  const cell = (lbl: string, val: string, idx: number, color?: [number, number, number]) => {
+    const x = 8 + idx * col7 + 1;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(6.2);
+    doc.setTextColor(110);
+    doc.text(lbl.toUpperCase(), x, y - 1);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    if (color) doc.setTextColor(color[0], color[1], color[2]);
+    else doc.setTextColor(20);
+    doc.text(val, x, y + 4);
+  };
+  cell("Nº do BM", resumo.descricaoBM, 0, navy);
+  cell("Data da Medição", resumo.dataMedicao, 1);
+  cell("Valor total do contrato", fmtBRL(resumo.valorTotalObra), 2);
+  cell("Valor desta medição", fmtBRL(resumo.valorDestaMedicao), 3, orange);
+  cell("Valor acumulado", fmtBRL(resumo.valorAcumulado), 4, green);
+  cell("% Acumulado", `${fmtNum(resumo.percentualAcumulado)}%`, 5, navy);
+  cell("Saldo restante", fmtBRL(resumo.saldoRestante), 6);
+  doc.setTextColor(0, 0, 0);
+  y += 10;
+
   // Tabela — 14 colunas igual ao Excel/tela
   type CellDef = string | number | { content: string; colSpan?: number; rowSpan?: number; styles?: Record<string, unknown> };
   const body: CellDef[][] = [];
