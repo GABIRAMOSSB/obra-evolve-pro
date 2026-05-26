@@ -79,7 +79,8 @@ export function exportAcompanhamentoXlsx(
   // Metadata (rows 3-5)
   aoa.push(["Licitador:", info.cliente || "—", "", "Contratante:", info.contratante || "—", "", "Empresa Executora:", info.empresaExecutora || "—", "", "CNPJ:", info.cnpj || "—", "", "Nº Contrato:", info.numeroContrato || "—"]);
   aoa.push(["Obra:", projectName, "", "Endereço:", info.endereco || "—", "", "Município:", info.municipio || "—", "", "UF:", info.estado || "—", "", "Nº Licitação:", info.numeroLicitacao || "—"]);
-  aoa.push(["Resp. Técnico:", info.responsavelTecnico || "—", "", "CREA/CAU:", info.crea || "—", "", "ART/RRT:", info.artRrt || "—", "", "Fiscal:", info.fiscal || "—", "", "CPF Fiscal:", info.cpfFiscal || "—"]);
+  aoa.push(["Resp. Técnico:", info.responsavelTecnico || "—", "", "CREA/CAU:", info.crea || "—", "", "Cargo (Resp.):", info.cargoResponsavel || "—", "", "ART/RRT:", info.artRrt || "—", "", "Fiscal:", info.fiscal || "—"]);
+  aoa.push(["CPF Fiscal:", info.cpfFiscal || "—", "", "Cargo (Fiscal):", info.cargoFiscal || "—", "", "Início da Obra:", info.dataInicioObra || "—", "", "Prazo (dias):", info.prazoContratualDias ?? "—", "", "", ""]);
   // Linha de resumo financeiro (idêntica à tela e ao PDF)
   aoa.push([
     "Nº do BM:", resumo.descricaoBM, "",
@@ -184,8 +185,8 @@ export function exportAcompanhamentoXlsx(
       border: ALL_BORDERS,
     });
   }
-  // Metadata rows 3-5: labels bold, values normal
-  for (let row1 = 3; row1 <= 5; row1++) {
+  // Metadata rows 3-6: labels bold, values normal
+  for (let row1 = 3; row1 <= 6; row1++) {
     for (let c = 0; c < 14; c++) {
       const isLabel = c % 3 === 0;
       setStyle(addr(row1, c), styleCell({
@@ -197,16 +198,16 @@ export function exportAcompanhamentoXlsx(
     }
   }
 
-  // Financial summary rows 6-7 (Nº do BM, Data, Valor Total da Obra...)
-  for (let row1 = 6; row1 <= 7; row1++) {
+  // Financial summary rows 7-8 (Nº do BM, Data, Valor Total da Obra...)
+  for (let row1 = 7; row1 <= 8; row1++) {
     for (let c = 0; c < 14; c++) {
       const isLabel = c % 3 === 0;
-      const isMoney = !isLabel && (c === 7 || c === 10 || c === 13 || (row1 === 7 && c === 4));
-      const isPercent = row1 === 7 && c === 1;
+      const isMoney = !isLabel && (c === 7 || c === 10 || c === 13 || (row1 === 8 && c === 4));
+      const isPercent = row1 === 8 && c === 1;
       let bg = isLabel ? "F1F5F9" : "FFFFFF";
       let color = isLabel ? "475569" : "0F172A";
-      if (row1 === 6 && c === 10) { bg = "FDEBDC"; color = ORANGE; } // Valor desta medição
-      if (row1 === 6 && c === 13) { bg = "DCFCE7"; color = GREEN; } // Valor acumulado
+      if (row1 === 7 && c === 10) { bg = "FDEBDC"; color = ORANGE; } // Valor desta medição
+      if (row1 === 7 && c === 13) { bg = "DCFCE7"; color = GREEN; } // Valor acumulado
       setStyle(addr(row1, c), styleCell({
         bold: isLabel || isMoney || isPercent,
         color,
@@ -218,16 +219,16 @@ export function exportAcompanhamentoXlsx(
     }
   }
 
-  // Group header row 9
+  // Group header row 10
   for (let c = 0; c < 14; c++) {
     let bg = HEADER_BG;
     if (c >= 6 && c <= 8) bg = "B45309"; // orange-ish for executado físico
     if (c >= 9 && c <= 11) bg = "166534"; // green for financeiro
-    setStyle(addr(9, c), styleHeader(bg));
+    setStyle(addr(10, c), styleHeader(bg));
   }
-  // Sub-header row 10
+  // Sub-header row 11
   for (let c = 0; c < 14; c++) {
-    setStyle(addr(10, c), styleHeader(SUBHEADER_BG, "0F172A", 10));
+    setStyle(addr(11, c), styleHeader(SUBHEADER_BG, "0F172A", 10));
   }
 
   // Data rows
@@ -286,11 +287,11 @@ export function exportAcompanhamentoXlsx(
   // Row heights
   ws["!rows"] = [];
   ws["!rows"][0] = { hpt: 26 }; // banner
-  ws["!rows"][8] = { hpt: 22 }; // group header
-  ws["!rows"][9] = { hpt: 28 }; // sub-header
+  ws["!rows"][9] = { hpt: 22 }; // group header
+  ws["!rows"][10] = { hpt: 28 }; // sub-header
 
-  // Freeze first 10 rows (banner + metadata + resumo + headers) and first 2 cols
-  ws["!freeze"] = { xSplit: 2, ySplit: 10 } as never;
+  // Freeze first 11 rows (banner + metadata + resumo + headers) and first 2 cols
+  ws["!freeze"] = { xSplit: 2, ySplit: 11 } as never;
   (ws as Record<string, unknown>)["!protect"] = {
     password: "",
     selectLockedCells: true,
@@ -303,16 +304,16 @@ export function exportAcompanhamentoXlsx(
   };
   ws["!merges"] = [
     { s: { r: 0, c: 1 }, e: { r: 0, c: 11 } }, // Title centered
-    { s: { r: 8, c: 0 }, e: { r: 8, c: 5 } },  // PLANEJAMENTO
-    { s: { r: 8, c: 6 }, e: { r: 8, c: 8 } },  // EXEC FÍSICO
-    { s: { r: 8, c: 9 }, e: { r: 8, c: 11 } }, // EXEC FINANCEIRO
-    { s: { r: 8, c: 12 }, e: { r: 9, c: 12 } }, // DESVIO spans 2
-    { s: { r: 8, c: 13 }, e: { r: 9, c: 13 } }, // STATUS spans 2
+    { s: { r: 9, c: 0 }, e: { r: 9, c: 5 } },  // PLANEJAMENTO
+    { s: { r: 9, c: 6 }, e: { r: 9, c: 8 } },  // EXEC FÍSICO
+    { s: { r: 9, c: 9 }, e: { r: 9, c: 11 } }, // EXEC FINANCEIRO
+    { s: { r: 9, c: 12 }, e: { r: 10, c: 12 } }, // DESVIO spans 2
+    { s: { r: 9, c: 13 }, e: { r: 10, c: 13 } }, // STATUS spans 2
   ];
 
   // Print setup: A4 landscape, fit to 1 page wide, repeat headers
   (ws as Record<string, unknown>)["!pageSetup"] = { orientation: "landscape", paperSize: 9, fitToWidth: 1, fitToHeight: 0 };
-  (ws as Record<string, unknown>)["!printHeader"] = [1, 10]; // repeat rows 1-10 on each printed page
+  (ws as Record<string, unknown>)["!printHeader"] = [1, 11]; // repeat rows 1-11 on each printed page
   (ws as Record<string, unknown>)["!margins"] = { left: 0.3, right: 0.3, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 };
 
 
@@ -441,7 +442,12 @@ export function buildMeasurementPdfBlob(
   dy("Nº Contrato", info.numeroContrato || "—", 8, y, col - 2);
   dy("Nº Licitação", info.numeroLicitacao || "—", 8 + col, y, col - 2);
   dy("Resp. Técnico", `${info.responsavelTecnico || "—"}${info.crea ? " — " + info.crea : ""}`, 8 + 2 * col, y, col - 2);
-  dy("Fiscal", info.fiscal || "—", 8 + 3 * col, y, col - 2);
+  dy("Cargo / Função (Resp.)", info.cargoResponsavel || "—", 8 + 3 * col, y, col - 2);
+  y += 7.5;
+  dy("Fiscal da Obra", info.fiscal || "—", 8, y, col - 2);
+  dy("CPF do Fiscal", info.cpfFiscal || "—", 8 + col, y, col - 2);
+  dy("Cargo / Função (Fiscal)", info.cargoFiscal || "—", 8 + 2 * col, y, col - 2);
+  dy("ART / RRT", info.artRrt || "—", 8 + 3 * col, y, col - 2);
   y += 8;
 
   // Resumo financeiro do BM (faixa única — 7 colunas, como na tela)
