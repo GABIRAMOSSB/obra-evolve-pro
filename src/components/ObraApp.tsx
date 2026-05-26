@@ -1143,10 +1143,16 @@ function Dashboard({
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 divide-x divide-y divide-border border-b border-border text-xs">
             <BMField label="Responsável Técnico" value={info.responsavelTecnico || "—"} />
             <BMField label="CREA / CAU" value={info.crea || "—"} />
+            <BMField label="Cargo / Função (Resp.)" value={info.cargoResponsavel || "—"} />
             <BMField label="ART / RRT" value={info.artRrt || "—"} />
-            <BMField label="Fiscal da Obra" value={info.fiscal || "—"} />
             <BMField label="Início da Obra" value={info.dataInicioObra ? new Date(info.dataInicioObra + "T00:00:00").toLocaleDateString("pt-BR") : "—"} />
             <BMField label="Prazo (dias)" value={info.prazoContratualDias ? String(info.prazoContratualDias) : "—"} />
+          </div>
+          {/* Linha 3b — Fiscalização */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 divide-x divide-y divide-border border-b border-border text-xs">
+            <BMField label="Fiscal da Obra" value={info.fiscal || "—"} wide />
+            <BMField label="CPF do Fiscal" value={info.cpfFiscal || "—"} />
+            <BMField label="Cargo / Função (Fiscal)" value={info.cargoFiscal || "—"} wide />
           </div>
           {/* Linha 4 — Resumo financeiro da medição */}
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 divide-x divide-y divide-border text-xs">
