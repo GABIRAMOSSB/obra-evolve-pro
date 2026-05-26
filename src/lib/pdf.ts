@@ -185,8 +185,8 @@ export function exportAcompanhamentoXlsx(
       border: ALL_BORDERS,
     });
   }
-  // Metadata rows 3-5: labels bold, values normal
-  for (let row1 = 3; row1 <= 5; row1++) {
+  // Metadata rows 3-6: labels bold, values normal
+  for (let row1 = 3; row1 <= 6; row1++) {
     for (let c = 0; c < 14; c++) {
       const isLabel = c % 3 === 0;
       setStyle(addr(row1, c), styleCell({
@@ -198,16 +198,16 @@ export function exportAcompanhamentoXlsx(
     }
   }
 
-  // Financial summary rows 6-7 (Nº do BM, Data, Valor Total da Obra...)
-  for (let row1 = 6; row1 <= 7; row1++) {
+  // Financial summary rows 7-8 (Nº do BM, Data, Valor Total da Obra...)
+  for (let row1 = 7; row1 <= 8; row1++) {
     for (let c = 0; c < 14; c++) {
       const isLabel = c % 3 === 0;
-      const isMoney = !isLabel && (c === 7 || c === 10 || c === 13 || (row1 === 7 && c === 4));
-      const isPercent = row1 === 7 && c === 1;
+      const isMoney = !isLabel && (c === 7 || c === 10 || c === 13 || (row1 === 8 && c === 4));
+      const isPercent = row1 === 8 && c === 1;
       let bg = isLabel ? "F1F5F9" : "FFFFFF";
       let color = isLabel ? "475569" : "0F172A";
-      if (row1 === 6 && c === 10) { bg = "FDEBDC"; color = ORANGE; } // Valor desta medição
-      if (row1 === 6 && c === 13) { bg = "DCFCE7"; color = GREEN; } // Valor acumulado
+      if (row1 === 7 && c === 10) { bg = "FDEBDC"; color = ORANGE; } // Valor desta medição
+      if (row1 === 7 && c === 13) { bg = "DCFCE7"; color = GREEN; } // Valor acumulado
       setStyle(addr(row1, c), styleCell({
         bold: isLabel || isMoney || isPercent,
         color,
@@ -219,16 +219,16 @@ export function exportAcompanhamentoXlsx(
     }
   }
 
-  // Group header row 9
+  // Group header row 10
   for (let c = 0; c < 14; c++) {
     let bg = HEADER_BG;
     if (c >= 6 && c <= 8) bg = "B45309"; // orange-ish for executado físico
     if (c >= 9 && c <= 11) bg = "166534"; // green for financeiro
-    setStyle(addr(9, c), styleHeader(bg));
+    setStyle(addr(10, c), styleHeader(bg));
   }
-  // Sub-header row 10
+  // Sub-header row 11
   for (let c = 0; c < 14; c++) {
-    setStyle(addr(10, c), styleHeader(SUBHEADER_BG, "0F172A", 10));
+    setStyle(addr(11, c), styleHeader(SUBHEADER_BG, "0F172A", 10));
   }
 
   // Data rows
