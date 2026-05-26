@@ -287,11 +287,11 @@ export function exportAcompanhamentoXlsx(
   // Row heights
   ws["!rows"] = [];
   ws["!rows"][0] = { hpt: 26 }; // banner
-  ws["!rows"][8] = { hpt: 22 }; // group header
-  ws["!rows"][9] = { hpt: 28 }; // sub-header
+  ws["!rows"][9] = { hpt: 22 }; // group header
+  ws["!rows"][10] = { hpt: 28 }; // sub-header
 
-  // Freeze first 10 rows (banner + metadata + resumo + headers) and first 2 cols
-  ws["!freeze"] = { xSplit: 2, ySplit: 10 } as never;
+  // Freeze first 11 rows (banner + metadata + resumo + headers) and first 2 cols
+  ws["!freeze"] = { xSplit: 2, ySplit: 11 } as never;
   (ws as Record<string, unknown>)["!protect"] = {
     password: "",
     selectLockedCells: true,
@@ -304,16 +304,16 @@ export function exportAcompanhamentoXlsx(
   };
   ws["!merges"] = [
     { s: { r: 0, c: 1 }, e: { r: 0, c: 11 } }, // Title centered
-    { s: { r: 8, c: 0 }, e: { r: 8, c: 5 } },  // PLANEJAMENTO
-    { s: { r: 8, c: 6 }, e: { r: 8, c: 8 } },  // EXEC FÍSICO
-    { s: { r: 8, c: 9 }, e: { r: 8, c: 11 } }, // EXEC FINANCEIRO
-    { s: { r: 8, c: 12 }, e: { r: 9, c: 12 } }, // DESVIO spans 2
-    { s: { r: 8, c: 13 }, e: { r: 9, c: 13 } }, // STATUS spans 2
+    { s: { r: 9, c: 0 }, e: { r: 9, c: 5 } },  // PLANEJAMENTO
+    { s: { r: 9, c: 6 }, e: { r: 9, c: 8 } },  // EXEC FÍSICO
+    { s: { r: 9, c: 9 }, e: { r: 9, c: 11 } }, // EXEC FINANCEIRO
+    { s: { r: 9, c: 12 }, e: { r: 10, c: 12 } }, // DESVIO spans 2
+    { s: { r: 9, c: 13 }, e: { r: 10, c: 13 } }, // STATUS spans 2
   ];
 
   // Print setup: A4 landscape, fit to 1 page wide, repeat headers
   (ws as Record<string, unknown>)["!pageSetup"] = { orientation: "landscape", paperSize: 9, fitToWidth: 1, fitToHeight: 0 };
-  (ws as Record<string, unknown>)["!printHeader"] = [1, 10]; // repeat rows 1-10 on each printed page
+  (ws as Record<string, unknown>)["!printHeader"] = [1, 11]; // repeat rows 1-11 on each printed page
   (ws as Record<string, unknown>)["!margins"] = { left: 0.3, right: 0.3, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 };
 
 
