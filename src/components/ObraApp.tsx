@@ -911,13 +911,15 @@ function Dashboard({
     toast.success(`${item} removido`);
   }
 
-  // BM selecionado: se o filtro de medição estiver ativo, usa o maior número
-  // selecionado; caso contrário, usa a medição atualmente em aberto.
+  // BM selecionado: se o filtro de medição estiver ativo, usa o número
+  // selecionado; caso contrário, fica sem BM (resumo geral).
   const currentMeasNumber = getCurrentMeasurement(data);
-  const selectedBM = useMemo(() => {
-    const nums = filterMeasurements.map((n) => parseInt(n, 10)).filter((n) => !isNaN(n));
-    return nums.length > 0 ? Math.max(...nums) : currentMeasNumber;
-  }, [filterMeasurements, currentMeasNumber]);
+  const savedMeasurements = useMemo(() => getSavedMeasurements(data.evolutions), [data.evolutions]);
+  const selectedBM = useMemo<number | null>(() => {
+    const n = filterMeasurement ? parseInt(filterMeasurement, 10) : NaN;
+    if (isNaN(n)) return null;
+    return savedMeasurements.some((s) => s.number === n) ? n : null;
+  }, [filterMeasurement, savedMeasurements]);
 
   // Resumo do cabeçalho — sempre com TODAS as linhas (data.rows), nunca com
   // filteredRows: os totais globais não podem mudar com filtros de tela.
