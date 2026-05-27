@@ -1,6 +1,7 @@
 import type { BudgetRow, Evolution, Measurement, ObraInfo } from "./types";
 
 export interface ResumoCabecalhoBM {
+  hasMeasurement: boolean;
   numeroBM: number;
   codigoBM: string;
   descricaoBM: string;
@@ -11,24 +12,103 @@ export interface ResumoCabecalhoBM {
   valorTotalObra: number;
   valorDestaMedicao: number;
   valorAcumulado: number;
+  acumuladoAnterior: number;
   percentualAcumulado: number;
   saldoRestante: number;
+  diasDecorridos: number;
+  diasRestantes: number;
+}
+
+export interface SavedMeasurement {
+  number: number;
+  /** Data oficial da medição (yyyy-mm-dd ou ISO completo). */
+  date: string;
 }
 
 /**
- * Função única de cálculo do resumo do cabeçalho do Boletim de Medição.
- * IMPORTANTE: sempre receber **TODAS** as linhas (data.rows) — nunca a lista
- * filtrada — para que os totais globais não mudem com filtros de tela.
+ * Normaliza uma data (string ISO completa, "yyyy-mm-dd", Date ou null/undefined)
+ * para o padrão brasileiro DD/MM/AAAA.
+ *
+ * Aceita inclusive strings ISO com horário/fuso (ex.: 2026-05-20T19:59:49.020Z)
+ * e nunca produz saídas quebradas como "20T19:59:49.020Z/05/2026".
+ */
+export function formatarDataBR(data?: string | Date | null): string {
+  if (data === undefined || data === null || data === "") return "";
+  let d: Date;
+  if (data instanceof Date) {
+    d = data;
+  } else {
+    const s = String(data).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+      d = new Date(s + "T12:00:00");
+    } else {
+      d = new Date(s);
+    }
+  }
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+}
+
+/** Lista de medições efetivamente salvas (fechadas) no projeto, ordenada por número. */
+export function getSavedMeasurements(
+  evolutions: Record<string, Evolution>,
+): SavedMeasurement[] {
+  const dateByNumber = new Map<number, string>();
+  for (const evo of Object.values(evolutions || {})) {
+    for (const m of evo?.measurements ?? []) {
+      if (!m.closed) continue;
+      const d = m.closedAt || m.dataExec || "";
+      const cur = dateByNumber.get(m.number);
+      if (!cur || (d && d > cur)) dateByNumber.set(m.number, d);
+    }
+  }
+  return Array.from(dateByNumber.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([number, date]) => ({ number, date }));
+}
+
+function parseISODate(s?: string | null): Date | null {
+  if (!s) return null;
+  const str = String(s).trim();
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(str) ? new Date(str + "T12:00:00") : new Date(str);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function diffInDays(a: Date, b: Date): number {
+  const MS = 1000 * 60 * 60 * 24;
+  return Math.max(0, Math.round((b.getTime() - a.getTime()) / MS));
+}
+
+/**
+ * Monta os dados do cabeçalho do Boletim de Medição.
+ *
+ * - Quando `selectedBM` é `null`/`undefined`, o resumo representa o estado geral
+ *   da obra (sem nº de BM, sem data/período de medição).
+ * - Quando `selectedBM` aponta para uma medição salva, calcula período, valores,
+ *   acumulado anterior, dias decorridos e dias restantes da obra.
  */
 export function calcularResumoCabecalhoBM(
   allRows: BudgetRow[],
   evolutions: Record<string, Evolution>,
-  selectedBM: number,
+  selectedBM: number | null | undefined,
   info: ObraInfo = {},
 ): ResumoCabecalhoBM {
+  const saved = getSavedMeasurements(evolutions);
+  const current = selectedBM ? saved.find((s) => s.number === selectedBM) : undefined;
+  const hasMeasurement = !!current;
+  const effectiveBM = current?.number ?? 0;
+
+  let previous: SavedMeasurement | undefined;
+  if (hasMeasurement) {
+    for (const s of saved) {
+      if (s.number < effectiveBM && (!previous || s.number > previous.number)) previous = s;
+    }
+  }
+
   let valorTotalObra = 0;
   let valorDestaMedicao = 0;
   let valorAcumulado = 0;
+  let acumuladoAnterior = 0;
 
   for (const r of allRows) {
     if (r.isGroup) continue;
@@ -37,45 +117,45 @@ export function calcularResumoCabecalhoBM(
     const list = evolutions[r.item]?.measurements ?? [];
     for (const mm of list) {
       const q = mm.quantExec || 0;
-      if (mm.number === selectedBM) valorDestaMedicao += q * vu;
-      if (mm.number <= selectedBM) valorAcumulado += q * vu;
+      const val = q * vu;
+      if (hasMeasurement) {
+        if (mm.number === effectiveBM) valorDestaMedicao += val;
+        if (mm.number < effectiveBM) acumuladoAnterior += val;
+        if (mm.number <= effectiveBM) valorAcumulado += val;
+      } else if (mm.closed) {
+        valorAcumulado += val;
+      }
     }
   }
 
-  // Datas: fim = closedAt da medição selecionada (ou hoje, se em aberto)
-  //        início = closedAt da medição anterior (ou data de início da obra)
-  let prevClose: string | undefined;
-  let thisClose: string | undefined;
-  for (const evo of Object.values(evolutions)) {
-    for (const mm of evo?.measurements ?? []) {
-      if (!mm.closed || !mm.closedAt) continue;
-      if (mm.number === selectedBM - 1 && (!prevClose || mm.closedAt > prevClose)) prevClose = mm.closedAt;
-      if (mm.number === selectedBM && (!thisClose || mm.closedAt > thisClose)) thisClose = mm.closedAt;
-    }
-  }
-  const periodoInicio = prevClose ?? info.dataInicioObra;
-  const periodoFim = thisClose;
-  const toBR = (iso?: string) => {
-    if (!iso) return "";
-    const [y, m, d] = iso.split("-");
-    return y && m && d ? `${d}/${m}/${y}` : iso;
-  };
-  const periodoLabel = periodoInicio && periodoFim
-    ? `${toBR(periodoInicio)} a ${toBR(periodoFim)}`
-    : periodoInicio
-      ? `${toBR(periodoInicio)} a ${new Date().toLocaleDateString("pt-BR")}`
-      : `até ${new Date().toLocaleDateString("pt-BR")}`;
-  const dataMedicao = periodoFim ? toBR(periodoFim) : new Date().toLocaleDateString("pt-BR");
+  const periodoInicio = hasMeasurement
+    ? previous?.date ?? info.dataInicioObra
+    : undefined;
+  const periodoFim = hasMeasurement ? current?.date : undefined;
+  const periodoLabel = hasMeasurement
+    ? `${formatarDataBR(periodoInicio)} a ${formatarDataBR(periodoFim)}`
+    : "";
+  const dataMedicao = hasMeasurement ? formatarDataBR(periodoFim) : "";
+
+  const dataInicio = parseISODate(info.dataInicioObra);
+  const refFim = hasMeasurement ? parseISODate(periodoFim) : new Date();
+  let diasDecorridos = 0;
+  if (dataInicio && refFim) diasDecorridos = diffInDays(dataInicio, refFim);
+  const prazo = info.prazoContratualDias ?? 0;
+  const diasRestantes = prazo > 0 ? Math.max(0, prazo - diasDecorridos) : 0;
 
   if (valorAcumulado > valorTotalObra) valorAcumulado = valorTotalObra;
   const percentualAcumulado = valorTotalObra > 0 ? (valorAcumulado / valorTotalObra) * 100 : 0;
   const saldoRestante = Math.max(0, valorTotalObra - valorAcumulado);
-  const codigoBM = `BM-${String(selectedBM).padStart(2, "0")}`;
+
+  const codigoBM = hasMeasurement ? `BM-${String(effectiveBM).padStart(2, "0")}` : "";
+  const descricaoBM = hasMeasurement ? `${codigoBM} (${effectiveBM}ª Medição)` : "";
 
   return {
-    numeroBM: selectedBM,
+    hasMeasurement,
+    numeroBM: effectiveBM,
     codigoBM,
-    descricaoBM: `${codigoBM} (${selectedBM}ª Medição)`,
+    descricaoBM,
     periodoInicio,
     periodoFim,
     periodoLabel,
@@ -83,8 +163,11 @@ export function calcularResumoCabecalhoBM(
     valorTotalObra,
     valorDestaMedicao,
     valorAcumulado,
+    acumuladoAnterior,
     percentualAcumulado,
     saldoRestante,
+    diasDecorridos,
+    diasRestantes,
   };
 }
 
