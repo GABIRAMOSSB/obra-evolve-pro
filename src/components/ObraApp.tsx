@@ -1488,7 +1488,7 @@ function BMField({
   return (
     <div className={`px-3 py-2 ${wide ? "md:col-span-2" : ""}`}>
       <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{label}</div>
-      <div className={`mt-1 ${strong ? "font-bold text-sm" : "text-sm font-medium"} ${valueClass} truncate`}>{value}</div>
+      <div className={`mt-1 ${strong ? "font-bold text-sm" : "text-sm font-medium"} ${valueClass} break-words whitespace-normal`} style={{ overflowWrap: "break-word", wordBreak: "break-word" }}>{value}</div>
       {typeof progress === "number" && (
         <div className="mt-1.5 h-1 rounded-full bg-muted overflow-hidden">
           <div className="h-full bg-success" style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} />
