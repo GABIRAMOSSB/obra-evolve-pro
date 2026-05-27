@@ -988,7 +988,7 @@ function Dashboard({
                 const blob = buildMeasurementPdfBlob(
                   filteredRows,
                   data.evolutions,
-                  selectedBM,
+                  selectedBM ?? currentMeasNumber,
                   data.nome,
                   new Date(),
                   info,
