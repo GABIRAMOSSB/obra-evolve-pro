@@ -1300,13 +1300,12 @@ function Dashboard({
                   onRemove: () => setFilterExec(filterExec.filter((x) => x !== e)),
                 }),
               );
-              filterMeasurements.forEach((m) =>
+              if (filterMeasurement) {
                 chips.push({
-                  label: `Medição: BM-${String(m).padStart(2, "0")}`,
-                  onRemove: () =>
-                    setFilterMeasurements(filterMeasurements.filter((x) => x !== m)),
-                }),
-              );
+                  label: `Medição: BM-${String(filterMeasurement).padStart(2, "0")}`,
+                  onRemove: () => setFilterMeasurement(""),
+                });
+              }
               if (filterItem.trim())
                 chips.push({ label: `Item: ${filterItem}`, onRemove: () => setFilterItem("") });
               if (filterDesc.trim())
