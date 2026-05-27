@@ -1199,15 +1199,28 @@ function Dashboard({
                 </div>
                 <div>
                   <Label className="text-xs">Medição</Label>
-                  <MultiSelect
-                    options={Array.from({ length: currentMeasNumber }, (_, i) => {
-                      const n = i + 1;
-                      return { value: String(n), label: `BM-${String(n).padStart(2, "0")}` };
-                    })}
-                    value={filterMeasurements}
-                    onChange={setFilterMeasurements}
-                    placeholder="Todas as medições"
-                  />
+                  <Select
+                    value={filterMeasurement || "__all__"}
+                    onValueChange={(v) => setFilterMeasurement(v === "__all__" ? "" : v)}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="Todas as medições" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__">Todas as medições</SelectItem>
+                      {savedMeasurements.length === 0 && (
+                        <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                          Nenhuma medição salva
+                        </div>
+                      )}
+                      {savedMeasurements.map((s) => (
+                        <SelectItem key={s.number} value={String(s.number)}>
+                          {`BM-${String(s.number).padStart(2, "0")}`}
+                          {s.date ? ` — ${formatarDataBR(s.date)}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label className="text-xs">Status</Label>
