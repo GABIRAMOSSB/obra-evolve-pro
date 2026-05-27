@@ -731,11 +731,11 @@ function Dashboard({
   );
 
   const hasRowFilters =
-    filterStatuses.length > 0 || !!filterPercMin || filterExec.length > 0 || filterMeasurements.length > 0;
+    filterStatuses.length > 0 || !!filterPercMin || filterExec.length > 0 || !!filterMeasurement;
 
   // Rows that match filters (ignoring collapse) — used for metrics & exports.
   const filteredRows = useMemo(() => {
-    const measNums = filterMeasurements.map((n) => parseInt(n, 10)).filter((n) => !isNaN(n));
+    const measNum = filterMeasurement ? parseInt(filterMeasurement, 10) : NaN;
     return data.rows.filter((r) => {
       if (filterEtapas.length > 0) {
         const inEtapa = filterEtapas.some(
@@ -760,9 +760,9 @@ function Dashboard({
             (filterExec.includes("nao") && !executado);
           if (!matches) return false;
         }
-        if (measNums.length > 0) {
+        if (!isNaN(measNum)) {
           const ms = a.measurements ?? [];
-          const hit = ms.some((m) => measNums.includes(m.number) && (m.quantExec || 0) > 0);
+          const hit = ms.some((m) => m.number === measNum && (m.quantExec || 0) > 0);
           if (!hit) return false;
         }
       } else if (hasRowFilters) {
@@ -770,7 +770,7 @@ function Dashboard({
       }
       return true;
     });
-  }, [data, filterEtapas, itemTokens, filterDesc, filterStatuses, filterPercMin, filterExec, filterMeasurements, hasRowFilters]);
+  }, [data, filterEtapas, itemTokens, filterDesc, filterStatuses, filterPercMin, filterExec, filterMeasurement, hasRowFilters]);
 
   // Visible rows additionally hide descendants of collapsed groups.
   const visibleRows = useMemo(() => {
