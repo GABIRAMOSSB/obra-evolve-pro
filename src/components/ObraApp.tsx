@@ -1346,7 +1346,7 @@ function Dashboard({
                       setFilterItem("");
                       setFilterDesc("");
                       setFilterPercMin("");
-                      setFilterMeasurements([]);
+                      setFilterMeasurement("");
                     }}
                   >
                     Limpar todos
