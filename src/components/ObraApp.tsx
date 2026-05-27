@@ -18,6 +18,8 @@ import {
   isChildOf,
   projectMetrics,
   calcularResumoCabecalhoBM,
+  getSavedMeasurements,
+  formatarDataBR,
 } from "@/lib/calc";
 import {
   exportAcompanhamentoXlsx,
@@ -707,7 +709,7 @@ function Dashboard({
   const [filterItem, setFilterItem] = useState("");
   const [filterDesc, setFilterDesc] = useState("");
   const [filterPercMin, setFilterPercMin] = useState("");
-  const [filterMeasurements, setFilterMeasurements] = useState<string[]>([]);
+  const [filterMeasurement, setFilterMeasurement] = useState<string>("");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const toggleCollapse = (item: string) =>
     setCollapsed((c) => ({ ...c, [item]: !c[item] }));
@@ -731,11 +733,11 @@ function Dashboard({
   );
 
   const hasRowFilters =
-    filterStatuses.length > 0 || !!filterPercMin || filterExec.length > 0 || filterMeasurements.length > 0;
+    filterStatuses.length > 0 || !!filterPercMin || filterExec.length > 0 || !!filterMeasurement;
 
   // Rows that match filters (ignoring collapse) — used for metrics & exports.
   const filteredRows = useMemo(() => {
-    const measNums = filterMeasurements.map((n) => parseInt(n, 10)).filter((n) => !isNaN(n));
+    const measNum = filterMeasurement ? parseInt(filterMeasurement, 10) : NaN;
     return data.rows.filter((r) => {
       if (filterEtapas.length > 0) {
         const inEtapa = filterEtapas.some(
@@ -760,9 +762,9 @@ function Dashboard({
             (filterExec.includes("nao") && !executado);
           if (!matches) return false;
         }
-        if (measNums.length > 0) {
+        if (!isNaN(measNum)) {
           const ms = a.measurements ?? [];
-          const hit = ms.some((m) => measNums.includes(m.number) && (m.quantExec || 0) > 0);
+          const hit = ms.some((m) => m.number === measNum && (m.quantExec || 0) > 0);
           if (!hit) return false;
         }
       } else if (hasRowFilters) {
@@ -770,7 +772,7 @@ function Dashboard({
       }
       return true;
     });
-  }, [data, filterEtapas, itemTokens, filterDesc, filterStatuses, filterPercMin, filterExec, filterMeasurements, hasRowFilters]);
+  }, [data, filterEtapas, itemTokens, filterDesc, filterStatuses, filterPercMin, filterExec, filterMeasurement, hasRowFilters]);
 
   // Visible rows additionally hide descendants of collapsed groups.
   const visibleRows = useMemo(() => {
@@ -911,13 +913,15 @@ function Dashboard({
     toast.success(`${item} removido`);
   }
 
-  // BM selecionado: se o filtro de medição estiver ativo, usa o maior número
-  // selecionado; caso contrário, usa a medição atualmente em aberto.
+  // BM selecionado: se o filtro de medição estiver ativo, usa o número
+  // selecionado; caso contrário, fica sem BM (resumo geral).
   const currentMeasNumber = getCurrentMeasurement(data);
-  const selectedBM = useMemo(() => {
-    const nums = filterMeasurements.map((n) => parseInt(n, 10)).filter((n) => !isNaN(n));
-    return nums.length > 0 ? Math.max(...nums) : currentMeasNumber;
-  }, [filterMeasurements, currentMeasNumber]);
+  const savedMeasurements = useMemo(() => getSavedMeasurements(data.evolutions), [data.evolutions]);
+  const selectedBM = useMemo<number | null>(() => {
+    const n = filterMeasurement ? parseInt(filterMeasurement, 10) : NaN;
+    if (isNaN(n)) return null;
+    return savedMeasurements.some((s) => s.number === n) ? n : null;
+  }, [filterMeasurement, savedMeasurements]);
 
   // Resumo do cabeçalho — sempre com TODAS as linhas (data.rows), nunca com
   // filteredRows: os totais globais não podem mudar com filtros de tela.
@@ -970,7 +974,7 @@ function Dashboard({
               <ObraInfoDialog nome={data.nome} info={data.info} onSave={handleSaveInfo} />
             </div>
 
-            <Button variant="outline" size="sm" className="border-border" onClick={() => exportAcompanhamentoXlsx(filteredRows, data.evolutions, info, data.nome, selectedBM, undefined, data.rows)}>
+            <Button variant="outline" size="sm" className="border-border" onClick={() => exportAcompanhamentoXlsx(filteredRows, data.evolutions, info, data.nome, selectedBM ?? currentMeasNumber, undefined, data.rows)}>
               <FileSpreadsheet className="w-4 h-4 mr-1 text-success" /> Excel
             </Button>
             <Button variant="outline" size="sm" className="border-border" onClick={() => exportRelatorioPdf(filteredRows, data.evolutions, data.fileName)}>
@@ -984,7 +988,7 @@ function Dashboard({
                 const blob = buildMeasurementPdfBlob(
                   filteredRows,
                   data.evolutions,
-                  selectedBM,
+                  selectedBM ?? currentMeasNumber,
                   data.nome,
                   new Date(),
                   info,
@@ -1117,10 +1121,10 @@ function Dashboard({
         {/* BOLETIM DE MEDIÇÃO */}
         <Card className="overflow-hidden border-border shadow-[var(--shadow-card)] p-0">
           <div className="bg-primary text-primary-foreground flex items-center justify-between gap-3 px-4 py-2.5">
-            <div className="font-mono text-[11px] tracking-[0.2em] opacity-80">{resumoBM.codigoBM}</div>
+            <div className="font-mono text-[11px] tracking-[0.2em] opacity-80">{resumoBM.hasMeasurement ? resumoBM.codigoBM : ""}</div>
             <div className="font-bold tracking-[0.25em] text-sm text-center flex-1">BOLETIM DE MEDIÇÃO</div>
             <div className="font-mono text-[11px] tracking-[0.15em] opacity-80 text-right">
-              Período: {resumoBM.periodoLabel}
+              {resumoBM.hasMeasurement ? `Período: ${resumoBM.periodoLabel}` : ""}
             </div>
           </div>
           {/* Linha 1 — Identificação */}
@@ -1145,7 +1149,7 @@ function Dashboard({
             <BMField label="CREA / CAU" value={info.crea || "—"} />
             <BMField label="Cargo / Função (Resp.)" value={info.cargoResponsavel || "—"} />
             <BMField label="ART / RRT" value={info.artRrt || "—"} />
-            <BMField label="Início da Obra" value={info.dataInicioObra ? new Date(info.dataInicioObra + "T00:00:00").toLocaleDateString("pt-BR") : "—"} />
+            <BMField label="Início da Obra" value={formatarDataBR(info.dataInicioObra) || "—"} />
             <BMField label="Prazo (dias)" value={info.prazoContratualDias ? String(info.prazoContratualDias) : "—"} />
           </div>
           {/* Linha 3b — Fiscalização */}
@@ -1155,15 +1159,27 @@ function Dashboard({
             <BMField label="Cargo / Função (Fiscal)" value={info.cargoFiscal || "—"} wide />
           </div>
           {/* Linha 4 — Resumo financeiro da medição */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 divide-x divide-y divide-border text-xs">
-            <BMField label="Nº do BM" value={resumoBM.descricaoBM} strong tone="primary" />
-            <BMField label="Data da Medição" value={resumoBM.dataMedicao} />
-            <BMField label="Valor total do contrato" value={fmtBRL(resumoBM.valorTotalObra)} strong />
-            <BMField label="Valor desta medição" value={fmtBRL(resumoBM.valorDestaMedicao)} strong tone="measure" />
-            <BMField label="Valor acumulado" value={fmtBRL(resumoBM.valorAcumulado)} strong tone="success" />
-            <BMField label="% Acumulado" value={`${fmtNum(resumoBM.percentualAcumulado)}%`} strong tone="primary" progress={resumoBM.percentualAcumulado} />
-            <BMField label="Saldo restante" value={fmtBRL(resumoBM.saldoRestante)} strong />
-          </div>
+          {resumoBM.hasMeasurement ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 divide-x divide-y divide-border text-xs">
+              <BMField label="Nº do BM" value={resumoBM.descricaoBM} strong tone="primary" />
+              <BMField label="Data da Medição" value={resumoBM.dataMedicao} />
+              <BMField label="Período da Medição" value={resumoBM.periodoLabel} wide />
+              <BMField label="Valor desta medição" value={fmtBRL(resumoBM.valorDestaMedicao)} strong tone="measure" />
+              <BMField label="Valor acumulado" value={fmtBRL(resumoBM.valorAcumulado)} strong tone="success" />
+              <BMField label="% Acumulado" value={`${fmtNum(resumoBM.percentualAcumulado)}%`} strong tone="primary" progress={resumoBM.percentualAcumulado} />
+              <BMField label="Saldo restante" value={fmtBRL(resumoBM.saldoRestante)} strong />
+              <BMField label="Dias decorridos" value={`${resumoBM.diasDecorridos} dias`} />
+              <BMField label="Dias restantes" value={info.prazoContratualDias ? `${resumoBM.diasRestantes} dias` : "—"} />
+              <BMField label="Valor total da obra" value={fmtBRL(resumoBM.valorTotalObra)} strong />
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y divide-border text-xs">
+              <BMField label="Valor total da obra" value={fmtBRL(resumoBM.valorTotalObra)} strong />
+              <BMField label="Acumulado executado" value={fmtBRL(resumoBM.valorAcumulado)} strong tone="success" />
+              <BMField label="% Acumulado" value={`${fmtNum(resumoBM.percentualAcumulado)}%`} strong tone="primary" progress={resumoBM.percentualAcumulado} />
+              <BMField label="Saldo restante" value={fmtBRL(resumoBM.saldoRestante)} strong />
+            </div>
+          )}
         </Card>
 
 
@@ -1195,15 +1211,28 @@ function Dashboard({
                 </div>
                 <div>
                   <Label className="text-xs">Medição</Label>
-                  <MultiSelect
-                    options={Array.from({ length: currentMeasNumber }, (_, i) => {
-                      const n = i + 1;
-                      return { value: String(n), label: `BM-${String(n).padStart(2, "0")}` };
-                    })}
-                    value={filterMeasurements}
-                    onChange={setFilterMeasurements}
-                    placeholder="Todas as medições"
-                  />
+                  <Select
+                    value={filterMeasurement || "__all__"}
+                    onValueChange={(v) => setFilterMeasurement(v === "__all__" ? "" : v)}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="Todas as medições" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__">Todas as medições</SelectItem>
+                      {savedMeasurements.length === 0 && (
+                        <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                          Nenhuma medição salva
+                        </div>
+                      )}
+                      {savedMeasurements.map((s) => (
+                        <SelectItem key={s.number} value={String(s.number)}>
+                          {`BM-${String(s.number).padStart(2, "0")}`}
+                          {s.date ? ` — ${formatarDataBR(s.date)}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label className="text-xs">Status</Label>
@@ -1283,13 +1312,12 @@ function Dashboard({
                   onRemove: () => setFilterExec(filterExec.filter((x) => x !== e)),
                 }),
               );
-              filterMeasurements.forEach((m) =>
+              if (filterMeasurement) {
                 chips.push({
-                  label: `Medição: BM-${String(m).padStart(2, "0")}`,
-                  onRemove: () =>
-                    setFilterMeasurements(filterMeasurements.filter((x) => x !== m)),
-                }),
-              );
+                  label: `Medição: BM-${String(filterMeasurement).padStart(2, "0")}`,
+                  onRemove: () => setFilterMeasurement(""),
+                });
+              }
               if (filterItem.trim())
                 chips.push({ label: `Item: ${filterItem}`, onRemove: () => setFilterItem("") });
               if (filterDesc.trim())
@@ -1330,7 +1358,7 @@ function Dashboard({
                       setFilterItem("");
                       setFilterDesc("");
                       setFilterPercMin("");
-                      setFilterMeasurements([]);
+                      setFilterMeasurement("");
                     }}
                   >
                     Limpar todos
@@ -1460,7 +1488,7 @@ function BMField({
   return (
     <div className={`px-3 py-2 ${wide ? "md:col-span-2" : ""}`}>
       <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{label}</div>
-      <div className={`mt-1 ${strong ? "font-bold text-sm" : "text-sm font-medium"} ${valueClass} truncate`}>{value}</div>
+      <div className={`mt-1 ${strong ? "font-bold text-sm" : "text-sm font-medium"} ${valueClass} break-words whitespace-normal`} style={{ overflowWrap: "break-word", wordBreak: "break-word" }}>{value}</div>
       {typeof progress === "number" && (
         <div className="mt-1.5 h-1 rounded-full bg-muted overflow-hidden">
           <div className="h-full bg-success" style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} />
