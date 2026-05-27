@@ -1121,10 +1121,10 @@ function Dashboard({
         {/* BOLETIM DE MEDIÇÃO */}
         <Card className="overflow-hidden border-border shadow-[var(--shadow-card)] p-0">
           <div className="bg-primary text-primary-foreground flex items-center justify-between gap-3 px-4 py-2.5">
-            <div className="font-mono text-[11px] tracking-[0.2em] opacity-80">{resumoBM.codigoBM}</div>
+            <div className="font-mono text-[11px] tracking-[0.2em] opacity-80">{resumoBM.hasMeasurement ? resumoBM.codigoBM : ""}</div>
             <div className="font-bold tracking-[0.25em] text-sm text-center flex-1">BOLETIM DE MEDIÇÃO</div>
             <div className="font-mono text-[11px] tracking-[0.15em] opacity-80 text-right">
-              Período: {resumoBM.periodoLabel}
+              {resumoBM.hasMeasurement ? `Período: ${resumoBM.periodoLabel}` : ""}
             </div>
           </div>
           {/* Linha 1 — Identificação */}
@@ -1149,7 +1149,7 @@ function Dashboard({
             <BMField label="CREA / CAU" value={info.crea || "—"} />
             <BMField label="Cargo / Função (Resp.)" value={info.cargoResponsavel || "—"} />
             <BMField label="ART / RRT" value={info.artRrt || "—"} />
-            <BMField label="Início da Obra" value={info.dataInicioObra ? new Date(info.dataInicioObra + "T00:00:00").toLocaleDateString("pt-BR") : "—"} />
+            <BMField label="Início da Obra" value={formatarDataBR(info.dataInicioObra) || "—"} />
             <BMField label="Prazo (dias)" value={info.prazoContratualDias ? String(info.prazoContratualDias) : "—"} />
           </div>
           {/* Linha 3b — Fiscalização */}
@@ -1159,15 +1159,27 @@ function Dashboard({
             <BMField label="Cargo / Função (Fiscal)" value={info.cargoFiscal || "—"} wide />
           </div>
           {/* Linha 4 — Resumo financeiro da medição */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 divide-x divide-y divide-border text-xs">
-            <BMField label="Nº do BM" value={resumoBM.descricaoBM} strong tone="primary" />
-            <BMField label="Data da Medição" value={resumoBM.dataMedicao} />
-            <BMField label="Valor total do contrato" value={fmtBRL(resumoBM.valorTotalObra)} strong />
-            <BMField label="Valor desta medição" value={fmtBRL(resumoBM.valorDestaMedicao)} strong tone="measure" />
-            <BMField label="Valor acumulado" value={fmtBRL(resumoBM.valorAcumulado)} strong tone="success" />
-            <BMField label="% Acumulado" value={`${fmtNum(resumoBM.percentualAcumulado)}%`} strong tone="primary" progress={resumoBM.percentualAcumulado} />
-            <BMField label="Saldo restante" value={fmtBRL(resumoBM.saldoRestante)} strong />
-          </div>
+          {resumoBM.hasMeasurement ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 divide-x divide-y divide-border text-xs">
+              <BMField label="Nº do BM" value={resumoBM.descricaoBM} strong tone="primary" />
+              <BMField label="Data da Medição" value={resumoBM.dataMedicao} />
+              <BMField label="Período da Medição" value={resumoBM.periodoLabel} wide />
+              <BMField label="Valor desta medição" value={fmtBRL(resumoBM.valorDestaMedicao)} strong tone="measure" />
+              <BMField label="Valor acumulado" value={fmtBRL(resumoBM.valorAcumulado)} strong tone="success" />
+              <BMField label="% Acumulado" value={`${fmtNum(resumoBM.percentualAcumulado)}%`} strong tone="primary" progress={resumoBM.percentualAcumulado} />
+              <BMField label="Saldo restante" value={fmtBRL(resumoBM.saldoRestante)} strong />
+              <BMField label="Dias decorridos" value={`${resumoBM.diasDecorridos} dias`} />
+              <BMField label="Dias restantes" value={info.prazoContratualDias ? `${resumoBM.diasRestantes} dias` : "—"} />
+              <BMField label="Valor total da obra" value={fmtBRL(resumoBM.valorTotalObra)} strong />
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y divide-border text-xs">
+              <BMField label="Valor total da obra" value={fmtBRL(resumoBM.valorTotalObra)} strong />
+              <BMField label="Acumulado executado" value={fmtBRL(resumoBM.valorAcumulado)} strong tone="success" />
+              <BMField label="% Acumulado" value={`${fmtNum(resumoBM.percentualAcumulado)}%`} strong tone="primary" progress={resumoBM.percentualAcumulado} />
+              <BMField label="Saldo restante" value={fmtBRL(resumoBM.saldoRestante)} strong />
+            </div>
+          )}
         </Card>
 
 
