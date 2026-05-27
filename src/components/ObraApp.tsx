@@ -974,7 +974,7 @@ function Dashboard({
               <ObraInfoDialog nome={data.nome} info={data.info} onSave={handleSaveInfo} />
             </div>
 
-            <Button variant="outline" size="sm" className="border-border" onClick={() => exportAcompanhamentoXlsx(filteredRows, data.evolutions, info, data.nome, selectedBM, undefined, data.rows)}>
+            <Button variant="outline" size="sm" className="border-border" onClick={() => exportAcompanhamentoXlsx(filteredRows, data.evolutions, info, data.nome, selectedBM ?? currentMeasNumber, undefined, data.rows)}>
               <FileSpreadsheet className="w-4 h-4 mr-1 text-success" /> Excel
             </Button>
             <Button variant="outline" size="sm" className="border-border" onClick={() => exportRelatorioPdf(filteredRows, data.evolutions, data.fileName)}>
