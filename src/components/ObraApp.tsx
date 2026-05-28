@@ -1395,6 +1395,7 @@ function Dashboard({
               onToggleCollapse={toggleCollapse}
               obraId={data.id}
               currentMeasurement={getCurrentMeasurement(data)}
+              viewMeasurement={selectedBM ?? getCurrentMeasurement(data)}
             />
 
             <SignatureBlock info={info} municipio={info.municipio} />
@@ -1545,6 +1546,7 @@ function ActivitiesTable({
   onToggleCollapse,
   obraId,
   currentMeasurement,
+  viewMeasurement,
 }: {
   rows: BudgetRow[];
   allRows: BudgetRow[];
@@ -1556,6 +1558,7 @@ function ActivitiesTable({
   onToggleCollapse?: (item: string) => void;
   obraId: string;
   currentMeasurement: number;
+  viewMeasurement: number;
 }) {
   if (rows.length === 0) {
     return (
@@ -1578,16 +1581,18 @@ function ActivitiesTable({
     .filter((r) => !r.isGroup)
     .reduce((s, r) => {
       const list = evolutions[r.item]?.measurements ?? [];
-      const qtdAnt = list.filter((m) => m.closed).reduce((a, m) => a + (m.quantExec || 0), 0);
+      const qtdAnt = list
+        .filter((m) => m.number < viewMeasurement)
+        .reduce((a, m) => a + (m.quantExec || 0), 0);
       return s + qtdAnt * (r.valorUnitBDI || 0);
     }, 0);
   const tFinPeriodo = allRows
     .filter((r) => !r.isGroup)
     .reduce((s, r) => {
-      const open = evolutions[r.item]?.measurements?.find(
-        (m) => !m.closed && m.number === currentMeasurement,
+      const meas = evolutions[r.item]?.measurements?.find(
+        (m) => m.number === viewMeasurement,
       );
-      return s + (open ? (open.quantExec || 0) * (r.valorUnitBDI || 0) : 0);
+      return s + (meas ? (meas.quantExec || 0) * (r.valorUnitBDI || 0) : 0);
     }, 0);
   const tFinAtual = tFinAnterior + tFinPeriodo;
 
@@ -1661,10 +1666,12 @@ function ActivitiesTable({
                   if (child.isGroup) continue;
                   if (child.item !== r.item && !child.item.startsWith(r.item + ".")) continue;
                   const list = evolutions[child.item]?.measurements ?? [];
-                  const qAnt = list.filter((m) => m.closed).reduce((a, m) => a + (m.quantExec || 0), 0);
-                  const open = list.find((m) => !m.closed && m.number === currentMeasurement);
+                  const qAnt = list
+                    .filter((m) => m.number < viewMeasurement)
+                    .reduce((a, m) => a + (m.quantExec || 0), 0);
+                  const meas = list.find((m) => m.number === viewMeasurement);
                   gFinAnt += qAnt * (child.valorUnitBDI || 0);
-                  if (open) gFinPer += (open.quantExec || 0) * (child.valorUnitBDI || 0);
+                  if (meas) gFinPer += (meas.quantExec || 0) * (child.valorUnitBDI || 0);
                 }
                 const gFinAtual = gFinAnt + gFinPer;
                 const gDesvio = contratoTotal > 0 ? (gFinAtual / contratoTotal) * 100 : 0;
@@ -1729,6 +1736,7 @@ function ActivitiesTable({
                   indent={indent}
                   obraId={obraId}
                   currentMeasurement={currentMeasurement}
+                  viewMeasurement={viewMeasurement}
                   contratoTotal={contratoTotal}
                 />
               );
@@ -1773,6 +1781,7 @@ function ServiceRow({
   indent = 0,
   obraId,
   currentMeasurement,
+  viewMeasurement,
   contratoTotal,
 }: {
   row: BudgetRow;
@@ -1784,15 +1793,23 @@ function ServiceRow({
   indent?: number;
   obraId: string;
   currentMeasurement: number;
+  viewMeasurement: number;
   contratoTotal: number;
 }) {
   const a = activityMetrics(row, evolution);
   const allMeasurements = a.measurements;
-  const closedSum = allMeasurements
+  // Acumulado de medições com número < viewMeasurement (igual à lógica do PDF/Excel).
+  const qtdAnterior = allMeasurements
+    .filter((m) => m.number < viewMeasurement)
+    .reduce((s, m) => s + (m.quantExec || 0), 0);
+  // Medição exibida (pode ser histórica fechada ou a em aberto).
+  const viewedMeas = allMeasurements.find((m) => m.number === viewMeasurement);
+  const periodoQty = viewedMeas?.quantExec || 0;
+  // Edição liberada somente quando a medição em visualização é a aberta atual.
+  const isEditable = viewMeasurement === currentMeasurement && (!viewedMeas || !viewedMeas.closed);
+  const closedSumForCommit = allMeasurements
     .filter((m) => m.closed)
     .reduce((s, m) => s + (m.quantExec || 0), 0);
-  const openMeas = allMeasurements.find((m) => !m.closed && m.number === currentMeasurement);
-  const periodoQty = openMeas?.quantExec || 0;
   const [qty, setQty] = useState(periodoQty ? String(periodoQty) : "");
 
   useEffect(() => {
@@ -1801,7 +1818,7 @@ function ServiceRow({
 
   function commit(periodo: number) {
     const p = Math.max(0, periodo);
-    const newAcc = closedSum + p;
+    const newAcc = closedSumForCommit + p;
     if (Math.abs(p - periodoQty) < 1e-6) return;
     if (row.quantidade > 0 && newAcc > row.quantidade + 1e-6) {
       toast.warning(`Acumulado limitado ao total previsto: ${fmtNum(row.quantidade)} ${row.und}.`);
@@ -1816,8 +1833,7 @@ function ServiceRow({
   }
 
   const vu = row.valorUnitBDI || 0;
-  const qtdAnterior = closedSum;
-  const qtdAtual = closedSum + periodoQty;
+  const qtdAtual = qtdAnterior + periodoQty;
   const finAnterior = qtdAnterior * vu;
   const finPeriodo = periodoQty * vu;
   const finAtual = qtdAtual * vu;
@@ -1843,7 +1859,14 @@ function ServiceRow({
           {qtdAnterior > 0 ? fmtNum(qtdAnterior) : "—"}
         </td>
         <td className="px-1 py-1 bg-[var(--measure)]/10">
-          {row.quantidade > 0 && qtdAnterior >= row.quantidade - 1e-6 ? (
+          {!isEditable ? (
+            <div
+              className="h-7 flex items-center justify-end px-2 text-right text-xs rounded bg-muted text-muted-foreground cursor-not-allowed select-none"
+              title={viewedMeas?.closed ? "Medição bloqueada (fechada)" : "Selecione a medição em aberto para editar"}
+            >
+              {periodoQty > 0 ? fmtNum(periodoQty) : "—"}
+            </div>
+          ) : row.quantidade > 0 && qtdAnterior >= row.quantidade - 1e-6 ? (
             <div
               className="h-7 flex items-center justify-end px-2 text-right text-xs rounded bg-muted text-muted-foreground cursor-not-allowed select-none"
               title="Item concluído — campo bloqueado"
