@@ -1666,10 +1666,12 @@ function ActivitiesTable({
                   if (child.isGroup) continue;
                   if (child.item !== r.item && !child.item.startsWith(r.item + ".")) continue;
                   const list = evolutions[child.item]?.measurements ?? [];
-                  const qAnt = list.filter((m) => m.closed).reduce((a, m) => a + (m.quantExec || 0), 0);
-                  const open = list.find((m) => !m.closed && m.number === currentMeasurement);
+                  const qAnt = list
+                    .filter((m) => m.number < viewMeasurement)
+                    .reduce((a, m) => a + (m.quantExec || 0), 0);
+                  const meas = list.find((m) => m.number === viewMeasurement);
                   gFinAnt += qAnt * (child.valorUnitBDI || 0);
-                  if (open) gFinPer += (open.quantExec || 0) * (child.valorUnitBDI || 0);
+                  if (meas) gFinPer += (meas.quantExec || 0) * (child.valorUnitBDI || 0);
                 }
                 const gFinAtual = gFinAnt + gFinPer;
                 const gDesvio = contratoTotal > 0 ? (gFinAtual / contratoTotal) * 100 : 0;
