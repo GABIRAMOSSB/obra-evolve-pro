@@ -1546,6 +1546,7 @@ function ActivitiesTable({
   onToggleCollapse,
   obraId,
   currentMeasurement,
+  viewMeasurement,
 }: {
   rows: BudgetRow[];
   allRows: BudgetRow[];
@@ -1557,6 +1558,7 @@ function ActivitiesTable({
   onToggleCollapse?: (item: string) => void;
   obraId: string;
   currentMeasurement: number;
+  viewMeasurement: number;
 }) {
   if (rows.length === 0) {
     return (
