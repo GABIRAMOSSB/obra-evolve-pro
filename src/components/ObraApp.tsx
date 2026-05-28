@@ -2145,36 +2145,63 @@ function EvolutionDialog({
                 <thead className="bg-muted/60">
                   <tr>
                     <th className="px-2 py-1.5 text-left">Medição</th>
-                    <th className="px-2 py-1.5 text-right">Qtd. Exec.</th>
-                    <th className="px-2 py-1.5 text-right">% Exec.</th>
-                    <th className="px-2 py-1.5 text-right">Valor Executado</th>
+                    <th className="px-2 py-1.5 text-right" title="Calculado automaticamente">
+                      Acum. Anterior 🔒
+                    </th>
+                    <th className="px-2 py-1.5 text-right bg-[var(--measure)]/10">Período</th>
+                    <th className="px-2 py-1.5 text-right" title="Calculado automaticamente">
+                      Acum. Atual 🔒
+                    </th>
+                    <th className="px-2 py-1.5 text-right">% Acum.</th>
+                    <th className="px-2 py-1.5 text-right">Valor Acum.</th>
                     <th className="px-2 py-1.5 text-center">Status</th>
                     <th className="px-2 py-1.5 text-left">Data</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {measurements.map((m) => {
-                    const pct = row.quantidade > 0 ? (m.quantExec / row.quantidade) * 100 : 0;
-                    const val = (pct / 100) * (row.total || 0);
-                    return (
-                      <tr key={m.id} className="border-t">
-                        <td className="px-2 py-1.5 font-medium">M{m.number}</td>
-                        <td className="px-2 py-1.5 text-right">{fmtNum(m.quantExec)} {row.und}</td>
-                        <td className="px-2 py-1.5 text-right">{fmtNum(pct)}%</td>
-                        <td className="px-2 py-1.5 text-right">{fmtBRL(val)}</td>
-                        <td className="px-2 py-1.5 text-center">
-                          {m.closed ? (
-                            <Badge variant="outline" className="text-[10px]">🔒 Bloqueada</Badge>
-                          ) : (
-                            <Badge variant="secondary" className="text-[10px]">Em aberto</Badge>
-                          )}
-                        </td>
-                        <td className="px-2 py-1.5">{m.dataExec ? fmtDate(m.dataExec) : "—"}</td>
-                      </tr>
-                    );
-                  })}
+                  {(() => {
+                    let running = 0;
+                    return [...measurements]
+                      .sort((a, b) => a.number - b.number)
+                      .map((m) => {
+                        const acumAnt = running;
+                        const periodo = m.quantExec || 0;
+                        const acumAtual = acumAnt + periodo;
+                        running = acumAtual;
+                        const pct = row.quantidade > 0 ? (acumAtual / row.quantidade) * 100 : 0;
+                        const val = (pct / 100) * (row.total || 0);
+                        return (
+                          <tr key={m.id} className="border-t">
+                            <td className="px-2 py-1.5 font-medium">BM-{String(m.number).padStart(2, "0")}</td>
+                            <td className="px-2 py-1.5 text-right text-muted-foreground">
+                              {m.number === 1 ? "—" : `${fmtNum(acumAnt)} ${row.und}`}
+                            </td>
+                            <td className="px-2 py-1.5 text-right bg-[var(--measure)]/5">
+                              {fmtNum(periodo)} {row.und}
+                            </td>
+                            <td className="px-2 py-1.5 text-right font-semibold">
+                              {fmtNum(acumAtual)} {row.und}
+                            </td>
+                            <td className="px-2 py-1.5 text-right">{fmtNum(pct)}%</td>
+                            <td className="px-2 py-1.5 text-right">{fmtBRL(val)}</td>
+                            <td className="px-2 py-1.5 text-center">
+                              {m.closed ? (
+                                <Badge variant="outline" className="text-[10px]">🔒 Bloqueada</Badge>
+                              ) : (
+                                <Badge variant="secondary" className="text-[10px]">Em aberto</Badge>
+                              )}
+                            </td>
+                            <td className="px-2 py-1.5">{m.dataExec ? fmtDate(m.dataExec) : "—"}</td>
+                          </tr>
+                        );
+                      });
+                  })()}
                 </tbody>
               </table>
+              <div className="px-2 py-1.5 text-[10px] text-muted-foreground bg-muted/30 border-t">
+                Apenas <strong>Período</strong> é editável. <strong>Acum. Anterior</strong> e <strong>Acum. Atual</strong> são calculados automaticamente
+                (BM-01: Acum. Anterior = 0, Acum. Atual = Período; BM-02+: Acum. Anterior = Acum. Atual da medição anterior, Acum. Atual = Acum. Anterior + Período).
+              </div>
             </div>
           )}
 
