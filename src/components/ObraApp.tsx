@@ -1859,7 +1859,14 @@ function ServiceRow({
           {qtdAnterior > 0 ? fmtNum(qtdAnterior) : "—"}
         </td>
         <td className="px-1 py-1 bg-[var(--measure)]/10">
-          {row.quantidade > 0 && qtdAnterior >= row.quantidade - 1e-6 ? (
+          {!isEditable ? (
+            <div
+              className="h-7 flex items-center justify-end px-2 text-right text-xs rounded bg-muted text-muted-foreground cursor-not-allowed select-none"
+              title={viewedMeas?.closed ? "Medição bloqueada (fechada)" : "Selecione a medição em aberto para editar"}
+            >
+              {periodoQty > 0 ? fmtNum(periodoQty) : "—"}
+            </div>
+          ) : row.quantidade > 0 && qtdAnterior >= row.quantidade - 1e-6 ? (
             <div
               className="h-7 flex items-center justify-end px-2 text-right text-xs rounded bg-muted text-muted-foreground cursor-not-allowed select-none"
               title="Item concluído — campo bloqueado"
