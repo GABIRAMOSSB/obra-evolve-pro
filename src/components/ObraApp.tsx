@@ -1781,6 +1781,7 @@ function ServiceRow({
   indent = 0,
   obraId,
   currentMeasurement,
+  viewMeasurement,
   contratoTotal,
 }: {
   row: BudgetRow;
@@ -1792,15 +1793,23 @@ function ServiceRow({
   indent?: number;
   obraId: string;
   currentMeasurement: number;
+  viewMeasurement: number;
   contratoTotal: number;
 }) {
   const a = activityMetrics(row, evolution);
   const allMeasurements = a.measurements;
-  const closedSum = allMeasurements
+  // Acumulado de medições com número < viewMeasurement (igual à lógica do PDF/Excel).
+  const qtdAnterior = allMeasurements
+    .filter((m) => m.number < viewMeasurement)
+    .reduce((s, m) => s + (m.quantExec || 0), 0);
+  // Medição exibida (pode ser histórica fechada ou a em aberto).
+  const viewedMeas = allMeasurements.find((m) => m.number === viewMeasurement);
+  const periodoQty = viewedMeas?.quantExec || 0;
+  // Edição liberada somente quando a medição em visualização é a aberta atual.
+  const isEditable = viewMeasurement === currentMeasurement && (!viewedMeas || !viewedMeas.closed);
+  const closedSumForCommit = allMeasurements
     .filter((m) => m.closed)
     .reduce((s, m) => s + (m.quantExec || 0), 0);
-  const openMeas = allMeasurements.find((m) => !m.closed && m.number === currentMeasurement);
-  const periodoQty = openMeas?.quantExec || 0;
   const [qty, setQty] = useState(periodoQty ? String(periodoQty) : "");
 
   useEffect(() => {
@@ -1809,7 +1818,7 @@ function ServiceRow({
 
   function commit(periodo: number) {
     const p = Math.max(0, periodo);
-    const newAcc = closedSum + p;
+    const newAcc = closedSumForCommit + p;
     if (Math.abs(p - periodoQty) < 1e-6) return;
     if (row.quantidade > 0 && newAcc > row.quantidade + 1e-6) {
       toast.warning(`Acumulado limitado ao total previsto: ${fmtNum(row.quantidade)} ${row.und}.`);
@@ -1824,8 +1833,7 @@ function ServiceRow({
   }
 
   const vu = row.valorUnitBDI || 0;
-  const qtdAnterior = closedSum;
-  const qtdAtual = closedSum + periodoQty;
+  const qtdAtual = qtdAnterior + periodoQty;
   const finAnterior = qtdAnterior * vu;
   const finPeriodo = periodoQty * vu;
   const finAtual = qtdAtual * vu;
