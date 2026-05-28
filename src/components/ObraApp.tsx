@@ -1736,6 +1736,7 @@ function ActivitiesTable({
                   indent={indent}
                   obraId={obraId}
                   currentMeasurement={currentMeasurement}
+                  viewMeasurement={viewMeasurement}
                   contratoTotal={contratoTotal}
                 />
               );
