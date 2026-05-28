@@ -1395,6 +1395,7 @@ function Dashboard({
               onToggleCollapse={toggleCollapse}
               obraId={data.id}
               currentMeasurement={getCurrentMeasurement(data)}
+              viewMeasurement={selectedBM ?? getCurrentMeasurement(data)}
             />
 
             <SignatureBlock info={info} municipio={info.municipio} />
