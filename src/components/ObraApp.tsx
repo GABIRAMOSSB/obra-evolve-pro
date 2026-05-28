@@ -1581,16 +1581,18 @@ function ActivitiesTable({
     .filter((r) => !r.isGroup)
     .reduce((s, r) => {
       const list = evolutions[r.item]?.measurements ?? [];
-      const qtdAnt = list.filter((m) => m.closed).reduce((a, m) => a + (m.quantExec || 0), 0);
+      const qtdAnt = list
+        .filter((m) => m.number < viewMeasurement)
+        .reduce((a, m) => a + (m.quantExec || 0), 0);
       return s + qtdAnt * (r.valorUnitBDI || 0);
     }, 0);
   const tFinPeriodo = allRows
     .filter((r) => !r.isGroup)
     .reduce((s, r) => {
-      const open = evolutions[r.item]?.measurements?.find(
-        (m) => !m.closed && m.number === currentMeasurement,
+      const meas = evolutions[r.item]?.measurements?.find(
+        (m) => m.number === viewMeasurement,
       );
-      return s + (open ? (open.quantExec || 0) * (r.valorUnitBDI || 0) : 0);
+      return s + (meas ? (meas.quantExec || 0) * (r.valorUnitBDI || 0) : 0);
     }, 0);
   const tFinAtual = tFinAnterior + tFinPeriodo;
 
