@@ -311,6 +311,72 @@ export type Database = {
           },
         ]
       }
+      estoque_movimentos: {
+        Row: {
+          apontamento_id: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          data_movimento: string
+          id: string
+          insumo_id: string
+          item_codigo: string | null
+          item_descricao: string | null
+          nota_fiscal_id: string | null
+          nota_fiscal_item_id: string | null
+          obra_id: string | null
+          observacoes: string | null
+          origem: string
+          quantidade: number
+          tipo: string
+          updated_at: string
+          valor_total: number
+          valor_unitario: number
+        }
+        Insert: {
+          apontamento_id?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          data_movimento?: string
+          id?: string
+          insumo_id: string
+          item_codigo?: string | null
+          item_descricao?: string | null
+          nota_fiscal_id?: string | null
+          nota_fiscal_item_id?: string | null
+          obra_id?: string | null
+          observacoes?: string | null
+          origem?: string
+          quantidade: number
+          tipo: string
+          updated_at?: string
+          valor_total?: number
+          valor_unitario?: number
+        }
+        Update: {
+          apontamento_id?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          data_movimento?: string
+          id?: string
+          insumo_id?: string
+          item_codigo?: string | null
+          item_descricao?: string | null
+          nota_fiscal_id?: string | null
+          nota_fiscal_item_id?: string | null
+          obra_id?: string | null
+          observacoes?: string | null
+          origem?: string
+          quantidade?: number
+          tipo?: string
+          updated_at?: string
+          valor_total?: number
+          valor_unitario?: number
+        }
+        Relationships: []
+      }
       funcionarios: {
         Row: {
           ativo: boolean
@@ -790,6 +856,14 @@ export type Database = {
     }
     Functions: {
       accept_company_invite: { Args: { _token: string }; Returns: string }
+      calcular_saldo_insumo: {
+        Args: { _company: string; _insumo: string; _obra?: string }
+        Returns: {
+          saldo: number
+          ultimo_movimento: string
+          valor_medio: number
+        }[]
+      }
       current_user_company: { Args: never; Returns: string }
       get_company_member_emails: {
         Args: { _company: string }
@@ -820,6 +894,10 @@ export type Database = {
       is_company_member: {
         Args: { _company: string; _user: string }
         Returns: boolean
+      }
+      registrar_entrada_nfe: {
+        Args: { _nota_id: string; _obra_id?: string }
+        Returns: number
       }
       seed_funcoes_base: { Args: { _company: string }; Returns: undefined }
       seed_insumos_base: { Args: { _company: string }; Returns: undefined }
