@@ -124,6 +124,9 @@ function NotasFiscaisPage() {
   const [detailNota, setDetailNota] = useState<NotaRow | null>(null);
   const [detailItens, setDetailItens] = useState<ItemRow[]>([]);
   const [insumos, setInsumos] = useState<InsumoOption[]>([]);
+  const [obras, setObras] = useState<ObraLite[]>([]);
+  const [bulkObra, setBulkObra] = useState<string>("");
+  const [bulkComp, setBulkComp] = useState<string>("");
 
   const refresh = async () => {
     if (!companyId) return;
@@ -153,10 +156,23 @@ function NotasFiscaisPage() {
     setInsumos((data as InsumoOption[]) || []);
   };
 
+  const loadObras = async () => {
+    if (!companyId) return;
+    const { data } = await supabase
+      .from("company_workspaces")
+      .select("workspace")
+      .eq("company_id", companyId)
+      .maybeSingle();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ws = (data as any)?.workspace as { obras?: ProjectData[] } | undefined;
+    setObras((ws?.obras ?? []).map((o) => ({ id: o.id, nome: o.nome || o.id, rows: o.rows ?? [] })));
+  };
+
   useEffect(() => {
     if (companyId) {
       refresh();
       loadInsumos();
+      loadObras();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId]);
