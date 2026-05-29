@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as RealizadoRouteImport } from './routes/realizado'
 import { Route as NotasFiscaisRouteImport } from './routes/notas-fiscais'
 import { Route as MaoDeObraRouteImport } from './routes/mao-de-obra'
 import { Route as LoginRouteImport } from './routes/login'
@@ -21,6 +22,11 @@ import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RealizadoRoute = RealizadoRouteImport.update({
+  id: '/realizado',
+  path: '/realizado',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NotasFiscaisRoute = NotasFiscaisRouteImport.update({
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/mao-de-obra': typeof MaoDeObraRoute
   '/notas-fiscais': typeof NotasFiscaisRoute
+  '/realizado': typeof RealizadoRoute
   '/reset-password': typeof ResetPasswordRoute
   '/invite/$token': typeof InviteTokenRoute
 }
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/mao-de-obra': typeof MaoDeObraRoute
   '/notas-fiscais': typeof NotasFiscaisRoute
+  '/realizado': typeof RealizadoRoute
   '/reset-password': typeof ResetPasswordRoute
   '/invite/$token': typeof InviteTokenRoute
 }
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/mao-de-obra': typeof MaoDeObraRoute
   '/notas-fiscais': typeof NotasFiscaisRoute
+  '/realizado': typeof RealizadoRoute
   '/reset-password': typeof ResetPasswordRoute
   '/invite/$token': typeof InviteTokenRoute
 }
@@ -99,6 +108,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/mao-de-obra'
     | '/notas-fiscais'
+    | '/realizado'
     | '/reset-password'
     | '/invite/$token'
   fileRoutesByTo: FileRoutesByTo
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/mao-de-obra'
     | '/notas-fiscais'
+    | '/realizado'
     | '/reset-password'
     | '/invite/$token'
   id:
@@ -119,6 +130,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/mao-de-obra'
     | '/notas-fiscais'
+    | '/realizado'
     | '/reset-password'
     | '/invite/$token'
   fileRoutesById: FileRoutesById
@@ -130,6 +142,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   MaoDeObraRoute: typeof MaoDeObraRoute
   NotasFiscaisRoute: typeof NotasFiscaisRoute
+  RealizadoRoute: typeof RealizadoRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   InviteTokenRoute: typeof InviteTokenRoute
 }
@@ -141,6 +154,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/realizado': {
+      id: '/realizado'
+      path: '/realizado'
+      fullPath: '/realizado'
+      preLoaderRoute: typeof RealizadoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/notas-fiscais': {
@@ -202,9 +222,20 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   MaoDeObraRoute: MaoDeObraRoute,
   NotasFiscaisRoute: NotasFiscaisRoute,
+  RealizadoRoute: RealizadoRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   InviteTokenRoute: InviteTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
