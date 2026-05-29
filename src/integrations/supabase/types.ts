@@ -282,6 +282,180 @@ export type Database = {
           },
         ]
       }
+      nota_fiscal_itens: {
+        Row: {
+          cfop: string | null
+          codigo_produto: string | null
+          company_id: string
+          created_at: string
+          descricao: string
+          id: string
+          insumo_id: string | null
+          match_status: string
+          ncm: string | null
+          nota_fiscal_id: string
+          numero_item: number
+          quantidade: number
+          unidade: string | null
+          updated_at: string
+          valor_desconto: number | null
+          valor_frete: number | null
+          valor_total: number
+          valor_unitario: number
+        }
+        Insert: {
+          cfop?: string | null
+          codigo_produto?: string | null
+          company_id: string
+          created_at?: string
+          descricao: string
+          id?: string
+          insumo_id?: string | null
+          match_status?: string
+          ncm?: string | null
+          nota_fiscal_id: string
+          numero_item: number
+          quantidade?: number
+          unidade?: string | null
+          updated_at?: string
+          valor_desconto?: number | null
+          valor_frete?: number | null
+          valor_total?: number
+          valor_unitario?: number
+        }
+        Update: {
+          cfop?: string | null
+          codigo_produto?: string | null
+          company_id?: string
+          created_at?: string
+          descricao?: string
+          id?: string
+          insumo_id?: string | null
+          match_status?: string
+          ncm?: string | null
+          nota_fiscal_id?: string
+          numero_item?: number
+          quantidade?: number
+          unidade?: string | null
+          updated_at?: string
+          valor_desconto?: number | null
+          valor_frete?: number | null
+          valor_total?: number
+          valor_unitario?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nota_fiscal_itens_insumo_id_fkey"
+            columns: ["insumo_id"]
+            isOneToOne: false
+            referencedRelation: "insumos_mestre"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nota_fiscal_itens_nota_fiscal_id_fkey"
+            columns: ["nota_fiscal_id"]
+            isOneToOne: false
+            referencedRelation: "notas_fiscais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notas_fiscais: {
+        Row: {
+          chave_acesso: string
+          company_id: string
+          created_at: string
+          data_emissao: string | null
+          data_entrada: string | null
+          destinatario_cnpj: string | null
+          destinatario_nome: string | null
+          emitente_cnpj: string | null
+          emitente_ie: string | null
+          emitente_nome: string | null
+          emitente_uf: string | null
+          id: string
+          imported_by: string | null
+          modelo: string | null
+          natureza_operacao: string | null
+          numero: string
+          obra_id: string | null
+          observacoes: string | null
+          serie: string | null
+          status: string
+          updated_at: string
+          valor_desconto: number | null
+          valor_frete: number | null
+          valor_icms: number | null
+          valor_ipi: number | null
+          valor_outras: number | null
+          valor_produtos: number | null
+          valor_total: number | null
+          xml_content: string | null
+        }
+        Insert: {
+          chave_acesso: string
+          company_id: string
+          created_at?: string
+          data_emissao?: string | null
+          data_entrada?: string | null
+          destinatario_cnpj?: string | null
+          destinatario_nome?: string | null
+          emitente_cnpj?: string | null
+          emitente_ie?: string | null
+          emitente_nome?: string | null
+          emitente_uf?: string | null
+          id?: string
+          imported_by?: string | null
+          modelo?: string | null
+          natureza_operacao?: string | null
+          numero: string
+          obra_id?: string | null
+          observacoes?: string | null
+          serie?: string | null
+          status?: string
+          updated_at?: string
+          valor_desconto?: number | null
+          valor_frete?: number | null
+          valor_icms?: number | null
+          valor_ipi?: number | null
+          valor_outras?: number | null
+          valor_produtos?: number | null
+          valor_total?: number | null
+          xml_content?: string | null
+        }
+        Update: {
+          chave_acesso?: string
+          company_id?: string
+          created_at?: string
+          data_emissao?: string | null
+          data_entrada?: string | null
+          destinatario_cnpj?: string | null
+          destinatario_nome?: string | null
+          emitente_cnpj?: string | null
+          emitente_ie?: string | null
+          emitente_nome?: string | null
+          emitente_uf?: string | null
+          id?: string
+          imported_by?: string | null
+          modelo?: string | null
+          natureza_operacao?: string | null
+          numero?: string
+          obra_id?: string | null
+          observacoes?: string | null
+          serie?: string | null
+          status?: string
+          updated_at?: string
+          valor_desconto?: number | null
+          valor_frete?: number | null
+          valor_icms?: number | null
+          valor_ipi?: number | null
+          valor_outras?: number | null
+          valor_produtos?: number | null
+          valor_total?: number | null
+          xml_content?: string | null
+        }
+        Relationships: []
+      }
       unidades_medida: {
         Row: {
           company_id: string
