@@ -605,7 +605,7 @@ function FuncionariosTab({
     const { error } = edit
       ? await supabase.from("funcionarios").update(payload).eq("id", edit.id)
       : await supabase.from("funcionarios").insert(payload);
-    if (error) return toast.error(error.message);
+    if (error) { console.error("Erro funcionario:", error); return toast.error(`Erro: ${error.message}`); }
     toast.success(edit ? "Funcionário atualizado" : "Funcionário criado");
     setOpen(false);
     reset();
