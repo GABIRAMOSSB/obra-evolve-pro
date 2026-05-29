@@ -428,7 +428,7 @@ function RealizadoPage() {
                 <Card className="p-4">
                   <h2 className="font-semibold mb-1">Comparativo por Etapa (rollup)</h2>
                   <p className="text-xs text-muted-foreground mb-3">
-                    Soma de todas as composições filhas (mão de obra apontada + material consumido do estoque).
+                    Espelho completo da planilha — soma de todas as composições filhas (MO apontada + NF-e apropriada + saída de estoque vinculada).
                   </p>
                   {comparativoEtapas.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-6 text-center">
