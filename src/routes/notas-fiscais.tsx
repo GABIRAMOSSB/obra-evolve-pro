@@ -287,15 +287,53 @@ function NotasFiscaisPage() {
   const openDetail = async (nota: NotaRow) => {
     setDetailNota(nota);
     setDetailItens([]);
+    setBulkObra("");
+    setBulkComp("");
     const { data } = await supabase
       .from("nota_fiscal_itens")
       .select(
-        "id,numero_item,codigo_produto,descricao,ncm,cfop,unidade,quantidade,valor_unitario,valor_total,insumo_id,match_status",
+        "id,numero_item,codigo_produto,descricao,ncm,cfop,unidade,quantidade,valor_unitario,valor_total,insumo_id,match_status,obra_id,item_codigo,item_descricao",
       )
       .eq("nota_fiscal_id", nota.id)
       .order("numero_item");
     setDetailItens((data as ItemRow[]) || []);
   };
+
+  const vincularApropriacao = async (
+    itemId: string,
+    obraId: string | null,
+    itemCodigo: string | null,
+  ) => {
+    const obra = obras.find((o) => o.id === obraId);
+    const comp = obra?.rows.find((r) => r.codigo === itemCodigo && !r.isGroup);
+    const payload = {
+      obra_id: obraId,
+      item_codigo: itemCodigo,
+      item_descricao: comp?.descricao ?? null,
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await supabase.from("nota_fiscal_itens").update(payload as any).eq("id", itemId);
+    if (error) { toast.error(error.message); return; }
+    setDetailItens((prev) => prev.map((it) => it.id === itemId ? { ...it, ...payload } : it));
+  };
+
+  const aplicarBulk = async () => {
+    if (!detailNota) return;
+    if (!bulkObra) { toast.error("Selecione a obra"); return; }
+    const obra = obras.find((o) => o.id === bulkObra);
+    const comp = obra?.rows.find((r) => r.codigo === bulkComp && !r.isGroup);
+    const payload = {
+      obra_id: bulkObra,
+      item_codigo: bulkComp || null,
+      item_descricao: comp?.descricao ?? null,
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await supabase.from("nota_fiscal_itens").update(payload as any).eq("nota_fiscal_id", detailNota.id);
+    if (error) { toast.error(error.message); return; }
+    setDetailItens((prev) => prev.map((it) => ({ ...it, ...payload })));
+    toast.success(`Apropriação aplicada a ${detailItens.length} item(ns)`);
+  };
+
 
   const vincularInsumo = async (itemId: string, insumoId: string | null) => {
     const { error } = await supabase
