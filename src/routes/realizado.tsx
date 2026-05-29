@@ -449,16 +449,15 @@ function RealizadoPage() {
               <TabsContent value="itens" className="mt-4">
                 <Card className="p-4">
                   <h2 className="font-semibold mb-1">
-                    Comparativo por Item do Orçamento
+                    Comparativo por Composição
                   </h2>
                   <p className="text-xs text-muted-foreground mb-3">
-                    Cruzamento por código do item entre orçamento e apontamentos
-                    de mão de obra. Itens sem apontamento não aparecem.
+                    Realizado = Mão de Obra apontada + Material consumido (saída de estoque vinculada a esta composição).
+                    Composições sem realização não aparecem.
                   </p>
                   {comparativoItens.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-6 text-center">
-                      Nenhum apontamento vinculado a itens do orçamento desta
-                      obra.
+                      Nenhuma composição com apontamentos ou consumo vinculado.
                     </p>
                   ) : (
                     <Table>
@@ -470,6 +469,8 @@ function RealizadoPage() {
                           <TableHead className="text-right">Qtd Exec.</TableHead>
                           <TableHead className="text-right">Horas</TableHead>
                           <TableHead className="text-right">Previsto</TableHead>
+                          <TableHead className="text-right">MO</TableHead>
+                          <TableHead className="text-right">Material</TableHead>
                           <TableHead className="text-right">Realizado</TableHead>
                           <TableHead className="text-right">Desvio</TableHead>
                           <TableHead className="text-right">%</TableHead>
@@ -478,33 +479,17 @@ function RealizadoPage() {
                       <TableBody>
                         {comparativoItens.map((c, idx) => (
                           <TableRow key={idx}>
-                            <TableCell className="font-mono text-xs">
-                              {c.row.codigo}
-                            </TableCell>
-                            <TableCell className="text-xs">
-                              {c.row.descricao}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {c.row.quantidade.toFixed(2)} {c.row.und}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {c.qtdExec.toFixed(2)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {c.horas.toFixed(2)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {fmtMoney(c.previsto)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {fmtMoney(c.realizado)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <DesvioCell value={c.desvio} />
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <DesvioCell value={c.desvioPct} suffix="%" />
-                            </TableCell>
+                            <TableCell className="font-mono text-xs">{c.row.codigo}</TableCell>
+                            <TableCell className="text-xs">{c.row.descricao}</TableCell>
+                            <TableCell className="text-right">{c.row.quantidade.toFixed(2)} {c.row.und}</TableCell>
+                            <TableCell className="text-right">{c.qtdExec.toFixed(2)}</TableCell>
+                            <TableCell className="text-right">{c.horas.toFixed(2)}</TableCell>
+                            <TableCell className="text-right">{fmtMoney(c.previsto)}</TableCell>
+                            <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.mo)}</TableCell>
+                            <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.material)}</TableCell>
+                            <TableCell className="text-right font-medium">{fmtMoney(c.realizado)}</TableCell>
+                            <TableCell className="text-right"><DesvioCell value={c.desvio} /></TableCell>
+                            <TableCell className="text-right"><DesvioCell value={c.desvioPct} suffix="%" /></TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
