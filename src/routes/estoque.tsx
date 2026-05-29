@@ -151,7 +151,7 @@ function EstoquePage() {
     if (!notaSelecionada) { toast.error("Selecione uma nota fiscal"); return; }
     const { data, error } = await supabase.rpc("registrar_entrada_nfe", {
       _nota_id: notaSelecionada,
-      _obra_id: obraEntrada || null,
+      _obra_id: obraEntrada || undefined,
     });
     if (error) { toast.error(`Erro: ${error.message}`); return; }
     toast.success(`${data ?? 0} item(ns) lançado(s) no estoque`);
