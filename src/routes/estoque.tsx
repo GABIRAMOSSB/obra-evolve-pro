@@ -96,8 +96,8 @@ function EstoquePage() {
       if (movRes.data) setMovimentos(movRes.data as Movimento[]);
       if (notRes.data) setNotas(notRes.data as Nota[]);
       if (itensRes.data) setNotaItens(itensRes.data as NotaItemResumo[]);
-      const ws = wsRes.data?.workspace as { obras?: { id: string; nome?: string }[] } | undefined;
-      setObras((ws?.obras ?? []).map(o => ({ id: o.id, nome: o.nome || o.id })));
+      const ws = wsRes.data?.workspace as { obras?: ProjectData[] } | undefined;
+      setObras((ws?.obras ?? []).map(o => ({ id: o.id, nome: o.nome || o.id, rows: o.rows ?? [] })));
     } finally {
       setLoading(false);
     }
