@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as NotasFiscaisRouteImport } from './routes/notas-fiscais'
+import { Route as MaoDeObraRouteImport } from './routes/mao-de-obra'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as InsumosRouteImport } from './routes/insumos'
 import { Route as EquipeRouteImport } from './routes/equipe'
@@ -25,6 +26,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const NotasFiscaisRoute = NotasFiscaisRouteImport.update({
   id: '/notas-fiscais',
   path: '/notas-fiscais',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MaoDeObraRoute = MaoDeObraRouteImport.update({
+  id: '/mao-de-obra',
+  path: '/mao-de-obra',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/equipe': typeof EquipeRoute
   '/insumos': typeof InsumosRoute
   '/login': typeof LoginRoute
+  '/mao-de-obra': typeof MaoDeObraRoute
   '/notas-fiscais': typeof NotasFiscaisRoute
   '/reset-password': typeof ResetPasswordRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   '/equipe': typeof EquipeRoute
   '/insumos': typeof InsumosRoute
   '/login': typeof LoginRoute
+  '/mao-de-obra': typeof MaoDeObraRoute
   '/notas-fiscais': typeof NotasFiscaisRoute
   '/reset-password': typeof ResetPasswordRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -77,6 +85,7 @@ export interface FileRoutesById {
   '/equipe': typeof EquipeRoute
   '/insumos': typeof InsumosRoute
   '/login': typeof LoginRoute
+  '/mao-de-obra': typeof MaoDeObraRoute
   '/notas-fiscais': typeof NotasFiscaisRoute
   '/reset-password': typeof ResetPasswordRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -88,6 +97,7 @@ export interface FileRouteTypes {
     | '/equipe'
     | '/insumos'
     | '/login'
+    | '/mao-de-obra'
     | '/notas-fiscais'
     | '/reset-password'
     | '/invite/$token'
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/equipe'
     | '/insumos'
     | '/login'
+    | '/mao-de-obra'
     | '/notas-fiscais'
     | '/reset-password'
     | '/invite/$token'
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/equipe'
     | '/insumos'
     | '/login'
+    | '/mao-de-obra'
     | '/notas-fiscais'
     | '/reset-password'
     | '/invite/$token'
@@ -116,6 +128,7 @@ export interface RootRouteChildren {
   EquipeRoute: typeof EquipeRoute
   InsumosRoute: typeof InsumosRoute
   LoginRoute: typeof LoginRoute
+  MaoDeObraRoute: typeof MaoDeObraRoute
   NotasFiscaisRoute: typeof NotasFiscaisRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   InviteTokenRoute: typeof InviteTokenRoute
@@ -135,6 +148,13 @@ declare module '@tanstack/react-router' {
       path: '/notas-fiscais'
       fullPath: '/notas-fiscais'
       preLoaderRoute: typeof NotasFiscaisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mao-de-obra': {
+      id: '/mao-de-obra'
+      path: '/mao-de-obra'
+      fullPath: '/mao-de-obra'
+      preLoaderRoute: typeof MaoDeObraRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -180,6 +200,7 @@ const rootRouteChildren: RootRouteChildren = {
   EquipeRoute: EquipeRoute,
   InsumosRoute: InsumosRoute,
   LoginRoute: LoginRoute,
+  MaoDeObraRoute: MaoDeObraRoute,
   NotasFiscaisRoute: NotasFiscaisRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   InviteTokenRoute: InviteTokenRoute,

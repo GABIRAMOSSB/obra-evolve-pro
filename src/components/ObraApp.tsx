@@ -1077,6 +1077,9 @@ function Dashboard({
             <Button asChild variant="ghost" size="sm" title="Notas Fiscais (XML NF-e)">
               <Link to="/notas-fiscais"><FileText className="w-4 h-4 mr-1" /> NF-e</Link>
             </Button>
+            <Button asChild variant="ghost" size="sm" title="Apontamento de Mão de Obra">
+              <Link to="/mao-de-obra"><HardHat className="w-4 h-4 mr-1" /> Mão de Obra</Link>
+            </Button>
             <Button asChild variant="ghost" size="sm" title={`Equipe (${companyName})`}>
               <Link to="/equipe"><Users className="w-4 h-4 mr-1" /> {companyName}</Link>
             </Button>
