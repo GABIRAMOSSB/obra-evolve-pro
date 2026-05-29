@@ -266,9 +266,9 @@ function EstoquePage() {
                     <Select value={notaSelecionada} onValueChange={setNotaSelecionada}>
                       <SelectTrigger><SelectValue placeholder="Selecione a NF-e" /></SelectTrigger>
                       <SelectContent>
-                        {notas.map(n => (
+                        {notasElegiveis.map(n => (
                           <SelectItem key={n.id} value={n.id}>
-                            NF {n.numero} — {n.emitente_nome ?? "—"}
+                            NF {n.numero} — {n.emitente_nome ?? "—"} · {n.itens_vinculados} item(ns)
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -276,6 +276,11 @@ function EstoquePage() {
                     <p className="text-xs text-muted-foreground mt-1">
                       Somente itens com insumo vinculado serão lançados. Itens já lançados anteriormente são ignorados.
                     </p>
+                    {notasElegiveis.length === 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Nenhuma NF-e está pronta para entrada. Primeiro vincule os itens da nota a um insumo na tela de NF-e.
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label>Obra (opcional — sobrescreve a da nota)</Label>
