@@ -1084,6 +1084,9 @@ function Dashboard({
             <Button asChild variant="ghost" size="sm" title="Previsto × Realizado">
               <Link to="/realizado"><BarChart3 className="w-4 h-4 mr-1" /> Realizado</Link>
             </Button>
+            <Button asChild variant="ghost" size="sm" title="Controle de Estoque">
+              <Link to="/estoque"><Package className="w-4 h-4 mr-1" /> Estoque</Link>
+            </Button>
             <Button asChild variant="ghost" size="sm" title={`Equipe (${companyName})`}>
               <Link to="/equipe"><Users className="w-4 h-4 mr-1" /> {companyName}</Link>
             </Button>
