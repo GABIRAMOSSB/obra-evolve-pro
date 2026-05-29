@@ -4,7 +4,6 @@ import { loadWorkspaceCloud, saveWorkspaceCloud, newObraId, detectMigration, mar
 import { useAuth } from "@/hooks/use-auth";
 import { useCompany } from "@/hooks/use-company";
 import { useNavigate, Link } from "@tanstack/react-router";
-import { LogOut, CloudUpload, CheckCircle2 } from "lucide-react";
 import { ObraInfoDialog } from "@/components/ObraInfoDialog";
 import { PhotoUploader } from "@/components/PhotoUploader";
 import { parseExcel, type ParseResult } from "@/lib/excel";
@@ -51,6 +50,9 @@ import { toast } from "sonner";
 import DocumentsTab from "@/components/DocumentsTab";
 import { MeasurementClosure } from "@/components/MeasurementClosure";
 import {
+  LogOut,
+  CloudUpload,
+  CheckCircle2,
   Upload,
   HardHat,
   BarChart3,
