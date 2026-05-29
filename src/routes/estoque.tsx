@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { ArrowLeft, ArrowDownToLine, ArrowUpFromLine, Package, RefreshCw, FileDown } from "lucide-react";
 import { toast } from "sonner";
+import type { BudgetRow, ProjectData } from "@/lib/types";
 
 export const Route = createFileRoute("/estoque")({ component: EstoquePage });
 
