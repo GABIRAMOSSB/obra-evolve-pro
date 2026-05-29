@@ -44,7 +44,8 @@ function brl(n: number) {
 }
 
 function EstoquePage() {
-  const { companyId } = useCompany();
+  const { company } = useCompany();
+  const companyId = company?.id;
   const [tab, setTab] = useState("saldos");
   const [insumos, setInsumos] = useState<Insumo[]>([]);
   const [unidades, setUnidades] = useState<Unidade[]>([]);
