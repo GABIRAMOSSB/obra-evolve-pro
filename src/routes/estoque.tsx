@@ -58,7 +58,7 @@ function EstoquePage() {
   const [notas, setNotas] = useState<Nota[]>([]);
   const [notaItens, setNotaItens] = useState<NotaItemResumo[]>([]);
   const [notasElegiveis, setNotasElegiveis] = useState<NotaElegivel[]>([]);
-  const [obras, setObras] = useState<{ id: string; nome: string }[]>([]);
+  const [obras, setObras] = useState<{ id: string; nome: string; rows: BudgetRow[] }[]>([]);
   const [filtroObra, setFiltroObra] = useState<string>("todas");
   const [filtroBusca, setFiltroBusca] = useState("");
   const [loading, setLoading] = useState(false);
