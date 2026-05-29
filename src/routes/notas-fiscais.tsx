@@ -93,7 +93,12 @@ type ItemRow = {
   valor_total: number;
   insumo_id: string | null;
   match_status: string;
+  obra_id: string | null;
+  item_codigo: string | null;
+  item_descricao: string | null;
 };
+
+type ObraLite = { id: string; nome: string; rows: BudgetRow[] };
 
 type InsumoOption = {
   id: string;
