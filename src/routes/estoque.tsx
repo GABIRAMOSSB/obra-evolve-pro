@@ -209,6 +209,17 @@ function EstoquePage() {
     const qtd = Number(formQtd);
     if (qtd <= 0) { toast.error("Quantidade inválida"); return; }
     const composicao = composicoesObra.find(r => r.codigo === formItemCodigo);
+
+    let valorUnit = Number(formValor);
+    if (!valorUnit || valorUnit <= 0) {
+      const ents = movimentos.filter(m => m.insumo_id === formInsumo && m.tipo === "entrada");
+      const tq = ents.reduce((a, m) => a + Number(m.quantidade), 0);
+      const tv = ents.reduce((a, m) => a + Number(m.valor_total), 0);
+      valorUnit = tq > 0 ? tv / tq : 0;
+    }
+    if (valorUnit <= 0) {
+      toast.warning("Saída sem custo: nenhuma entrada valorada para esse insumo. Informe o valor unitário.");
+    }
     const { error } = await supabase.from("estoque_movimentos").insert({
       company_id: companyId,
       obra_id: formObra || null,
