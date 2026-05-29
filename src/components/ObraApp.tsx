@@ -70,6 +70,7 @@ import {
   StickyNote,
   X,
   Package,
+  FileText,
 } from "lucide-react";
 
 
@@ -1071,6 +1072,9 @@ function Dashboard({
             {saving && <span className="text-xs text-muted-foreground px-2">Salvando...</span>}
             <Button asChild variant="ghost" size="sm" title="Cadastro Mestre de Insumos">
               <Link to="/insumos"><Package className="w-4 h-4 mr-1" /> Insumos</Link>
+            </Button>
+            <Button asChild variant="ghost" size="sm" title="Notas Fiscais (XML NF-e)">
+              <Link to="/notas-fiscais"><FileText className="w-4 h-4 mr-1" /> NF-e</Link>
             </Button>
             <Button asChild variant="ghost" size="sm" title={`Equipe (${companyName})`}>
               <Link to="/equipe"><Users className="w-4 h-4 mr-1" /> {companyName}</Link>

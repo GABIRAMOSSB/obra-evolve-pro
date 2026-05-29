@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as NotasFiscaisRouteImport } from './routes/notas-fiscais'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as InsumosRouteImport } from './routes/insumos'
 import { Route as EquipeRouteImport } from './routes/equipe'
@@ -19,6 +20,11 @@ import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotasFiscaisRoute = NotasFiscaisRouteImport.update({
+  id: '/notas-fiscais',
+  path: '/notas-fiscais',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/equipe': typeof EquipeRoute
   '/insumos': typeof InsumosRoute
   '/login': typeof LoginRoute
+  '/notas-fiscais': typeof NotasFiscaisRoute
   '/reset-password': typeof ResetPasswordRoute
   '/invite/$token': typeof InviteTokenRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/equipe': typeof EquipeRoute
   '/insumos': typeof InsumosRoute
   '/login': typeof LoginRoute
+  '/notas-fiscais': typeof NotasFiscaisRoute
   '/reset-password': typeof ResetPasswordRoute
   '/invite/$token': typeof InviteTokenRoute
 }
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   '/equipe': typeof EquipeRoute
   '/insumos': typeof InsumosRoute
   '/login': typeof LoginRoute
+  '/notas-fiscais': typeof NotasFiscaisRoute
   '/reset-password': typeof ResetPasswordRoute
   '/invite/$token': typeof InviteTokenRoute
 }
@@ -79,6 +88,7 @@ export interface FileRouteTypes {
     | '/equipe'
     | '/insumos'
     | '/login'
+    | '/notas-fiscais'
     | '/reset-password'
     | '/invite/$token'
   fileRoutesByTo: FileRoutesByTo
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
     | '/equipe'
     | '/insumos'
     | '/login'
+    | '/notas-fiscais'
     | '/reset-password'
     | '/invite/$token'
   id:
@@ -95,6 +106,7 @@ export interface FileRouteTypes {
     | '/equipe'
     | '/insumos'
     | '/login'
+    | '/notas-fiscais'
     | '/reset-password'
     | '/invite/$token'
   fileRoutesById: FileRoutesById
@@ -104,6 +116,7 @@ export interface RootRouteChildren {
   EquipeRoute: typeof EquipeRoute
   InsumosRoute: typeof InsumosRoute
   LoginRoute: typeof LoginRoute
+  NotasFiscaisRoute: typeof NotasFiscaisRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   InviteTokenRoute: typeof InviteTokenRoute
 }
@@ -115,6 +128,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notas-fiscais': {
+      id: '/notas-fiscais'
+      path: '/notas-fiscais'
+      fullPath: '/notas-fiscais'
+      preLoaderRoute: typeof NotasFiscaisRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -160,9 +180,20 @@ const rootRouteChildren: RootRouteChildren = {
   EquipeRoute: EquipeRoute,
   InsumosRoute: InsumosRoute,
   LoginRoute: LoginRoute,
+  NotasFiscaisRoute: NotasFiscaisRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   InviteTokenRoute: InviteTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
