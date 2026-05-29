@@ -105,6 +105,7 @@ function RealizadoPage() {
   const [apontamentos, setApontamentos] = useState<Apontamento[]>([]);
   const [notas, setNotas] = useState<NotaFiscal[]>([]);
   const [nfItens, setNfItens] = useState<NotaFiscalItem[]>([]);
+  const [movsEstoque, setMovsEstoque] = useState<MovEstoque[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -115,7 +116,7 @@ function RealizadoPage() {
     if (!company) return;
     setLoading(true);
     try {
-      const [w, a, nf] = await Promise.all([
+      const [w, a, nf, mv] = await Promise.all([
         supabase
           .from("company_workspaces")
           .select("workspace")
@@ -132,16 +133,22 @@ function RealizadoPage() {
           .select("id, obra_id, data_emissao, emitente_nome, numero, valor_total")
           .eq("company_id", company.id)
           .order("data_emissao", { ascending: false }),
+        supabase
+          .from("estoque_movimentos")
+          .select("obra_id, tipo, item_codigo, item_descricao, quantidade, valor_total, valor_unitario")
+          .eq("company_id", company.id),
       ]);
       if (w.error) throw w.error;
       if (a.error) throw a.error;
       if (nf.error) throw nf.error;
+      if (mv.error) throw mv.error;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const ws = (w.data as any)?.workspace;
       const list = (ws?.obras ?? []) as ProjectData[];
       setObras(list);
       setApontamentos((a.data as Apontamento[]) ?? []);
       setNotas((nf.data as NotaFiscal[]) ?? []);
+      setMovsEstoque((mv.data as MovEstoque[]) ?? []);
       if (!obraId && list.length > 0) setObraId(list[0].id);
     } catch (err) {
       console.error(err);
