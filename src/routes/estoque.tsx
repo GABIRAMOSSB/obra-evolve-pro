@@ -176,6 +176,18 @@ function EstoquePage() {
     }, 0);
   }, [saldos]);
 
+  // Composições (linhas-folha do orçamento) da obra selecionada no form
+  const composicoesObra = useMemo<BudgetRow[]>(() => {
+    const obra = obras.find(o => o.id === formObra);
+    if (!obra) return [];
+    return obra.rows.filter(r => !r.isGroup && r.codigo);
+  }, [obras, formObra]);
+
+  function resetForm() {
+    setFormInsumo(""); setFormObra(""); setFormItemCodigo("");
+    setFormQtd(""); setFormValor(""); setFormObs("");
+  }
+
   // Ações
   async function handleEntradaNFe() {
     if (!canEdit) { toast.error("Você não tem permissão para lançar entradas."); return; }
@@ -196,6 +208,7 @@ function EstoquePage() {
     if (!companyId || !formInsumo || !formQtd) { toast.error("Preencha insumo e quantidade"); return; }
     const qtd = Number(formQtd);
     if (qtd <= 0) { toast.error("Quantidade inválida"); return; }
+    const composicao = composicoesObra.find(r => r.codigo === formItemCodigo);
     const { error } = await supabase.from("estoque_movimentos").insert({
       company_id: companyId,
       obra_id: formObra || null,
@@ -205,19 +218,23 @@ function EstoquePage() {
       quantidade: qtd,
       valor_unitario: Number(formValor) || 0,
       valor_total: qtd * (Number(formValor) || 0),
-      item_descricao: insumoMap[formInsumo]?.descricao ?? null,
+      item_codigo: composicao?.codigo ?? null,
+      item_descricao: composicao?.descricao ?? insumoMap[formInsumo]?.descricao ?? null,
       observacoes: formObs || null,
     });
     if (error) { toast.error(error.message); return; }
-    toast.success("Saída registrada");
+    toast.success(composicao
+      ? `Saída apropriada na composição ${composicao.codigo}`
+      : "Saída registrada (sem vínculo de composição)");
     setOpenSaida(false);
-    setFormInsumo(""); setFormObra(""); setFormQtd(""); setFormValor(""); setFormObs("");
+    resetForm();
     loadAll();
   }
 
   async function handleAjuste() {
     if (!companyId || !formInsumo || !formQtd) { toast.error("Preencha insumo e quantidade"); return; }
     const qtd = Number(formQtd);
+    const composicao = composicoesObra.find(r => r.codigo === formItemCodigo);
     const { error } = await supabase.from("estoque_movimentos").insert({
       company_id: companyId,
       obra_id: formObra || null,
@@ -227,13 +244,14 @@ function EstoquePage() {
       quantidade: qtd,
       valor_unitario: 0,
       valor_total: 0,
-      item_descricao: insumoMap[formInsumo]?.descricao ?? null,
+      item_codigo: composicao?.codigo ?? null,
+      item_descricao: composicao?.descricao ?? insumoMap[formInsumo]?.descricao ?? null,
       observacoes: formObs || "Ajuste de inventário",
     });
     if (error) { toast.error(error.message); return; }
     toast.success("Ajuste registrado");
     setOpenAjuste(false);
-    setFormInsumo(""); setFormObra(""); setFormQtd(""); setFormObs("");
+    resetForm();
     loadAll();
   }
 
