@@ -400,9 +400,9 @@ function RealizadoPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <KpiCard label="Previsto (Orçamento)" value={fmtMoney(previstoTotal)} />
               <KpiCard
-                label="Realizado (MO + Material consumido)"
+                label="Realizado (MO + Material apropriado)"
                 value={fmtMoney(realizadoTotal)}
-                sub={`MO ${fmtMoney(custoMaoObra)} • Mat. consumido ${fmtMoney(custoMaterialConsumido)} • Comprado ${fmtMoney(custoMaterialComprado)}`}
+                sub={`MO ${fmtMoney(custoMaoObra)} • NF-e apropriada ${fmtMoney(custoMaterialNFeApropriado)} • Estoque ${fmtMoney(custoMaterialEstoque)} • Comprado ${fmtMoney(custoMaterialComprado)}`}
               />
               <KpiCard
                 label="Desvio R$"
