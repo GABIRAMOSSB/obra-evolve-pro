@@ -967,7 +967,7 @@ function ApontamentosTab({
       unidade: form.unidade.trim() || null,
       observacoes: form.observacoes.trim() || null,
     });
-    if (error) return toast.error(error.message);
+    if (error) { console.error("Erro ao salvar apontamento:", error); return toast.error(`Erro: ${error.message}`); }
     toast.success("Apontamento registrado");
     reset();
     setOpen(false);
