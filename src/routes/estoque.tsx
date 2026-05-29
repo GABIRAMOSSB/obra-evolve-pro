@@ -411,10 +411,25 @@ function EstoquePage() {
                   </div>
                   <div>
                     <Label>Obra</Label>
-                    <Select value={formObra} onValueChange={setFormObra}>
+                    <Select value={formObra} onValueChange={(v) => { setFormObra(v); setFormItemCodigo(""); }}>
                       <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                       <SelectContent>
                         {obras.map(o => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Composição (opcional)</Label>
+                    <Select value={formItemCodigo} onValueChange={setFormItemCodigo} disabled={!formObra}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={formObra ? "Selecione a composição" : "Escolha a obra primeiro"} />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-72">
+                        {composicoesObra.map(r => (
+                          <SelectItem key={r.codigo} value={r.codigo}>
+                            <span className="font-mono text-xs mr-2">{r.codigo}</span>{r.descricao}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
