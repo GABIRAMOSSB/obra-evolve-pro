@@ -74,6 +74,15 @@ interface NotaFiscal {
   numero: string;
   valor_total: number | null;
 }
+interface MovEstoque {
+  obra_id: string | null;
+  tipo: string;
+  item_codigo: string | null;
+  item_descricao: string | null;
+  quantidade: number;
+  valor_total: number;
+  valor_unitario: number;
+}
 
 function fmtMoney(v: number | null | undefined) {
   return (v ?? 0).toLocaleString("pt-BR", {
@@ -96,6 +105,7 @@ function RealizadoPage() {
   const [apontamentos, setApontamentos] = useState<Apontamento[]>([]);
   const [notas, setNotas] = useState<NotaFiscal[]>([]);
   const [nfItens, setNfItens] = useState<NotaFiscalItem[]>([]);
+  const [movsEstoque, setMovsEstoque] = useState<MovEstoque[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -106,7 +116,7 @@ function RealizadoPage() {
     if (!company) return;
     setLoading(true);
     try {
-      const [w, a, nf] = await Promise.all([
+      const [w, a, nf, mv] = await Promise.all([
         supabase
           .from("company_workspaces")
           .select("workspace")
@@ -123,16 +133,22 @@ function RealizadoPage() {
           .select("id, obra_id, data_emissao, emitente_nome, numero, valor_total")
           .eq("company_id", company.id)
           .order("data_emissao", { ascending: false }),
+        supabase
+          .from("estoque_movimentos")
+          .select("obra_id, tipo, item_codigo, item_descricao, quantidade, valor_total, valor_unitario")
+          .eq("company_id", company.id),
       ]);
       if (w.error) throw w.error;
       if (a.error) throw a.error;
       if (nf.error) throw nf.error;
+      if (mv.error) throw mv.error;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const ws = (w.data as any)?.workspace;
       const list = (ws?.obras ?? []) as ProjectData[];
       setObras(list);
       setApontamentos((a.data as Apontamento[]) ?? []);
       setNotas((nf.data as NotaFiscal[]) ?? []);
+      setMovsEstoque((mv.data as MovEstoque[]) ?? []);
       if (!obraId && list.length > 0) setObraId(list[0].id);
     } catch (err) {
       console.error(err);
@@ -191,32 +207,61 @@ function RealizadoPage() {
     [notas, obraId],
   );
 
-  const custoMaterial = useMemo(
+  // Movimentos de estoque da obra (saídas = consumo apropriado)
+  const movsObra = useMemo(
+    () => movsEstoque.filter((m) => m.obra_id === obraId && m.tipo === "saida"),
+    [movsEstoque, obraId],
+  );
+
+  const custoMaterialConsumido = useMemo(
+    () => movsObra.reduce((acc, m) => acc + Number(m.valor_total ?? 0), 0),
+    [movsObra],
+  );
+
+  // Total comprado (NF-e) — referência de compras, não necessariamente consumido
+  const custoMaterialComprado = useMemo(
     () => notasObra.reduce((acc, n) => acc + Number(n.valor_total ?? 0), 0),
     [notasObra],
   );
 
-  const realizadoTotal = custoMaoObra + custoMaterial;
+  const realizadoTotal = custoMaoObra + custoMaterialConsumido;
   const desvio = realizadoTotal - previstoTotal;
   const desvioPct = previstoTotal > 0 ? (desvio / previstoTotal) * 100 : 0;
 
-  // Comparativo por item (cruza item_codigo do apontamento ↔ orçamento)
-  const comparativoItens = useMemo(() => {
-    if (!obra) return [];
-    const apontPorCod = new Map<string, { horas: number; custo: number; qtd: number }>();
+  // Custo MO + Material por código de composição
+  const custoPorComposicao = useMemo(() => {
+    const map = new Map<string, { mo: number; material: number; horas: number; qtd: number }>();
+    const get = (k: string) => {
+      const cur = map.get(k) ?? { mo: 0, material: 0, horas: 0, qtd: 0 };
+      map.set(k, cur);
+      return cur;
+    };
     for (const ap of apontamentosObra) {
       const k = (ap.item_codigo ?? "").trim();
       if (!k) continue;
-      const cur = apontPorCod.get(k) ?? { horas: 0, custo: 0, qtd: 0 };
-      cur.horas += Number(ap.horas_normais) + Number(ap.horas_extras);
-      cur.custo += Number(ap.custo_total);
-      cur.qtd += Number(ap.quantidade_executada ?? 0);
-      apontPorCod.set(k, cur);
+      const c = get(k);
+      c.mo += Number(ap.custo_total);
+      c.horas += Number(ap.horas_normais) + Number(ap.horas_extras);
+      c.qtd += Number(ap.quantidade_executada ?? 0);
     }
+    for (const m of movsObra) {
+      const k = (m.item_codigo ?? "").trim();
+      if (!k) continue;
+      const c = get(k);
+      c.material += Number(m.valor_total);
+    }
+    return map;
+  }, [apontamentosObra, movsObra]);
+
+  // Comparativo por composição (linha-folha do orçamento)
+  const comparativoItens = useMemo(() => {
+    if (!obra) return [];
     const rows: Array<{
       row: BudgetRow;
       previsto: number;
       realizado: number;
+      mo: number;
+      material: number;
       horas: number;
       qtdExec: number;
       desvio: number;
@@ -224,22 +269,55 @@ function RealizadoPage() {
     }> = [];
     for (const r of obra.rows) {
       if (r.isGroup) continue;
-      const ap = apontPorCod.get(r.codigo);
-      if (!ap) continue;
+      const c = custoPorComposicao.get(r.codigo);
+      if (!c) continue;
       const previsto = r.total || 0;
-      const realizado = ap.custo;
+      const realizado = c.mo + c.material;
       rows.push({
         row: r,
         previsto,
         realizado,
-        horas: ap.horas,
-        qtdExec: ap.qtd,
+        mo: c.mo,
+        material: c.material,
+        horas: c.horas,
+        qtdExec: c.qtd,
         desvio: realizado - previsto,
         desvioPct: previsto > 0 ? ((realizado - previsto) / previsto) * 100 : 0,
       });
     }
     return rows.sort((a, b) => b.realizado - a.realizado);
-  }, [obra, apontamentosObra]);
+  }, [obra, custoPorComposicao]);
+
+  // Rollup por etapa (linhas isGroup de nível 1) — soma de todos os filhos cujo
+  // código começa com "{etapa.codigo}." (previsto e realizado).
+  const comparativoEtapas = useMemo(() => {
+    if (!obra) return [];
+    const etapas = obra.rows.filter((r) => r.isGroup && r.level === 1 && r.codigo);
+    return etapas.map((et) => {
+      const prefixo = `${et.codigo}.`;
+      let previsto = 0;
+      let mo = 0;
+      let material = 0;
+      for (const r of obra.rows) {
+        if (r.isGroup) continue;
+        if (!r.codigo) continue;
+        if (r.codigo !== et.codigo && !r.codigo.startsWith(prefixo)) continue;
+        previsto += r.total || 0;
+        const c = custoPorComposicao.get(r.codigo);
+        if (c) { mo += c.mo; material += c.material; }
+      }
+      const realizado = mo + material;
+      return {
+        row: et,
+        previsto,
+        realizado,
+        mo,
+        material,
+        desvio: realizado - previsto,
+        desvioPct: previsto > 0 ? ((realizado - previsto) / previsto) * 100 : 0,
+      };
+    }).filter((e) => e.previsto > 0 || e.realizado > 0);
+  }, [obra, custoPorComposicao]);
 
   if (authLoading || companyLoading || loading) {
     return (
@@ -301,9 +379,9 @@ function RealizadoPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <KpiCard label="Previsto (Orçamento)" value={fmtMoney(previstoTotal)} />
               <KpiCard
-                label="Realizado Total"
+                label="Realizado (MO + Material consumido)"
                 value={fmtMoney(realizadoTotal)}
-                sub={`MO ${fmtMoney(custoMaoObra)} • Mat ${fmtMoney(custoMaterial)}`}
+                sub={`MO ${fmtMoney(custoMaoObra)} • Mat. consumido ${fmtMoney(custoMaterialConsumido)} • Comprado ${fmtMoney(custoMaterialComprado)}`}
               />
               <KpiCard
                 label="Desvio R$"
@@ -317,26 +395,69 @@ function RealizadoPage() {
               />
             </div>
 
-            <Tabs defaultValue="itens">
+            <Tabs defaultValue="etapas">
               <TabsList>
-                <TabsTrigger value="itens">Por Item / Atividade</TabsTrigger>
+                <TabsTrigger value="etapas">Por Etapa</TabsTrigger>
+                <TabsTrigger value="itens">Por Composição</TabsTrigger>
                 <TabsTrigger value="materiais">Materiais (NF-e)</TabsTrigger>
                 <TabsTrigger value="mao-obra">Mão de Obra</TabsTrigger>
               </TabsList>
 
+              <TabsContent value="etapas" className="mt-4">
+                <Card className="p-4">
+                  <h2 className="font-semibold mb-1">Comparativo por Etapa (rollup)</h2>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Soma de todas as composições filhas (mão de obra apontada + material consumido do estoque).
+                  </p>
+                  {comparativoEtapas.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-6 text-center">
+                      Nenhuma etapa com orçamento ou realizado.
+                    </p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Código</TableHead>
+                          <TableHead>Etapa</TableHead>
+                          <TableHead className="text-right">Previsto</TableHead>
+                          <TableHead className="text-right">MO</TableHead>
+                          <TableHead className="text-right">Material</TableHead>
+                          <TableHead className="text-right">Realizado</TableHead>
+                          <TableHead className="text-right">Desvio</TableHead>
+                          <TableHead className="text-right">%</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {comparativoEtapas.map((e, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell className="font-mono text-xs">{e.row.codigo}</TableCell>
+                            <TableCell className="text-xs font-medium">{e.row.descricao}</TableCell>
+                            <TableCell className="text-right">{fmtMoney(e.previsto)}</TableCell>
+                            <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(e.mo)}</TableCell>
+                            <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(e.material)}</TableCell>
+                            <TableCell className="text-right font-medium">{fmtMoney(e.realizado)}</TableCell>
+                            <TableCell className="text-right"><DesvioCell value={e.desvio} /></TableCell>
+                            <TableCell className="text-right"><DesvioCell value={e.desvioPct} suffix="%" /></TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </Card>
+              </TabsContent>
+
               <TabsContent value="itens" className="mt-4">
                 <Card className="p-4">
                   <h2 className="font-semibold mb-1">
-                    Comparativo por Item do Orçamento
+                    Comparativo por Composição
                   </h2>
                   <p className="text-xs text-muted-foreground mb-3">
-                    Cruzamento por código do item entre orçamento e apontamentos
-                    de mão de obra. Itens sem apontamento não aparecem.
+                    Realizado = Mão de Obra apontada + Material consumido (saída de estoque vinculada a esta composição).
+                    Composições sem realização não aparecem.
                   </p>
                   {comparativoItens.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-6 text-center">
-                      Nenhum apontamento vinculado a itens do orçamento desta
-                      obra.
+                      Nenhuma composição com apontamentos ou consumo vinculado.
                     </p>
                   ) : (
                     <Table>
@@ -348,6 +469,8 @@ function RealizadoPage() {
                           <TableHead className="text-right">Qtd Exec.</TableHead>
                           <TableHead className="text-right">Horas</TableHead>
                           <TableHead className="text-right">Previsto</TableHead>
+                          <TableHead className="text-right">MO</TableHead>
+                          <TableHead className="text-right">Material</TableHead>
                           <TableHead className="text-right">Realizado</TableHead>
                           <TableHead className="text-right">Desvio</TableHead>
                           <TableHead className="text-right">%</TableHead>
@@ -356,33 +479,17 @@ function RealizadoPage() {
                       <TableBody>
                         {comparativoItens.map((c, idx) => (
                           <TableRow key={idx}>
-                            <TableCell className="font-mono text-xs">
-                              {c.row.codigo}
-                            </TableCell>
-                            <TableCell className="text-xs">
-                              {c.row.descricao}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {c.row.quantidade.toFixed(2)} {c.row.und}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {c.qtdExec.toFixed(2)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {c.horas.toFixed(2)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {fmtMoney(c.previsto)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {fmtMoney(c.realizado)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <DesvioCell value={c.desvio} />
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <DesvioCell value={c.desvioPct} suffix="%" />
-                            </TableCell>
+                            <TableCell className="font-mono text-xs">{c.row.codigo}</TableCell>
+                            <TableCell className="text-xs">{c.row.descricao}</TableCell>
+                            <TableCell className="text-right">{c.row.quantidade.toFixed(2)} {c.row.und}</TableCell>
+                            <TableCell className="text-right">{c.qtdExec.toFixed(2)}</TableCell>
+                            <TableCell className="text-right">{c.horas.toFixed(2)}</TableCell>
+                            <TableCell className="text-right">{fmtMoney(c.previsto)}</TableCell>
+                            <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.mo)}</TableCell>
+                            <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.material)}</TableCell>
+                            <TableCell className="text-right font-medium">{fmtMoney(c.realizado)}</TableCell>
+                            <TableCell className="text-right"><DesvioCell value={c.desvio} /></TableCell>
+                            <TableCell className="text-right"><DesvioCell value={c.desvioPct} suffix="%" /></TableCell>
                           </TableRow>
                         ))}
                       </TableBody>

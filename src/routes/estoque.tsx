@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { ArrowLeft, ArrowDownToLine, ArrowUpFromLine, Package, RefreshCw, FileDown } from "lucide-react";
 import { toast } from "sonner";
+import type { BudgetRow, ProjectData } from "@/lib/types";
 
 export const Route = createFileRoute("/estoque")({ component: EstoquePage });
 
@@ -57,7 +58,7 @@ function EstoquePage() {
   const [notas, setNotas] = useState<Nota[]>([]);
   const [notaItens, setNotaItens] = useState<NotaItemResumo[]>([]);
   const [notasElegiveis, setNotasElegiveis] = useState<NotaElegivel[]>([]);
-  const [obras, setObras] = useState<{ id: string; nome: string }[]>([]);
+  const [obras, setObras] = useState<{ id: string; nome: string; rows: BudgetRow[] }[]>([]);
   const [filtroObra, setFiltroObra] = useState<string>("todas");
   const [filtroBusca, setFiltroBusca] = useState("");
   const [loading, setLoading] = useState(false);
@@ -74,6 +75,7 @@ function EstoquePage() {
   // saída/ajuste form
   const [formInsumo, setFormInsumo] = useState("");
   const [formObra, setFormObra] = useState<string>("");
+  const [formItemCodigo, setFormItemCodigo] = useState<string>("");
   const [formQtd, setFormQtd] = useState("");
   const [formValor, setFormValor] = useState("");
   const [formObs, setFormObs] = useState("");
@@ -95,8 +97,8 @@ function EstoquePage() {
       if (movRes.data) setMovimentos(movRes.data as Movimento[]);
       if (notRes.data) setNotas(notRes.data as Nota[]);
       if (itensRes.data) setNotaItens(itensRes.data as NotaItemResumo[]);
-      const ws = wsRes.data?.workspace as { obras?: { id: string; nome?: string }[] } | undefined;
-      setObras((ws?.obras ?? []).map(o => ({ id: o.id, nome: o.nome || o.id })));
+      const ws = wsRes.data?.workspace as { obras?: ProjectData[] } | undefined;
+      setObras((ws?.obras ?? []).map(o => ({ id: o.id, nome: o.nome || o.id, rows: o.rows ?? [] })));
     } finally {
       setLoading(false);
     }
@@ -174,6 +176,18 @@ function EstoquePage() {
     }, 0);
   }, [saldos]);
 
+  // Composições (linhas-folha do orçamento) da obra selecionada no form
+  const composicoesObra = useMemo<BudgetRow[]>(() => {
+    const obra = obras.find(o => o.id === formObra);
+    if (!obra) return [];
+    return obra.rows.filter(r => !r.isGroup && r.codigo);
+  }, [obras, formObra]);
+
+  function resetForm() {
+    setFormInsumo(""); setFormObra(""); setFormItemCodigo("");
+    setFormQtd(""); setFormValor(""); setFormObs("");
+  }
+
   // Ações
   async function handleEntradaNFe() {
     if (!canEdit) { toast.error("Você não tem permissão para lançar entradas."); return; }
@@ -194,6 +208,7 @@ function EstoquePage() {
     if (!companyId || !formInsumo || !formQtd) { toast.error("Preencha insumo e quantidade"); return; }
     const qtd = Number(formQtd);
     if (qtd <= 0) { toast.error("Quantidade inválida"); return; }
+    const composicao = composicoesObra.find(r => r.codigo === formItemCodigo);
     const { error } = await supabase.from("estoque_movimentos").insert({
       company_id: companyId,
       obra_id: formObra || null,
@@ -203,19 +218,23 @@ function EstoquePage() {
       quantidade: qtd,
       valor_unitario: Number(formValor) || 0,
       valor_total: qtd * (Number(formValor) || 0),
-      item_descricao: insumoMap[formInsumo]?.descricao ?? null,
+      item_codigo: composicao?.codigo ?? null,
+      item_descricao: composicao?.descricao ?? insumoMap[formInsumo]?.descricao ?? null,
       observacoes: formObs || null,
     });
     if (error) { toast.error(error.message); return; }
-    toast.success("Saída registrada");
+    toast.success(composicao
+      ? `Saída apropriada na composição ${composicao.codigo}`
+      : "Saída registrada (sem vínculo de composição)");
     setOpenSaida(false);
-    setFormInsumo(""); setFormObra(""); setFormQtd(""); setFormValor(""); setFormObs("");
+    resetForm();
     loadAll();
   }
 
   async function handleAjuste() {
     if (!companyId || !formInsumo || !formQtd) { toast.error("Preencha insumo e quantidade"); return; }
     const qtd = Number(formQtd);
+    const composicao = composicoesObra.find(r => r.codigo === formItemCodigo);
     const { error } = await supabase.from("estoque_movimentos").insert({
       company_id: companyId,
       obra_id: formObra || null,
@@ -225,13 +244,14 @@ function EstoquePage() {
       quantidade: qtd,
       valor_unitario: 0,
       valor_total: 0,
-      item_descricao: insumoMap[formInsumo]?.descricao ?? null,
+      item_codigo: composicao?.codigo ?? null,
+      item_descricao: composicao?.descricao ?? insumoMap[formInsumo]?.descricao ?? null,
       observacoes: formObs || "Ajuste de inventário",
     });
     if (error) { toast.error(error.message); return; }
     toast.success("Ajuste registrado");
     setOpenAjuste(false);
-    setFormInsumo(""); setFormObra(""); setFormQtd(""); setFormObs("");
+    resetForm();
     loadAll();
   }
 
@@ -323,12 +343,30 @@ function EstoquePage() {
                   </div>
                   <div>
                     <Label>Obra</Label>
-                    <Select value={formObra} onValueChange={setFormObra}>
+                    <Select value={formObra} onValueChange={(v) => { setFormObra(v); setFormItemCodigo(""); }}>
                       <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                       <SelectContent>
                         {obras.map(o => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div>
+                    <Label>Composição / Item do orçamento (opcional)</Label>
+                    <Select value={formItemCodigo} onValueChange={setFormItemCodigo} disabled={!formObra}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={formObra ? "Selecione a composição (apropriação)" : "Escolha a obra primeiro"} />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-72">
+                        {composicoesObra.map(r => (
+                          <SelectItem key={r.codigo} value={r.codigo}>
+                            <span className="font-mono text-xs mr-2">{r.codigo}</span>{r.descricao}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Ao vincular, o custo desta saída é apropriado nesta composição e somado automaticamente na etapa pai (Realizado).
+                    </p>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
@@ -373,10 +411,25 @@ function EstoquePage() {
                   </div>
                   <div>
                     <Label>Obra</Label>
-                    <Select value={formObra} onValueChange={setFormObra}>
+                    <Select value={formObra} onValueChange={(v) => { setFormObra(v); setFormItemCodigo(""); }}>
                       <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                       <SelectContent>
                         {obras.map(o => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Composição (opcional)</Label>
+                    <Select value={formItemCodigo} onValueChange={setFormItemCodigo} disabled={!formObra}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={formObra ? "Selecione a composição" : "Escolha a obra primeiro"} />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-72">
+                        {composicoesObra.map(r => (
+                          <SelectItem key={r.codigo} value={r.codigo}>
+                            <span className="font-mono text-xs mr-2">{r.codigo}</span>{r.descricao}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
