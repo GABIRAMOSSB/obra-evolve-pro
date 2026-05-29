@@ -628,11 +628,47 @@ function NotasFiscaisPage() {
                 </div>
               </div>
 
+              {canEdit && obras.length > 0 && (
+                <div className="rounded-md border bg-muted/40 p-3 space-y-2">
+                  <div className="text-sm font-medium">Apropriar custo da nota inteira</div>
+                  <div className="flex flex-wrap items-end gap-2">
+                    <div className="min-w-[200px]">
+                      <div className="text-xs text-muted-foreground mb-1">Obra</div>
+                      <Select value={bulkObra} onValueChange={(v) => { setBulkObra(v); setBulkComp(""); }}>
+                        <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
+                        <SelectContent>
+                          {obras.map((o) => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="min-w-[280px] flex-1">
+                      <div className="text-xs text-muted-foreground mb-1">Composição / Item do orçamento</div>
+                      <Select value={bulkComp} onValueChange={setBulkComp} disabled={!bulkObra}>
+                        <SelectTrigger><SelectValue placeholder={bulkObra ? "Selecione…" : "Escolha a obra primeiro"} /></SelectTrigger>
+                        <SelectContent>
+                          {(obras.find((o) => o.id === bulkObra)?.rows ?? [])
+                            .filter((r) => !r.isGroup && r.codigo)
+                            .map((r) => (
+                              <SelectItem key={r.codigo} value={r.codigo}>
+                                <span className="font-mono mr-2">{r.codigo}</span>{r.descricao}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button onClick={aplicarBulk} disabled={!bulkObra}>Aplicar a todos os itens</Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Define obra + composição em todos os itens desta NF-e de uma vez. Você ainda pode ajustar item a item abaixo.
+                  </p>
+                </div>
+              )}
+
               <div>
                 <h3 className="font-medium mb-2">
                   Itens ({detailItens.length}){" "}
                   <span className="text-xs text-muted-foreground font-normal">
-                    — vincule cada descrição a um insumo do cadastro mestre
+                    — vincule cada item ao insumo, à obra e à composição do orçamento
                   </span>
                 </h3>
                 <div className="overflow-x-auto">
@@ -640,70 +676,90 @@ function NotasFiscaisPage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>#</TableHead>
-                        <TableHead>Cód.</TableHead>
                         <TableHead>Descrição</TableHead>
-                        <TableHead>NCM</TableHead>
-                        <TableHead>Un.</TableHead>
                         <TableHead className="text-right">Qtd</TableHead>
-                        <TableHead className="text-right">V. Unit.</TableHead>
                         <TableHead className="text-right">V. Total</TableHead>
-                        <TableHead>Insumo vinculado</TableHead>
+                        <TableHead>Insumo mestre</TableHead>
+                        <TableHead>Obra</TableHead>
+                        <TableHead>Composição</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {detailItens.map((it) => (
-                        <TableRow key={it.id}>
-                          <TableCell>{it.numero_item}</TableCell>
-                          <TableCell className="font-mono text-xs">
-                            {it.codigo_produto || "—"}
-                          </TableCell>
-                          <TableCell className="max-w-sm">{it.descricao}</TableCell>
-                          <TableCell className="font-mono text-xs">{it.ncm || "—"}</TableCell>
-                          <TableCell>{it.unidade || "—"}</TableCell>
-                          <TableCell className="text-right">
-                            {it.quantidade.toLocaleString("pt-BR")}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatMoney(it.valor_unitario)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatMoney(it.valor_total)}
-                          </TableCell>
-                          <TableCell>
-                            {canEdit ? (
-                              <Select
-                                value={it.insumo_id || "__none__"}
-                                onValueChange={(v) =>
-                                  vincularInsumo(it.id, v === "__none__" ? null : v)
-                                }
-                              >
-                                <SelectTrigger className="w-[260px]">
-                                  <SelectValue placeholder="Selecionar insumo…" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="__none__">
-                                    <span className="text-muted-foreground">
-                                      (não vinculado)
-                                    </span>
-                                  </SelectItem>
-                                  {insumos.map((ins) => (
-                                    <SelectItem key={ins.id} value={ins.id}>
-                                      {ins.codigo ? `[${ins.codigo}] ` : ""}
-                                      {ins.descricao}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            ) : it.insumo_id ? (
-                              <Badge variant="secondary">
-                                <Link2 className="w-3 h-3 mr-1" /> vinculado
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline">pendente</Badge>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {detailItens.map((it) => {
+                        const obraSel = obras.find((o) => o.id === it.obra_id);
+                        const compRows = (obraSel?.rows ?? []).filter((r) => !r.isGroup && r.codigo);
+                        return (
+                          <TableRow key={it.id}>
+                            <TableCell>{it.numero_item}</TableCell>
+                            <TableCell className="max-w-xs text-xs">{it.descricao}</TableCell>
+                            <TableCell className="text-right text-xs">{it.quantidade.toLocaleString("pt-BR")}</TableCell>
+                            <TableCell className="text-right">{formatMoney(it.valor_total)}</TableCell>
+                            <TableCell>
+                              {canEdit ? (
+                                <Select
+                                  value={it.insumo_id || "__none__"}
+                                  onValueChange={(v) => vincularInsumo(it.id, v === "__none__" ? null : v)}
+                                >
+                                  <SelectTrigger className="w-[220px]"><SelectValue placeholder="Insumo…" /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="__none__"><span className="text-muted-foreground">(não vinculado)</span></SelectItem>
+                                    {insumos.map((ins) => (
+                                      <SelectItem key={ins.id} value={ins.id}>
+                                        {ins.codigo ? `[${ins.codigo}] ` : ""}{ins.descricao}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              ) : it.insumo_id ? (
+                                <Badge variant="secondary"><Link2 className="w-3 h-3 mr-1" /> ok</Badge>
+                              ) : (
+                                <Badge variant="outline">pendente</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {canEdit ? (
+                                <Select
+                                  value={it.obra_id || "__none__"}
+                                  onValueChange={(v) => vincularApropriacao(it.id, v === "__none__" ? null : v, null)}
+                                >
+                                  <SelectTrigger className="w-[180px]"><SelectValue placeholder="Obra…" /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="__none__"><span className="text-muted-foreground">(nenhuma)</span></SelectItem>
+                                    {obras.map((o) => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <span className="text-xs">{obraSel?.nome ?? "—"}</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {canEdit ? (
+                                <Select
+                                  value={it.item_codigo || "__none__"}
+                                  onValueChange={(v) => vincularApropriacao(it.id, it.obra_id, v === "__none__" ? null : v)}
+                                  disabled={!it.obra_id}
+                                >
+                                  <SelectTrigger className="w-[260px]">
+                                    <SelectValue placeholder={it.obra_id ? "Composição…" : "Defina obra"} />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="__none__"><span className="text-muted-foreground">(nenhuma)</span></SelectItem>
+                                    {compRows.map((r) => (
+                                      <SelectItem key={r.codigo} value={r.codigo}>
+                                        <span className="font-mono mr-2">{r.codigo}</span>{r.descricao}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              ) : it.item_codigo ? (
+                                <Badge variant="secondary">{it.item_codigo}</Badge>
+                              ) : (
+                                <Badge variant="outline">não apropriado</Badge>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
