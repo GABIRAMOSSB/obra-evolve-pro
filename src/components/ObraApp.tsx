@@ -53,6 +53,7 @@ import { MeasurementClosure } from "@/components/MeasurementClosure";
 import {
   Upload,
   HardHat,
+  BarChart3,
   FileSpreadsheet,
   FileText,
   Trash2,
