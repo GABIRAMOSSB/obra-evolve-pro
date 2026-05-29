@@ -14,6 +14,97 @@ export type Database = {
   }
   public: {
     Tables: {
+      apontamentos_mao_obra: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          custo_hora: number
+          custo_total: number
+          data: string
+          equipe_id: string | null
+          funcao_id: string | null
+          funcionario_id: string | null
+          horas_extras: number
+          horas_normais: number
+          id: string
+          item_codigo: string | null
+          item_descricao: string | null
+          item_key: string | null
+          obra_id: string
+          observacoes: string | null
+          quantidade_executada: number | null
+          unidade: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          custo_hora?: number
+          custo_total?: number
+          data: string
+          equipe_id?: string | null
+          funcao_id?: string | null
+          funcionario_id?: string | null
+          horas_extras?: number
+          horas_normais?: number
+          id?: string
+          item_codigo?: string | null
+          item_descricao?: string | null
+          item_key?: string | null
+          obra_id: string
+          observacoes?: string | null
+          quantidade_executada?: number | null
+          unidade?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          custo_hora?: number
+          custo_total?: number
+          data?: string
+          equipe_id?: string | null
+          funcao_id?: string | null
+          funcionario_id?: string | null
+          horas_extras?: number
+          horas_normais?: number
+          id?: string
+          item_codigo?: string | null
+          item_descricao?: string | null
+          item_key?: string | null
+          obra_id?: string
+          observacoes?: string | null
+          quantidade_executada?: number | null
+          unidade?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "apontamentos_mao_obra_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "apontamentos_mao_obra_funcao_id_fkey"
+            columns: ["funcao_id"]
+            isOneToOne: false
+            referencedRelation: "funcoes_mao_obra"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "apontamentos_mao_obra_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "funcionarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           created_at: string
@@ -139,6 +230,181 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      equipe_membros: {
+        Row: {
+          company_id: string
+          created_at: string
+          equipe_id: string
+          funcionario_id: string
+          id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          equipe_id: string
+          funcionario_id: string
+          id?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          equipe_id?: string
+          funcionario_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipe_membros_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipe_membros_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "funcionarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipes: {
+        Row: {
+          ativo: boolean
+          company_id: string
+          created_at: string
+          descricao: string | null
+          encarregado_id: string | null
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          company_id: string
+          created_at?: string
+          descricao?: string | null
+          encarregado_id?: string | null
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          company_id?: string
+          created_at?: string
+          descricao?: string | null
+          encarregado_id?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipes_encarregado_id_fkey"
+            columns: ["encarregado_id"]
+            isOneToOne: false
+            referencedRelation: "funcionarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funcionarios: {
+        Row: {
+          ativo: boolean
+          company_id: string
+          cpf: string | null
+          created_at: string
+          custo_hora: number | null
+          data_admissao: string | null
+          data_demissao: string | null
+          funcao_id: string | null
+          id: string
+          matricula: string | null
+          nome: string
+          observacoes: string | null
+          salario_mensal: number | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          company_id: string
+          cpf?: string | null
+          created_at?: string
+          custo_hora?: number | null
+          data_admissao?: string | null
+          data_demissao?: string | null
+          funcao_id?: string | null
+          id?: string
+          matricula?: string | null
+          nome: string
+          observacoes?: string | null
+          salario_mensal?: number | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          company_id?: string
+          cpf?: string | null
+          created_at?: string
+          custo_hora?: number | null
+          data_admissao?: string | null
+          data_demissao?: string | null
+          funcao_id?: string | null
+          id?: string
+          matricula?: string | null
+          nome?: string
+          observacoes?: string | null
+          salario_mensal?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funcionarios_funcao_id_fkey"
+            columns: ["funcao_id"]
+            isOneToOne: false
+            referencedRelation: "funcoes_mao_obra"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funcoes_mao_obra: {
+        Row: {
+          ativo: boolean
+          company_id: string
+          created_at: string
+          custo_hora_base: number
+          descricao: string | null
+          encargos_percentual: number
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          company_id: string
+          created_at?: string
+          custo_hora_base?: number
+          descricao?: string | null
+          encargos_percentual?: number
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          company_id?: string
+          created_at?: string
+          custo_hora_base?: number
+          descricao?: string | null
+          encargos_percentual?: number
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       insumo_aliases: {
         Row: {
@@ -555,6 +821,7 @@ export type Database = {
         Args: { _company: string; _user: string }
         Returns: boolean
       }
+      seed_funcoes_base: { Args: { _company: string }; Returns: undefined }
       seed_insumos_base: { Args: { _company: string }; Returns: undefined }
     }
     Enums: {
