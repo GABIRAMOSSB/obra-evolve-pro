@@ -51,6 +51,7 @@ import {
   formatMoney,
   type NFeParsed,
 } from "@/lib/nfe-parser";
+import type { BudgetRow, ProjectData } from "@/lib/types";
 
 export const Route = createFileRoute("/notas-fiscais")({
   component: NotasFiscaisPage,
@@ -92,7 +93,12 @@ type ItemRow = {
   valor_total: number;
   insumo_id: string | null;
   match_status: string;
+  obra_id: string | null;
+  item_codigo: string | null;
+  item_descricao: string | null;
 };
+
+type ObraLite = { id: string; nome: string; rows: BudgetRow[] };
 
 type InsumoOption = {
   id: string;
@@ -118,6 +124,9 @@ function NotasFiscaisPage() {
   const [detailNota, setDetailNota] = useState<NotaRow | null>(null);
   const [detailItens, setDetailItens] = useState<ItemRow[]>([]);
   const [insumos, setInsumos] = useState<InsumoOption[]>([]);
+  const [obras, setObras] = useState<ObraLite[]>([]);
+  const [bulkObra, setBulkObra] = useState<string>("");
+  const [bulkComp, setBulkComp] = useState<string>("");
 
   const refresh = async () => {
     if (!companyId) return;
@@ -147,10 +156,23 @@ function NotasFiscaisPage() {
     setInsumos((data as InsumoOption[]) || []);
   };
 
+  const loadObras = async () => {
+    if (!companyId) return;
+    const { data } = await supabase
+      .from("company_workspaces")
+      .select("workspace")
+      .eq("company_id", companyId)
+      .maybeSingle();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ws = (data as any)?.workspace as { obras?: ProjectData[] } | undefined;
+    setObras((ws?.obras ?? []).map((o) => ({ id: o.id, nome: o.nome || o.id, rows: o.rows ?? [] })));
+  };
+
   useEffect(() => {
     if (companyId) {
       refresh();
       loadInsumos();
+      loadObras();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId]);
@@ -265,15 +287,53 @@ function NotasFiscaisPage() {
   const openDetail = async (nota: NotaRow) => {
     setDetailNota(nota);
     setDetailItens([]);
+    setBulkObra("");
+    setBulkComp("");
     const { data } = await supabase
       .from("nota_fiscal_itens")
       .select(
-        "id,numero_item,codigo_produto,descricao,ncm,cfop,unidade,quantidade,valor_unitario,valor_total,insumo_id,match_status",
+        "id,numero_item,codigo_produto,descricao,ncm,cfop,unidade,quantidade,valor_unitario,valor_total,insumo_id,match_status,obra_id,item_codigo,item_descricao",
       )
       .eq("nota_fiscal_id", nota.id)
       .order("numero_item");
     setDetailItens((data as ItemRow[]) || []);
   };
+
+  const vincularApropriacao = async (
+    itemId: string,
+    obraId: string | null,
+    itemCodigo: string | null,
+  ) => {
+    const obra = obras.find((o) => o.id === obraId);
+    const comp = obra?.rows.find((r) => r.codigo === itemCodigo && !r.isGroup);
+    const payload = {
+      obra_id: obraId,
+      item_codigo: itemCodigo,
+      item_descricao: comp?.descricao ?? null,
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await supabase.from("nota_fiscal_itens").update(payload as any).eq("id", itemId);
+    if (error) { toast.error(error.message); return; }
+    setDetailItens((prev) => prev.map((it) => it.id === itemId ? { ...it, ...payload } : it));
+  };
+
+  const aplicarBulk = async () => {
+    if (!detailNota) return;
+    if (!bulkObra) { toast.error("Selecione a obra"); return; }
+    const obra = obras.find((o) => o.id === bulkObra);
+    const comp = obra?.rows.find((r) => r.codigo === bulkComp && !r.isGroup);
+    const payload = {
+      obra_id: bulkObra,
+      item_codigo: bulkComp || null,
+      item_descricao: comp?.descricao ?? null,
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await supabase.from("nota_fiscal_itens").update(payload as any).eq("nota_fiscal_id", detailNota.id);
+    if (error) { toast.error(error.message); return; }
+    setDetailItens((prev) => prev.map((it) => ({ ...it, ...payload })));
+    toast.success(`Apropriação aplicada a ${detailItens.length} item(ns)`);
+  };
+
 
   const vincularInsumo = async (itemId: string, insumoId: string | null) => {
     const { error } = await supabase
@@ -568,11 +628,47 @@ function NotasFiscaisPage() {
                 </div>
               </div>
 
+              {canEdit && obras.length > 0 && (
+                <div className="rounded-md border bg-muted/40 p-3 space-y-2">
+                  <div className="text-sm font-medium">Apropriar custo da nota inteira</div>
+                  <div className="flex flex-wrap items-end gap-2">
+                    <div className="min-w-[200px]">
+                      <div className="text-xs text-muted-foreground mb-1">Obra</div>
+                      <Select value={bulkObra} onValueChange={(v) => { setBulkObra(v); setBulkComp(""); }}>
+                        <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
+                        <SelectContent>
+                          {obras.map((o) => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="min-w-[280px] flex-1">
+                      <div className="text-xs text-muted-foreground mb-1">Composição / Item do orçamento</div>
+                      <Select value={bulkComp} onValueChange={setBulkComp} disabled={!bulkObra}>
+                        <SelectTrigger><SelectValue placeholder={bulkObra ? "Selecione…" : "Escolha a obra primeiro"} /></SelectTrigger>
+                        <SelectContent>
+                          {(obras.find((o) => o.id === bulkObra)?.rows ?? [])
+                            .filter((r) => !r.isGroup && r.codigo)
+                            .map((r) => (
+                              <SelectItem key={r.codigo} value={r.codigo}>
+                                <span className="font-mono mr-2">{r.codigo}</span>{r.descricao}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button onClick={aplicarBulk} disabled={!bulkObra}>Aplicar a todos os itens</Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Define obra + composição em todos os itens desta NF-e de uma vez. Você ainda pode ajustar item a item abaixo.
+                  </p>
+                </div>
+              )}
+
               <div>
                 <h3 className="font-medium mb-2">
                   Itens ({detailItens.length}){" "}
                   <span className="text-xs text-muted-foreground font-normal">
-                    — vincule cada descrição a um insumo do cadastro mestre
+                    — vincule cada item ao insumo, à obra e à composição do orçamento
                   </span>
                 </h3>
                 <div className="overflow-x-auto">
@@ -580,70 +676,90 @@ function NotasFiscaisPage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>#</TableHead>
-                        <TableHead>Cód.</TableHead>
                         <TableHead>Descrição</TableHead>
-                        <TableHead>NCM</TableHead>
-                        <TableHead>Un.</TableHead>
                         <TableHead className="text-right">Qtd</TableHead>
-                        <TableHead className="text-right">V. Unit.</TableHead>
                         <TableHead className="text-right">V. Total</TableHead>
-                        <TableHead>Insumo vinculado</TableHead>
+                        <TableHead>Insumo mestre</TableHead>
+                        <TableHead>Obra</TableHead>
+                        <TableHead>Composição</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {detailItens.map((it) => (
-                        <TableRow key={it.id}>
-                          <TableCell>{it.numero_item}</TableCell>
-                          <TableCell className="font-mono text-xs">
-                            {it.codigo_produto || "—"}
-                          </TableCell>
-                          <TableCell className="max-w-sm">{it.descricao}</TableCell>
-                          <TableCell className="font-mono text-xs">{it.ncm || "—"}</TableCell>
-                          <TableCell>{it.unidade || "—"}</TableCell>
-                          <TableCell className="text-right">
-                            {it.quantidade.toLocaleString("pt-BR")}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatMoney(it.valor_unitario)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatMoney(it.valor_total)}
-                          </TableCell>
-                          <TableCell>
-                            {canEdit ? (
-                              <Select
-                                value={it.insumo_id || "__none__"}
-                                onValueChange={(v) =>
-                                  vincularInsumo(it.id, v === "__none__" ? null : v)
-                                }
-                              >
-                                <SelectTrigger className="w-[260px]">
-                                  <SelectValue placeholder="Selecionar insumo…" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="__none__">
-                                    <span className="text-muted-foreground">
-                                      (não vinculado)
-                                    </span>
-                                  </SelectItem>
-                                  {insumos.map((ins) => (
-                                    <SelectItem key={ins.id} value={ins.id}>
-                                      {ins.codigo ? `[${ins.codigo}] ` : ""}
-                                      {ins.descricao}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            ) : it.insumo_id ? (
-                              <Badge variant="secondary">
-                                <Link2 className="w-3 h-3 mr-1" /> vinculado
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline">pendente</Badge>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {detailItens.map((it) => {
+                        const obraSel = obras.find((o) => o.id === it.obra_id);
+                        const compRows = (obraSel?.rows ?? []).filter((r) => !r.isGroup && r.codigo);
+                        return (
+                          <TableRow key={it.id}>
+                            <TableCell>{it.numero_item}</TableCell>
+                            <TableCell className="max-w-xs text-xs">{it.descricao}</TableCell>
+                            <TableCell className="text-right text-xs">{it.quantidade.toLocaleString("pt-BR")}</TableCell>
+                            <TableCell className="text-right">{formatMoney(it.valor_total)}</TableCell>
+                            <TableCell>
+                              {canEdit ? (
+                                <Select
+                                  value={it.insumo_id || "__none__"}
+                                  onValueChange={(v) => vincularInsumo(it.id, v === "__none__" ? null : v)}
+                                >
+                                  <SelectTrigger className="w-[220px]"><SelectValue placeholder="Insumo…" /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="__none__"><span className="text-muted-foreground">(não vinculado)</span></SelectItem>
+                                    {insumos.map((ins) => (
+                                      <SelectItem key={ins.id} value={ins.id}>
+                                        {ins.codigo ? `[${ins.codigo}] ` : ""}{ins.descricao}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              ) : it.insumo_id ? (
+                                <Badge variant="secondary"><Link2 className="w-3 h-3 mr-1" /> ok</Badge>
+                              ) : (
+                                <Badge variant="outline">pendente</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {canEdit ? (
+                                <Select
+                                  value={it.obra_id || "__none__"}
+                                  onValueChange={(v) => vincularApropriacao(it.id, v === "__none__" ? null : v, null)}
+                                >
+                                  <SelectTrigger className="w-[180px]"><SelectValue placeholder="Obra…" /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="__none__"><span className="text-muted-foreground">(nenhuma)</span></SelectItem>
+                                    {obras.map((o) => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <span className="text-xs">{obraSel?.nome ?? "—"}</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {canEdit ? (
+                                <Select
+                                  value={it.item_codigo || "__none__"}
+                                  onValueChange={(v) => vincularApropriacao(it.id, it.obra_id, v === "__none__" ? null : v)}
+                                  disabled={!it.obra_id}
+                                >
+                                  <SelectTrigger className="w-[260px]">
+                                    <SelectValue placeholder={it.obra_id ? "Composição…" : "Defina obra"} />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="__none__"><span className="text-muted-foreground">(nenhuma)</span></SelectItem>
+                                    {compRows.map((r) => (
+                                      <SelectItem key={r.codigo} value={r.codigo}>
+                                        <span className="font-mono mr-2">{r.codigo}</span>{r.descricao}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              ) : it.item_codigo ? (
+                                <Badge variant="secondary">{it.item_codigo}</Badge>
+                              ) : (
+                                <Badge variant="outline">não apropriado</Badge>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>

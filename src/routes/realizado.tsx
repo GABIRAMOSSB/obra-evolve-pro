@@ -65,6 +65,9 @@ interface NotaFiscalItem {
   descricao: string;
   quantidade: number;
   valor_total: number;
+  obra_id: string | null;
+  item_codigo: string | null;
+  item_descricao: string | null;
 }
 interface NotaFiscal {
   id: string;
@@ -162,24 +165,27 @@ function RealizadoPage() {
     if (company) load();
   }, [company, load]);
 
-  // Carrega itens das notas vinculadas à obra atual
+  // Carrega TODOS os itens de NF-e da company (filtra por obra na hora de calcular).
+  // Inclui itens já apropriados (obra_id + item_codigo) E itens das notas vinculadas à obra.
   useEffect(() => {
-    if (!company || !obraId) return;
-    const notasObra = notas.filter((n) => n.obra_id === obraId).map((n) => n.id);
-    if (notasObra.length === 0) {
-      setNfItens([]);
-      return;
-    }
+    if (!company) return;
     supabase
       .from("nota_fiscal_itens")
-      .select("nota_fiscal_id, descricao, quantidade, valor_total")
+      .select("nota_fiscal_id, descricao, quantidade, valor_total, obra_id, item_codigo, item_descricao")
       .eq("company_id", company.id)
-      .in("nota_fiscal_id", notasObra)
       .then(({ data, error }) => {
         if (error) return console.error(error);
         setNfItens((data as NotaFiscalItem[]) ?? []);
       });
-  }, [company, obraId, notas]);
+  }, [company]);
+
+  // Itens da NF-e apropriados à obra atual (via item.obra_id ou via nota vinculada à obra)
+  const nfItensObra = useMemo(() => {
+    if (!obraId) return [];
+    const notasIds = new Set(notas.filter((n) => n.obra_id === obraId).map((n) => n.id));
+    return nfItens.filter((i) => i.obra_id === obraId || notasIds.has(i.nota_fiscal_id));
+  }, [nfItens, notas, obraId]);
+
 
   const obra = useMemo(() => obras.find((o) => o.id === obraId), [obras, obraId]);
 
@@ -213,12 +219,23 @@ function RealizadoPage() {
     [movsEstoque, obraId],
   );
 
-  const custoMaterialConsumido = useMemo(
+  // Material consumido = saídas de estoque vinculadas à composição
+  const custoMaterialEstoque = useMemo(
     () => movsObra.reduce((acc, m) => acc + Number(m.valor_total ?? 0), 0),
     [movsObra],
   );
 
-  // Total comprado (NF-e) — referência de compras, não necessariamente consumido
+  // Material direto da NF-e apropriado à obra/composição (sem precisar passar pelo estoque)
+  const custoMaterialNFeApropriado = useMemo(
+    () => nfItensObra
+      .filter((i) => i.item_codigo)
+      .reduce((acc, i) => acc + Number(i.valor_total ?? 0), 0),
+    [nfItensObra],
+  );
+
+  const custoMaterialConsumido = custoMaterialEstoque + custoMaterialNFeApropriado;
+
+  // Total comprado (NF-e) — referência de compras, não necessariamente apropriado
   const custoMaterialComprado = useMemo(
     () => notasObra.reduce((acc, n) => acc + Number(n.valor_total ?? 0), 0),
     [notasObra],
@@ -250,10 +267,16 @@ function RealizadoPage() {
       const c = get(k);
       c.material += Number(m.valor_total);
     }
+    for (const i of nfItensObra) {
+      const k = (i.item_codigo ?? "").trim();
+      if (!k) continue;
+      const c = get(k);
+      c.material += Number(i.valor_total);
+    }
     return map;
-  }, [apontamentosObra, movsObra]);
+  }, [apontamentosObra, movsObra, nfItensObra]);
 
-  // Comparativo por composição (linha-folha do orçamento)
+  // Comparativo por composição — espelho COMPLETO da planilha (mostra TODAS as linhas-folha)
   const comparativoItens = useMemo(() => {
     if (!obra) return [];
     const rows: Array<{
@@ -269,8 +292,7 @@ function RealizadoPage() {
     }> = [];
     for (const r of obra.rows) {
       if (r.isGroup) continue;
-      const c = custoPorComposicao.get(r.codigo);
-      if (!c) continue;
+      const c = custoPorComposicao.get(r.codigo) ?? { mo: 0, material: 0, horas: 0, qtd: 0 };
       const previsto = r.total || 0;
       const realizado = c.mo + c.material;
       rows.push({
@@ -285,11 +307,10 @@ function RealizadoPage() {
         desvioPct: previsto > 0 ? ((realizado - previsto) / previsto) * 100 : 0,
       });
     }
-    return rows.sort((a, b) => b.realizado - a.realizado);
+    return rows;
   }, [obra, custoPorComposicao]);
 
-  // Rollup por etapa (linhas isGroup de nível 1) — soma de todos os filhos cujo
-  // código começa com "{etapa.codigo}." (previsto e realizado).
+  // Rollup por etapa — espelho COMPLETO (todas as etapas, mesmo zeradas)
   const comparativoEtapas = useMemo(() => {
     if (!obra) return [];
     const etapas = obra.rows.filter((r) => r.isGroup && r.level === 1 && r.codigo);
@@ -316,7 +337,7 @@ function RealizadoPage() {
         desvio: realizado - previsto,
         desvioPct: previsto > 0 ? ((realizado - previsto) / previsto) * 100 : 0,
       };
-    }).filter((e) => e.previsto > 0 || e.realizado > 0);
+    });
   }, [obra, custoPorComposicao]);
 
   if (authLoading || companyLoading || loading) {
@@ -379,9 +400,9 @@ function RealizadoPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <KpiCard label="Previsto (Orçamento)" value={fmtMoney(previstoTotal)} />
               <KpiCard
-                label="Realizado (MO + Material consumido)"
+                label="Realizado (MO + Material apropriado)"
                 value={fmtMoney(realizadoTotal)}
-                sub={`MO ${fmtMoney(custoMaoObra)} • Mat. consumido ${fmtMoney(custoMaterialConsumido)} • Comprado ${fmtMoney(custoMaterialComprado)}`}
+                sub={`MO ${fmtMoney(custoMaoObra)} • NF-e apropriada ${fmtMoney(custoMaterialNFeApropriado)} • Estoque ${fmtMoney(custoMaterialEstoque)} • Comprado ${fmtMoney(custoMaterialComprado)}`}
               />
               <KpiCard
                 label="Desvio R$"
@@ -407,7 +428,7 @@ function RealizadoPage() {
                 <Card className="p-4">
                   <h2 className="font-semibold mb-1">Comparativo por Etapa (rollup)</h2>
                   <p className="text-xs text-muted-foreground mb-3">
-                    Soma de todas as composições filhas (mão de obra apontada + material consumido do estoque).
+                    Espelho completo da planilha — soma de todas as composições filhas (MO apontada + NF-e apropriada + saída de estoque vinculada).
                   </p>
                   {comparativoEtapas.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-6 text-center">
@@ -452,12 +473,11 @@ function RealizadoPage() {
                     Comparativo por Composição
                   </h2>
                   <p className="text-xs text-muted-foreground mb-3">
-                    Realizado = Mão de Obra apontada + Material consumido (saída de estoque vinculada a esta composição).
-                    Composições sem realização não aparecem.
+                    Espelho da planilha original: todas as linhas-folha aparecem. Realizado = MO apontada + NF-e apropriada à composição + saída de estoque vinculada.
                   </p>
                   {comparativoItens.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-6 text-center">
-                      Nenhuma composição com apontamentos ou consumo vinculado.
+                      Esta obra não tem composições no orçamento.
                     </p>
                   ) : (
                     <Table>

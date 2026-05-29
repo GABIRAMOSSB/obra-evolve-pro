@@ -623,10 +623,13 @@ export type Database = {
           descricao: string
           id: string
           insumo_id: string | null
+          item_codigo: string | null
+          item_descricao: string | null
           match_status: string
           ncm: string | null
           nota_fiscal_id: string
           numero_item: number
+          obra_id: string | null
           quantidade: number
           unidade: string | null
           updated_at: string
@@ -643,10 +646,13 @@ export type Database = {
           descricao: string
           id?: string
           insumo_id?: string | null
+          item_codigo?: string | null
+          item_descricao?: string | null
           match_status?: string
           ncm?: string | null
           nota_fiscal_id: string
           numero_item: number
+          obra_id?: string | null
           quantidade?: number
           unidade?: string | null
           updated_at?: string
@@ -663,10 +669,13 @@ export type Database = {
           descricao?: string
           id?: string
           insumo_id?: string | null
+          item_codigo?: string | null
+          item_descricao?: string | null
           match_status?: string
           ncm?: string | null
           nota_fiscal_id?: string
           numero_item?: number
+          obra_id?: string | null
           quantidade?: number
           unidade?: string | null
           updated_at?: string
