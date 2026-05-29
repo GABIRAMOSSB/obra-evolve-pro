@@ -219,12 +219,23 @@ function RealizadoPage() {
     [movsEstoque, obraId],
   );
 
-  const custoMaterialConsumido = useMemo(
+  // Material consumido = saídas de estoque vinculadas à composição
+  const custoMaterialEstoque = useMemo(
     () => movsObra.reduce((acc, m) => acc + Number(m.valor_total ?? 0), 0),
     [movsObra],
   );
 
-  // Total comprado (NF-e) — referência de compras, não necessariamente consumido
+  // Material direto da NF-e apropriado à obra/composição (sem precisar passar pelo estoque)
+  const custoMaterialNFeApropriado = useMemo(
+    () => nfItensObra
+      .filter((i) => i.item_codigo)
+      .reduce((acc, i) => acc + Number(i.valor_total ?? 0), 0),
+    [nfItensObra],
+  );
+
+  const custoMaterialConsumido = custoMaterialEstoque + custoMaterialNFeApropriado;
+
+  // Total comprado (NF-e) — referência de compras, não necessariamente apropriado
   const custoMaterialComprado = useMemo(
     () => notasObra.reduce((acc, n) => acc + Number(n.valor_total ?? 0), 0),
     [notasObra],
@@ -256,10 +267,16 @@ function RealizadoPage() {
       const c = get(k);
       c.material += Number(m.valor_total);
     }
+    for (const i of nfItensObra) {
+      const k = (i.item_codigo ?? "").trim();
+      if (!k) continue;
+      const c = get(k);
+      c.material += Number(i.valor_total);
+    }
     return map;
-  }, [apontamentosObra, movsObra]);
+  }, [apontamentosObra, movsObra, nfItensObra]);
 
-  // Comparativo por composição (linha-folha do orçamento)
+  // Comparativo por composição — espelho COMPLETO da planilha (mostra TODAS as linhas-folha)
   const comparativoItens = useMemo(() => {
     if (!obra) return [];
     const rows: Array<{
@@ -275,8 +292,7 @@ function RealizadoPage() {
     }> = [];
     for (const r of obra.rows) {
       if (r.isGroup) continue;
-      const c = custoPorComposicao.get(r.codigo);
-      if (!c) continue;
+      const c = custoPorComposicao.get(r.codigo) ?? { mo: 0, material: 0, horas: 0, qtd: 0 };
       const previsto = r.total || 0;
       const realizado = c.mo + c.material;
       rows.push({
@@ -291,11 +307,10 @@ function RealizadoPage() {
         desvioPct: previsto > 0 ? ((realizado - previsto) / previsto) * 100 : 0,
       });
     }
-    return rows.sort((a, b) => b.realizado - a.realizado);
+    return rows;
   }, [obra, custoPorComposicao]);
 
-  // Rollup por etapa (linhas isGroup de nível 1) — soma de todos os filhos cujo
-  // código começa com "{etapa.codigo}." (previsto e realizado).
+  // Rollup por etapa — espelho COMPLETO (todas as etapas, mesmo zeradas)
   const comparativoEtapas = useMemo(() => {
     if (!obra) return [];
     const etapas = obra.rows.filter((r) => r.isGroup && r.level === 1 && r.codigo);
@@ -322,7 +337,7 @@ function RealizadoPage() {
         desvio: realizado - previsto,
         desvioPct: previsto > 0 ? ((realizado - previsto) / previsto) * 100 : 0,
       };
-    }).filter((e) => e.previsto > 0 || e.realizado > 0);
+    });
   }, [obra, custoPorComposicao]);
 
   if (authLoading || companyLoading || loading) {
