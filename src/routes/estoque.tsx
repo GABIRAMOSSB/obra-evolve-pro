@@ -35,6 +35,7 @@ type Movimento = {
   nota_fiscal_id: string | null;
 };
 type Nota = { id: string; numero: string; emitente_nome: string | null; data_emissao: string | null; obra_id: string | null };
+type NotaElegivel = Nota & { itens_vinculados: number };
 
 function fmt(n: number) {
   return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -51,6 +52,7 @@ function EstoquePage() {
   const [unidades, setUnidades] = useState<Unidade[]>([]);
   const [movimentos, setMovimentos] = useState<Movimento[]>([]);
   const [notas, setNotas] = useState<Nota[]>([]);
+  const [notasElegiveis, setNotasElegiveis] = useState<NotaElegivel[]>([]);
   const [obras, setObras] = useState<{ id: string; nome: string }[]>([]);
   const [filtroObra, setFiltroObra] = useState<string>("todas");
   const [filtroBusca, setFiltroBusca] = useState("");
@@ -76,17 +78,19 @@ function EstoquePage() {
     if (!companyId) return;
     setLoading(true);
     try {
-      const [insRes, uniRes, movRes, notRes, wsRes] = await Promise.all([
+      const [insRes, uniRes, movRes, notRes, wsRes, notasElegiveisRes] = await Promise.all([
         supabase.from("insumos_mestre").select("id,codigo,descricao,unidade_id").eq("company_id", companyId).eq("ativo", true).order("descricao"),
         supabase.from("unidades_medida").select("id,sigla").eq("company_id", companyId),
         supabase.from("estoque_movimentos").select("*").eq("company_id", companyId).order("data_movimento", { ascending: false }).limit(1000),
         supabase.from("notas_fiscais").select("id,numero,emitente_nome,data_emissao,obra_id").eq("company_id", companyId).order("data_emissao", { ascending: false }),
         supabase.from("company_workspaces").select("workspace").eq("company_id", companyId).maybeSingle(),
+        supabase.rpc("notas_elegiveis_entrada_estoque", { _company: companyId }),
       ]);
       if (insRes.data) setInsumos(insRes.data as Insumo[]);
       if (uniRes.data) setUnidades(uniRes.data as Unidade[]);
       if (movRes.data) setMovimentos(movRes.data as Movimento[]);
       if (notRes.data) setNotas(notRes.data as Nota[]);
+      setNotasElegiveis((notasElegiveisRes.data as NotaElegivel[] | null) ?? []);
       const ws = wsRes.data?.workspace as { obras?: { id: string; nome?: string }[] } | undefined;
       setObras((ws?.obras ?? []).map(o => ({ id: o.id, nome: o.nome || o.id })));
     } finally {
@@ -154,6 +158,7 @@ function EstoquePage() {
       _obra_id: obraEntrada || undefined,
     });
     if (error) { toast.error(`Erro: ${error.message}`); return; }
+    if ((data ?? 0) === 0) { toast.error("Essa NF-e não possui itens vinculados pendentes para entrada."); return; }
     toast.success(`${data ?? 0} item(ns) lançado(s) no estoque`);
     setOpenEntradaNFe(false);
     setNotaSelecionada(""); setObraEntrada("");
