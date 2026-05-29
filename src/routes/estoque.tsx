@@ -25,6 +25,7 @@ type Movimento = {
   data_movimento: string;
   tipo: "entrada" | "saida" | "ajuste" | "transferencia";
   origem: string;
+  nota_fiscal_item_id?: string | null;
   insumo_id: string;
   obra_id: string | null;
   quantidade: number;
@@ -48,6 +49,7 @@ function brl(n: number) {
 function EstoquePage() {
   const { company } = useCompany();
   const companyId = company?.id;
+  const canEdit = company?.role === "admin" || company?.role === "editor";
   const [tab, setTab] = useState("saldos");
   const [insumos, setInsumos] = useState<Insumo[]>([]);
   const [unidades, setUnidades] = useState<Unidade[]>([]);
@@ -119,16 +121,14 @@ function EstoquePage() {
 
   useEffect(() => {
     const itensJaLancados = new Set(
-      movimentos.filter((m) => m.tipo === "entrada" && m.nota_fiscal_id).map((m) => m.nota_fiscal_id),
+      movimentos
+        .filter((m) => m.tipo === "entrada" && m.nota_fiscal_item_id)
+        .map((m) => m.nota_fiscal_item_id as string),
     );
 
     const itensPendentesPorNota = new Map<string, number>();
     notaItens.forEach((item) => {
-      if (!item.insumo_id) return;
-      const jaLancado = movimentos.some(
-        (mov) => mov.tipo === "entrada" && mov.nota_fiscal_id === item.nota_fiscal_id && mov.id && mov.item_descricao !== null,
-      );
-      if (jaLancado && itensJaLancados.has(item.nota_fiscal_id)) return;
+      if (!item.insumo_id || itensJaLancados.has(item.id)) return;
       itensPendentesPorNota.set(item.nota_fiscal_id, (itensPendentesPorNota.get(item.nota_fiscal_id) ?? 0) + 1);
     });
 
