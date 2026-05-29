@@ -65,6 +65,9 @@ interface NotaFiscalItem {
   descricao: string;
   quantidade: number;
   valor_total: number;
+  obra_id: string | null;
+  item_codigo: string | null;
+  item_descricao: string | null;
 }
 interface NotaFiscal {
   id: string;
