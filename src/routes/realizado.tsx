@@ -379,9 +379,9 @@ function RealizadoPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <KpiCard label="Previsto (Orçamento)" value={fmtMoney(previstoTotal)} />
               <KpiCard
-                label="Realizado Total"
+                label="Realizado (MO + Material consumido)"
                 value={fmtMoney(realizadoTotal)}
-                sub={`MO ${fmtMoney(custoMaoObra)} • Mat ${fmtMoney(custoMaterial)}`}
+                sub={`MO ${fmtMoney(custoMaoObra)} • Mat. consumido ${fmtMoney(custoMaterialConsumido)} • Comprado ${fmtMoney(custoMaterialComprado)}`}
               />
               <KpiCard
                 label="Desvio R$"
@@ -395,12 +395,56 @@ function RealizadoPage() {
               />
             </div>
 
-            <Tabs defaultValue="itens">
+            <Tabs defaultValue="etapas">
               <TabsList>
-                <TabsTrigger value="itens">Por Item / Atividade</TabsTrigger>
+                <TabsTrigger value="etapas">Por Etapa</TabsTrigger>
+                <TabsTrigger value="itens">Por Composição</TabsTrigger>
                 <TabsTrigger value="materiais">Materiais (NF-e)</TabsTrigger>
                 <TabsTrigger value="mao-obra">Mão de Obra</TabsTrigger>
               </TabsList>
+
+              <TabsContent value="etapas" className="mt-4">
+                <Card className="p-4">
+                  <h2 className="font-semibold mb-1">Comparativo por Etapa (rollup)</h2>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Soma de todas as composições filhas (mão de obra apontada + material consumido do estoque).
+                  </p>
+                  {comparativoEtapas.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-6 text-center">
+                      Nenhuma etapa com orçamento ou realizado.
+                    </p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Código</TableHead>
+                          <TableHead>Etapa</TableHead>
+                          <TableHead className="text-right">Previsto</TableHead>
+                          <TableHead className="text-right">MO</TableHead>
+                          <TableHead className="text-right">Material</TableHead>
+                          <TableHead className="text-right">Realizado</TableHead>
+                          <TableHead className="text-right">Desvio</TableHead>
+                          <TableHead className="text-right">%</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {comparativoEtapas.map((e, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell className="font-mono text-xs">{e.row.codigo}</TableCell>
+                            <TableCell className="text-xs font-medium">{e.row.descricao}</TableCell>
+                            <TableCell className="text-right">{fmtMoney(e.previsto)}</TableCell>
+                            <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(e.mo)}</TableCell>
+                            <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(e.material)}</TableCell>
+                            <TableCell className="text-right font-medium">{fmtMoney(e.realizado)}</TableCell>
+                            <TableCell className="text-right"><DesvioCell value={e.desvio} /></TableCell>
+                            <TableCell className="text-right"><DesvioCell value={e.desvioPct} suffix="%" /></TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </Card>
+              </TabsContent>
 
               <TabsContent value="itens" className="mt-4">
                 <Card className="p-4">
