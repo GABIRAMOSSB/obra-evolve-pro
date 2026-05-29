@@ -74,6 +74,15 @@ interface NotaFiscal {
   numero: string;
   valor_total: number | null;
 }
+interface MovEstoque {
+  obra_id: string | null;
+  tipo: string;
+  item_codigo: string | null;
+  item_descricao: string | null;
+  quantidade: number;
+  valor_total: number;
+  valor_unitario: number;
+}
 
 function fmtMoney(v: number | null | undefined) {
   return (v ?? 0).toLocaleString("pt-BR", {
