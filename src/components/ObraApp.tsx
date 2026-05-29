@@ -69,6 +69,7 @@ import {
   Calendar,
   StickyNote,
   X,
+  Package,
 } from "lucide-react";
 
 
