@@ -35,6 +35,7 @@ type Movimento = {
   nota_fiscal_id: string | null;
 };
 type Nota = { id: string; numero: string; emitente_nome: string | null; data_emissao: string | null; obra_id: string | null };
+type NotaItemResumo = { id: string; nota_fiscal_id: string; insumo_id: string | null };
 type NotaElegivel = Nota & { itens_vinculados: number };
 
 function fmt(n: number) {
@@ -52,6 +53,7 @@ function EstoquePage() {
   const [unidades, setUnidades] = useState<Unidade[]>([]);
   const [movimentos, setMovimentos] = useState<Movimento[]>([]);
   const [notas, setNotas] = useState<Nota[]>([]);
+  const [notaItens, setNotaItens] = useState<NotaItemResumo[]>([]);
   const [notasElegiveis, setNotasElegiveis] = useState<NotaElegivel[]>([]);
   const [obras, setObras] = useState<{ id: string; nome: string }[]>([]);
   const [filtroObra, setFiltroObra] = useState<string>("todas");
@@ -78,19 +80,19 @@ function EstoquePage() {
     if (!companyId) return;
     setLoading(true);
     try {
-      const [insRes, uniRes, movRes, notRes, wsRes, notasElegiveisRes] = await Promise.all([
+      const [insRes, uniRes, movRes, notRes, wsRes, itensRes] = await Promise.all([
         supabase.from("insumos_mestre").select("id,codigo,descricao,unidade_id").eq("company_id", companyId).eq("ativo", true).order("descricao"),
         supabase.from("unidades_medida").select("id,sigla").eq("company_id", companyId),
         supabase.from("estoque_movimentos").select("*").eq("company_id", companyId).order("data_movimento", { ascending: false }).limit(1000),
         supabase.from("notas_fiscais").select("id,numero,emitente_nome,data_emissao,obra_id").eq("company_id", companyId).order("data_emissao", { ascending: false }),
         supabase.from("company_workspaces").select("workspace").eq("company_id", companyId).maybeSingle(),
-        supabase.rpc("notas_elegiveis_entrada_estoque", { _company: companyId }),
+        supabase.from("nota_fiscal_itens").select("id,nota_fiscal_id,insumo_id").eq("company_id", companyId),
       ]);
       if (insRes.data) setInsumos(insRes.data as Insumo[]);
       if (uniRes.data) setUnidades(uniRes.data as Unidade[]);
       if (movRes.data) setMovimentos(movRes.data as Movimento[]);
       if (notRes.data) setNotas(notRes.data as Nota[]);
-      setNotasElegiveis((notasElegiveisRes.data as NotaElegivel[] | null) ?? []);
+      if (itensRes.data) setNotaItens(itensRes.data as NotaItemResumo[]);
       const ws = wsRes.data?.workspace as { obras?: { id: string; nome?: string }[] } | undefined;
       setObras((ws?.obras ?? []).map(o => ({ id: o.id, nome: o.nome || o.id })));
     } finally {
@@ -114,6 +116,28 @@ function EstoquePage() {
     insumos.forEach(i => { m[i.id] = i; });
     return m;
   }, [insumos]);
+
+  useEffect(() => {
+    const itensJaLancados = new Set(
+      movimentos.filter((m) => m.tipo === "entrada" && m.nota_fiscal_id).map((m) => m.nota_fiscal_id),
+    );
+
+    const itensPendentesPorNota = new Map<string, number>();
+    notaItens.forEach((item) => {
+      if (!item.insumo_id) return;
+      const jaLancado = movimentos.some(
+        (mov) => mov.tipo === "entrada" && mov.nota_fiscal_id === item.nota_fiscal_id && mov.id && mov.item_descricao !== null,
+      );
+      if (jaLancado && itensJaLancados.has(item.nota_fiscal_id)) return;
+      itensPendentesPorNota.set(item.nota_fiscal_id, (itensPendentesPorNota.get(item.nota_fiscal_id) ?? 0) + 1);
+    });
+
+    setNotasElegiveis(
+      notas
+        .map((nota) => ({ ...nota, itens_vinculados: itensPendentesPorNota.get(nota.id) ?? 0 }))
+        .filter((nota) => nota.itens_vinculados > 0),
+    );
+  }, [notaItens, notas, movimentos]);
 
   // Saldos agregados por insumo (e obra se filtro)
   const saldos = useMemo(() => {
