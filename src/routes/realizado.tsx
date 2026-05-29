@@ -165,24 +165,27 @@ function RealizadoPage() {
     if (company) load();
   }, [company, load]);
 
-  // Carrega itens das notas vinculadas à obra atual
+  // Carrega TODOS os itens de NF-e da company (filtra por obra na hora de calcular).
+  // Inclui itens já apropriados (obra_id + item_codigo) E itens das notas vinculadas à obra.
   useEffect(() => {
-    if (!company || !obraId) return;
-    const notasObra = notas.filter((n) => n.obra_id === obraId).map((n) => n.id);
-    if (notasObra.length === 0) {
-      setNfItens([]);
-      return;
-    }
+    if (!company) return;
     supabase
       .from("nota_fiscal_itens")
-      .select("nota_fiscal_id, descricao, quantidade, valor_total")
+      .select("nota_fiscal_id, descricao, quantidade, valor_total, obra_id, item_codigo, item_descricao")
       .eq("company_id", company.id)
-      .in("nota_fiscal_id", notasObra)
       .then(({ data, error }) => {
         if (error) return console.error(error);
         setNfItens((data as NotaFiscalItem[]) ?? []);
       });
-  }, [company, obraId, notas]);
+  }, [company]);
+
+  // Itens da NF-e apropriados à obra atual (via item.obra_id ou via nota vinculada à obra)
+  const nfItensObra = useMemo(() => {
+    if (!obraId) return [];
+    const notasIds = new Set(notas.filter((n) => n.obra_id === obraId).map((n) => n.id));
+    return nfItens.filter((i) => i.obra_id === obraId || notasIds.has(i.nota_fiscal_id));
+  }, [nfItens, notas, obraId]);
+
 
   const obra = useMemo(() => obras.find((o) => o.id === obraId), [obras, obraId]);
 
