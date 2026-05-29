@@ -473,12 +473,11 @@ function RealizadoPage() {
                     Comparativo por Composição
                   </h2>
                   <p className="text-xs text-muted-foreground mb-3">
-                    Realizado = Mão de Obra apontada + Material consumido (saída de estoque vinculada a esta composição).
-                    Composições sem realização não aparecem.
+                    Espelho da planilha original: todas as linhas-folha aparecem. Realizado = MO apontada + NF-e apropriada à composição + saída de estoque vinculada.
                   </p>
                   {comparativoItens.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-6 text-center">
-                      Nenhuma composição com apontamentos ou consumo vinculado.
+                      Esta obra não tem composições no orçamento.
                     </p>
                   ) : (
                     <Table>
