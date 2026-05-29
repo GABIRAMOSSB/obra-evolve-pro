@@ -343,12 +343,30 @@ function EstoquePage() {
                   </div>
                   <div>
                     <Label>Obra</Label>
-                    <Select value={formObra} onValueChange={setFormObra}>
+                    <Select value={formObra} onValueChange={(v) => { setFormObra(v); setFormItemCodigo(""); }}>
                       <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                       <SelectContent>
                         {obras.map(o => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div>
+                    <Label>Composição / Item do orçamento (opcional)</Label>
+                    <Select value={formItemCodigo} onValueChange={setFormItemCodigo} disabled={!formObra}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={formObra ? "Selecione a composição (apropriação)" : "Escolha a obra primeiro"} />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-72">
+                        {composicoesObra.map(r => (
+                          <SelectItem key={r.codigo} value={r.codigo}>
+                            <span className="font-mono text-xs mr-2">{r.codigo}</span>{r.descricao}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Ao vincular, o custo desta saída é apropriado nesta composição e somado automaticamente na etapa pai (Realizado).
+                    </p>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
