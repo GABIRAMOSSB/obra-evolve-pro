@@ -15,6 +15,7 @@ import { Route as NotasFiscaisRouteImport } from './routes/notas-fiscais'
 import { Route as MaoDeObraRouteImport } from './routes/mao-de-obra'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as InsumosRouteImport } from './routes/insumos'
+import { Route as EstoqueRouteImport } from './routes/estoque'
 import { Route as EquipeRouteImport } from './routes/equipe'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
@@ -49,6 +50,11 @@ const InsumosRoute = InsumosRouteImport.update({
   path: '/insumos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EstoqueRoute = EstoqueRouteImport.update({
+  id: '/estoque',
+  path: '/estoque',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EquipeRoute = EquipeRouteImport.update({
   id: '/equipe',
   path: '/equipe',
@@ -68,6 +74,7 @@ const InviteTokenRoute = InviteTokenRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/equipe': typeof EquipeRoute
+  '/estoque': typeof EstoqueRoute
   '/insumos': typeof InsumosRoute
   '/login': typeof LoginRoute
   '/mao-de-obra': typeof MaoDeObraRoute
@@ -79,6 +86,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/equipe': typeof EquipeRoute
+  '/estoque': typeof EstoqueRoute
   '/insumos': typeof InsumosRoute
   '/login': typeof LoginRoute
   '/mao-de-obra': typeof MaoDeObraRoute
@@ -91,6 +99,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/equipe': typeof EquipeRoute
+  '/estoque': typeof EstoqueRoute
   '/insumos': typeof InsumosRoute
   '/login': typeof LoginRoute
   '/mao-de-obra': typeof MaoDeObraRoute
@@ -104,6 +113,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/equipe'
+    | '/estoque'
     | '/insumos'
     | '/login'
     | '/mao-de-obra'
@@ -115,6 +125,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/equipe'
+    | '/estoque'
     | '/insumos'
     | '/login'
     | '/mao-de-obra'
@@ -126,6 +137,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/equipe'
+    | '/estoque'
     | '/insumos'
     | '/login'
     | '/mao-de-obra'
@@ -138,6 +150,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   EquipeRoute: typeof EquipeRoute
+  EstoqueRoute: typeof EstoqueRoute
   InsumosRoute: typeof InsumosRoute
   LoginRoute: typeof LoginRoute
   MaoDeObraRoute: typeof MaoDeObraRoute
@@ -191,6 +204,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InsumosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/estoque': {
+      id: '/estoque'
+      path: '/estoque'
+      fullPath: '/estoque'
+      preLoaderRoute: typeof EstoqueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/equipe': {
       id: '/equipe'
       path: '/equipe'
@@ -218,6 +238,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   EquipeRoute: EquipeRoute,
+  EstoqueRoute: EstoqueRoute,
   InsumosRoute: InsumosRoute,
   LoginRoute: LoginRoute,
   MaoDeObraRoute: MaoDeObraRoute,
