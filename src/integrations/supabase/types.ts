@@ -140,6 +140,189 @@ export type Database = {
           },
         ]
       }
+      insumo_aliases: {
+        Row: {
+          cnpj_fornecedor: string | null
+          codigo_fornecedor: string | null
+          company_id: string
+          created_at: string
+          descricao_alternativa: string
+          fornecedor: string | null
+          id: string
+          insumo_id: string
+          origem: string
+        }
+        Insert: {
+          cnpj_fornecedor?: string | null
+          codigo_fornecedor?: string | null
+          company_id: string
+          created_at?: string
+          descricao_alternativa: string
+          fornecedor?: string | null
+          id?: string
+          insumo_id: string
+          origem?: string
+        }
+        Update: {
+          cnpj_fornecedor?: string | null
+          codigo_fornecedor?: string | null
+          company_id?: string
+          created_at?: string
+          descricao_alternativa?: string
+          fornecedor?: string | null
+          id?: string
+          insumo_id?: string
+          origem?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insumo_aliases_insumo_id_fkey"
+            columns: ["insumo_id"]
+            isOneToOne: false
+            referencedRelation: "insumos_mestre"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      insumo_categorias: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          nome: string
+          ordem: number
+          parent_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          nome: string
+          ordem?: number
+          parent_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          ordem?: number
+          parent_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insumo_categorias_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "insumo_categorias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      insumos_mestre: {
+        Row: {
+          ativo: boolean
+          categoria_id: string | null
+          codigo: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          descricao: string
+          id: string
+          ncm: string | null
+          observacoes: string | null
+          unidade_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          categoria_id?: string | null
+          codigo?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          descricao: string
+          id?: string
+          ncm?: string | null
+          observacoes?: string | null
+          unidade_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          categoria_id?: string | null
+          codigo?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string
+          id?: string
+          ncm?: string | null
+          observacoes?: string | null
+          unidade_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insumos_mestre_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "insumo_categorias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insumos_mestre_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_medida"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      unidades_medida: {
+        Row: {
+          company_id: string
+          created_at: string
+          descricao: string
+          fator_conversao: number
+          id: string
+          sigla: string
+          unidade_base_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          descricao: string
+          fator_conversao?: number
+          id?: string
+          sigla: string
+          unidade_base_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          descricao?: string
+          fator_conversao?: number
+          id?: string
+          sigla?: string
+          unidade_base_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unidades_medida_unidade_base_id_fkey"
+            columns: ["unidade_base_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_medida"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_workspaces: {
         Row: {
           created_at: string
@@ -198,6 +381,7 @@ export type Database = {
         Args: { _company: string; _user: string }
         Returns: boolean
       }
+      seed_insumos_base: { Args: { _company: string }; Returns: undefined }
     }
     Enums: {
       company_role: "admin" | "member" | "editor"
