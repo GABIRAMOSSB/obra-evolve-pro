@@ -51,6 +51,7 @@ import {
   formatMoney,
   type NFeParsed,
 } from "@/lib/nfe-parser";
+import type { BudgetRow, ProjectData } from "@/lib/types";
 
 export const Route = createFileRoute("/notas-fiscais")({
   component: NotasFiscaisPage,
