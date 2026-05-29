@@ -207,32 +207,61 @@ function RealizadoPage() {
     [notas, obraId],
   );
 
-  const custoMaterial = useMemo(
+  // Movimentos de estoque da obra (saídas = consumo apropriado)
+  const movsObra = useMemo(
+    () => movsEstoque.filter((m) => m.obra_id === obraId && m.tipo === "saida"),
+    [movsEstoque, obraId],
+  );
+
+  const custoMaterialConsumido = useMemo(
+    () => movsObra.reduce((acc, m) => acc + Number(m.valor_total ?? 0), 0),
+    [movsObra],
+  );
+
+  // Total comprado (NF-e) — referência de compras, não necessariamente consumido
+  const custoMaterialComprado = useMemo(
     () => notasObra.reduce((acc, n) => acc + Number(n.valor_total ?? 0), 0),
     [notasObra],
   );
 
-  const realizadoTotal = custoMaoObra + custoMaterial;
+  const realizadoTotal = custoMaoObra + custoMaterialConsumido;
   const desvio = realizadoTotal - previstoTotal;
   const desvioPct = previstoTotal > 0 ? (desvio / previstoTotal) * 100 : 0;
 
-  // Comparativo por item (cruza item_codigo do apontamento ↔ orçamento)
-  const comparativoItens = useMemo(() => {
-    if (!obra) return [];
-    const apontPorCod = new Map<string, { horas: number; custo: number; qtd: number }>();
+  // Custo MO + Material por código de composição
+  const custoPorComposicao = useMemo(() => {
+    const map = new Map<string, { mo: number; material: number; horas: number; qtd: number }>();
+    const get = (k: string) => {
+      const cur = map.get(k) ?? { mo: 0, material: 0, horas: 0, qtd: 0 };
+      map.set(k, cur);
+      return cur;
+    };
     for (const ap of apontamentosObra) {
       const k = (ap.item_codigo ?? "").trim();
       if (!k) continue;
-      const cur = apontPorCod.get(k) ?? { horas: 0, custo: 0, qtd: 0 };
-      cur.horas += Number(ap.horas_normais) + Number(ap.horas_extras);
-      cur.custo += Number(ap.custo_total);
-      cur.qtd += Number(ap.quantidade_executada ?? 0);
-      apontPorCod.set(k, cur);
+      const c = get(k);
+      c.mo += Number(ap.custo_total);
+      c.horas += Number(ap.horas_normais) + Number(ap.horas_extras);
+      c.qtd += Number(ap.quantidade_executada ?? 0);
     }
+    for (const m of movsObra) {
+      const k = (m.item_codigo ?? "").trim();
+      if (!k) continue;
+      const c = get(k);
+      c.material += Number(m.valor_total);
+    }
+    return map;
+  }, [apontamentosObra, movsObra]);
+
+  // Comparativo por composição (linha-folha do orçamento)
+  const comparativoItens = useMemo(() => {
+    if (!obra) return [];
     const rows: Array<{
       row: BudgetRow;
       previsto: number;
       realizado: number;
+      mo: number;
+      material: number;
       horas: number;
       qtdExec: number;
       desvio: number;
@@ -240,22 +269,55 @@ function RealizadoPage() {
     }> = [];
     for (const r of obra.rows) {
       if (r.isGroup) continue;
-      const ap = apontPorCod.get(r.codigo);
-      if (!ap) continue;
+      const c = custoPorComposicao.get(r.codigo);
+      if (!c) continue;
       const previsto = r.total || 0;
-      const realizado = ap.custo;
+      const realizado = c.mo + c.material;
       rows.push({
         row: r,
         previsto,
         realizado,
-        horas: ap.horas,
-        qtdExec: ap.qtd,
+        mo: c.mo,
+        material: c.material,
+        horas: c.horas,
+        qtdExec: c.qtd,
         desvio: realizado - previsto,
         desvioPct: previsto > 0 ? ((realizado - previsto) / previsto) * 100 : 0,
       });
     }
     return rows.sort((a, b) => b.realizado - a.realizado);
-  }, [obra, apontamentosObra]);
+  }, [obra, custoPorComposicao]);
+
+  // Rollup por etapa (linhas isGroup de nível 1) — soma de todos os filhos cujo
+  // código começa com "{etapa.codigo}." (previsto e realizado).
+  const comparativoEtapas = useMemo(() => {
+    if (!obra) return [];
+    const etapas = obra.rows.filter((r) => r.isGroup && r.level === 1 && r.codigo);
+    return etapas.map((et) => {
+      const prefixo = `${et.codigo}.`;
+      let previsto = 0;
+      let mo = 0;
+      let material = 0;
+      for (const r of obra.rows) {
+        if (r.isGroup) continue;
+        if (!r.codigo) continue;
+        if (r.codigo !== et.codigo && !r.codigo.startsWith(prefixo)) continue;
+        previsto += r.total || 0;
+        const c = custoPorComposicao.get(r.codigo);
+        if (c) { mo += c.mo; material += c.material; }
+      }
+      const realizado = mo + material;
+      return {
+        row: et,
+        previsto,
+        realizado,
+        mo,
+        material,
+        desvio: realizado - previsto,
+        desvioPct: previsto > 0 ? ((realizado - previsto) / previsto) * 100 : 0,
+      };
+    }).filter((e) => e.previsto > 0 || e.realizado > 0);
+  }, [obra, custoPorComposicao]);
 
   if (authLoading || companyLoading || loading) {
     return (
