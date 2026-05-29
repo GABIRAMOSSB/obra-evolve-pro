@@ -176,6 +176,7 @@ function EstoquePage() {
 
   // Ações
   async function handleEntradaNFe() {
+    if (!canEdit) { toast.error("Você não tem permissão para lançar entradas."); return; }
     if (!notaSelecionada) { toast.error("Selecione uma nota fiscal"); return; }
     const { data, error } = await supabase.rpc("registrar_entrada_nfe", {
       _nota_id: notaSelecionada,
