@@ -102,7 +102,9 @@ type InsumoOption = {
 
 function NotasFiscaisPage() {
   const { user, loading: authLoading } = useAuth();
-  const { companyId, role, loading: companyLoading } = useCompany();
+  const { company, loading: companyLoading } = useCompany();
+  const companyId = company?.id ?? null;
+  const role = company?.role ?? null;
   const canEdit = role === "admin" || role === "editor";
   const canDelete = role === "admin";
 

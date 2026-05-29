@@ -70,7 +70,8 @@ import {
   StickyNote,
   X,
   Package,
-  FileText,
+
+
 } from "lucide-react";
 
 
