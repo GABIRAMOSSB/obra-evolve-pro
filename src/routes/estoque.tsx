@@ -87,8 +87,8 @@ function EstoquePage() {
       if (uniRes.data) setUnidades(uniRes.data as Unidade[]);
       if (movRes.data) setMovimentos(movRes.data as Movimento[]);
       if (notRes.data) setNotas(notRes.data as Nota[]);
-      const ws = wsRes.data?.workspace as { obras?: { id: string; info?: { nome?: string } }[] } | undefined;
-      setObras((ws?.obras ?? []).map(o => ({ id: o.id, nome: o.info?.nome || o.id })));
+      const ws = wsRes.data?.workspace as { obras?: { id: string; nome?: string }[] } | undefined;
+      setObras((ws?.obras ?? []).map(o => ({ id: o.id, nome: o.nome || o.id })));
     } finally {
       setLoading(false);
     }
