@@ -75,6 +75,7 @@ function EstoquePage() {
   // saída/ajuste form
   const [formInsumo, setFormInsumo] = useState("");
   const [formObra, setFormObra] = useState<string>("");
+  const [formItemCodigo, setFormItemCodigo] = useState<string>("");
   const [formQtd, setFormQtd] = useState("");
   const [formValor, setFormValor] = useState("");
   const [formObs, setFormObs] = useState("");
