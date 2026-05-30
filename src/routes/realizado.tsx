@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, Fragment } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useCompany } from "@/hooks/use-company";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,8 +34,11 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
+  ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import type { BudgetRow, ProjectData } from "@/lib/types";
+
 
 export const Route = createFileRoute("/realizado")({
   component: RealizadoPage,
@@ -85,7 +88,18 @@ interface MovEstoque {
   quantidade: number;
   valor_total: number;
   valor_unitario: number;
+  insumo_descricao?: string | null;
+  unidade?: string | null;
 }
+interface Apropriacao {
+  obra_id: string;
+  item_codigo: string;
+  descricao_insumo: string;
+  unidade: string | null;
+  quantidade: number;
+  valor_total: number;
+}
+
 
 function fmtMoney(v: number | null | undefined) {
   return (v ?? 0).toLocaleString("pt-BR", {
@@ -109,6 +123,9 @@ function RealizadoPage() {
   const [notas, setNotas] = useState<NotaFiscal[]>([]);
   const [nfItens, setNfItens] = useState<NotaFiscalItem[]>([]);
   const [movsEstoque, setMovsEstoque] = useState<MovEstoque[]>([]);
+  const [apropriacoes, setApropriacoes] = useState<Apropriacao[]>([]);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -165,8 +182,7 @@ function RealizadoPage() {
     if (company) load();
   }, [company, load]);
 
-  // Carrega TODOS os itens de NF-e da company (filtra por obra na hora de calcular).
-  // Inclui itens já apropriados (obra_id + item_codigo) E itens das notas vinculadas à obra.
+  // Carrega TODOS os itens de NF-e da company + apropriações (rateio).
   useEffect(() => {
     if (!company) return;
     supabase
@@ -177,7 +193,18 @@ function RealizadoPage() {
         if (error) return console.error(error);
         setNfItens((data as NotaFiscalItem[]) ?? []);
       });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from("nfe_item_apropriacoes")
+      .select("obra_id, item_codigo, descricao_insumo, unidade, quantidade, valor_total")
+      .eq("company_id", company.id)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .then(({ data, error }: any) => {
+        if (error) return console.error(error);
+        setApropriacoes((data as Apropriacao[]) ?? []);
+      });
   }, [company]);
+
 
   // Itens da NF-e apropriados à obra atual (via item.obra_id ou via nota vinculada à obra)
   const nfItensObra = useMemo(() => {
@@ -225,13 +252,23 @@ function RealizadoPage() {
     [movsObra],
   );
 
-  // Material direto da NF-e apropriado à obra/composição (sem precisar passar pelo estoque)
-  const custoMaterialNFeApropriado = useMemo(
-    () => nfItensObra
-      .filter((i) => i.item_codigo)
-      .reduce((acc, i) => acc + Number(i.valor_total ?? 0), 0),
-    [nfItensObra],
+  // Apropriações de NF-e da obra (rateio item × composição)
+  const apropObra = useMemo(
+    () => apropriacoes.filter((a) => a.obra_id === obraId),
+    [apropriacoes, obraId],
   );
+
+  // Material direto da NF-e apropriado à obra/composição (rateio + legado)
+  const custoMaterialNFeApropriado = useMemo(() => {
+    // Soma rateios novos
+    const novo = apropObra.reduce((acc, a) => acc + Number(a.valor_total ?? 0), 0);
+    // Soma legado (item.obra_id+item_codigo) — somente itens SEM apropriações na nova tabela
+    // (heurística: identifica itens que ainda usam o vínculo direto)
+    const legado = nfItensObra
+      .filter((i) => i.item_codigo)
+      .reduce((acc, i) => acc + Number(i.valor_total ?? 0), 0);
+    return novo + legado;
+  }, [apropObra, nfItensObra]);
 
   const custoMaterialConsumido = custoMaterialEstoque + custoMaterialNFeApropriado;
 
@@ -267,6 +304,13 @@ function RealizadoPage() {
       const c = get(k);
       c.material += Number(m.valor_total);
     }
+    for (const a of apropObra) {
+      const k = (a.item_codigo ?? "").trim();
+      if (!k) continue;
+      const c = get(k);
+      c.material += Number(a.valor_total);
+    }
+    // Legado: itens de NF-e ainda vinculados diretamente
     for (const i of nfItensObra) {
       const k = (i.item_codigo ?? "").trim();
       if (!k) continue;
@@ -274,7 +318,82 @@ function RealizadoPage() {
       c.material += Number(i.valor_total);
     }
     return map;
-  }, [apontamentosObra, movsObra, nfItensObra]);
+  }, [apontamentosObra, movsObra, apropObra, nfItensObra]);
+
+  // Composição REAL: lista de insumos consumidos por código de composição.
+  // Fonte: apropriações de NF-e (rateio) + saídas de estoque + legado item_codigo.
+  // Inclui também a mão-de-obra como "insumo" virtual.
+  const insumosPorComposicao = useMemo(() => {
+    const map = new Map<string, Array<{
+      descricao: string;
+      unidade: string | null;
+      quantidade: number;
+      valor: number;
+      fonte: "NF-e" | "Estoque" | "MO";
+    }>>();
+    const push = (k: string, item: { descricao: string; unidade: string | null; quantidade: number; valor: number; fonte: "NF-e" | "Estoque" | "MO" }) => {
+      const arr = map.get(k) ?? [];
+      // agrega por (descricao + unidade + fonte)
+      const idx = arr.findIndex(
+        (x) => x.descricao === item.descricao && x.unidade === item.unidade && x.fonte === item.fonte,
+      );
+      if (idx >= 0) {
+        arr[idx].quantidade += item.quantidade;
+        arr[idx].valor += item.valor;
+      } else {
+        arr.push({ ...item });
+      }
+      map.set(k, arr);
+    };
+    for (const a of apropObra) {
+      const k = (a.item_codigo ?? "").trim();
+      if (!k) continue;
+      push(k, {
+        descricao: a.descricao_insumo,
+        unidade: a.unidade,
+        quantidade: Number(a.quantidade ?? 0),
+        valor: Number(a.valor_total ?? 0),
+        fonte: "NF-e",
+      });
+    }
+    for (const m of movsObra) {
+      const k = (m.item_codigo ?? "").trim();
+      if (!k) continue;
+      push(k, {
+        descricao: m.item_descricao ?? "Saída de estoque",
+        unidade: null,
+        quantidade: Number(m.quantidade ?? 0),
+        valor: Number(m.valor_total ?? 0),
+        fonte: "Estoque",
+      });
+    }
+    for (const i of nfItensObra) {
+      const k = (i.item_codigo ?? "").trim();
+      if (!k) continue;
+      push(k, {
+        descricao: i.descricao,
+        unidade: null,
+        quantidade: Number(i.quantidade ?? 0),
+        valor: Number(i.valor_total ?? 0),
+        fonte: "NF-e",
+      });
+    }
+    for (const ap of apontamentosObra) {
+      const k = (ap.item_codigo ?? "").trim();
+      if (!k) continue;
+      const horas = Number(ap.horas_normais ?? 0) + Number(ap.horas_extras ?? 0);
+      if (horas <= 0 && Number(ap.custo_total ?? 0) <= 0) continue;
+      push(k, {
+        descricao: "Mão de obra apontada",
+        unidade: "h",
+        quantidade: horas,
+        valor: Number(ap.custo_total ?? 0),
+        fonte: "MO",
+      });
+    }
+    return map;
+  }, [apropObra, movsObra, nfItensObra, apontamentosObra]);
+
 
   // Comparativo por composição — espelho COMPLETO da planilha (mostra TODAS as linhas-folha)
   const comparativoItens = useMemo(() => {
@@ -475,7 +594,9 @@ function RealizadoPage() {
                     Comparativo por Composição
                   </h2>
                   <p className="text-xs text-muted-foreground mb-3">
-                    Espelho da planilha original: todas as linhas-folha aparecem. Realizado = MO apontada + NF-e apropriada à composição + saída de estoque vinculada.
+                    Espelho da planilha original: todas as linhas-folha aparecem.
+                    Clique em uma linha para ver a <strong>composição real</strong> levantada em campo
+                    (insumos + MO consumidos + coeficiente real = qtd / qtd executada).
                   </p>
                   {comparativoItens.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-6 text-center">
@@ -485,6 +606,7 @@ function RealizadoPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
+                          <TableHead className="w-8"></TableHead>
                           <TableHead>Código</TableHead>
                           <TableHead>Descrição</TableHead>
                           <TableHead className="text-right">Qtd Orç.</TableHead>
@@ -499,24 +621,103 @@ function RealizadoPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {comparativoItens.map((c, idx) => (
-                          <TableRow key={idx}>
-                            <TableCell className="font-mono text-xs">{c.row.codigo}</TableCell>
-                            <TableCell className="text-xs">{c.row.descricao}</TableCell>
-                            <TableCell className="text-right">{c.row.quantidade.toFixed(2)} {c.row.und}</TableCell>
-                            <TableCell className="text-right">{c.qtdExec.toFixed(2)}</TableCell>
-                            <TableCell className="text-right">{c.horas.toFixed(2)}</TableCell>
-                            <TableCell className="text-right">{fmtMoney(c.previsto)}</TableCell>
-                            <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.mo)}</TableCell>
-                            <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.material)}</TableCell>
-                            <TableCell className="text-right font-medium">{fmtMoney(c.realizado)}</TableCell>
-                            <TableCell className="text-right"><DesvioCell value={c.desvio} /></TableCell>
-                            <TableCell className="text-right"><DesvioCell value={c.desvioPct} suffix="%" /></TableCell>
-                          </TableRow>
-                        ))}
+                        {comparativoItens.map((c, idx) => {
+                          const insumos = insumosPorComposicao.get(c.row.codigo) ?? [];
+                          const hasInsumos = insumos.length > 0;
+                          const isOpen = expanded.has(c.row.codigo);
+                          const toggle = () => {
+                            if (!hasInsumos) return;
+                            setExpanded((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(c.row.codigo)) next.delete(c.row.codigo);
+                              else next.add(c.row.codigo);
+                              return next;
+                            });
+                          };
+                          return (
+                            <Fragment key={idx}>
+
+                              <TableRow
+                                key={idx}
+                                onClick={toggle}
+                                className={hasInsumos ? "cursor-pointer hover:bg-muted/40" : ""}
+                              >
+                                <TableCell className="w-8">
+                                  {hasInsumos ? (
+                                    isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />
+                                  ) : null}
+                                </TableCell>
+                                <TableCell className="font-mono text-xs">{c.row.codigo}</TableCell>
+                                <TableCell className="text-xs">{c.row.descricao}</TableCell>
+                                <TableCell className="text-right">{c.row.quantidade.toFixed(2)} {c.row.und}</TableCell>
+                                <TableCell className="text-right">{c.qtdExec.toFixed(2)}</TableCell>
+                                <TableCell className="text-right">{c.horas.toFixed(2)}</TableCell>
+                                <TableCell className="text-right">{fmtMoney(c.previsto)}</TableCell>
+                                <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.mo)}</TableCell>
+                                <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.material)}</TableCell>
+                                <TableCell className="text-right font-medium">{fmtMoney(c.realizado)}</TableCell>
+                                <TableCell className="text-right"><DesvioCell value={c.desvio} /></TableCell>
+                                <TableCell className="text-right"><DesvioCell value={c.desvioPct} suffix="%" /></TableCell>
+                              </TableRow>
+                              {isOpen && hasInsumos && (
+                                <TableRow key={`${idx}-exp`} className="bg-muted/20 hover:bg-muted/20">
+                                  <TableCell></TableCell>
+                                  <TableCell colSpan={11} className="p-3">
+                                    <div className="space-y-2">
+                                      <div className="text-xs font-semibold text-muted-foreground uppercase">
+                                        Composição real — {c.row.descricao}
+                                      </div>
+                                      <Table>
+                                        <TableHeader>
+                                          <TableRow>
+                                            <TableHead className="text-xs">Insumo / Recurso</TableHead>
+                                            <TableHead className="text-xs">Fonte</TableHead>
+                                            <TableHead className="text-xs text-right">Qtd</TableHead>
+                                            <TableHead className="text-xs">Und</TableHead>
+                                            <TableHead className="text-xs text-right">Valor</TableHead>
+                                            <TableHead className="text-xs text-right">Coef. real</TableHead>
+                                            <TableHead className="text-xs text-right">Custo unit.</TableHead>
+                                          </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                          {insumos.map((ins, ix) => {
+                                            const coef = c.qtdExec > 0 ? ins.quantidade / c.qtdExec : 0;
+                                            const custoUnit = c.qtdExec > 0 ? ins.valor / c.qtdExec : 0;
+                                            return (
+                                              <TableRow key={ix}>
+                                                <TableCell className="text-xs">{ins.descricao}</TableCell>
+                                                <TableCell><Badge variant={ins.fonte === "MO" ? "default" : ins.fonte === "Estoque" ? "secondary" : "outline"} className="text-[10px]">{ins.fonte}</Badge></TableCell>
+                                                <TableCell className="text-right text-xs">{ins.quantidade.toLocaleString("pt-BR", { maximumFractionDigits: 3 })}</TableCell>
+                                                <TableCell className="text-xs">{ins.unidade ?? "—"}</TableCell>
+                                                <TableCell className="text-right text-xs">{fmtMoney(ins.valor)}</TableCell>
+                                                <TableCell className="text-right text-xs font-mono">
+                                                  {c.qtdExec > 0 ? `${coef.toLocaleString("pt-BR", { maximumFractionDigits: 4 })} ${ins.unidade ?? ""}/${c.row.und}` : "—"}
+                                                </TableCell>
+                                                <TableCell className="text-right text-xs font-mono">
+                                                  {c.qtdExec > 0 ? fmtMoney(custoUnit) : "—"}
+                                                </TableCell>
+                                              </TableRow>
+                                            );
+                                          })}
+                                        </TableBody>
+                                      </Table>
+                                      {c.qtdExec === 0 && (
+                                        <p className="text-xs text-amber-600">
+                                          ⚠ Sem quantidade executada apontada. Aponte execução na tela de Mão de Obra para que o coeficiente real seja calculado.
+                                        </p>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              )}
+                            </Fragment>
+
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   )}
+
                 </Card>
               </TabsContent>
 
