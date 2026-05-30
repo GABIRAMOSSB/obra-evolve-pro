@@ -453,7 +453,7 @@ function RealizadoPage() {
                       <TableBody>
                         {comparativoEtapas.map((e, idx) => (
                           <TableRow key={idx}>
-                            <TableCell className="font-mono text-xs">{e.row.codigo}</TableCell>
+                            <TableCell className="font-mono text-xs">{e.row.item}</TableCell>
                             <TableCell className="text-xs font-medium">{e.row.descricao}</TableCell>
                             <TableCell className="text-right">{fmtMoney(e.previsto)}</TableCell>
                             <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(e.mo)}</TableCell>
