@@ -614,6 +614,63 @@ export type Database = {
           },
         ]
       }
+      nfe_item_apropriacoes: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          descricao_insumo: string
+          id: string
+          insumo_id: string | null
+          item_codigo: string
+          item_descricao: string | null
+          nota_fiscal_id: string
+          nota_fiscal_item_id: string
+          obra_id: string
+          quantidade: number
+          unidade: string | null
+          updated_at: string
+          valor_total: number
+          valor_unitario: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          descricao_insumo: string
+          id?: string
+          insumo_id?: string | null
+          item_codigo: string
+          item_descricao?: string | null
+          nota_fiscal_id: string
+          nota_fiscal_item_id: string
+          obra_id: string
+          quantidade?: number
+          unidade?: string | null
+          updated_at?: string
+          valor_total?: number
+          valor_unitario?: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          descricao_insumo?: string
+          id?: string
+          insumo_id?: string | null
+          item_codigo?: string
+          item_descricao?: string | null
+          nota_fiscal_id?: string
+          nota_fiscal_item_id?: string
+          obra_id?: string
+          quantidade?: number
+          unidade?: string | null
+          updated_at?: string
+          valor_total?: number
+          valor_unitario?: number
+        }
+        Relationships: []
+      }
       nota_fiscal_itens: {
         Row: {
           cfop: string | null
