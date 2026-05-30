@@ -594,7 +594,9 @@ function RealizadoPage() {
                     Comparativo por Composição
                   </h2>
                   <p className="text-xs text-muted-foreground mb-3">
-                    Espelho da planilha original: todas as linhas-folha aparecem. Realizado = MO apontada + NF-e apropriada à composição + saída de estoque vinculada.
+                    Espelho da planilha original: todas as linhas-folha aparecem.
+                    Clique em uma linha para ver a <strong>composição real</strong> levantada em campo
+                    (insumos + MO consumidos + coeficiente real = qtd / qtd executada).
                   </p>
                   {comparativoItens.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-6 text-center">
@@ -604,6 +606,7 @@ function RealizadoPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
+                          <TableHead className="w-8"></TableHead>
                           <TableHead>Código</TableHead>
                           <TableHead>Descrição</TableHead>
                           <TableHead className="text-right">Qtd Orç.</TableHead>
@@ -618,24 +621,101 @@ function RealizadoPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {comparativoItens.map((c, idx) => (
-                          <TableRow key={idx}>
-                            <TableCell className="font-mono text-xs">{c.row.codigo}</TableCell>
-                            <TableCell className="text-xs">{c.row.descricao}</TableCell>
-                            <TableCell className="text-right">{c.row.quantidade.toFixed(2)} {c.row.und}</TableCell>
-                            <TableCell className="text-right">{c.qtdExec.toFixed(2)}</TableCell>
-                            <TableCell className="text-right">{c.horas.toFixed(2)}</TableCell>
-                            <TableCell className="text-right">{fmtMoney(c.previsto)}</TableCell>
-                            <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.mo)}</TableCell>
-                            <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.material)}</TableCell>
-                            <TableCell className="text-right font-medium">{fmtMoney(c.realizado)}</TableCell>
-                            <TableCell className="text-right"><DesvioCell value={c.desvio} /></TableCell>
-                            <TableCell className="text-right"><DesvioCell value={c.desvioPct} suffix="%" /></TableCell>
-                          </TableRow>
-                        ))}
+                        {comparativoItens.map((c, idx) => {
+                          const insumos = insumosPorComposicao.get(c.row.codigo) ?? [];
+                          const hasInsumos = insumos.length > 0;
+                          const isOpen = expanded.has(c.row.codigo);
+                          const toggle = () => {
+                            if (!hasInsumos) return;
+                            setExpanded((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(c.row.codigo)) next.delete(c.row.codigo);
+                              else next.add(c.row.codigo);
+                              return next;
+                            });
+                          };
+                          return (
+                            <>
+                              <TableRow
+                                key={idx}
+                                onClick={toggle}
+                                className={hasInsumos ? "cursor-pointer hover:bg-muted/40" : ""}
+                              >
+                                <TableCell className="w-8">
+                                  {hasInsumos ? (
+                                    isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />
+                                  ) : null}
+                                </TableCell>
+                                <TableCell className="font-mono text-xs">{c.row.codigo}</TableCell>
+                                <TableCell className="text-xs">{c.row.descricao}</TableCell>
+                                <TableCell className="text-right">{c.row.quantidade.toFixed(2)} {c.row.und}</TableCell>
+                                <TableCell className="text-right">{c.qtdExec.toFixed(2)}</TableCell>
+                                <TableCell className="text-right">{c.horas.toFixed(2)}</TableCell>
+                                <TableCell className="text-right">{fmtMoney(c.previsto)}</TableCell>
+                                <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.mo)}</TableCell>
+                                <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.material)}</TableCell>
+                                <TableCell className="text-right font-medium">{fmtMoney(c.realizado)}</TableCell>
+                                <TableCell className="text-right"><DesvioCell value={c.desvio} /></TableCell>
+                                <TableCell className="text-right"><DesvioCell value={c.desvioPct} suffix="%" /></TableCell>
+                              </TableRow>
+                              {isOpen && hasInsumos && (
+                                <TableRow key={`${idx}-exp`} className="bg-muted/20 hover:bg-muted/20">
+                                  <TableCell></TableCell>
+                                  <TableCell colSpan={11} className="p-3">
+                                    <div className="space-y-2">
+                                      <div className="text-xs font-semibold text-muted-foreground uppercase">
+                                        Composição real — {c.row.descricao}
+                                      </div>
+                                      <Table>
+                                        <TableHeader>
+                                          <TableRow>
+                                            <TableHead className="text-xs">Insumo / Recurso</TableHead>
+                                            <TableHead className="text-xs">Fonte</TableHead>
+                                            <TableHead className="text-xs text-right">Qtd</TableHead>
+                                            <TableHead className="text-xs">Und</TableHead>
+                                            <TableHead className="text-xs text-right">Valor</TableHead>
+                                            <TableHead className="text-xs text-right">Coef. real</TableHead>
+                                            <TableHead className="text-xs text-right">Custo unit.</TableHead>
+                                          </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                          {insumos.map((ins, ix) => {
+                                            const coef = c.qtdExec > 0 ? ins.quantidade / c.qtdExec : 0;
+                                            const custoUnit = c.qtdExec > 0 ? ins.valor / c.qtdExec : 0;
+                                            return (
+                                              <TableRow key={ix}>
+                                                <TableCell className="text-xs">{ins.descricao}</TableCell>
+                                                <TableCell><Badge variant={ins.fonte === "MO" ? "default" : ins.fonte === "Estoque" ? "secondary" : "outline"} className="text-[10px]">{ins.fonte}</Badge></TableCell>
+                                                <TableCell className="text-right text-xs">{ins.quantidade.toLocaleString("pt-BR", { maximumFractionDigits: 3 })}</TableCell>
+                                                <TableCell className="text-xs">{ins.unidade ?? "—"}</TableCell>
+                                                <TableCell className="text-right text-xs">{fmtMoney(ins.valor)}</TableCell>
+                                                <TableCell className="text-right text-xs font-mono">
+                                                  {c.qtdExec > 0 ? `${coef.toLocaleString("pt-BR", { maximumFractionDigits: 4 })} ${ins.unidade ?? ""}/${c.row.und}` : "—"}
+                                                </TableCell>
+                                                <TableCell className="text-right text-xs font-mono">
+                                                  {c.qtdExec > 0 ? fmtMoney(custoUnit) : "—"}
+                                                </TableCell>
+                                              </TableRow>
+                                            );
+                                          })}
+                                        </TableBody>
+                                      </Table>
+                                      {c.qtdExec === 0 && (
+                                        <p className="text-xs text-amber-600">
+                                          ⚠ Sem quantidade executada apontada. Aponte execução na tela de Mão de Obra para que o coeficiente real seja calculado.
+                                        </p>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              )}
+                            </>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   )}
+
                 </Card>
               </TabsContent>
 
