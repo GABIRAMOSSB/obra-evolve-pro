@@ -34,8 +34,11 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
+  ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import type { BudgetRow, ProjectData } from "@/lib/types";
+
 
 export const Route = createFileRoute("/realizado")({
   component: RealizadoPage,
