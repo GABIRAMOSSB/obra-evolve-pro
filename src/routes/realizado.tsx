@@ -88,7 +88,18 @@ interface MovEstoque {
   quantidade: number;
   valor_total: number;
   valor_unitario: number;
+  insumo_descricao?: string | null;
+  unidade?: string | null;
 }
+interface Apropriacao {
+  obra_id: string;
+  item_codigo: string;
+  descricao_insumo: string;
+  unidade: string | null;
+  quantidade: number;
+  valor_total: number;
+}
+
 
 function fmtMoney(v: number | null | undefined) {
   return (v ?? 0).toLocaleString("pt-BR", {
