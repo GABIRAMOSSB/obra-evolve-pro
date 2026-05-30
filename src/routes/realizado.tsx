@@ -710,7 +710,8 @@ function RealizadoPage() {
                                   </TableCell>
                                 </TableRow>
                               )}
-                            </>
+                            </Fragment>
+
                           );
                         })}
                       </TableBody>
