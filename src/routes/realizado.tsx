@@ -252,13 +252,23 @@ function RealizadoPage() {
     [movsObra],
   );
 
-  // Material direto da NF-e apropriado à obra/composição (sem precisar passar pelo estoque)
-  const custoMaterialNFeApropriado = useMemo(
-    () => nfItensObra
-      .filter((i) => i.item_codigo)
-      .reduce((acc, i) => acc + Number(i.valor_total ?? 0), 0),
-    [nfItensObra],
+  // Apropriações de NF-e da obra (rateio item × composição)
+  const apropObra = useMemo(
+    () => apropriacoes.filter((a) => a.obra_id === obraId),
+    [apropriacoes, obraId],
   );
+
+  // Material direto da NF-e apropriado à obra/composição (rateio + legado)
+  const custoMaterialNFeApropriado = useMemo(() => {
+    // Soma rateios novos
+    const novo = apropObra.reduce((acc, a) => acc + Number(a.valor_total ?? 0), 0);
+    // Soma legado (item.obra_id+item_codigo) — somente itens SEM apropriações na nova tabela
+    // (heurística: identifica itens que ainda usam o vínculo direto)
+    const legado = nfItensObra
+      .filter((i) => i.item_codigo)
+      .reduce((acc, i) => acc + Number(i.valor_total ?? 0), 0);
+    return novo + legado;
+  }, [apropObra, nfItensObra]);
 
   const custoMaterialConsumido = custoMaterialEstoque + custoMaterialNFeApropriado;
 
@@ -294,6 +304,13 @@ function RealizadoPage() {
       const c = get(k);
       c.material += Number(m.valor_total);
     }
+    for (const a of apropObra) {
+      const k = (a.item_codigo ?? "").trim();
+      if (!k) continue;
+      const c = get(k);
+      c.material += Number(a.valor_total);
+    }
+    // Legado: itens de NF-e ainda vinculados diretamente
     for (const i of nfItensObra) {
       const k = (i.item_codigo ?? "").trim();
       if (!k) continue;
@@ -301,7 +318,82 @@ function RealizadoPage() {
       c.material += Number(i.valor_total);
     }
     return map;
-  }, [apontamentosObra, movsObra, nfItensObra]);
+  }, [apontamentosObra, movsObra, apropObra, nfItensObra]);
+
+  // Composição REAL: lista de insumos consumidos por código de composição.
+  // Fonte: apropriações de NF-e (rateio) + saídas de estoque + legado item_codigo.
+  // Inclui também a mão-de-obra como "insumo" virtual.
+  const insumosPorComposicao = useMemo(() => {
+    const map = new Map<string, Array<{
+      descricao: string;
+      unidade: string | null;
+      quantidade: number;
+      valor: number;
+      fonte: "NF-e" | "Estoque" | "MO";
+    }>>();
+    const push = (k: string, item: { descricao: string; unidade: string | null; quantidade: number; valor: number; fonte: "NF-e" | "Estoque" | "MO" }) => {
+      const arr = map.get(k) ?? [];
+      // agrega por (descricao + unidade + fonte)
+      const idx = arr.findIndex(
+        (x) => x.descricao === item.descricao && x.unidade === item.unidade && x.fonte === item.fonte,
+      );
+      if (idx >= 0) {
+        arr[idx].quantidade += item.quantidade;
+        arr[idx].valor += item.valor;
+      } else {
+        arr.push({ ...item });
+      }
+      map.set(k, arr);
+    };
+    for (const a of apropObra) {
+      const k = (a.item_codigo ?? "").trim();
+      if (!k) continue;
+      push(k, {
+        descricao: a.descricao_insumo,
+        unidade: a.unidade,
+        quantidade: Number(a.quantidade ?? 0),
+        valor: Number(a.valor_total ?? 0),
+        fonte: "NF-e",
+      });
+    }
+    for (const m of movsObra) {
+      const k = (m.item_codigo ?? "").trim();
+      if (!k) continue;
+      push(k, {
+        descricao: m.item_descricao ?? "Saída de estoque",
+        unidade: null,
+        quantidade: Number(m.quantidade ?? 0),
+        valor: Number(m.valor_total ?? 0),
+        fonte: "Estoque",
+      });
+    }
+    for (const i of nfItensObra) {
+      const k = (i.item_codigo ?? "").trim();
+      if (!k) continue;
+      push(k, {
+        descricao: i.descricao,
+        unidade: null,
+        quantidade: Number(i.quantidade ?? 0),
+        valor: Number(i.valor_total ?? 0),
+        fonte: "NF-e",
+      });
+    }
+    for (const ap of apontamentosObra) {
+      const k = (ap.item_codigo ?? "").trim();
+      if (!k) continue;
+      const horas = Number(ap.horas_normais ?? 0) + Number(ap.horas_extras ?? 0);
+      if (horas <= 0 && Number(ap.custo_total ?? 0) <= 0) continue;
+      push(k, {
+        descricao: "Mão de obra apontada",
+        unidade: "h",
+        quantidade: horas,
+        valor: Number(ap.custo_total ?? 0),
+        fonte: "MO",
+      });
+    }
+    return map;
+  }, [apropObra, movsObra, nfItensObra, apontamentosObra]);
+
 
   // Comparativo por composição — espelho COMPLETO da planilha (mostra TODAS as linhas-folha)
   const comparativoItens = useMemo(() => {
