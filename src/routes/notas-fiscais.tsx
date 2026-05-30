@@ -793,6 +793,18 @@ function NotasFiscaisPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {companyId && detailNota && (
+        <NfeRateioDialog
+          open={!!rateioItem}
+          onOpenChange={(o) => !o && setRateioItem(null)}
+          companyId={companyId}
+          item={rateioItem}
+          nota={{ id: detailNota.id, numero: detailNota.numero, emitente_nome: detailNota.emitente_nome }}
+          obras={obras}
+          onSaved={() => detailNota && openDetail(detailNota)}
+        />
+      )}
     </div>
   );
 }
