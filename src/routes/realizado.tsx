@@ -635,7 +635,8 @@ function RealizadoPage() {
                             });
                           };
                           return (
-                            <>
+                            <Fragment key={idx}>
+
                               <TableRow
                                 key={idx}
                                 onClick={toggle}
