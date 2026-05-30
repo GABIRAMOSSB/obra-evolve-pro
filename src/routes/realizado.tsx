@@ -182,8 +182,7 @@ function RealizadoPage() {
     if (company) load();
   }, [company, load]);
 
-  // Carrega TODOS os itens de NF-e da company (filtra por obra na hora de calcular).
-  // Inclui itens já apropriados (obra_id + item_codigo) E itens das notas vinculadas à obra.
+  // Carrega TODOS os itens de NF-e da company + apropriações (rateio).
   useEffect(() => {
     if (!company) return;
     supabase
@@ -194,7 +193,18 @@ function RealizadoPage() {
         if (error) return console.error(error);
         setNfItens((data as NotaFiscalItem[]) ?? []);
       });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from("nfe_item_apropriacoes")
+      .select("obra_id, item_codigo, descricao_insumo, unidade, quantidade, valor_total")
+      .eq("company_id", company.id)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .then(({ data, error }: any) => {
+        if (error) return console.error(error);
+        setApropriacoes((data as Apropriacao[]) ?? []);
+      });
   }, [company]);
+
 
   // Itens da NF-e apropriados à obra atual (via item.obra_id ou via nota vinculada à obra)
   const nfItensObra = useMemo(() => {
