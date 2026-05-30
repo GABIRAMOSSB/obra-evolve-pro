@@ -129,6 +129,8 @@ function NotasFiscaisPage() {
   const [obras, setObras] = useState<ObraLite[]>([]);
   const [bulkObra, setBulkObra] = useState<string>("");
   const [bulkComp, setBulkComp] = useState<string>("");
+  const [rateioItem, setRateioItem] = useState<RateioItem | null>(null);
+
 
   const refresh = async () => {
     if (!companyId) return;
