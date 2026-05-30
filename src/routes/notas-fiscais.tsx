@@ -44,6 +44,7 @@ import {
   Eye,
   Link2,
   AlertCircle,
+  Split,
 } from "lucide-react";
 import {
   parseNFeXml,
@@ -51,6 +52,7 @@ import {
   formatMoney,
   type NFeParsed,
 } from "@/lib/nfe-parser";
+import { NfeRateioDialog, type RateioItem } from "@/components/NfeRateioDialog";
 import type { BudgetRow, ProjectData } from "@/lib/types";
 
 export const Route = createFileRoute("/notas-fiscais")({
@@ -127,6 +129,8 @@ function NotasFiscaisPage() {
   const [obras, setObras] = useState<ObraLite[]>([]);
   const [bulkObra, setBulkObra] = useState<string>("");
   const [bulkComp, setBulkComp] = useState<string>("");
+  const [rateioItem, setRateioItem] = useState<RateioItem | null>(null);
+
 
   const refresh = async () => {
     if (!companyId) return;
@@ -682,6 +686,7 @@ function NotasFiscaisPage() {
                         <TableHead>Insumo mestre</TableHead>
                         <TableHead>Obra</TableHead>
                         <TableHead>Composição</TableHead>
+                        <TableHead></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -757,6 +762,26 @@ function NotasFiscaisPage() {
                                 <Badge variant="outline">não apropriado</Badge>
                               )}
                             </TableCell>
+                            <TableCell>
+                              {canEdit && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setRateioItem({
+                                    id: it.id,
+                                    descricao: it.descricao,
+                                    unidade: it.unidade,
+                                    quantidade: it.quantidade,
+                                    valor_unitario: it.valor_unitario,
+                                    valor_total: it.valor_total,
+                                    insumo_id: it.insumo_id,
+                                  })}
+                                  title="Apropriar com rateio (várias composições)"
+                                >
+                                  <Split className="w-3 h-3 mr-1" /> Rateio
+                                </Button>
+                              )}
+                            </TableCell>
                           </TableRow>
                         );
                       })}
@@ -768,6 +793,18 @@ function NotasFiscaisPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {companyId && detailNota && (
+        <NfeRateioDialog
+          open={!!rateioItem}
+          onOpenChange={(o) => !o && setRateioItem(null)}
+          companyId={companyId}
+          item={rateioItem}
+          nota={{ id: detailNota.id, numero: detailNota.numero, emitente_nome: detailNota.emitente_nome }}
+          obras={obras}
+          onSaved={() => detailNota && openDetail(detailNota)}
+        />
+      )}
     </div>
   );
 }
