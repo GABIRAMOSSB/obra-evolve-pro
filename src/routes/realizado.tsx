@@ -123,6 +123,9 @@ function RealizadoPage() {
   const [notas, setNotas] = useState<NotaFiscal[]>([]);
   const [nfItens, setNfItens] = useState<NotaFiscalItem[]>([]);
   const [movsEstoque, setMovsEstoque] = useState<MovEstoque[]>([]);
+  const [apropriacoes, setApropriacoes] = useState<Apropriacao[]>([]);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
