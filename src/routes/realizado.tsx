@@ -310,21 +310,22 @@ function RealizadoPage() {
     return rows;
   }, [obra, custoPorComposicao]);
 
-  // Rollup por etapa — espelho COMPLETO (todas as etapas, mesmo zeradas)
+  // Rollup por etapa — espelho COMPLETO (todas as etapas do orçamento,
+  // mesmo zeradas). Etapas são linhas isGroup de nível 1 (ex.: "1", "2"…)
+  // e NÃO têm "codigo" — a hierarquia é feita pelo campo `item`.
   const comparativoEtapas = useMemo(() => {
     if (!obra) return [];
-    const etapas = obra.rows.filter((r) => r.isGroup && r.level === 1 && r.codigo);
+    const etapas = obra.rows.filter((r) => r.isGroup && r.level === 1);
     return etapas.map((et) => {
-      const prefixo = `${et.codigo}.`;
+      const prefixo = `${et.item}.`;
       let previsto = 0;
       let mo = 0;
       let material = 0;
       for (const r of obra.rows) {
         if (r.isGroup) continue;
-        if (!r.codigo) continue;
-        if (r.codigo !== et.codigo && !r.codigo.startsWith(prefixo)) continue;
+        if (!r.item.startsWith(prefixo)) continue;
         previsto += r.total || 0;
-        const c = custoPorComposicao.get(r.codigo);
+        const c = r.codigo ? custoPorComposicao.get(r.codigo) : undefined;
         if (c) { mo += c.mo; material += c.material; }
       }
       const realizado = mo + material;
@@ -339,6 +340,7 @@ function RealizadoPage() {
       };
     });
   }, [obra, custoPorComposicao]);
+
 
   if (authLoading || companyLoading || loading) {
     return (
@@ -451,7 +453,7 @@ function RealizadoPage() {
                       <TableBody>
                         {comparativoEtapas.map((e, idx) => (
                           <TableRow key={idx}>
-                            <TableCell className="font-mono text-xs">{e.row.codigo}</TableCell>
+                            <TableCell className="font-mono text-xs">{e.row.item}</TableCell>
                             <TableCell className="text-xs font-medium">{e.row.descricao}</TableCell>
                             <TableCell className="text-right">{fmtMoney(e.previsto)}</TableCell>
                             <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(e.mo)}</TableCell>
