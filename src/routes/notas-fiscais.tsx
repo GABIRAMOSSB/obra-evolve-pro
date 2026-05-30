@@ -762,6 +762,26 @@ function NotasFiscaisPage() {
                                 <Badge variant="outline">não apropriado</Badge>
                               )}
                             </TableCell>
+                            <TableCell>
+                              {canEdit && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setRateioItem({
+                                    id: it.id,
+                                    descricao: it.descricao,
+                                    unidade: it.unidade,
+                                    quantidade: it.quantidade,
+                                    valor_unitario: it.valor_unitario,
+                                    valor_total: it.valor_total,
+                                    insumo_id: it.insumo_id,
+                                  })}
+                                  title="Apropriar com rateio (várias composições)"
+                                >
+                                  <Split className="w-3 h-3 mr-1" /> Rateio
+                                </Button>
+                              )}
+                            </TableCell>
                           </TableRow>
                         );
                       })}
