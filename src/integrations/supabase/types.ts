@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       apontamentos_mao_obra: {
         Row: {
+          centro_custo: string | null
           company_id: string
           created_at: string
           created_by: string | null
@@ -23,6 +24,7 @@ export type Database = {
           custo_total: number
           data: string
           equipe_id: string | null
+          frente_servico: string | null
           funcao_id: string | null
           funcionario_id: string | null
           horas_extras: number
@@ -38,6 +40,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          centro_custo?: string | null
           company_id: string
           created_at?: string
           created_by?: string | null
@@ -45,6 +48,7 @@ export type Database = {
           custo_total?: number
           data: string
           equipe_id?: string | null
+          frente_servico?: string | null
           funcao_id?: string | null
           funcionario_id?: string | null
           horas_extras?: number
@@ -60,6 +64,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          centro_custo?: string | null
           company_id?: string
           created_at?: string
           created_by?: string | null
@@ -67,6 +72,7 @@ export type Database = {
           custo_total?: number
           data?: string
           equipe_id?: string | null
+          frente_servico?: string | null
           funcao_id?: string | null
           funcionario_id?: string | null
           horas_extras?: number
@@ -314,10 +320,12 @@ export type Database = {
       estoque_movimentos: {
         Row: {
           apontamento_id: string | null
+          centro_custo: string | null
           company_id: string
           created_at: string
           created_by: string | null
           data_movimento: string
+          frente_servico: string | null
           id: string
           insumo_id: string
           item_codigo: string | null
@@ -335,10 +343,12 @@ export type Database = {
         }
         Insert: {
           apontamento_id?: string | null
+          centro_custo?: string | null
           company_id: string
           created_at?: string
           created_by?: string | null
           data_movimento?: string
+          frente_servico?: string | null
           id?: string
           insumo_id: string
           item_codigo?: string | null
@@ -356,10 +366,12 @@ export type Database = {
         }
         Update: {
           apontamento_id?: string | null
+          centro_custo?: string | null
           company_id?: string
           created_at?: string
           created_by?: string | null
           data_movimento?: string
+          frente_servico?: string | null
           id?: string
           insumo_id?: string
           item_codigo?: string | null
@@ -616,54 +628,66 @@ export type Database = {
       }
       nfe_item_apropriacoes: {
         Row: {
+          centro_custo: string | null
           company_id: string
           created_at: string
           created_by: string | null
           descricao_insumo: string
+          frente_servico: string | null
           id: string
           insumo_id: string | null
           item_codigo: string
           item_descricao: string | null
+          local_aplicacao: string | null
           nota_fiscal_id: string
           nota_fiscal_item_id: string
           obra_id: string
           quantidade: number
+          responsavel: string | null
           unidade: string | null
           updated_at: string
           valor_total: number
           valor_unitario: number
         }
         Insert: {
+          centro_custo?: string | null
           company_id: string
           created_at?: string
           created_by?: string | null
           descricao_insumo: string
+          frente_servico?: string | null
           id?: string
           insumo_id?: string | null
           item_codigo: string
           item_descricao?: string | null
+          local_aplicacao?: string | null
           nota_fiscal_id: string
           nota_fiscal_item_id: string
           obra_id: string
           quantidade?: number
+          responsavel?: string | null
           unidade?: string | null
           updated_at?: string
           valor_total?: number
           valor_unitario?: number
         }
         Update: {
+          centro_custo?: string | null
           company_id?: string
           created_at?: string
           created_by?: string | null
           descricao_insumo?: string
+          frente_servico?: string | null
           id?: string
           insumo_id?: string | null
           item_codigo?: string
           item_descricao?: string | null
+          local_aplicacao?: string | null
           nota_fiscal_id?: string
           nota_fiscal_item_id?: string
           obra_id?: string
           quantidade?: number
+          responsavel?: string | null
           unidade?: string | null
           updated_at?: string
           valor_total?: number
