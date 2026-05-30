@@ -44,6 +44,7 @@ import {
   Eye,
   Link2,
   AlertCircle,
+  Split,
 } from "lucide-react";
 import {
   parseNFeXml,
@@ -51,6 +52,7 @@ import {
   formatMoney,
   type NFeParsed,
 } from "@/lib/nfe-parser";
+import { NfeRateioDialog, type RateioItem } from "@/components/NfeRateioDialog";
 import type { BudgetRow, ProjectData } from "@/lib/types";
 
 export const Route = createFileRoute("/notas-fiscais")({
