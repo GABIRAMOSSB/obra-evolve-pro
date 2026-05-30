@@ -686,6 +686,7 @@ function NotasFiscaisPage() {
                         <TableHead>Insumo mestre</TableHead>
                         <TableHead>Obra</TableHead>
                         <TableHead>Composição</TableHead>
+                        <TableHead></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
