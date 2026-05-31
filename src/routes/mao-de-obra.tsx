@@ -169,10 +169,10 @@ function MaoDeObraPage() {
 
   const seedBase = async () => {
     if (!company) return;
-    if (!confirm("Popular 15 funções base (pedreiro, servente, eletricista, etc.)?")) return;
+    if (!confirm("Popular base com ~85 cargos da construção civil? Itens já existentes com o mesmo nome serão ignorados.")) return;
     const { error } = await supabase.rpc("seed_funcoes_base", { _company: company.id });
     if (error) return toast.error(error.message);
-    toast.success("Funções base populadas");
+    toast.success("Cargos da construção civil populados");
     load();
   };
 
