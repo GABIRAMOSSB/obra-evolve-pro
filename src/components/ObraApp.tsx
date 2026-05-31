@@ -4,7 +4,7 @@ import { loadWorkspaceCloud, saveWorkspaceCloud, newObraId, detectMigration, mar
 import { useAuth } from "@/hooks/use-auth";
 import { useCompany } from "@/hooks/use-company";
 import { usePersistedTab } from "@/hooks/use-persisted-tab";
-import { useNavigate, Link } from "@tanstack/react-router";
+import { useNavigate, Link, useRouterState } from "@tanstack/react-router";
 import { ObraInfoDialog } from "@/components/ObraInfoDialog";
 import { PhotoUploader } from "@/components/PhotoUploader";
 import { parseExcel, type ParseResult } from "@/lib/excel";
@@ -3240,5 +3240,43 @@ function ResourceLinesEditor<T extends ResourceLinhaBase>({
         </div>
       )}
     </div>
+  );
+}
+
+/* ============================================================
+ *  SidebarLink — item de navegação da sidebar premium
+ * ============================================================ */
+function SidebarLink({
+  to,
+  icon: Icon,
+  label,
+  exact,
+}: {
+  to: string;
+  icon: typeof HardHat;
+  label: string;
+  exact?: boolean;
+}) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const active = exact ? pathname === to : pathname === to || pathname.startsWith(`${to}/`);
+  return (
+    <Link
+      to={to}
+      className={`group relative flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200 ${
+        active
+          ? "bg-sidebar-accent/40 text-sidebar-foreground shadow-[inset_0_1px_0_oklch(1_0_0_/_0.06)]"
+          : "text-sidebar-foreground/65 hover:text-sidebar-foreground hover:bg-sidebar-accent/20"
+      }`}
+    >
+      {active && (
+        <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-gradient-to-b from-primary-glow to-primary shadow-[0_0_12px_oklch(0.65_0.22_285_/_0.6)]" />
+      )}
+      <Icon
+        className={`w-4 h-4 shrink-0 transition-colors ${
+          active ? "text-primary-glow" : "text-sidebar-foreground/50 group-hover:text-sidebar-foreground/80"
+        }`}
+      />
+      <span className="truncate">{label}</span>
+    </Link>
   );
 }
