@@ -40,7 +40,7 @@ export function AppTopbar() {
         </Link>
 
         {/* Nav (scroll horizontal em telas estreitas) */}
-        <nav className="flex-1 min-w-0 overflow-x-auto">
+        <nav className="flex-1 min-w-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex items-center gap-1">
             {NAV_ITEMS.map((item) => (
               <NavItem key={item.to} {...item} />
