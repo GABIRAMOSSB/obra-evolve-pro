@@ -197,7 +197,7 @@ function EquipamentosPage() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
-        <div className="max-w-[1400px] mx-auto px-6 py-3 flex items-center justify-between">
+        <div className="w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button asChild variant="ghost" size="sm">
               <Link to="/">
@@ -217,7 +217,7 @@ function EquipamentosPage() {
         </div>
       </header>
 
-      <main className="max-w-[1400px] mx-auto px-6 py-6">
+      <main className="w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Card className="p-4">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
             <div className="flex items-center gap-2">

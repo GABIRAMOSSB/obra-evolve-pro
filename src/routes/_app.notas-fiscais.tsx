@@ -669,7 +669,7 @@ function NotasFiscaisPage() {
                 <div className="rounded-md border bg-muted/40 p-3 space-y-2">
                   <div className="text-sm font-medium">Apropriar custo da nota inteira</div>
                   <div className="flex flex-wrap items-end gap-2">
-                    <div className="min-w-[200px]">
+                    <div className="w-full sm:w-auto sm:flex-1 sm:min-w-[12rem]">
                       <div className="text-xs text-muted-foreground mb-1">Obra</div>
                       <Select value={bulkObra} onValueChange={(v) => { setBulkObra(v); setBulkComp(""); }}>
                         <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
@@ -678,7 +678,7 @@ function NotasFiscaisPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="min-w-[280px] flex-1">
+                    <div className="w-full sm:flex-[2] sm:min-w-[16rem]">
                       <div className="text-xs text-muted-foreground mb-1">Composição / Item do orçamento</div>
                       <Select value={bulkComp} onValueChange={setBulkComp} disabled={!bulkObra}>
                         <SelectTrigger><SelectValue placeholder={bulkObra ? "Selecione…" : "Escolha a obra primeiro"} /></SelectTrigger>
@@ -738,7 +738,7 @@ function NotasFiscaisPage() {
                                   value={it.insumo_id || "__none__"}
                                   onValueChange={(v) => vincularInsumo(it.id, v === "__none__" ? null : v)}
                                 >
-                                  <SelectTrigger className="w-[220px]"><SelectValue placeholder="Insumo…" /></SelectTrigger>
+                                  <SelectTrigger className="w-full min-w-[12rem]"><SelectValue placeholder="Insumo…" /></SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="__none__"><span className="text-muted-foreground">(não vinculado)</span></SelectItem>
                                     {insumos.map((ins) => (
@@ -760,7 +760,7 @@ function NotasFiscaisPage() {
                                   value={it.obra_id || "__none__"}
                                   onValueChange={(v) => vincularApropriacao(it.id, v === "__none__" ? null : v, null)}
                                 >
-                                  <SelectTrigger className="w-[180px]"><SelectValue placeholder="Obra…" /></SelectTrigger>
+                                  <SelectTrigger className="w-full min-w-[10rem]"><SelectValue placeholder="Obra…" /></SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="__none__"><span className="text-muted-foreground">(nenhuma)</span></SelectItem>
                                     {obras.map((o) => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
@@ -777,7 +777,7 @@ function NotasFiscaisPage() {
                                   onValueChange={(v) => vincularApropriacao(it.id, it.obra_id, v === "__none__" ? null : v)}
                                   disabled={!it.obra_id}
                                 >
-                                  <SelectTrigger className="w-[260px]">
+                                  <SelectTrigger className="w-full min-w-[14rem]">
                                     <SelectValue placeholder={it.obra_id ? "Composição…" : "Defina obra"} />
                                   </SelectTrigger>
                                   <SelectContent>

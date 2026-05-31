@@ -1008,7 +1008,7 @@ function Dashboard({
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <Building2 className="w-4 h-4 text-primary shrink-0" />
               <Select value={activeId} onValueChange={onSelectObra}>
-                <SelectTrigger className="h-9 min-w-[180px] max-w-[320px] border-0 bg-muted/50 hover:bg-muted focus:ring-1 focus:ring-primary/40 text-sm font-medium rounded-lg">
+                <SelectTrigger className="h-9 w-full sm:min-w-[12rem] sm:max-w-[20rem] border-0 bg-muted/50 hover:bg-muted focus:ring-1 focus:ring-primary/40 text-sm font-medium rounded-lg">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1117,7 +1117,7 @@ function Dashboard({
           </div>
         </div>
 
-        <main className="flex-1 px-4 sm:px-6 py-6 space-y-5 max-w-[1600px] w-full mx-auto">
+        <main className="flex-1 w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
           {/* 5 Cards de resumo */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
             <SummaryCard label="Valor total da obra" value={fmtBRL(resumoBM.valorTotalObra)} icon="total" />

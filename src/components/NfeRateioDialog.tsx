@@ -256,7 +256,7 @@ export function NfeRateioDialog({ open, onOpenChange, companyId, item, nota, obr
                       <TableRow key={r.key}>
                         <TableCell>
                           <Select value={r.obra_id} onValueChange={(v) => updateRow(r.key, { obra_id: v, item_codigo: "" })}>
-                            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Obra…" /></SelectTrigger>
+                            <SelectTrigger className="w-full min-w-[10rem]"><SelectValue placeholder="Obra…" /></SelectTrigger>
                             <SelectContent>
                               {obras.map((o) => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
                             </SelectContent>
@@ -264,7 +264,7 @@ export function NfeRateioDialog({ open, onOpenChange, companyId, item, nota, obr
                         </TableCell>
                         <TableCell>
                           <Select value={r.item_codigo} onValueChange={(v) => updateRow(r.key, { item_codigo: v })} disabled={!r.obra_id}>
-                            <SelectTrigger className="w-[260px]"><SelectValue placeholder={r.obra_id ? "Composição…" : "Defina obra"} /></SelectTrigger>
+                            <SelectTrigger className="w-full min-w-[14rem]"><SelectValue placeholder={r.obra_id ? "Composição…" : "Defina obra"} /></SelectTrigger>
                             <SelectContent>
                               {compRows.map((b) => (
                                 <SelectItem key={b.codigo} value={b.codigo}>
@@ -279,7 +279,7 @@ export function NfeRateioDialog({ open, onOpenChange, companyId, item, nota, obr
                             placeholder="Centro custo"
                             value={r.centro_custo}
                             onChange={(e) => updateRow(r.key, { centro_custo: e.target.value })}
-                            className="w-[140px]"
+                            className="w-full min-w-[7rem]"
                           />
                         </TableCell>
                         <TableCell>
@@ -287,7 +287,7 @@ export function NfeRateioDialog({ open, onOpenChange, companyId, item, nota, obr
                             placeholder="Frente"
                             value={r.frente_servico}
                             onChange={(e) => updateRow(r.key, { frente_servico: e.target.value })}
-                            className="w-[140px]"
+                            className="w-full min-w-[7rem]"
                           />
                         </TableCell>
                         <TableCell className="text-right">
@@ -296,7 +296,7 @@ export function NfeRateioDialog({ open, onOpenChange, companyId, item, nota, obr
                             step="0.001"
                             value={r.quantidade}
                             onChange={(e) => updateRow(r.key, { quantidade: Number(e.target.value) || 0 })}
-                            className="w-[110px] text-right"
+                            className="w-full min-w-[6rem] text-right"
                           />
                         </TableCell>
                         <TableCell className="text-right text-xs text-muted-foreground">

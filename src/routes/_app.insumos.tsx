@@ -192,7 +192,7 @@ function InsumosPage() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
-        <div className="max-w-[1600px] mx-auto px-6 py-3 flex items-center justify-between">
+        <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button asChild variant="ghost" size="sm">
               <Link to="/">
@@ -213,7 +213,7 @@ function InsumosPage() {
         </div>
       </header>
 
-      <main className="max-w-[1600px] mx-auto px-6 py-6">
+      <main className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Tabs defaultValue="insumos">
           <TabsList>
             <TabsTrigger value="insumos">
@@ -234,7 +234,7 @@ function InsumosPage() {
           <TabsContent value="insumos" className="mt-4">
             <Card className="p-4 space-y-4">
               <div className="flex flex-wrap gap-3 items-center justify-between">
-                <div className="flex gap-2 items-center flex-1 min-w-[300px]">
+                <div className="flex gap-2 items-center flex-1 w-full sm:flex-1 sm:min-w-[18rem]">
                   <Search className="w-4 h-4 text-muted-foreground" />
                   <Input
                     placeholder="Buscar por descrição, código ou NCM..."
@@ -243,7 +243,7 @@ function InsumosPage() {
                     className="max-w-md"
                   />
                   <Select value={filterCat} onValueChange={setFilterCat}>
-                    <SelectTrigger className="w-[220px]">
+                    <SelectTrigger className="w-full sm:w-56">
                       <SelectValue placeholder="Categoria" />
                     </SelectTrigger>
                     <SelectContent>
