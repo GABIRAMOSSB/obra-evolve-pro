@@ -988,8 +988,8 @@ function Dashboard({
 
 
   return (
-      {/* ===== Conteúdo principal (sidebar provida pelo layout _app) ===== */}
-      <div className="flex-1 min-w-0 flex flex-col">
+    <div className="flex-1 min-w-0 flex flex-col">
+
 
         {!isAdmin && (
           <div className="bg-warning/20 border-b border-warning text-foreground text-xs text-center py-1.5 px-4">
