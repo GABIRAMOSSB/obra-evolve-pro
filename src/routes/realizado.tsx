@@ -899,6 +899,7 @@ function RealizadoPage() {
                                             <TableHead className="text-xs text-right">Valor</TableHead>
                                             <TableHead className="text-xs text-right">Coef. real</TableHead>
                                             <TableHead className="text-xs text-right">Custo unit.</TableHead>
+                                            <TableHead className="text-xs text-right w-24">Ações</TableHead>
                                           </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -906,7 +907,7 @@ function RealizadoPage() {
                                             const coef = c.qtdExec > 0 ? ins.quantidade / c.qtdExec : 0;
                                             const custoUnit = c.qtdExec > 0 ? ins.valor / c.qtdExec : 0;
                                             return (
-                                              <TableRow key={ix}>
+                                              <TableRow key={`${ins.origem}-${ins.id}-${ix}`}>
                                                 <TableCell className="text-xs">{ins.descricao}</TableCell>
                                                 <TableCell><Badge variant={ins.fonte === "MO" ? "default" : ins.fonte === "Estoque" ? "secondary" : "outline"} className="text-[10px]">{ins.fonte}</Badge></TableCell>
                                                 <TableCell className="text-right text-xs">{ins.quantidade.toLocaleString("pt-BR", { maximumFractionDigits: 3 })}</TableCell>
@@ -918,6 +919,17 @@ function RealizadoPage() {
                                                 <TableCell className="text-right text-xs font-mono">
                                                   {c.qtdExec > 0 ? fmtMoney(custoUnit) : "—"}
                                                 </TableCell>
+                                                <TableCell className="text-right">
+                                                  <div className="flex justify-end gap-1">
+                                                    <Button variant="ghost" size="icon" className="h-7 w-7" title="Editar" onClick={() => openEdit(ins)}>
+                                                      <Pencil className="w-3.5 h-3.5" />
+                                                    </Button>
+                                                    <Button variant="ghost" size="icon" className="h-7 w-7" title="Apagar" onClick={() => handleDeleteInsumo(ins)}>
+                                                      <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                                                    </Button>
+                                                  </div>
+                                                </TableCell>
+
                                               </TableRow>
                                             );
                                           })}
