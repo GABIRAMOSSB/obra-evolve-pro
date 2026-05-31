@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, lazy, Suspense, type ReactNode } from "react";
 import type { ProjectData, BudgetRow, Evolution, Measurement, DiaryEntry, Workspace, ObraInfo, DiaryPhoto } from "@/lib/types";
 import { loadWorkspaceCloud, saveWorkspaceCloud, newObraId, detectMigration, markMigrated, type MigrationPlan } from "@/lib/storage";
 import { useAuth } from "@/hooks/use-auth";
@@ -64,7 +64,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import DocumentsTab from "@/components/DocumentsTab";
+const DocumentsTab = lazy(() => import("@/components/DocumentsTab"));
 import { MeasurementClosure } from "@/components/MeasurementClosure";
 import {
   LogOut,
@@ -1496,7 +1496,9 @@ function Dashboard({
 
 
           <TabsContent value="documentos">
-            <DocumentsTab obraId={data.id} />
+            <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Carregando documentos…</div>}>
+              <DocumentsTab obraId={data.id} />
+            </Suspense>
           </TabsContent>
         </Tabs>
       </main>
