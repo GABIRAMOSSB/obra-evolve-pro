@@ -55,7 +55,7 @@ import {
 import { NfeRateioDialog, type RateioItem } from "@/components/NfeRateioDialog";
 import type { BudgetRow, ProjectData } from "@/lib/types";
 
-export const Route = createFileRoute("/notas-fiscais")({
+export const Route = createFileRoute("/_app/notas-fiscais")({
   component: NotasFiscaisPage,
   head: () => ({
     meta: [

@@ -10,37 +10,23 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as RealizadoRouteImport } from './routes/realizado'
-import { Route as NotasFiscaisRouteImport } from './routes/notas-fiscais'
-import { Route as MaoDeObraRouteImport } from './routes/mao-de-obra'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as InsumosRouteImport } from './routes/insumos'
-import { Route as EstoqueRouteImport } from './routes/estoque'
-import { Route as EquipeRouteImport } from './routes/equipe'
-import { Route as EquipamentosRouteImport } from './routes/equipamentos'
-import { Route as ComposicoesRouteImport } from './routes/composicoes'
-import { Route as BackupRouteImport } from './routes/backup'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
+import { Route as AppRealizadoRouteImport } from './routes/_app.realizado'
+import { Route as AppNotasFiscaisRouteImport } from './routes/_app.notas-fiscais'
+import { Route as AppMaoDeObraRouteImport } from './routes/_app.mao-de-obra'
+import { Route as AppInsumosRouteImport } from './routes/_app.insumos'
+import { Route as AppEstoqueRouteImport } from './routes/_app.estoque'
+import { Route as AppEquipeRouteImport } from './routes/_app.equipe'
+import { Route as AppEquipamentosRouteImport } from './routes/_app.equipamentos'
+import { Route as AppComposicoesRouteImport } from './routes/_app.composicoes'
+import { Route as AppBackupRouteImport } from './routes/_app.backup'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RealizadoRoute = RealizadoRouteImport.update({
-  id: '/realizado',
-  path: '/realizado',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NotasFiscaisRoute = NotasFiscaisRouteImport.update({
-  id: '/notas-fiscais',
-  path: '/notas-fiscais',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MaoDeObraRoute = MaoDeObraRouteImport.update({
-  id: '/mao-de-obra',
-  path: '/mao-de-obra',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -48,153 +34,165 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const InsumosRoute = InsumosRouteImport.update({
-  id: '/insumos',
-  path: '/insumos',
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
   getParentRoute: () => rootRouteImport,
 } as any)
-const EstoqueRoute = EstoqueRouteImport.update({
-  id: '/estoque',
-  path: '/estoque',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EquipeRoute = EquipeRouteImport.update({
-  id: '/equipe',
-  path: '/equipe',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EquipamentosRoute = EquipamentosRouteImport.update({
-  id: '/equipamentos',
-  path: '/equipamentos',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ComposicoesRoute = ComposicoesRouteImport.update({
-  id: '/composicoes',
-  path: '/composicoes',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BackupRoute = BackupRouteImport.update({
-  id: '/backup',
-  path: '/backup',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const IndexRoute = IndexRouteImport.update({
+const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AppRoute,
 } as any)
 const InviteTokenRoute = InviteTokenRouteImport.update({
   id: '/invite/$token',
   path: '/invite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppRealizadoRoute = AppRealizadoRouteImport.update({
+  id: '/realizado',
+  path: '/realizado',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppNotasFiscaisRoute = AppNotasFiscaisRouteImport.update({
+  id: '/notas-fiscais',
+  path: '/notas-fiscais',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMaoDeObraRoute = AppMaoDeObraRouteImport.update({
+  id: '/mao-de-obra',
+  path: '/mao-de-obra',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppInsumosRoute = AppInsumosRouteImport.update({
+  id: '/insumos',
+  path: '/insumos',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppEstoqueRoute = AppEstoqueRouteImport.update({
+  id: '/estoque',
+  path: '/estoque',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppEquipeRoute = AppEquipeRouteImport.update({
+  id: '/equipe',
+  path: '/equipe',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppEquipamentosRoute = AppEquipamentosRouteImport.update({
+  id: '/equipamentos',
+  path: '/equipamentos',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppComposicoesRoute = AppComposicoesRouteImport.update({
+  id: '/composicoes',
+  path: '/composicoes',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBackupRoute = AppBackupRouteImport.update({
+  id: '/backup',
+  path: '/backup',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/backup': typeof BackupRoute
-  '/composicoes': typeof ComposicoesRoute
-  '/equipamentos': typeof EquipamentosRoute
-  '/equipe': typeof EquipeRoute
-  '/estoque': typeof EstoqueRoute
-  '/insumos': typeof InsumosRoute
+  '/': typeof AppIndexRoute
   '/login': typeof LoginRoute
-  '/mao-de-obra': typeof MaoDeObraRoute
-  '/notas-fiscais': typeof NotasFiscaisRoute
-  '/realizado': typeof RealizadoRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/backup': typeof AppBackupRoute
+  '/composicoes': typeof AppComposicoesRoute
+  '/equipamentos': typeof AppEquipamentosRoute
+  '/equipe': typeof AppEquipeRoute
+  '/estoque': typeof AppEstoqueRoute
+  '/insumos': typeof AppInsumosRoute
+  '/mao-de-obra': typeof AppMaoDeObraRoute
+  '/notas-fiscais': typeof AppNotasFiscaisRoute
+  '/realizado': typeof AppRealizadoRoute
   '/invite/$token': typeof InviteTokenRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/backup': typeof BackupRoute
-  '/composicoes': typeof ComposicoesRoute
-  '/equipamentos': typeof EquipamentosRoute
-  '/equipe': typeof EquipeRoute
-  '/estoque': typeof EstoqueRoute
-  '/insumos': typeof InsumosRoute
   '/login': typeof LoginRoute
-  '/mao-de-obra': typeof MaoDeObraRoute
-  '/notas-fiscais': typeof NotasFiscaisRoute
-  '/realizado': typeof RealizadoRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/backup': typeof AppBackupRoute
+  '/composicoes': typeof AppComposicoesRoute
+  '/equipamentos': typeof AppEquipamentosRoute
+  '/equipe': typeof AppEquipeRoute
+  '/estoque': typeof AppEstoqueRoute
+  '/insumos': typeof AppInsumosRoute
+  '/mao-de-obra': typeof AppMaoDeObraRoute
+  '/notas-fiscais': typeof AppNotasFiscaisRoute
+  '/realizado': typeof AppRealizadoRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/': typeof AppIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/backup': typeof BackupRoute
-  '/composicoes': typeof ComposicoesRoute
-  '/equipamentos': typeof EquipamentosRoute
-  '/equipe': typeof EquipeRoute
-  '/estoque': typeof EstoqueRoute
-  '/insumos': typeof InsumosRoute
+  '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
-  '/mao-de-obra': typeof MaoDeObraRoute
-  '/notas-fiscais': typeof NotasFiscaisRoute
-  '/realizado': typeof RealizadoRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/_app/backup': typeof AppBackupRoute
+  '/_app/composicoes': typeof AppComposicoesRoute
+  '/_app/equipamentos': typeof AppEquipamentosRoute
+  '/_app/equipe': typeof AppEquipeRoute
+  '/_app/estoque': typeof AppEstoqueRoute
+  '/_app/insumos': typeof AppInsumosRoute
+  '/_app/mao-de-obra': typeof AppMaoDeObraRoute
+  '/_app/notas-fiscais': typeof AppNotasFiscaisRoute
+  '/_app/realizado': typeof AppRealizadoRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/_app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/login'
+    | '/reset-password'
     | '/backup'
     | '/composicoes'
     | '/equipamentos'
     | '/equipe'
     | '/estoque'
     | '/insumos'
-    | '/login'
     | '/mao-de-obra'
     | '/notas-fiscais'
     | '/realizado'
-    | '/reset-password'
     | '/invite/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
+    | '/login'
+    | '/reset-password'
     | '/backup'
     | '/composicoes'
     | '/equipamentos'
     | '/equipe'
     | '/estoque'
     | '/insumos'
-    | '/login'
     | '/mao-de-obra'
     | '/notas-fiscais'
     | '/realizado'
-    | '/reset-password'
     | '/invite/$token'
+    | '/'
   id:
     | '__root__'
-    | '/'
-    | '/backup'
-    | '/composicoes'
-    | '/equipamentos'
-    | '/equipe'
-    | '/estoque'
-    | '/insumos'
+    | '/_app'
     | '/login'
-    | '/mao-de-obra'
-    | '/notas-fiscais'
-    | '/realizado'
     | '/reset-password'
+    | '/_app/backup'
+    | '/_app/composicoes'
+    | '/_app/equipamentos'
+    | '/_app/equipe'
+    | '/_app/estoque'
+    | '/_app/insumos'
+    | '/_app/mao-de-obra'
+    | '/_app/notas-fiscais'
+    | '/_app/realizado'
     | '/invite/$token'
+    | '/_app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  BackupRoute: typeof BackupRoute
-  ComposicoesRoute: typeof ComposicoesRoute
-  EquipamentosRoute: typeof EquipamentosRoute
-  EquipeRoute: typeof EquipeRoute
-  EstoqueRoute: typeof EstoqueRoute
-  InsumosRoute: typeof InsumosRoute
+  AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
-  MaoDeObraRoute: typeof MaoDeObraRoute
-  NotasFiscaisRoute: typeof NotasFiscaisRoute
-  RealizadoRoute: typeof RealizadoRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   InviteTokenRoute: typeof InviteTokenRoute
 }
@@ -208,27 +206,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/realizado': {
-      id: '/realizado'
-      path: '/realizado'
-      fullPath: '/realizado'
-      preLoaderRoute: typeof RealizadoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/notas-fiscais': {
-      id: '/notas-fiscais'
-      path: '/notas-fiscais'
-      fullPath: '/notas-fiscais'
-      preLoaderRoute: typeof NotasFiscaisRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mao-de-obra': {
-      id: '/mao-de-obra'
-      path: '/mao-de-obra'
-      fullPath: '/mao-de-obra'
-      preLoaderRoute: typeof MaoDeObraRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -236,54 +213,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/insumos': {
-      id: '/insumos'
-      path: '/insumos'
-      fullPath: '/insumos'
-      preLoaderRoute: typeof InsumosRouteImport
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/estoque': {
-      id: '/estoque'
-      path: '/estoque'
-      fullPath: '/estoque'
-      preLoaderRoute: typeof EstoqueRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/equipe': {
-      id: '/equipe'
-      path: '/equipe'
-      fullPath: '/equipe'
-      preLoaderRoute: typeof EquipeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/equipamentos': {
-      id: '/equipamentos'
-      path: '/equipamentos'
-      fullPath: '/equipamentos'
-      preLoaderRoute: typeof EquipamentosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/composicoes': {
-      id: '/composicoes'
-      path: '/composicoes'
-      fullPath: '/composicoes'
-      preLoaderRoute: typeof ComposicoesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/backup': {
-      id: '/backup'
-      path: '/backup'
-      fullPath: '/backup'
-      preLoaderRoute: typeof BackupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
+    '/_app/': {
+      id: '/_app/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
     }
     '/invite/$token': {
       id: '/invite/$token'
@@ -292,21 +234,103 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/realizado': {
+      id: '/_app/realizado'
+      path: '/realizado'
+      fullPath: '/realizado'
+      preLoaderRoute: typeof AppRealizadoRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/notas-fiscais': {
+      id: '/_app/notas-fiscais'
+      path: '/notas-fiscais'
+      fullPath: '/notas-fiscais'
+      preLoaderRoute: typeof AppNotasFiscaisRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/mao-de-obra': {
+      id: '/_app/mao-de-obra'
+      path: '/mao-de-obra'
+      fullPath: '/mao-de-obra'
+      preLoaderRoute: typeof AppMaoDeObraRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/insumos': {
+      id: '/_app/insumos'
+      path: '/insumos'
+      fullPath: '/insumos'
+      preLoaderRoute: typeof AppInsumosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/estoque': {
+      id: '/_app/estoque'
+      path: '/estoque'
+      fullPath: '/estoque'
+      preLoaderRoute: typeof AppEstoqueRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/equipe': {
+      id: '/_app/equipe'
+      path: '/equipe'
+      fullPath: '/equipe'
+      preLoaderRoute: typeof AppEquipeRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/equipamentos': {
+      id: '/_app/equipamentos'
+      path: '/equipamentos'
+      fullPath: '/equipamentos'
+      preLoaderRoute: typeof AppEquipamentosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/composicoes': {
+      id: '/_app/composicoes'
+      path: '/composicoes'
+      fullPath: '/composicoes'
+      preLoaderRoute: typeof AppComposicoesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/backup': {
+      id: '/_app/backup'
+      path: '/backup'
+      fullPath: '/backup'
+      preLoaderRoute: typeof AppBackupRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
+interface AppRouteChildren {
+  AppBackupRoute: typeof AppBackupRoute
+  AppComposicoesRoute: typeof AppComposicoesRoute
+  AppEquipamentosRoute: typeof AppEquipamentosRoute
+  AppEquipeRoute: typeof AppEquipeRoute
+  AppEstoqueRoute: typeof AppEstoqueRoute
+  AppInsumosRoute: typeof AppInsumosRoute
+  AppMaoDeObraRoute: typeof AppMaoDeObraRoute
+  AppNotasFiscaisRoute: typeof AppNotasFiscaisRoute
+  AppRealizadoRoute: typeof AppRealizadoRoute
+  AppIndexRoute: typeof AppIndexRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppBackupRoute: AppBackupRoute,
+  AppComposicoesRoute: AppComposicoesRoute,
+  AppEquipamentosRoute: AppEquipamentosRoute,
+  AppEquipeRoute: AppEquipeRoute,
+  AppEstoqueRoute: AppEstoqueRoute,
+  AppInsumosRoute: AppInsumosRoute,
+  AppMaoDeObraRoute: AppMaoDeObraRoute,
+  AppNotasFiscaisRoute: AppNotasFiscaisRoute,
+  AppRealizadoRoute: AppRealizadoRoute,
+  AppIndexRoute: AppIndexRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  BackupRoute: BackupRoute,
-  ComposicoesRoute: ComposicoesRoute,
-  EquipamentosRoute: EquipamentosRoute,
-  EquipeRoute: EquipeRoute,
-  EstoqueRoute: EstoqueRoute,
-  InsumosRoute: InsumosRoute,
+  AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
-  MaoDeObraRoute: MaoDeObraRoute,
-  NotasFiscaisRoute: NotasFiscaisRoute,
-  RealizadoRoute: RealizadoRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   InviteTokenRoute: InviteTokenRoute,
 }

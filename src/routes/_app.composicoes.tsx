@@ -25,7 +25,7 @@ import {
 import { ArrowLeft, Plus, Pencil, Trash2, Copy } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/composicoes")({
+export const Route = createFileRoute("/_app/composicoes")({
   component: ComposicoesPage,
   head: () => ({
     meta: [

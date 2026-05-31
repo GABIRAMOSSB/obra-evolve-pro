@@ -17,7 +17,7 @@ import { ArrowLeft, ArrowDownToLine, ArrowUpFromLine, Package, RefreshCw, FileDo
 import { toast } from "sonner";
 import type { BudgetRow, ProjectData } from "@/lib/types";
 
-export const Route = createFileRoute("/estoque")({ component: EstoquePage });
+export const Route = createFileRoute("/_app/estoque")({ component: EstoquePage });
 
 type Insumo = { id: string; codigo: string | null; descricao: string; unidade_id: string | null };
 type Unidade = { id: string; sigla: string };

@@ -53,7 +53,7 @@ import { Label } from "@/components/ui/label";
 import type { BudgetRow, ProjectData } from "@/lib/types";
 
 
-export const Route = createFileRoute("/realizado")({
+export const Route = createFileRoute("/_app/realizado")({
   component: RealizadoPage,
   head: () => ({
     meta: [

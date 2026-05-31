@@ -35,7 +35,7 @@ import {
 import { toast } from "sonner";
 import { ArrowLeft, Plus, Sparkles, Trash2, Pencil, Wrench } from "lucide-react";
 
-export const Route = createFileRoute("/equipamentos")({
+export const Route = createFileRoute("/_app/equipamentos")({
   component: EquipamentosPage,
   head: () => ({
     meta: [

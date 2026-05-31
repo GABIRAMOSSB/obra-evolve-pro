@@ -46,7 +46,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 
-export const Route = createFileRoute("/mao-de-obra")({
+export const Route = createFileRoute("/_app/mao-de-obra")({
   component: MaoDeObraPage,
   head: () => ({
     meta: [
