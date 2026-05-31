@@ -456,6 +456,127 @@ function RealizadoPage() {
     [insumosPorComposicao],
   );
 
+  // ---- Editar/apagar por linha de insumo ----
+  const [editing, setEditing] = useState<InsumoLinha | null>(null);
+  const [editDescricao, setEditDescricao] = useState("");
+  const [editQtd, setEditQtd] = useState("0");
+  const [editValor, setEditValor] = useState("0");
+
+  const refetchSources = useCallback(async () => {
+    if (!company) return;
+    await load();
+    // Re-busca itens NF-e e apropriações
+    const [nf, ap] = await Promise.all([
+      supabase
+        .from("nota_fiscal_itens")
+        .select("id, nota_fiscal_id, descricao, quantidade, valor_total, obra_id, item_codigo, item_descricao")
+        .eq("company_id", company.id),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from("nfe_item_apropriacoes")
+        .select("id, obra_id, item_codigo, descricao_insumo, unidade, quantidade, valor_total, nota_fiscal_item_id")
+        .eq("company_id", company.id),
+    ]);
+    if (!nf.error) setNfItens((nf.data as NotaFiscalItem[]) ?? []);
+    if (!ap.error) setApropriacoes((ap.data as Apropriacao[]) ?? []);
+  }, [company, load]);
+
+  const handleDeleteInsumo = useCallback(
+    async (ins: InsumoLinha) => {
+      if (!window.confirm(`Apagar este lançamento?\n\n${ins.descricao}\nValor: ${fmtMoney(ins.valor)}`)) return;
+      try {
+        if (ins.origem === "apontamento") {
+          const { error } = await supabase.from("apontamentos_mao_obra").delete().eq("id", ins.id);
+          if (error) throw error;
+        } else if (ins.origem === "apropriacao") {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { error } = await (supabase as any).from("nfe_item_apropriacoes").delete().eq("id", ins.id);
+          if (error) throw error;
+        } else if (ins.origem === "movimento") {
+          const { error } = await supabase.from("estoque_movimentos").delete().eq("id", ins.id);
+          if (error) throw error;
+        } else if (ins.origem === "nfe_item") {
+          // Não apaga a NF — só desvincula da obra/composição
+          const { error } = await supabase
+            .from("nota_fiscal_itens")
+            .update({ obra_id: null, item_codigo: null, item_descricao: null })
+            .eq("id", ins.id);
+          if (error) throw error;
+        }
+        toast.success("Lançamento removido");
+        await refetchSources();
+      } catch (err) {
+        console.error(err);
+        toast.error("Falha ao apagar lançamento");
+      }
+    },
+    [refetchSources],
+  );
+
+  const openEdit = useCallback((ins: InsumoLinha) => {
+    setEditing(ins);
+    setEditDescricao(ins.descricao);
+    setEditQtd(String(ins.quantidade));
+    setEditValor(String(ins.valor));
+  }, []);
+
+  const handleSaveEdit = useCallback(async () => {
+    if (!editing) return;
+    const qtd = Number(editQtd) || 0;
+    const valor = Number(editValor) || 0;
+    try {
+      if (editing.origem === "apontamento") {
+        // Para MO: ajusta horas_normais (zera extras) e custo_total
+        const { error } = await supabase
+          .from("apontamentos_mao_obra")
+          .update({
+            horas_normais: qtd,
+            horas_extras: 0,
+            custo_total: valor,
+            custo_hora: qtd > 0 ? valor / qtd : 0,
+          })
+          .eq("id", editing.id);
+        if (error) throw error;
+      } else if (editing.origem === "apropriacao") {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
+          .from("nfe_item_apropriacoes")
+          .update({
+            descricao_insumo: editDescricao,
+            quantidade: qtd,
+            valor_total: valor,
+            valor_unitario: qtd > 0 ? valor / qtd : 0,
+          })
+          .eq("id", editing.id);
+        if (error) throw error;
+      } else if (editing.origem === "movimento") {
+        const { error } = await supabase
+          .from("estoque_movimentos")
+          .update({
+            item_descricao: editDescricao,
+            quantidade: qtd,
+            valor_total: valor,
+            valor_unitario: qtd > 0 ? valor / qtd : 0,
+          })
+          .eq("id", editing.id);
+        if (error) throw error;
+      } else if (editing.origem === "nfe_item") {
+        const { error } = await supabase
+          .from("nota_fiscal_itens")
+          .update({ item_descricao: editDescricao })
+          .eq("id", editing.id);
+        if (error) throw error;
+      }
+      toast.success("Lançamento atualizado");
+      setEditing(null);
+      await refetchSources();
+    } catch (err) {
+      console.error(err);
+      toast.error("Falha ao salvar alteração");
+    }
+  }, [editing, editDescricao, editQtd, editValor, refetchSources]);
+
+
 
   // Comparativo por composição — espelho COMPLETO da planilha:
   // mantém a ordem original (etapas/subetapas como cabeçalhos + composições-folha),
