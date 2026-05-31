@@ -58,6 +58,8 @@ interface Apontamento {
   obra_id: string;
   item_codigo: string | null;
   item_descricao: string | null;
+  recurso_tipo: string | null;
+  recurso_nome: string | null;
   horas_normais: number;
   horas_extras: number;
   custo_total: number;
@@ -147,7 +149,7 @@ function RealizadoPage() {
         supabase
           .from("apontamentos_mao_obra")
           .select(
-            "obra_id, item_codigo, item_descricao, horas_normais, horas_extras, custo_total, quantidade_executada",
+            "obra_id, item_codigo, item_descricao, recurso_tipo, recurso_nome, horas_normais, horas_extras, custo_total, quantidade_executada",
           )
           .eq("company_id", company.id),
         supabase
@@ -418,8 +420,13 @@ function RealizadoPage() {
       if (!k) continue;
       const horas = Number(ap.horas_normais ?? 0) + Number(ap.horas_extras ?? 0);
       if (horas <= 0 && Number(ap.custo_total ?? 0) <= 0) continue;
+      const nome = (ap.recurso_nome ?? "").trim();
+      const isEquip = ap.recurso_tipo === "equipamento";
+      const descricao = nome
+        ? (isEquip ? `Equipamento: ${nome}` : nome)
+        : (isEquip ? "Equipamento apontado" : "Mão de obra apontada");
       push(k, {
-        descricao: "Mão de obra apontada",
+        descricao,
         unidade: "h",
         quantidade: horas,
         valor: Number(ap.custo_total ?? 0),
