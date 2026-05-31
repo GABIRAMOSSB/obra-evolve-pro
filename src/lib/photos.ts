@@ -29,11 +29,12 @@ async function compressImage(file: File, maxDim = 1600, quality = 0.8): Promise<
 export async function uploadDiaryPhoto(
   obraId: string,
   file: File,
+  companyId: string,
 ): Promise<DiaryPhoto> {
   const isVideo = file.type.startsWith("video/");
   const blob = isVideo ? file : await compressImage(file);
   const ext = isVideo ? (file.name.split(".").pop() || "mp4") : "jpg";
-  const path = `${obraId}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+  const path = `${companyId}/${obraId}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
   const { error } = await supabase.storage.from(BUCKET).upload(path, blob, {
     contentType: isVideo ? file.type : "image/jpeg",
     upsert: false,
