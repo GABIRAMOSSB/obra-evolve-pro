@@ -897,7 +897,7 @@ function RealizadoPage() {
                               {isOpen && hasInsumos && (
                                 <TableRow key={`${idx}-exp`} className="bg-muted/20 hover:bg-muted/20">
                                   <TableCell></TableCell>
-                                  <TableCell colSpan={12} className="p-3">
+                                  <TableCell colSpan={11} className="p-3">
                                     <div className="space-y-2">
                                       <div className="text-xs font-semibold text-muted-foreground uppercase">
                                         Composição real — {c.row.descricao}
