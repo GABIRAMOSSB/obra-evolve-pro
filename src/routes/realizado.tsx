@@ -164,7 +164,7 @@ function RealizadoPage() {
         supabase
           .from("apontamentos_mao_obra")
           .select(
-            "obra_id, item_codigo, item_descricao, recurso_tipo, recurso_nome, horas_normais, horas_extras, custo_total, quantidade_executada",
+            "id, obra_id, item_codigo, item_descricao, recurso_tipo, recurso_nome, horas_normais, horas_extras, custo_total, quantidade_executada",
           )
           .eq("company_id", company.id),
         supabase
@@ -174,8 +174,9 @@ function RealizadoPage() {
           .order("data_emissao", { ascending: false }),
         supabase
           .from("estoque_movimentos")
-          .select("obra_id, tipo, item_codigo, item_descricao, quantidade, valor_total, valor_unitario")
+          .select("id, obra_id, tipo, item_codigo, item_descricao, quantidade, valor_total, valor_unitario")
           .eq("company_id", company.id),
+
       ]);
       if (w.error) throw w.error;
       if (a.error) throw a.error;
