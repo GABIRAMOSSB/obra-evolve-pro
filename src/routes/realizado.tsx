@@ -335,6 +335,34 @@ function RealizadoPage() {
     return map;
   }, [apontamentosObra, movsObra, apropObra, nfItensObra]);
 
+  // Helper: resolve custo de uma linha do orçamento aceitando que o
+  // apontamento possa ter sido gravado por `codigo` da composição OU pelo
+  // caminho `item` (ex.: "1.5.1.0.1") quando o usuário lança via Diário.
+  const getCusto = useCallback(
+    (row: BudgetRow) => {
+      const empty = { mo: 0, material: 0, horas: 0, qtd: 0 };
+      const a = row.codigo ? custoPorComposicao.get(row.codigo) : undefined;
+      const b = row.item ? custoPorComposicao.get(row.item) : undefined;
+      if (!a && !b) return empty;
+      return {
+        mo: (a?.mo ?? 0) + (b?.mo ?? 0),
+        material: (a?.material ?? 0) + (b?.material ?? 0),
+        horas: (a?.horas ?? 0) + (b?.horas ?? 0),
+        qtd: (a?.qtd ?? 0) + (b?.qtd ?? 0),
+      };
+    },
+    [custoPorComposicao],
+  );
+
+  const getInsumos = useCallback(
+    (row: BudgetRow) => {
+      const a = row.codigo ? insumosPorComposicao.get(row.codigo) ?? [] : [];
+      const b = row.item ? insumosPorComposicao.get(row.item) ?? [] : [];
+      return [...a, ...b];
+    },
+    [insumosPorComposicao],
+  );
+
   // Composição REAL: lista de insumos consumidos por código de composição.
   // Fonte: apropriações de NF-e (rateio) + saídas de estoque + legado item_codigo.
   // Inclui também a mão-de-obra como "insumo" virtual.
