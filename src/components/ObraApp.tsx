@@ -709,6 +709,7 @@ function Dashboard({
   onSignOut: () => void;
 }) {
 
+  const [activeTab, setActiveTab] = usePersistedTab("dashboard", "atividades");
   const etapas = useMemo(() => data.rows.filter((r) => r.isGroup && r.level === 1), [data.rows]);
 
   const [filterEtapas, setFilterEtapas] = useState<string[]>([]);
