@@ -85,6 +85,10 @@ interface Insumo {
   ncm: string | null;
   observacoes: string | null;
   ativo: boolean;
+  sinapi_codigo?: string | null;
+  imagem_url?: string | null;
+  normas_tecnicas?: string | null;
+  informacoes_gerais?: string | null;
 }
 interface Alias {
   id: string;
