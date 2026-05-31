@@ -8,8 +8,8 @@ export function AppSidebar() {
   const { user, signOut } = useAuth();
   const { company } = useCompany();
   const userEmail = user?.email ?? "";
-  const companyName = company.name ?? "";
-  const isAdmin = company.role === "admin" || company.role === "editor";
+  const companyName = company?.name ?? "";
+  const isAdmin = company?.role === "admin" || company?.role === "editor";
 
   return (
     <aside className="hidden lg:flex flex-col w-[240px] shrink-0 bg-gradient-sidebar text-sidebar-foreground sticky top-0 h-screen border-r border-sidebar-border/40 relative overflow-hidden">
