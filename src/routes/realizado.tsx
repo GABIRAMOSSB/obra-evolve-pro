@@ -55,6 +55,7 @@ export const Route = createFileRoute("/realizado")({
 });
 
 interface Apontamento {
+  id: string;
   obra_id: string;
   item_codigo: string | null;
   item_descricao: string | null;
@@ -84,6 +85,7 @@ interface NotaFiscal {
   valor_total: number | null;
 }
 interface MovEstoque {
+  id: string;
   obra_id: string | null;
   tipo: string;
   item_codigo: string | null;
@@ -95,6 +97,7 @@ interface MovEstoque {
   unidade?: string | null;
 }
 interface Apropriacao {
+  id: string;
   obra_id: string;
   item_codigo: string;
   descricao_insumo: string;
@@ -103,6 +106,18 @@ interface Apropriacao {
   valor_total: number;
   nota_fiscal_item_id: string | null;
 }
+
+type InsumoOrigem = "apontamento" | "apropriacao" | "movimento" | "nfe_item";
+interface InsumoLinha {
+  id: string;
+  origem: InsumoOrigem;
+  descricao: string;
+  unidade: string | null;
+  quantidade: number;
+  valor: number;
+  fonte: "NF-e" | "Estoque" | "MO";
+}
+
 
 
 function fmtMoney(v: number | null | undefined) {
