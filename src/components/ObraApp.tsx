@@ -2543,15 +2543,18 @@ function EvolutionDialog({
 
 function DiaryPanel({
   obraId,
+  companyId,
   diaries,
   onUpdate,
   onRemove,
 }: {
   obraId: string;
+  companyId: string;
   diaries: DiaryEntry[];
   onUpdate: (e: DiaryEntry) => void;
   onRemove: (id: string) => void;
 }) {
+
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
