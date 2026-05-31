@@ -2418,7 +2418,7 @@ function EvolutionDialog({
                   titulo="Equipe presente (custo lançado no Realizado)"
                   tipo="mao_obra"
                   linhas={maoObraLinhas}
-                  setLinhas={(v) => setMaoObraLinhas(v as typeof maoObraLinhas)}
+                  onChange={setMaoObraLinhas}
                   opcoes={funcoesDb.map((f) => ({ id: f.id, nome: f.nome, custoHora: Number(f.custo_hora_base) || 0 }))}
                   itens={itensOrcamento}
                   itemPadrao={row.item}
@@ -2428,11 +2428,12 @@ function EvolutionDialog({
                   titulo="Equipamentos utilizados"
                   tipo="equipamento"
                   linhas={equipamentoLinhas}
-                  setLinhas={(v) => setEquipamentoLinhas(v as typeof equipamentoLinhas)}
+                  onChange={setEquipamentoLinhas}
                   opcoes={equipamentosDb.map((e) => ({ id: e.id, nome: e.nome, custoHora: Number(e.custo_hora) || 0 }))}
                   itens={itensOrcamento}
                   itemPadrao={row.item}
                 />
+
 
                 {/* Texto livre adicional (opcional) */}
                 <div className="grid grid-cols-2 gap-3">
