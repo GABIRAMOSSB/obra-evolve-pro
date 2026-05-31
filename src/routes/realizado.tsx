@@ -354,14 +354,6 @@ function RealizadoPage() {
     [custoPorComposicao],
   );
 
-  const getInsumos = useCallback(
-    (row: BudgetRow) => {
-      const a = row.codigo ? insumosPorComposicao.get(row.codigo) ?? [] : [];
-      const b = row.item ? insumosPorComposicao.get(row.item) ?? [] : [];
-      return [...a, ...b];
-    },
-    [insumosPorComposicao],
-  );
 
   // Composição REAL: lista de insumos consumidos por código de composição.
   // Fonte: apropriações de NF-e (rateio) + saídas de estoque + legado item_codigo.
