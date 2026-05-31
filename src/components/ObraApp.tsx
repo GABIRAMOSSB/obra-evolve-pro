@@ -7,7 +7,7 @@ import { usePersistedTab } from "@/hooks/use-persisted-tab";
 import { useNavigate, Link, useRouterState } from "@tanstack/react-router";
 import { ObraInfoDialog } from "@/components/ObraInfoDialog";
 import { PhotoUploader } from "@/components/PhotoUploader";
-import { parseExcel, type ParseResult } from "@/lib/excel";
+import type { ParseResult } from "@/lib/excel";
 import {
   activityMetrics,
   fmtBRL,
@@ -21,13 +21,27 @@ import {
   getSavedMeasurements,
   formatarDataBR,
 } from "@/lib/calc";
-import {
-  exportAcompanhamentoXlsx,
-  exportDiarioPdf,
-  exportRelatorioPdf,
-  gerarTextoDiario,
-  buildMeasurementPdfBlob,
-} from "@/lib/pdf";
+
+// Lazy loaders — mantêm xlsx/jspdf fora do bundle inicial.
+const loadExcel = () => import("@/lib/excel");
+const loadPdf = () => import("@/lib/pdf");
+const parseExcel: (file: File) => ReturnType<typeof import("@/lib/excel").parseExcel> =
+  async (file) => (await loadExcel()).parseExcel(file);
+const exportAcompanhamentoXlsx = async (
+  ...args: Parameters<typeof import("@/lib/pdf").exportAcompanhamentoXlsx>
+) => (await loadPdf()).exportAcompanhamentoXlsx(...args);
+const exportDiarioPdf = async (
+  ...args: Parameters<typeof import("@/lib/pdf").exportDiarioPdf>
+) => (await loadPdf()).exportDiarioPdf(...args);
+const exportRelatorioPdf = async (
+  ...args: Parameters<typeof import("@/lib/pdf").exportRelatorioPdf>
+) => (await loadPdf()).exportRelatorioPdf(...args);
+const buildMeasurementPdfBlob = async (
+  ...args: Parameters<typeof import("@/lib/pdf").buildMeasurementPdfBlob>
+): Promise<Blob> => (await loadPdf()).buildMeasurementPdfBlob(...args);
+const gerarTextoDiario = async (
+  ...args: Parameters<typeof import("@/lib/pdf").gerarTextoDiario>
+): Promise<string> => (await loadPdf()).gerarTextoDiario(...args);
 import { uploadDocumentBlob } from "@/lib/documents";
 import { syncDiaryApontamentos, deleteDiaryApontamentos } from "@/lib/apontamentos";
 import { supabase } from "@/integrations/supabase/client";
@@ -1074,8 +1088,8 @@ function Dashboard({
                 variant="ghost"
                 size="sm"
                 className="h-8 px-2.5"
-                onClick={() => {
-                  const blob = buildMeasurementPdfBlob(filteredRows, data.evolutions, selectedBM ?? currentMeasNumber, data.nome, new Date(), info, periodoInicio ?? undefined, data.rows);
+                onClick={async () => {
+                  const blob = await buildMeasurementPdfBlob(filteredRows, data.evolutions, selectedBM ?? currentMeasNumber, data.nome, new Date(), info, periodoInicio ?? undefined, data.rows);
                   const url = URL.createObjectURL(blob);
                   const a = document.createElement("a");
                   a.href = url;
@@ -2201,14 +2215,14 @@ function EvolutionDialog({
     return { evo: { measurements: novaLista }, periodo: q };
   }
 
-  function gerarDiario(q: number) {
+  async function gerarDiario(q: number) {
     if (!criarDiario || q <= 0) return;
     const etapa = (() => {
       const top = row.item.split(".")[0];
       const g = allRows.find((r) => r.item === top && r.isGroup);
       return g ? `${g.item} — ${g.descricao}` : row.item;
     })();
-    const texto = gerarTextoDiario({
+    const texto = await gerarTextoDiario({
       etapa,
       descricao: row.descricao,
       quantExec: q,
