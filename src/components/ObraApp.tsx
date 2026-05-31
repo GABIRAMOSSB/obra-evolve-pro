@@ -1088,8 +1088,8 @@ function Dashboard({
                 variant="ghost"
                 size="sm"
                 className="h-8 px-2.5"
-                onClick={() => {
-                  const blob = buildMeasurementPdfBlob(filteredRows, data.evolutions, selectedBM ?? currentMeasNumber, data.nome, new Date(), info, periodoInicio ?? undefined, data.rows);
+                onClick={async () => {
+                  const blob = await buildMeasurementPdfBlob(filteredRows, data.evolutions, selectedBM ?? currentMeasNumber, data.nome, new Date(), info, periodoInicio ?? undefined, data.rows);
                   const url = URL.createObjectURL(blob);
                   const a = document.createElement("a");
                   a.href = url;
