@@ -1444,8 +1444,9 @@ function Dashboard({
 
 
           <TabsContent value="diario">
-            <DiaryPanel obraId={data.id} diaries={data.diaries} onUpdate={updateDiary} onRemove={removeDiary} />
+            <DiaryPanel obraId={data.id} companyId={companyId} diaries={data.diaries} onUpdate={updateDiary} onRemove={removeDiary} />
           </TabsContent>
+
 
           <TabsContent value="documentos">
             <DocumentsTab obraId={data.id} />
