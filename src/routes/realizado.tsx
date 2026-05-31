@@ -420,8 +420,13 @@ function RealizadoPage() {
       if (!k) continue;
       const horas = Number(ap.horas_normais ?? 0) + Number(ap.horas_extras ?? 0);
       if (horas <= 0 && Number(ap.custo_total ?? 0) <= 0) continue;
+      const nome = (ap.recurso_nome ?? "").trim();
+      const isEquip = ap.recurso_tipo === "equipamento";
+      const descricao = nome
+        ? (isEquip ? `Equipamento: ${nome}` : nome)
+        : (isEquip ? "Equipamento apontado" : "Mão de obra apontada");
       push(k, {
-        descricao: "Mão de obra apontada",
+        descricao,
         unidade: "h",
         quantidade: horas,
         valor: Number(ap.custo_total ?? 0),
