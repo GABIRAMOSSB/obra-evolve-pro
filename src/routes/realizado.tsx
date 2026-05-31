@@ -64,6 +64,7 @@ interface Apontamento {
   quantidade_executada: number | null;
 }
 interface NotaFiscalItem {
+  id: string;
   nota_fiscal_id: string;
   descricao: string;
   quantidade: number;
@@ -98,6 +99,7 @@ interface Apropriacao {
   unidade: string | null;
   quantidade: number;
   valor_total: number;
+  nota_fiscal_item_id: string | null;
 }
 
 
