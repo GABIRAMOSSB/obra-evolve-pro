@@ -534,8 +534,9 @@ function RealizadoPage() {
 
   const handleSaveEdit = useCallback(async () => {
     if (!editing) return;
-    const qtd = Number(editQtd) || 0;
-    const valor = Number(editValor) || 0;
+    const parseBR = (s: string) => Number(String(s).replace(/\./g, "").replace(",", ".")) || 0;
+    const qtd = parseBR(editQtd);
+    const valor = parseBR(editValor);
     try {
       if (editing.origem === "apontamento") {
         // Para MO: ajusta horas_normais (zera extras) e custo_total
