@@ -64,7 +64,6 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { lazy, Suspense } from "react";
 const DocumentsTab = lazy(() => import("@/components/DocumentsTab"));
 import { MeasurementClosure } from "@/components/MeasurementClosure";
 import {
