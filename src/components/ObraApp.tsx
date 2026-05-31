@@ -2011,6 +2011,14 @@ function EvolutionDialog({
   const [statusDia, setStatusDia] = useState<DiaryEntry["statusDia"]>("Normal");
   const [pendencias, setPendencias] = useState("");
   const [fotos, setFotos] = useState<DiaryPhoto[]>([]);
+  const [maoObraLinhas, setMaoObraLinhas] = useState<import("@/lib/types").MaoObraLinha[]>([]);
+  const [equipamentoLinhas, setEquipamentoLinhas] = useState<import("@/lib/types").EquipamentoLinha[]>([]);
+  const [funcoesDb, setFuncoesDb] = useState<Array<{ id: string; nome: string; custo_hora_base: number }>>([]);
+  const [equipamentosDb, setEquipamentosDb] = useState<Array<{ id: string; nome: string; custo_hora: number }>>([]);
+  const itensOrcamento = useMemo(
+    () => allRows.filter((r) => !r.isGroup).map((r) => ({ codigo: r.item, descricao: r.descricao })),
+    [allRows],
+  );
 
   useEffect(() => {
     if (open) {
