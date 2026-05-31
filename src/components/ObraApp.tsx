@@ -2033,8 +2033,30 @@ function EvolutionDialog({
       setFotos([]);
       setPendencias("");
       setStatusDia("Normal");
+      setMaoObraLinhas([]);
+      setEquipamentoLinhas([]);
+      if (dialogCompany) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any)
+          .from("funcoes_mao_obra")
+          .select("id, nome, custo_hora_base")
+          .eq("company_id", dialogCompany.id)
+          .eq("ativo", true)
+          .order("nome")
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .then(({ data }: any) => setFuncoesDb(data ?? []));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any)
+          .from("equipamentos")
+          .select("id, nome, custo_hora")
+          .eq("company_id", dialogCompany.id)
+          .eq("ativo", true)
+          .order("nome")
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .then(({ data }: any) => setEquipamentosDb(data ?? []));
+      }
     }
-  }, [open, openMeasurement, row.quantidade]);
+  }, [open, openMeasurement, row.quantidade, dialogCompany]);
 
   function handleQuant(v: string) {
     setPeriodo(v);
