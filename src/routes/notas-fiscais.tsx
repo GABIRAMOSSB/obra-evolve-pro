@@ -664,7 +664,7 @@ function NotasFiscaisPage() {
                 </div>
               </div>
 
-              {canEdit && obras.length > 0 && (
+              {canEdit && obras.length > 0 && detailItens.length > 1 && (
                 <div className="rounded-md border bg-muted/40 p-3 space-y-2">
                   <div className="text-sm font-medium">Apropriar custo da nota inteira</div>
                   <div className="flex flex-wrap items-end gap-2">
