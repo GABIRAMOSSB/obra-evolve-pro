@@ -2414,47 +2414,38 @@ function EvolutionDialog({
                   </div>
                 </div>
 
-                <ChipMultiSelect
-                  label="Equipe presente"
-                  value={equipe}
-                  onChange={setEquipe}
-                  options={[
-                    "Mestre de obras",
-                    "Encarregado",
-                    "Engenheiro",
-                    "Pedreiro",
-                    "Servente",
-                    "Carpinteiro",
-                    "Armador",
-                    "Eletricista",
-                    "Encanador",
-                    "Pintor",
-                    "Soldador",
-                    "Operador de máquina",
-                  ]}
-                  placeholder="Ex: 2 pedreiros, 3 serventes"
+                <ResourceLinesEditor
+                  titulo="Equipe presente (custo lançado no Realizado)"
+                  tipo="mao_obra"
+                  linhas={maoObraLinhas}
+                  setLinhas={(v) => setMaoObraLinhas(v as typeof maoObraLinhas)}
+                  opcoes={funcoesDb.map((f) => ({ id: f.id, nome: f.nome, custoHora: Number(f.custo_hora_base) || 0 }))}
+                  itens={itensOrcamento}
+                  itemPadrao={row.item}
                 />
 
-                <ChipMultiSelect
-                  label="Equipamentos utilizados"
-                  value={equipamentos}
-                  onChange={setEquipamentos}
-                  options={[
-                    "Betoneira",
-                    "Bomba de concreto",
-                    "Caminhão basculante",
-                    "Retroescavadeira",
-                    "Escavadeira",
-                    "Compactador",
-                    "Serra mármore",
-                    "Furadeira",
-                    "Andaime",
-                    "Vibrador de concreto",
-                    "Caçamba",
-                    "Carrinho de mão",
-                  ]}
-                  placeholder="Ex: 1 betoneira, 2 andaimes"
+                <ResourceLinesEditor
+                  titulo="Equipamentos utilizados"
+                  tipo="equipamento"
+                  linhas={equipamentoLinhas}
+                  setLinhas={(v) => setEquipamentoLinhas(v as typeof equipamentoLinhas)}
+                  opcoes={equipamentosDb.map((e) => ({ id: e.id, nome: e.nome, custoHora: Number(e.custo_hora) || 0 }))}
+                  itens={itensOrcamento}
+                  itemPadrao={row.item}
                 />
+
+                {/* Texto livre adicional (opcional) */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Equipe (texto livre)</Label>
+                    <Input value={equipe} onChange={(e) => setEquipe(e.target.value)} placeholder="Observações da equipe" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Equipamentos (texto livre)</Label>
+                    <Input value={equipamentos} onChange={(e) => setEquipamentos(e.target.value)} placeholder="Observações dos equipamentos" />
+                  </div>
+                </div>
+
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div>
