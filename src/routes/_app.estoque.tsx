@@ -486,11 +486,11 @@ function EstoquePage() {
 
         {/* Filtros */}
         <Card className="p-3 flex flex-wrap gap-3 items-end">
-          <div className="flex-1 min-w-[220px]">
+          <div className="flex-1 w-full sm:flex-1 sm:min-w-[14rem]">
             <Label className="text-xs">Buscar</Label>
             <Input placeholder="Código ou descrição" value={filtroBusca} onChange={e => setFiltroBusca(e.target.value)} />
           </div>
-          <div className="min-w-[220px]">
+          <div className="w-full sm:flex-1 sm:min-w-[14rem]">
             <Label className="text-xs">Obra</Label>
             <Select value={filtroObra} onValueChange={setFiltroObra}>
               <SelectTrigger><SelectValue /></SelectTrigger>

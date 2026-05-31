@@ -234,7 +234,7 @@ function InsumosPage() {
           <TabsContent value="insumos" className="mt-4">
             <Card className="p-4 space-y-4">
               <div className="flex flex-wrap gap-3 items-center justify-between">
-                <div className="flex gap-2 items-center flex-1 min-w-[300px]">
+                <div className="flex gap-2 items-center flex-1 w-full sm:flex-1 sm:min-w-[18rem]">
                   <Search className="w-4 h-4 text-muted-foreground" />
                   <Input
                     placeholder="Buscar por descrição, código ou NCM..."
@@ -243,7 +243,7 @@ function InsumosPage() {
                     className="max-w-md"
                   />
                   <Select value={filterCat} onValueChange={setFilterCat}>
-                    <SelectTrigger className="w-[220px]">
+                    <SelectTrigger className="w-full sm:w-56">
                       <SelectValue placeholder="Categoria" />
                     </SelectTrigger>
                     <SelectContent>

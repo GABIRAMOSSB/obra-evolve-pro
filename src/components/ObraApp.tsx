@@ -1008,7 +1008,7 @@ function Dashboard({
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <Building2 className="w-4 h-4 text-primary shrink-0" />
               <Select value={activeId} onValueChange={onSelectObra}>
-                <SelectTrigger className="h-9 min-w-[180px] max-w-[320px] border-0 bg-muted/50 hover:bg-muted focus:ring-1 focus:ring-primary/40 text-sm font-medium rounded-lg">
+                <SelectTrigger className="h-9 w-full sm:min-w-[12rem] sm:max-w-[20rem] border-0 bg-muted/50 hover:bg-muted focus:ring-1 focus:ring-primary/40 text-sm font-medium rounded-lg">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
