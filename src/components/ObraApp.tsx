@@ -2215,6 +2215,13 @@ function EvolutionDialog({
   }
 
   function salvarParcial() {
+    const qPrev = parseFloat(periodo.replace(",", ".")) || 0;
+    if (qPrev <= 0) {
+      const ok = confirm(
+        "A quantidade executada está em 0. Nenhum avanço será registrado nesta medição. Deseja continuar mesmo assim?",
+      );
+      if (!ok) return;
+    }
     const { evo, periodo: q } = buildEvolution(false);
     onSave(evo);
     gerarDiario(q);

@@ -909,6 +909,7 @@ function RealizadoPage() {
                                             <TableHead className="text-xs">Fonte</TableHead>
                                             <TableHead className="text-xs text-right">Qtd</TableHead>
                                             <TableHead className="text-xs">Und</TableHead>
+                                            <TableHead className="text-xs text-right">Valor unit.</TableHead>
                                             <TableHead className="text-xs text-right">Valor</TableHead>
                                             <TableHead className="text-xs text-right">Coef. real</TableHead>
                                             <TableHead className="text-xs text-right">Custo unit.</TableHead>
@@ -919,12 +920,16 @@ function RealizadoPage() {
                                           {insumos.map((ins, ix) => {
                                             const coef = c.qtdExec > 0 ? ins.quantidade / c.qtdExec : 0;
                                             const custoUnit = c.qtdExec > 0 ? ins.valor / c.qtdExec : 0;
+                                            const valorUnit = ins.quantidade > 0 ? ins.valor / ins.quantidade : 0;
                                             return (
                                               <TableRow key={`${ins.origem}-${ins.id}-${ix}`}>
                                                 <TableCell className="text-xs">{ins.descricao}</TableCell>
                                                 <TableCell><Badge variant={ins.fonte === "MO" ? "default" : ins.fonte === "Estoque" ? "secondary" : "outline"} className="text-[10px]">{ins.fonte}</Badge></TableCell>
                                                 <TableCell className="text-right text-xs">{ins.quantidade.toLocaleString("pt-BR", { maximumFractionDigits: 3 })}</TableCell>
                                                 <TableCell className="text-xs">{ins.unidade ?? "—"}</TableCell>
+                                                <TableCell className="text-right text-xs font-mono">
+                                                  {ins.quantidade > 0 ? `${fmtMoney(valorUnit)}${ins.unidade ? `/${ins.unidade}` : ""}` : "—"}
+                                                </TableCell>
                                                 <TableCell className="text-right text-xs">{fmtMoney(ins.valor)}</TableCell>
                                                 <TableCell className="text-right text-xs font-mono">
                                                   {c.qtdExec > 0 ? `${coef.toLocaleString("pt-BR", { maximumFractionDigits: 4 })} ${ins.unidade ?? ""}/${c.row.und}` : "—"}
