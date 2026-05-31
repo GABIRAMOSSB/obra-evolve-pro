@@ -640,6 +640,24 @@ function RealizadoPage() {
                       </TableHeader>
                       <TableBody>
                         {comparativoItens.map((c, idx) => {
+                          if (c.isGroup) {
+                            const indent = Math.max(0, (c.row.level ?? 1) - 1) * 12;
+                            return (
+                              <TableRow key={idx} className="bg-muted/50 hover:bg-muted/50 font-semibold">
+                                <TableCell></TableCell>
+                                <TableCell className="font-mono text-xs">{c.row.item}</TableCell>
+                                <TableCell className="text-xs" colSpan={4}>
+                                  <span style={{ paddingLeft: indent }}>{c.row.descricao}</span>
+                                </TableCell>
+                                <TableCell className="text-right text-xs">{fmtMoney(c.previsto)}</TableCell>
+                                <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.mo)}</TableCell>
+                                <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.material)}</TableCell>
+                                <TableCell className="text-right text-xs">{fmtMoney(c.realizado)}</TableCell>
+                                <TableCell className="text-right"><DesvioCell value={c.desvio} /></TableCell>
+                                <TableCell className="text-right"><DesvioCell value={c.desvioPct} suffix="%" /></TableCell>
+                              </TableRow>
+                            );
+                          }
                           const insumos = insumosPorComposicao.get(c.row.codigo) ?? [];
                           const hasInsumos = insumos.length > 0;
                           const isOpen = expanded.has(c.row.codigo);
@@ -652,6 +670,7 @@ function RealizadoPage() {
                               return next;
                             });
                           };
+                          const indent = Math.max(0, (c.row.level ?? 1) - 1) * 12;
                           return (
                             <Fragment key={idx}>
 
@@ -666,7 +685,9 @@ function RealizadoPage() {
                                   ) : null}
                                 </TableCell>
                                 <TableCell className="font-mono text-xs">{c.row.codigo}</TableCell>
-                                <TableCell className="text-xs">{c.row.descricao}</TableCell>
+                                <TableCell className="text-xs">
+                                  <span style={{ paddingLeft: indent }}>{c.row.descricao}</span>
+                                </TableCell>
                                 <TableCell className="text-right">{c.row.quantidade.toFixed(2)} {c.row.und}</TableCell>
                                 <TableCell className="text-right">{c.qtdExec.toFixed(2)}</TableCell>
                                 <TableCell className="text-right">{c.horas.toFixed(2)}</TableCell>
@@ -732,6 +753,7 @@ function RealizadoPage() {
 
                           );
                         })}
+
                       </TableBody>
                     </Table>
                   )}
