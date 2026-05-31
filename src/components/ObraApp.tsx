@@ -1444,8 +1444,9 @@ function Dashboard({
 
 
           <TabsContent value="diario">
-            <DiaryPanel obraId={data.id} diaries={data.diaries} onUpdate={updateDiary} onRemove={removeDiary} />
+            <DiaryPanel obraId={data.id} companyId={companyId} diaries={data.diaries} onUpdate={updateDiary} onRemove={removeDiary} />
           </TabsContent>
+
 
           <TabsContent value="documentos">
             <DocumentsTab obraId={data.id} />
@@ -2542,15 +2543,18 @@ function EvolutionDialog({
 
 function DiaryPanel({
   obraId,
+  companyId,
   diaries,
   onUpdate,
   onRemove,
 }: {
   obraId: string;
+  companyId: string;
   diaries: DiaryEntry[];
   onUpdate: (e: DiaryEntry) => void;
   onRemove: (id: string) => void;
 }) {
+
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
@@ -2593,9 +2597,10 @@ function DiaryPanel({
       ) : (
         <div className="space-y-3">
           {filtered.map((d) => (
-            <DiaryCard key={d.id} obraId={obraId} entry={d} onUpdate={onUpdate} onRemove={onRemove} />
+            <DiaryCard key={d.id} obraId={obraId} companyId={companyId} entry={d} onUpdate={onUpdate} onRemove={onRemove} />
           ))}
         </div>
+
       )}
     </div>
   );
@@ -2603,17 +2608,33 @@ function DiaryPanel({
 
 function DiaryCard({
   obraId,
+  companyId,
   entry,
   onUpdate,
   onRemove,
 }: {
   obraId: string;
+  companyId: string;
   entry: DiaryEntry;
   onUpdate: (e: DiaryEntry) => void;
   onRemove: (id: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [e, setE] = useState(entry);
+  const [funcoesDb, setFuncoesDb] = useState<Array<{ id: string; nome: string; custo_hora_base: number }>>([]);
+  const [equipDb, setEquipDb] = useState<Array<{ id: string; nome: string; custo_hora: number }>>([]);
+
+  useEffect(() => {
+    if (!editing || !companyId) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sb = supabase as any;
+    sb.from("funcoes_mao_obra").select("id, nome, custo_hora_base").eq("company_id", companyId).eq("ativo", true).order("nome")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .then(({ data }: any) => setFuncoesDb(data ?? []));
+    sb.from("equipamentos").select("id, nome, custo_hora").eq("company_id", companyId).eq("ativo", true).order("nome")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .then(({ data }: any) => setEquipDb(data ?? []));
+  }, [editing, companyId]);
 
   function save() {
     onUpdate(e);
@@ -2622,6 +2643,7 @@ function DiaryCard({
   }
 
   const fotos = entry.fotos ?? [];
+
 
   return (
     <Card className="p-5">
@@ -2722,7 +2744,26 @@ function DiaryCard({
               onChange={(photos) => setE({ ...e, fotos: photos })}
             />
           </div>
+          <ResourceLinesEditor
+            titulo="Equipe presente (custo lançado no Realizado)"
+            tipo="mao_obra"
+            linhas={e.maoObraLinhas ?? []}
+            onChange={(linhas) => setE({ ...e, maoObraLinhas: linhas })}
+            opcoes={funcoesDb.map((f) => ({ id: f.id, nome: f.nome, custoHora: Number(f.custo_hora_base) || 0 }))}
+            itens={[]}
+            itemPadrao={e.itemKey}
+          />
+          <ResourceLinesEditor
+            titulo="Equipamentos utilizados"
+            tipo="equipamento"
+            linhas={e.equipamentoLinhas ?? []}
+            onChange={(linhas) => setE({ ...e, equipamentoLinhas: linhas })}
+            opcoes={equipDb.map((eq) => ({ id: eq.id, nome: eq.nome, custoHora: Number(eq.custo_hora) || 0 }))}
+            itens={[]}
+            itemPadrao={e.itemKey}
+          />
           <Button onClick={save}>Salvar alterações</Button>
+
         </div>
       ) : (
         <>
