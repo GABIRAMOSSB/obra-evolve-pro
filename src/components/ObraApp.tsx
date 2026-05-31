@@ -2152,6 +2152,12 @@ function EvolutionDialog({
       unidade: row.und,
       quantTotal: row.quantidade,
     });
+    const equipeAuto = maoObraLinhas.length > 0
+      ? maoObraLinhas.map((l) => `${l.quantidade} ${l.funcaoNome}`).join(", ")
+      : equipe;
+    const equipAuto = equipamentoLinhas.length > 0
+      ? equipamentoLinhas.map((l) => `${l.quantidade} ${l.equipamentoNome}`).join(", ")
+      : equipamentos;
     onAddDiary({
       id: crypto.randomUUID(),
       itemKey: row.item,
@@ -2160,8 +2166,8 @@ function EvolutionDialog({
       horaFim,
       statusDia,
       clima,
-      equipe,
-      equipamentos,
+      equipe: equipeAuto,
+      equipamentos: equipAuto,
       pendencias,
       observacoes: diarioObs,
       quantExec: q,
@@ -2169,6 +2175,8 @@ function EvolutionDialog({
       atividade: row.descricao,
       texto,
       fotos,
+      maoObraLinhas,
+      equipamentoLinhas,
       createdAt: new Date().toISOString(),
     });
   }
