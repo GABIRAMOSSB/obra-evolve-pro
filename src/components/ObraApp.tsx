@@ -28,6 +28,7 @@ import {
   buildMeasurementPdfBlob,
 } from "@/lib/pdf";
 import { uploadDocumentBlob } from "@/lib/documents";
+import { syncDiaryApontamentos, deleteDiaryApontamentos } from "@/lib/apontamentos";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
