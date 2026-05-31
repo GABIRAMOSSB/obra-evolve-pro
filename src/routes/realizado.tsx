@@ -189,7 +189,7 @@ function RealizadoPage() {
     if (!company) return;
     supabase
       .from("nota_fiscal_itens")
-      .select("nota_fiscal_id, descricao, quantidade, valor_total, obra_id, item_codigo, item_descricao")
+      .select("id, nota_fiscal_id, descricao, quantidade, valor_total, obra_id, item_codigo, item_descricao")
       .eq("company_id", company.id)
       .then(({ data, error }) => {
         if (error) return console.error(error);
@@ -198,7 +198,7 @@ function RealizadoPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any)
       .from("nfe_item_apropriacoes")
-      .select("obra_id, item_codigo, descricao_insumo, unidade, quantidade, valor_total")
+      .select("obra_id, item_codigo, descricao_insumo, unidade, quantidade, valor_total, nota_fiscal_item_id")
       .eq("company_id", company.id)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .then(({ data, error }: any) => {
@@ -208,12 +208,25 @@ function RealizadoPage() {
   }, [company]);
 
 
+  // IDs de itens de NF-e que já têm rateio (apropriação) — evitam duplicidade
+  // entre o caminho NOVO (nfe_item_apropriacoes) e o LEGADO (item.item_codigo).
+  const itensComApropriacao = useMemo(
+    () => new Set(apropriacoes.map((a) => a.nota_fiscal_item_id).filter(Boolean) as string[]),
+    [apropriacoes],
+  );
+
   // Itens da NF-e apropriados à obra atual (via item.obra_id ou via nota vinculada à obra)
+  // — exclui os que já estão rateados via nfe_item_apropriacoes para não somar duas vezes.
   const nfItensObra = useMemo(() => {
     if (!obraId) return [];
     const notasIds = new Set(notas.filter((n) => n.obra_id === obraId).map((n) => n.id));
-    return nfItens.filter((i) => i.obra_id === obraId || notasIds.has(i.nota_fiscal_id));
-  }, [nfItens, notas, obraId]);
+    return nfItens.filter(
+      (i) =>
+        (i.obra_id === obraId || notasIds.has(i.nota_fiscal_id)) &&
+        !itensComApropriacao.has(i.id),
+    );
+  }, [nfItens, notas, obraId, itensComApropriacao]);
+
 
 
   const obra = useMemo(() => obras.find((o) => o.id === obraId), [obras, obraId]);
