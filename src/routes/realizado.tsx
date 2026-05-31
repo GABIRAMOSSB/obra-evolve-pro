@@ -395,11 +395,14 @@ function RealizadoPage() {
   }, [apropObra, movsObra, nfItensObra, apontamentosObra]);
 
 
-  // Comparativo por composição — espelho COMPLETO da planilha (mostra TODAS as linhas-folha)
+  // Comparativo por composição — espelho COMPLETO da planilha:
+  // mantém a ordem original (etapas/subetapas como cabeçalhos + composições-folha),
+  // permitindo enxergar a hierarquia da planilha de orçamento.
   const comparativoItens = useMemo(() => {
     if (!obra) return [];
-    const rows: Array<{
+    type Row = {
       row: BudgetRow;
+      isGroup: boolean;
       previsto: number;
       realizado: number;
       mo: number;
@@ -408,26 +411,41 @@ function RealizadoPage() {
       qtdExec: number;
       desvio: number;
       desvioPct: number;
-    }> = [];
+    };
+    const rows: Row[] = [];
     for (const r of obra.rows) {
-      if (r.isGroup) continue;
-      const c = custoPorComposicao.get(r.codigo) ?? { mo: 0, material: 0, horas: 0, qtd: 0 };
-      const previsto = r.total || 0;
-      const realizado = c.mo + c.material;
-      rows.push({
-        row: r,
-        previsto,
-        realizado,
-        mo: c.mo,
-        material: c.material,
-        horas: c.horas,
-        qtdExec: c.qtd,
-        desvio: realizado - previsto,
-        desvioPct: previsto > 0 ? ((realizado - previsto) / previsto) * 100 : 0,
-      });
+      if (r.isGroup) {
+        // Rollup: soma das folhas descendentes
+        const prefixo = `${r.item}.`;
+        let previsto = 0, mo = 0, material = 0, horas = 0, qtdExec = 0;
+        for (const child of obra.rows) {
+          if (child.isGroup) continue;
+          if (!child.item.startsWith(prefixo)) continue;
+          previsto += child.total || 0;
+          const c = child.codigo ? custoPorComposicao.get(child.codigo) : undefined;
+          if (c) { mo += c.mo; material += c.material; horas += c.horas; qtdExec += c.qtd; }
+        }
+        const realizado = mo + material;
+        rows.push({
+          row: r, isGroup: true, previsto, realizado, mo, material, horas, qtdExec,
+          desvio: realizado - previsto,
+          desvioPct: previsto > 0 ? ((realizado - previsto) / previsto) * 100 : 0,
+        });
+      } else {
+        const c = custoPorComposicao.get(r.codigo) ?? { mo: 0, material: 0, horas: 0, qtd: 0 };
+        const previsto = r.total || 0;
+        const realizado = c.mo + c.material;
+        rows.push({
+          row: r, isGroup: false, previsto, realizado,
+          mo: c.mo, material: c.material, horas: c.horas, qtdExec: c.qtd,
+          desvio: realizado - previsto,
+          desvioPct: previsto > 0 ? ((realizado - previsto) / previsto) * 100 : 0,
+        });
+      }
     }
     return rows;
   }, [obra, custoPorComposicao]);
+
 
   // Rollup por etapa — espelho COMPLETO (todas as etapas do orçamento,
   // mesmo zeradas). Etapas são linhas isGroup de nível 1 (ex.: "1", "2"…)
