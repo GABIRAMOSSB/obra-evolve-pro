@@ -36,7 +36,19 @@ import {
   Minus,
   ChevronRight,
   ChevronDown,
+  Pencil,
+  Trash2,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
 import type { BudgetRow, ProjectData } from "@/lib/types";
 
 
@@ -55,6 +67,7 @@ export const Route = createFileRoute("/realizado")({
 });
 
 interface Apontamento {
+  id: string;
   obra_id: string;
   item_codigo: string | null;
   item_descricao: string | null;
@@ -84,6 +97,7 @@ interface NotaFiscal {
   valor_total: number | null;
 }
 interface MovEstoque {
+  id: string;
   obra_id: string | null;
   tipo: string;
   item_codigo: string | null;
@@ -95,6 +109,7 @@ interface MovEstoque {
   unidade?: string | null;
 }
 interface Apropriacao {
+  id: string;
   obra_id: string;
   item_codigo: string;
   descricao_insumo: string;
@@ -103,6 +118,18 @@ interface Apropriacao {
   valor_total: number;
   nota_fiscal_item_id: string | null;
 }
+
+type InsumoOrigem = "apontamento" | "apropriacao" | "movimento" | "nfe_item";
+interface InsumoLinha {
+  id: string;
+  origem: InsumoOrigem;
+  descricao: string;
+  unidade: string | null;
+  quantidade: number;
+  valor: number;
+  fonte: "NF-e" | "Estoque" | "MO";
+}
+
 
 
 function fmtMoney(v: number | null | undefined) {
@@ -149,7 +176,7 @@ function RealizadoPage() {
         supabase
           .from("apontamentos_mao_obra")
           .select(
-            "obra_id, item_codigo, item_descricao, recurso_tipo, recurso_nome, horas_normais, horas_extras, custo_total, quantidade_executada",
+            "id, obra_id, item_codigo, item_descricao, recurso_tipo, recurso_nome, horas_normais, horas_extras, custo_total, quantidade_executada",
           )
           .eq("company_id", company.id),
         supabase
@@ -159,8 +186,9 @@ function RealizadoPage() {
           .order("data_emissao", { ascending: false }),
         supabase
           .from("estoque_movimentos")
-          .select("obra_id, tipo, item_codigo, item_descricao, quantidade, valor_total, valor_unitario")
+          .select("id, obra_id, tipo, item_codigo, item_descricao, quantidade, valor_total, valor_unitario")
           .eq("company_id", company.id),
+
       ]);
       if (w.error) throw w.error;
       if (a.error) throw a.error;
@@ -200,13 +228,14 @@ function RealizadoPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any)
       .from("nfe_item_apropriacoes")
-      .select("obra_id, item_codigo, descricao_insumo, unidade, quantidade, valor_total, nota_fiscal_item_id")
+      .select("id, obra_id, item_codigo, descricao_insumo, unidade, quantidade, valor_total, nota_fiscal_item_id")
       .eq("company_id", company.id)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .then(({ data, error }: any) => {
         if (error) return console.error(error);
         setApropriacoes((data as Apropriacao[]) ?? []);
       });
+
   }, [company]);
 
 
@@ -361,31 +390,18 @@ function RealizadoPage() {
   // Fonte: apropriações de NF-e (rateio) + saídas de estoque + legado item_codigo.
   // Inclui também a mão-de-obra como "insumo" virtual.
   const insumosPorComposicao = useMemo(() => {
-    const map = new Map<string, Array<{
-      descricao: string;
-      unidade: string | null;
-      quantidade: number;
-      valor: number;
-      fonte: "NF-e" | "Estoque" | "MO";
-    }>>();
-    const push = (k: string, item: { descricao: string; unidade: string | null; quantidade: number; valor: number; fonte: "NF-e" | "Estoque" | "MO" }) => {
+    const map = new Map<string, InsumoLinha[]>();
+    const push = (k: string, item: InsumoLinha) => {
       const arr = map.get(k) ?? [];
-      // agrega por (descricao + unidade + fonte)
-      const idx = arr.findIndex(
-        (x) => x.descricao === item.descricao && x.unidade === item.unidade && x.fonte === item.fonte,
-      );
-      if (idx >= 0) {
-        arr[idx].quantidade += item.quantidade;
-        arr[idx].valor += item.valor;
-      } else {
-        arr.push({ ...item });
-      }
+      arr.push(item);
       map.set(k, arr);
     };
     for (const a of apropObra) {
       const k = (a.item_codigo ?? "").trim();
       if (!k) continue;
       push(k, {
+        id: a.id,
+        origem: "apropriacao",
         descricao: a.descricao_insumo,
         unidade: a.unidade,
         quantidade: Number(a.quantidade ?? 0),
@@ -397,6 +413,8 @@ function RealizadoPage() {
       const k = (m.item_codigo ?? "").trim();
       if (!k) continue;
       push(k, {
+        id: m.id,
+        origem: "movimento",
         descricao: m.item_descricao ?? "Saída de estoque",
         unidade: null,
         quantidade: Number(m.quantidade ?? 0),
@@ -408,6 +426,8 @@ function RealizadoPage() {
       const k = (i.item_codigo ?? "").trim();
       if (!k) continue;
       push(k, {
+        id: i.id,
+        origem: "nfe_item",
         descricao: i.descricao,
         unidade: null,
         quantidade: Number(i.quantidade ?? 0),
@@ -426,6 +446,8 @@ function RealizadoPage() {
         ? (isEquip ? `Equipamento: ${nome}` : nome)
         : (isEquip ? "Equipamento apontado" : "Mão de obra apontada");
       push(k, {
+        id: ap.id,
+        origem: "apontamento",
         descricao,
         unidade: "h",
         quantidade: horas,
@@ -436,6 +458,7 @@ function RealizadoPage() {
     return map;
   }, [apropObra, movsObra, nfItensObra, apontamentosObra]);
 
+
   const getInsumos = useCallback(
     (row: BudgetRow) => {
       const a = row.codigo ? insumosPorComposicao.get(row.codigo) ?? [] : [];
@@ -444,6 +467,127 @@ function RealizadoPage() {
     },
     [insumosPorComposicao],
   );
+
+  // ---- Editar/apagar por linha de insumo ----
+  const [editing, setEditing] = useState<InsumoLinha | null>(null);
+  const [editDescricao, setEditDescricao] = useState("");
+  const [editQtd, setEditQtd] = useState("0");
+  const [editValor, setEditValor] = useState("0");
+
+  const refetchSources = useCallback(async () => {
+    if (!company) return;
+    await load();
+    // Re-busca itens NF-e e apropriações
+    const [nf, ap] = await Promise.all([
+      supabase
+        .from("nota_fiscal_itens")
+        .select("id, nota_fiscal_id, descricao, quantidade, valor_total, obra_id, item_codigo, item_descricao")
+        .eq("company_id", company.id),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from("nfe_item_apropriacoes")
+        .select("id, obra_id, item_codigo, descricao_insumo, unidade, quantidade, valor_total, nota_fiscal_item_id")
+        .eq("company_id", company.id),
+    ]);
+    if (!nf.error) setNfItens((nf.data as NotaFiscalItem[]) ?? []);
+    if (!ap.error) setApropriacoes((ap.data as Apropriacao[]) ?? []);
+  }, [company, load]);
+
+  const handleDeleteInsumo = useCallback(
+    async (ins: InsumoLinha) => {
+      if (!window.confirm(`Apagar este lançamento?\n\n${ins.descricao}\nValor: ${fmtMoney(ins.valor)}`)) return;
+      try {
+        if (ins.origem === "apontamento") {
+          const { error } = await supabase.from("apontamentos_mao_obra").delete().eq("id", ins.id);
+          if (error) throw error;
+        } else if (ins.origem === "apropriacao") {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { error } = await (supabase as any).from("nfe_item_apropriacoes").delete().eq("id", ins.id);
+          if (error) throw error;
+        } else if (ins.origem === "movimento") {
+          const { error } = await supabase.from("estoque_movimentos").delete().eq("id", ins.id);
+          if (error) throw error;
+        } else if (ins.origem === "nfe_item") {
+          // Não apaga a NF — só desvincula da obra/composição
+          const { error } = await supabase
+            .from("nota_fiscal_itens")
+            .update({ obra_id: null, item_codigo: null, item_descricao: null })
+            .eq("id", ins.id);
+          if (error) throw error;
+        }
+        toast.success("Lançamento removido");
+        await refetchSources();
+      } catch (err) {
+        console.error(err);
+        toast.error("Falha ao apagar lançamento");
+      }
+    },
+    [refetchSources],
+  );
+
+  const openEdit = useCallback((ins: InsumoLinha) => {
+    setEditing(ins);
+    setEditDescricao(ins.descricao);
+    setEditQtd(String(ins.quantidade));
+    setEditValor(String(ins.valor));
+  }, []);
+
+  const handleSaveEdit = useCallback(async () => {
+    if (!editing) return;
+    const qtd = Number(editQtd) || 0;
+    const valor = Number(editValor) || 0;
+    try {
+      if (editing.origem === "apontamento") {
+        // Para MO: ajusta horas_normais (zera extras) e custo_total
+        const { error } = await supabase
+          .from("apontamentos_mao_obra")
+          .update({
+            horas_normais: qtd,
+            horas_extras: 0,
+            custo_total: valor,
+            custo_hora: qtd > 0 ? valor / qtd : 0,
+          })
+          .eq("id", editing.id);
+        if (error) throw error;
+      } else if (editing.origem === "apropriacao") {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
+          .from("nfe_item_apropriacoes")
+          .update({
+            descricao_insumo: editDescricao,
+            quantidade: qtd,
+            valor_total: valor,
+            valor_unitario: qtd > 0 ? valor / qtd : 0,
+          })
+          .eq("id", editing.id);
+        if (error) throw error;
+      } else if (editing.origem === "movimento") {
+        const { error } = await supabase
+          .from("estoque_movimentos")
+          .update({
+            item_descricao: editDescricao,
+            quantidade: qtd,
+            valor_total: valor,
+            valor_unitario: qtd > 0 ? valor / qtd : 0,
+          })
+          .eq("id", editing.id);
+        if (error) throw error;
+      } else if (editing.origem === "nfe_item") {
+        const { error } = await supabase
+          .from("nota_fiscal_itens")
+          .update({ item_descricao: editDescricao })
+          .eq("id", editing.id);
+        if (error) throw error;
+      }
+      toast.success("Lançamento atualizado");
+      setEditing(null);
+      await refetchSources();
+    } catch (err) {
+      console.error(err);
+      toast.error("Falha ao salvar alteração");
+    }
+  }, [editing, editDescricao, editQtd, editValor, refetchSources]);
+
 
 
   // Comparativo por composição — espelho COMPLETO da planilha:
@@ -767,6 +911,7 @@ function RealizadoPage() {
                                             <TableHead className="text-xs text-right">Valor</TableHead>
                                             <TableHead className="text-xs text-right">Coef. real</TableHead>
                                             <TableHead className="text-xs text-right">Custo unit.</TableHead>
+                                            <TableHead className="text-xs text-right w-24">Ações</TableHead>
                                           </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -774,7 +919,7 @@ function RealizadoPage() {
                                             const coef = c.qtdExec > 0 ? ins.quantidade / c.qtdExec : 0;
                                             const custoUnit = c.qtdExec > 0 ? ins.valor / c.qtdExec : 0;
                                             return (
-                                              <TableRow key={ix}>
+                                              <TableRow key={`${ins.origem}-${ins.id}-${ix}`}>
                                                 <TableCell className="text-xs">{ins.descricao}</TableCell>
                                                 <TableCell><Badge variant={ins.fonte === "MO" ? "default" : ins.fonte === "Estoque" ? "secondary" : "outline"} className="text-[10px]">{ins.fonte}</Badge></TableCell>
                                                 <TableCell className="text-right text-xs">{ins.quantidade.toLocaleString("pt-BR", { maximumFractionDigits: 3 })}</TableCell>
@@ -786,6 +931,17 @@ function RealizadoPage() {
                                                 <TableCell className="text-right text-xs font-mono">
                                                   {c.qtdExec > 0 ? fmtMoney(custoUnit) : "—"}
                                                 </TableCell>
+                                                <TableCell className="text-right">
+                                                  <div className="flex justify-end gap-1">
+                                                    <Button variant="ghost" size="icon" className="h-7 w-7" title="Editar" onClick={() => openEdit(ins)}>
+                                                      <Pencil className="w-3.5 h-3.5" />
+                                                    </Button>
+                                                    <Button variant="ghost" size="icon" className="h-7 w-7" title="Apagar" onClick={() => handleDeleteInsumo(ins)}>
+                                                      <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                                                    </Button>
+                                                  </div>
+                                                </TableCell>
+
                                               </TableRow>
                                             );
                                           })}
@@ -956,9 +1112,41 @@ function RealizadoPage() {
           </>
         )}
       </main>
+
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar lançamento</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Descrição</Label>
+              <Input value={editDescricao} onChange={(e) => setEditDescricao(e.target.value)} disabled={editing?.origem === "apontamento"} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Quantidade {editing?.origem === "apontamento" ? "(horas)" : ""}</Label>
+                <Input type="number" step="any" value={editQtd} onChange={(e) => setEditQtd(e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs">Valor total (R$)</Label>
+                <Input type="number" step="any" value={editValor} onChange={(e) => setEditValor(e.target.value)} disabled={editing?.origem === "nfe_item"} />
+              </div>
+            </div>
+            {editing?.origem === "nfe_item" && (
+              <p className="text-xs text-muted-foreground">Itens de NF-e não podem ter valor/quantidade alterados (vêm do XML). Para corrigir, use rateio na tela de NF-e.</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditing(null)}>Cancelar</Button>
+            <Button onClick={handleSaveEdit}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
 
 function KpiCard({
   label,

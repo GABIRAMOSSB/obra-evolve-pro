@@ -18,6 +18,7 @@ import { Route as InsumosRouteImport } from './routes/insumos'
 import { Route as EstoqueRouteImport } from './routes/estoque'
 import { Route as EquipeRouteImport } from './routes/equipe'
 import { Route as EquipamentosRouteImport } from './routes/equipamentos'
+import { Route as ComposicoesRouteImport } from './routes/composicoes'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 
@@ -66,6 +67,11 @@ const EquipamentosRoute = EquipamentosRouteImport.update({
   path: '/equipamentos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ComposicoesRoute = ComposicoesRouteImport.update({
+  id: '/composicoes',
+  path: '/composicoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -79,6 +85,7 @@ const InviteTokenRoute = InviteTokenRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/composicoes': typeof ComposicoesRoute
   '/equipamentos': typeof EquipamentosRoute
   '/equipe': typeof EquipeRoute
   '/estoque': typeof EstoqueRoute
@@ -92,6 +99,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/composicoes': typeof ComposicoesRoute
   '/equipamentos': typeof EquipamentosRoute
   '/equipe': typeof EquipeRoute
   '/estoque': typeof EstoqueRoute
@@ -106,6 +114,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/composicoes': typeof ComposicoesRoute
   '/equipamentos': typeof EquipamentosRoute
   '/equipe': typeof EquipeRoute
   '/estoque': typeof EstoqueRoute
@@ -121,6 +130,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/composicoes'
     | '/equipamentos'
     | '/equipe'
     | '/estoque'
@@ -134,6 +144,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/composicoes'
     | '/equipamentos'
     | '/equipe'
     | '/estoque'
@@ -147,6 +158,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/composicoes'
     | '/equipamentos'
     | '/equipe'
     | '/estoque'
@@ -161,6 +173,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ComposicoesRoute: typeof ComposicoesRoute
   EquipamentosRoute: typeof EquipamentosRoute
   EquipeRoute: typeof EquipeRoute
   EstoqueRoute: typeof EstoqueRoute
@@ -238,6 +251,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EquipamentosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/composicoes': {
+      id: '/composicoes'
+      path: '/composicoes'
+      fullPath: '/composicoes'
+      preLoaderRoute: typeof ComposicoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -257,6 +277,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ComposicoesRoute: ComposicoesRoute,
   EquipamentosRoute: EquipamentosRoute,
   EquipeRoute: EquipeRoute,
   EstoqueRoute: EstoqueRoute,

@@ -255,6 +255,98 @@ export type Database = {
           },
         ]
       }
+      composicoes_proprias: {
+        Row: {
+          ativo: boolean
+          codigo: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          custo_total: number
+          descricao: string
+          id: string
+          observacoes: string | null
+          unidade: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          codigo: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          custo_total?: number
+          descricao: string
+          id?: string
+          observacoes?: string | null
+          unidade?: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          codigo?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          custo_total?: number
+          descricao?: string
+          id?: string
+          observacoes?: string | null
+          unidade?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      composicoes_proprias_insumos: {
+        Row: {
+          coeficiente: number
+          company_id: string
+          composicao_id: string
+          created_at: string
+          custo_unitario: number
+          descricao: string
+          id: string
+          insumo_id: string | null
+          ordem: number
+          unidade: string | null
+          updated_at: string
+        }
+        Insert: {
+          coeficiente?: number
+          company_id: string
+          composicao_id: string
+          created_at?: string
+          custo_unitario?: number
+          descricao: string
+          id?: string
+          insumo_id?: string | null
+          ordem?: number
+          unidade?: string | null
+          updated_at?: string
+        }
+        Update: {
+          coeficiente?: number
+          company_id?: string
+          composicao_id?: string
+          created_at?: string
+          custo_unitario?: number
+          descricao?: string
+          id?: string
+          insumo_id?: string | null
+          ordem?: number
+          unidade?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "composicoes_proprias_insumos_composicao_id_fkey"
+            columns: ["composicao_id"]
+            isOneToOne: false
+            referencedRelation: "composicoes_proprias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       equipamentos: {
         Row: {
           ativo: boolean
