@@ -58,6 +58,8 @@ interface Apontamento {
   obra_id: string;
   item_codigo: string | null;
   item_descricao: string | null;
+  recurso_tipo: string | null;
+  recurso_nome: string | null;
   horas_normais: number;
   horas_extras: number;
   custo_total: number;
