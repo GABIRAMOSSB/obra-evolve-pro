@@ -7,7 +7,7 @@ import { usePersistedTab } from "@/hooks/use-persisted-tab";
 import { useNavigate, Link, useRouterState } from "@tanstack/react-router";
 import { ObraInfoDialog } from "@/components/ObraInfoDialog";
 import { PhotoUploader } from "@/components/PhotoUploader";
-import { parseExcel, type ParseResult } from "@/lib/excel";
+import type { ParseResult } from "@/lib/excel";
 import {
   activityMetrics,
   fmtBRL,
@@ -21,13 +21,23 @@ import {
   getSavedMeasurements,
   formatarDataBR,
 } from "@/lib/calc";
-import {
-  exportAcompanhamentoXlsx,
-  exportDiarioPdf,
-  exportRelatorioPdf,
-  gerarTextoDiario,
-  buildMeasurementPdfBlob,
-} from "@/lib/pdf";
+
+// Lazy loaders — mantêm xlsx/jspdf fora do bundle inicial.
+const loadExcel = () => import("@/lib/excel");
+const loadPdf = () => import("@/lib/pdf");
+const parseExcel = async (file: File) => (await loadExcel()).parseExcel(file);
+const exportAcompanhamentoXlsx: typeof import("@/lib/pdf").exportAcompanhamentoXlsx =
+  async (...args) => (await loadPdf()).exportAcompanhamentoXlsx(...args);
+const exportDiarioPdf: typeof import("@/lib/pdf").exportDiarioPdf =
+  async (...args) => (await loadPdf()).exportDiarioPdf(...args);
+const exportRelatorioPdf: typeof import("@/lib/pdf").exportRelatorioPdf =
+  async (...args) => (await loadPdf()).exportRelatorioPdf(...args);
+const buildMeasurementPdfBlob: typeof import("@/lib/pdf").buildMeasurementPdfBlob =
+  (async (...args: Parameters<typeof import("@/lib/pdf").buildMeasurementPdfBlob>) =>
+    (await loadPdf()).buildMeasurementPdfBlob(...args)) as typeof import("@/lib/pdf").buildMeasurementPdfBlob;
+const gerarTextoDiario: typeof import("@/lib/pdf").gerarTextoDiario =
+  (async (...args: Parameters<typeof import("@/lib/pdf").gerarTextoDiario>) =>
+    (await loadPdf()).gerarTextoDiario(...args)) as typeof import("@/lib/pdf").gerarTextoDiario;
 import { uploadDocumentBlob } from "@/lib/documents";
 import { syncDiaryApontamentos, deleteDiaryApontamentos } from "@/lib/apontamentos";
 import { supabase } from "@/integrations/supabase/client";
