@@ -2965,3 +2965,146 @@ function ChipMultiSelect({
     </div>
   );
 }
+
+interface ResourceOpcao { id: string; nome: string; custoHora: number; }
+interface ResourceLinhaBase {
+  id: string;
+  quantidade: number;
+  horas: number;
+  custoHora: number;
+  itemCodigo?: string;
+  itemDescricao?: string;
+  funcaoId?: string;
+  funcaoNome?: string;
+  equipamentoId?: string;
+  equipamentoNome?: string;
+}
+
+function ResourceLinesEditor<T extends ResourceLinhaBase>({
+  titulo, tipo, linhas, onChange, opcoes, itens, itemPadrao,
+}: {
+  titulo: string;
+  tipo: "mao_obra" | "equipamento";
+  linhas: T[];
+  onChange: (v: T[]) => void;
+  opcoes: ResourceOpcao[];
+  itens: { codigo: string; descricao: string }[];
+  itemPadrao: string;
+}) {
+  const JORNADA = 8;
+  function addLinha(opcaoId?: string) {
+    const op = opcoes.find((o) => o.id === opcaoId);
+    const base: ResourceLinhaBase = {
+      id: crypto.randomUUID(),
+      quantidade: 1,
+      horas: 8,
+      custoHora: op?.custoHora ?? 0,
+      itemCodigo: itemPadrao,
+      itemDescricao: itens.find((i) => i.codigo === itemPadrao)?.descricao,
+    };
+    if (tipo === "mao_obra") {
+      base.funcaoId = op?.id;
+      base.funcaoNome = op?.nome ?? "Função";
+    } else {
+      base.equipamentoId = op?.id;
+      base.equipamentoNome = op?.nome ?? "Equipamento";
+    }
+    onChange([...(linhas as ResourceLinhaBase[]), base] as T[]);
+  }
+  function updateLinha(id: string, patch: Partial<ResourceLinhaBase>) {
+    onChange(linhas.map((l) => (l.id === id ? { ...l, ...patch } : l)) as T[]);
+  }
+  function removeLinha(id: string) {
+    onChange(linhas.filter((l) => l.id !== id) as T[]);
+  }
+  return (
+    <div className="space-y-2">
+      <Label className="text-xs font-semibold">{titulo}</Label>
+      <div className="flex flex-wrap gap-1">
+        {opcoes.map((o) => (
+          <Button key={o.id} type="button" size="sm" variant="outline" className="h-7 text-xs"
+            onClick={() => addLinha(o.id)}>
+            + {o.nome}
+          </Button>
+        ))}
+        <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => addLinha()}>
+          + Linha em branco
+        </Button>
+      </div>
+      {linhas.length > 0 && (
+        <div className="border rounded-md overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="p-1 text-left">{tipo === "mao_obra" ? "Função" : "Equipamento"}</th>
+                <th className="p-1 w-16">Qtd</th>
+                <th className="p-1 w-20">Horas</th>
+                <th className="p-1 w-16">% 8h</th>
+                <th className="p-1 w-16">HE</th>
+                <th className="p-1 w-24">R$/h</th>
+                <th className="p-1">Atividade</th>
+                <th className="p-1 w-24 text-right">Custo</th>
+                <th className="p-1 w-8"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {linhas.map((l) => {
+                const horasTotais = (l.horas || 0) * (l.quantidade || 0);
+                const horasNormais = Math.min(l.horas || 0, JORNADA) * (l.quantidade || 0);
+                const horasExtras = Math.max(0, (l.horas || 0) - JORNADA) * (l.quantidade || 0);
+                const custo = horasNormais * l.custoHora + horasExtras * l.custoHora * 1.5;
+                const pct = ((l.horas || 0) / JORNADA) * 100;
+                const nome = tipo === "mao_obra" ? l.funcaoNome : l.equipamentoNome;
+                return (
+                  <tr key={l.id} className="border-t">
+                    <td className="p-1">
+                      <Input className="h-7 text-xs" value={nome ?? ""}
+                        onChange={(e) => updateLinha(l.id, tipo === "mao_obra"
+                          ? { funcaoNome: e.target.value }
+                          : { equipamentoNome: e.target.value })} />
+                    </td>
+                    <td className="p-1">
+                      <Input className="h-7 text-xs" type="number" min={1} value={l.quantidade}
+                        onChange={(e) => updateLinha(l.id, { quantidade: parseInt(e.target.value) || 0 })} />
+                    </td>
+                    <td className="p-1">
+                      <Input className="h-7 text-xs" type="number" step="0.5" value={l.horas}
+                        onChange={(e) => updateLinha(l.id, { horas: parseFloat(e.target.value) || 0 })} />
+                    </td>
+                    <td className="p-1 text-center text-muted-foreground">{pct.toFixed(0)}%</td>
+                    <td className="p-1 text-center text-muted-foreground">{horasExtras.toFixed(1)}h</td>
+                    <td className="p-1">
+                      <Input className="h-7 text-xs" type="number" step="0.01" value={l.custoHora}
+                        onChange={(e) => updateLinha(l.id, { custoHora: parseFloat(e.target.value) || 0 })} />
+                    </td>
+                    <td className="p-1">
+                      <select className="h-7 text-xs w-full border rounded bg-background px-1"
+                        value={l.itemCodigo ?? ""}
+                        onChange={(e) => {
+                          const it = itens.find((i) => i.codigo === e.target.value);
+                          updateLinha(l.id, { itemCodigo: e.target.value, itemDescricao: it?.descricao });
+                        }}>
+                        <option value="">—</option>
+                        {itens.map((i) => (
+                          <option key={i.codigo} value={i.codigo}>{i.codigo} — {i.descricao.slice(0, 40)}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="p-1 text-right font-medium">
+                      {custo.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                      <div className="text-[10px] text-muted-foreground">{horasTotais.toFixed(1)}h tot</div>
+                    </td>
+                    <td className="p-1">
+                      <Button type="button" size="sm" variant="ghost" className="h-6 w-6 p-0"
+                        onClick={() => removeLinha(l.id)}>×</Button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
