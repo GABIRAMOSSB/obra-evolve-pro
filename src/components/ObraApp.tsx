@@ -25,19 +25,23 @@ import {
 // Lazy loaders — mantêm xlsx/jspdf fora do bundle inicial.
 const loadExcel = () => import("@/lib/excel");
 const loadPdf = () => import("@/lib/pdf");
-const parseExcel = async (file: File) => (await loadExcel()).parseExcel(file);
-const exportAcompanhamentoXlsx: typeof import("@/lib/pdf").exportAcompanhamentoXlsx =
-  async (...args) => (await loadPdf()).exportAcompanhamentoXlsx(...args);
-const exportDiarioPdf: typeof import("@/lib/pdf").exportDiarioPdf =
-  async (...args) => (await loadPdf()).exportDiarioPdf(...args);
-const exportRelatorioPdf: typeof import("@/lib/pdf").exportRelatorioPdf =
-  async (...args) => (await loadPdf()).exportRelatorioPdf(...args);
-const buildMeasurementPdfBlob: typeof import("@/lib/pdf").buildMeasurementPdfBlob =
-  (async (...args: Parameters<typeof import("@/lib/pdf").buildMeasurementPdfBlob>) =>
-    (await loadPdf()).buildMeasurementPdfBlob(...args)) as typeof import("@/lib/pdf").buildMeasurementPdfBlob;
-const gerarTextoDiario: typeof import("@/lib/pdf").gerarTextoDiario =
-  (async (...args: Parameters<typeof import("@/lib/pdf").gerarTextoDiario>) =>
-    (await loadPdf()).gerarTextoDiario(...args)) as typeof import("@/lib/pdf").gerarTextoDiario;
+const parseExcel: (file: File) => ReturnType<typeof import("@/lib/excel").parseExcel> =
+  async (file) => (await loadExcel()).parseExcel(file);
+const exportAcompanhamentoXlsx = async (
+  ...args: Parameters<typeof import("@/lib/pdf").exportAcompanhamentoXlsx>
+) => (await loadPdf()).exportAcompanhamentoXlsx(...args);
+const exportDiarioPdf = async (
+  ...args: Parameters<typeof import("@/lib/pdf").exportDiarioPdf>
+) => (await loadPdf()).exportDiarioPdf(...args);
+const exportRelatorioPdf = async (
+  ...args: Parameters<typeof import("@/lib/pdf").exportRelatorioPdf>
+) => (await loadPdf()).exportRelatorioPdf(...args);
+const buildMeasurementPdfBlob = async (
+  ...args: Parameters<typeof import("@/lib/pdf").buildMeasurementPdfBlob>
+): Promise<Blob> => (await loadPdf()).buildMeasurementPdfBlob(...args);
+const gerarTextoDiario = async (
+  ...args: Parameters<typeof import("@/lib/pdf").gerarTextoDiario>
+): Promise<string> => (await loadPdf()).gerarTextoDiario(...args);
 import { uploadDocumentBlob } from "@/lib/documents";
 import { syncDiaryApontamentos, deleteDiaryApontamentos } from "@/lib/apontamentos";
 import { supabase } from "@/integrations/supabase/client";
