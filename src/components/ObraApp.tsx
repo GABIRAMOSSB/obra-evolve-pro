@@ -2211,14 +2211,14 @@ function EvolutionDialog({
     return { evo: { measurements: novaLista }, periodo: q };
   }
 
-  function gerarDiario(q: number) {
+  async function gerarDiario(q: number) {
     if (!criarDiario || q <= 0) return;
     const etapa = (() => {
       const top = row.item.split(".")[0];
       const g = allRows.find((r) => r.item === top && r.isGroup);
       return g ? `${g.item} — ${g.descricao}` : row.item;
     })();
-    const texto = gerarTextoDiario({
+    const texto = await gerarTextoDiario({
       etapa,
       descricao: row.descricao,
       quantExec: q,
