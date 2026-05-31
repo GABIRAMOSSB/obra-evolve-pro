@@ -3,6 +3,7 @@ import type { ProjectData, BudgetRow, Evolution, Measurement, DiaryEntry, Worksp
 import { loadWorkspaceCloud, saveWorkspaceCloud, newObraId, detectMigration, markMigrated, type MigrationPlan } from "@/lib/storage";
 import { useAuth } from "@/hooks/use-auth";
 import { useCompany } from "@/hooks/use-company";
+import { usePersistedTab } from "@/hooks/use-persisted-tab";
 import { useNavigate, Link } from "@tanstack/react-router";
 import { ObraInfoDialog } from "@/components/ObraInfoDialog";
 import { PhotoUploader } from "@/components/PhotoUploader";
@@ -709,6 +710,7 @@ function Dashboard({
   onSignOut: () => void;
 }) {
 
+  const [activeTab, setActiveTab] = usePersistedTab("dashboard", "atividades");
   const etapas = useMemo(() => data.rows.filter((r) => r.isGroup && r.level === 1), [data.rows]);
 
   const [filterEtapas, setFilterEtapas] = useState<string[]>([]);
@@ -1229,7 +1231,7 @@ function Dashboard({
 
 
 
-        <Tabs defaultValue="atividades">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="atividades">Atividades</TabsTrigger>
             <TabsTrigger value="diario">

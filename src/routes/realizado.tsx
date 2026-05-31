@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useMemo, Fragment } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useCompany } from "@/hooks/use-company";
+import { usePersistedTab } from "@/hooks/use-persisted-tab";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -158,6 +159,7 @@ function RealizadoPage() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = usePersistedTab("realizado", "etapas");
 
   useEffect(() => {
     if (!authLoading && !user) navigate({ to: "/login" });
@@ -751,7 +753,7 @@ function RealizadoPage() {
               />
             </div>
 
-            <Tabs defaultValue="etapas">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList>
                 <TabsTrigger value="etapas">Por Etapa</TabsTrigger>
                 <TabsTrigger value="itens">Por Composição</TabsTrigger>
