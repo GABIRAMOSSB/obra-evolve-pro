@@ -7,7 +7,7 @@ const ObraApp = lazy(() =>
   import("@/components/ObraApp").then((m) => ({ default: m.ObraApp }))
 );
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_app/")({
   component: Index,
   head: () => ({
     meta: [

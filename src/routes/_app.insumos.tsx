@@ -50,7 +50,7 @@ import {
   Pencil,
 } from "lucide-react";
 
-export const Route = createFileRoute("/insumos")({
+export const Route = createFileRoute("/_app/insumos")({
   component: InsumosPage,
   head: () => ({
     meta: [

@@ -16,7 +16,7 @@ import {
   type RestoreReport,
 } from "@/lib/backup";
 
-export const Route = createFileRoute("/backup")({
+export const Route = createFileRoute("/_app/backup")({
   component: BackupPage,
 });
 
