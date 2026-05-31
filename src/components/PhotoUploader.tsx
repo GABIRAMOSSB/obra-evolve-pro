@@ -10,12 +10,13 @@ import { toast } from "sonner";
 
 interface Props {
   obraId: string;
+  companyId: string;
   photos: DiaryPhoto[];
   onChange: (photos: DiaryPhoto[]) => void;
   compact?: boolean;
 }
 
-export function PhotoUploader({ obraId, photos, onChange, compact }: Props) {
+export function PhotoUploader({ obraId, companyId, photos, onChange, compact }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -47,7 +48,7 @@ export function PhotoUploader({ obraId, photos, onChange, compact }: Props) {
       for (let i = 0; i < validFiles.length; i++) {
         const f = validFiles[i];
         try {
-          const p = await uploadDiaryPhoto(obraId, f);
+          const p = await uploadDiaryPhoto(obraId, f, companyId);
           uploaded.push(p);
         } catch (e) {
           toast.error(`Falha ao enviar ${f.name}: ${(e as Error).message}`);
