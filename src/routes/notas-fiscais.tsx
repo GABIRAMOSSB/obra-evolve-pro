@@ -347,6 +347,7 @@ function NotasFiscaisPage() {
     if (error) { toast.error(error.message); return; }
     await upsertApropriacaoCheia(item, obraId, itemCodigo, comp?.descricao ?? null);
     setDetailItens((prev) => prev.map((it) => it.id === itemId ? { ...it, ...payload } : it));
+    if (obraId && itemCodigo) toast.success("Apropriação salva");
   };
 
   const aplicarBulk = async () => {
