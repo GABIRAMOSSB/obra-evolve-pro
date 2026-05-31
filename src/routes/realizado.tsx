@@ -1112,9 +1112,41 @@ function RealizadoPage() {
           </>
         )}
       </main>
+
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar lançamento</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Descrição</Label>
+              <Input value={editDescricao} onChange={(e) => setEditDescricao(e.target.value)} disabled={editing?.origem === "apontamento"} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Quantidade {editing?.origem === "apontamento" ? "(horas)" : ""}</Label>
+                <Input type="number" step="any" value={editQtd} onChange={(e) => setEditQtd(e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs">Valor total (R$)</Label>
+                <Input type="number" step="any" value={editValor} onChange={(e) => setEditValor(e.target.value)} disabled={editing?.origem === "nfe_item"} />
+              </div>
+            </div>
+            {editing?.origem === "nfe_item" && (
+              <p className="text-xs text-muted-foreground">Itens de NF-e não podem ter valor/quantidade alterados (vêm do XML). Para corrigir, use rateio na tela de NF-e.</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditing(null)}>Cancelar</Button>
+            <Button onClick={handleSaveEdit}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
 
 function KpiCard({
   label,
