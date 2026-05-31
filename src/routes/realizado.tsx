@@ -216,13 +216,14 @@ function RealizadoPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any)
       .from("nfe_item_apropriacoes")
-      .select("obra_id, item_codigo, descricao_insumo, unidade, quantidade, valor_total, nota_fiscal_item_id")
+      .select("id, obra_id, item_codigo, descricao_insumo, unidade, quantidade, valor_total, nota_fiscal_item_id")
       .eq("company_id", company.id)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .then(({ data, error }: any) => {
         if (error) return console.error(error);
         setApropriacoes((data as Apropriacao[]) ?? []);
       });
+
   }, [company]);
 
 
