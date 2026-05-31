@@ -1231,7 +1231,7 @@ function Dashboard({
 
 
 
-        <Tabs defaultValue="atividades">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="atividades">Atividades</TabsTrigger>
             <TabsTrigger value="diario">
