@@ -303,11 +303,38 @@ function NotasFiscaisPage() {
     setDetailItens((data as ItemRow[]) || []);
   };
 
+  const upsertApropriacaoCheia = async (
+    item: ItemRow,
+    obraId: string | null,
+    itemCodigo: string | null,
+    itemDescricao: string | null,
+  ) => {
+    if (!detailNota || !companyId) return;
+    await supabase.from("nfe_item_apropriacoes").delete().eq("nota_fiscal_item_id", item.id);
+    if (!obraId || !itemCodigo) return;
+    await supabase.from("nfe_item_apropriacoes").insert({
+      company_id: companyId,
+      nota_fiscal_id: detailNota.id,
+      nota_fiscal_item_id: item.id,
+      obra_id: obraId,
+      item_codigo: itemCodigo,
+      item_descricao: itemDescricao,
+      insumo_id: item.insumo_id,
+      descricao_insumo: item.descricao,
+      unidade: item.unidade,
+      quantidade: item.quantidade,
+      valor_unitario: item.valor_unitario,
+      valor_total: item.valor_total,
+    });
+  };
+
   const vincularApropriacao = async (
     itemId: string,
     obraId: string | null,
     itemCodigo: string | null,
   ) => {
+    const item = detailItens.find((i) => i.id === itemId);
+    if (!item) return;
     const obra = obras.find((o) => o.id === obraId);
     const comp = obra?.rows.find((r) => r.codigo === itemCodigo && !r.isGroup);
     const payload = {
@@ -318,22 +345,27 @@ function NotasFiscaisPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await supabase.from("nota_fiscal_itens").update(payload as any).eq("id", itemId);
     if (error) { toast.error(error.message); return; }
+    await upsertApropriacaoCheia(item, obraId, itemCodigo, comp?.descricao ?? null);
     setDetailItens((prev) => prev.map((it) => it.id === itemId ? { ...it, ...payload } : it));
   };
 
   const aplicarBulk = async () => {
     if (!detailNota) return;
     if (!bulkObra) { toast.error("Selecione a obra"); return; }
+    if (!bulkComp) { toast.error("Selecione a composição"); return; }
     const obra = obras.find((o) => o.id === bulkObra);
     const comp = obra?.rows.find((r) => r.codigo === bulkComp && !r.isGroup);
     const payload = {
       obra_id: bulkObra,
-      item_codigo: bulkComp || null,
+      item_codigo: bulkComp,
       item_descricao: comp?.descricao ?? null,
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await supabase.from("nota_fiscal_itens").update(payload as any).eq("nota_fiscal_id", detailNota.id);
     if (error) { toast.error(error.message); return; }
+    for (const it of detailItens) {
+      await upsertApropriacaoCheia(it, bulkObra, bulkComp, comp?.descricao ?? null);
+    }
     setDetailItens((prev) => prev.map((it) => ({ ...it, ...payload })));
     toast.success(`Apropriação aplicada a ${detailItens.length} item(ns)`);
   };
