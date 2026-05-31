@@ -520,7 +520,7 @@ function RealizadoPage() {
         desvioPct: previsto > 0 ? ((realizado - previsto) / previsto) * 100 : 0,
       };
     });
-  }, [obra, custoPorComposicao]);
+  }, [obra, getCusto]);
 
 
   if (authLoading || companyLoading || loading) {
