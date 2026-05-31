@@ -347,6 +347,7 @@ function NotasFiscaisPage() {
     if (error) { toast.error(error.message); return; }
     await upsertApropriacaoCheia(item, obraId, itemCodigo, comp?.descricao ?? null);
     setDetailItens((prev) => prev.map((it) => it.id === itemId ? { ...it, ...payload } : it));
+    if (obraId && itemCodigo) toast.success("Apropriação salva");
   };
 
   const aplicarBulk = async () => {
@@ -820,6 +821,15 @@ function NotasFiscaisPage() {
                     </TableBody>
                   </Table>
                 </div>
+              </div>
+
+              <div className="flex items-center justify-between border-t pt-3">
+                <p className="text-xs text-muted-foreground">
+                  As alterações são salvas automaticamente a cada seleção.
+                </p>
+                <Button onClick={() => { toast.success("Apropriação concluída"); setDetailNota(null); refresh(); }}>
+                  Concluir
+                </Button>
               </div>
             </div>
           )}
