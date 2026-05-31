@@ -807,6 +807,12 @@ function Dashboard({
 
   const addDiary = (entry: DiaryEntry) => {
     setData({ ...data, diaries: [entry, ...data.diaries] });
+    if (companyId) {
+      syncDiaryApontamentos(companyId, data.id, entry).catch((e) => {
+        console.error("syncDiaryApontamentos", e);
+        toast.error("Falha ao registrar custo no Realizado");
+      });
+    }
   };
 
   const updateDiary = (entry: DiaryEntry) => {
@@ -814,10 +820,19 @@ function Dashboard({
       ...data,
       diaries: data.diaries.map((d) => (d.id === entry.id ? entry : d)),
     });
+    if (companyId) {
+      syncDiaryApontamentos(companyId, data.id, entry).catch((e) => {
+        console.error("syncDiaryApontamentos", e);
+        toast.error("Falha ao atualizar custo no Realizado");
+      });
+    }
   };
 
   const removeDiary = (id: string) => {
     setData({ ...data, diaries: data.diaries.filter((d) => d.id !== id) });
+    deleteDiaryApontamentos(id).catch((e) => {
+      console.error("deleteDiaryApontamentos", e);
+    });
   };
 
   function removeObra() {
