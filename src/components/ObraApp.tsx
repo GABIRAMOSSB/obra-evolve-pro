@@ -408,15 +408,18 @@ export function ObraApp() {
   if (!activeObra) {
     return (
       <>
-        <div className="min-h-screen bg-background flex items-center justify-center p-6">
-          <Card className="max-w-xl w-full p-10 text-center space-y-6">
-            <div className="mx-auto w-16 h-16 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center">
+        <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-6">
+          <Card className="max-w-xl w-full p-10 text-center space-y-6 shadow-elevated animate-slide-up relative overflow-hidden">
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-primary text-primary-foreground flex items-center justify-center shadow-glow">
               <HardHat className="w-8 h-8" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Acompanhamento de Obras</h1>
-              <p className="text-muted-foreground mt-2">
-                <span className="font-medium text-foreground">{company.name}</span> — importe sua primeira planilha orçamentária para começar.
+              <h1 className="text-3xl font-bold font-display tracking-tight">
+                Acompanhamento de <span className="text-gradient-primary">Obras</span>
+              </h1>
+              <p className="text-muted-foreground mt-3">
+                <span className="font-semibold text-foreground">{company.name}</span> — importe sua primeira planilha orçamentária para começar.
               </p>
             </div>
             <label className="block">
@@ -439,13 +442,15 @@ export function ObraApp() {
             <p className="text-xs text-muted-foreground">
               Seus dados ficam sincronizados na nuvem e visíveis para toda a sua equipe.
             </p>
-            <Button variant="outline" className="w-full" onClick={checkLocalMigration}>
-              <CloudUpload className="mr-2 w-4 h-4" /> Procurar dados locais para migrar
-            </Button>
-            <Button asChild variant="outline" className="w-full">
-              <Link to="/equipe"><Users className="mr-2 w-4 h-4" /> Gerenciar equipe</Link>
-            </Button>
-            <div className="flex items-center justify-between text-xs text-muted-foreground border-t pt-4">
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" onClick={checkLocalMigration}>
+                <CloudUpload className="mr-2 w-4 h-4" /> Migrar local
+              </Button>
+              <Button asChild variant="outline">
+                <Link to="/equipe"><Users className="mr-2 w-4 h-4" /> Equipe</Link>
+              </Button>
+            </div>
+            <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/60 pt-4">
               <span className="truncate">{user?.email} • {company.role === "admin" ? "Admin" : company.role === "editor" ? "Editor" : "Membro"}</span>
               <Button variant="ghost" size="sm" onClick={handleSignOut}>
                 <LogOut className="w-3.5 h-3.5 mr-1" /> Sair
