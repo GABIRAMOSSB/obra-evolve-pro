@@ -23,6 +23,8 @@ export type Database = {
           custo_hora: number
           custo_total: number
           data: string
+          diary_entry_id: string | null
+          equipamento_id: string | null
           equipe_id: string | null
           frente_servico: string | null
           funcao_id: string | null
@@ -33,9 +35,13 @@ export type Database = {
           item_codigo: string | null
           item_descricao: string | null
           item_key: string | null
+          jornada_horas: number
           obra_id: string
           observacoes: string | null
           quantidade_executada: number | null
+          quantidade_pessoas: number
+          recurso_nome: string | null
+          recurso_tipo: string
           unidade: string | null
           updated_at: string
         }
@@ -47,6 +53,8 @@ export type Database = {
           custo_hora?: number
           custo_total?: number
           data: string
+          diary_entry_id?: string | null
+          equipamento_id?: string | null
           equipe_id?: string | null
           frente_servico?: string | null
           funcao_id?: string | null
@@ -57,9 +65,13 @@ export type Database = {
           item_codigo?: string | null
           item_descricao?: string | null
           item_key?: string | null
+          jornada_horas?: number
           obra_id: string
           observacoes?: string | null
           quantidade_executada?: number | null
+          quantidade_pessoas?: number
+          recurso_nome?: string | null
+          recurso_tipo?: string
           unidade?: string | null
           updated_at?: string
         }
@@ -71,6 +83,8 @@ export type Database = {
           custo_hora?: number
           custo_total?: number
           data?: string
+          diary_entry_id?: string | null
+          equipamento_id?: string | null
           equipe_id?: string | null
           frente_servico?: string | null
           funcao_id?: string | null
@@ -81,9 +95,13 @@ export type Database = {
           item_codigo?: string | null
           item_descricao?: string | null
           item_key?: string | null
+          jornada_horas?: number
           obra_id?: string
           observacoes?: string | null
           quantidade_executada?: number | null
+          quantidade_pessoas?: number
+          recurso_nome?: string | null
+          recurso_tipo?: string
           unidade?: string | null
           updated_at?: string
         }
@@ -236,6 +254,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      equipamentos: {
+        Row: {
+          ativo: boolean
+          company_id: string
+          created_at: string
+          created_by: string | null
+          custo_hora: number
+          custo_hora_extra: number | null
+          descricao: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          tipo: string | null
+          unidade: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          custo_hora?: number
+          custo_hora_extra?: number | null
+          descricao?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          tipo?: string | null
+          unidade?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          custo_hora?: number
+          custo_hora_extra?: number | null
+          descricao?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          tipo?: string | null
+          unidade?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       equipe_membros: {
         Row: {
