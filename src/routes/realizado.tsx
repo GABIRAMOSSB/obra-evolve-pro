@@ -506,8 +506,8 @@ function RealizadoPage() {
         if (r.isGroup) continue;
         if (!r.item.startsWith(prefixo)) continue;
         previsto += r.total || 0;
-        const c = r.codigo ? custoPorComposicao.get(r.codigo) : undefined;
-        if (c) { mo += c.mo; material += c.material; }
+        const c = getCusto(r);
+        mo += c.mo; material += c.material;
       }
       const realizado = mo + material;
       return {
