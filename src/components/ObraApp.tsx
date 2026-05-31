@@ -3022,18 +3022,13 @@ function ResourceLinesEditor<T extends ResourceLinhaBase>({
   }
   return (
     <div className="space-y-2">
-      <Label className="text-xs font-semibold">{titulo}</Label>
-      <div className="flex flex-wrap gap-1">
-        {opcoes.map((o) => (
-          <Button key={o.id} type="button" size="sm" variant="outline" className="h-7 text-xs"
-            onClick={() => addLinha(o.id)}>
-            + {o.nome}
-          </Button>
-        ))}
-        <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => addLinha()}>
-          + Linha em branco
+      <div className="flex items-center justify-between">
+        <Label className="text-xs font-semibold">{titulo}</Label>
+        <Button type="button" size="sm" variant="outline" className="h-7 text-xs" onClick={() => addLinha()}>
+          + Acrescentar
         </Button>
       </div>
+
       {linhas.length > 0 && (
         <div className="border rounded-md overflow-x-auto">
           <table className="w-full text-xs">
