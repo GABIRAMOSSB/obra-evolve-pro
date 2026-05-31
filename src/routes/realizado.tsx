@@ -702,7 +702,7 @@ function RealizadoPage() {
                               </TableRow>
                             );
                           }
-                          const insumos = insumosPorComposicao.get(c.row.codigo) ?? [];
+                          const insumos = getInsumos(c.row);
                           const hasInsumos = insumos.length > 0;
                           const isOpen = expanded.has(c.row.codigo);
                           const toggle = () => {
