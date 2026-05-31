@@ -2528,7 +2528,7 @@ function EvolutionDialog({
 
                 <div className="border-t pt-3">
                   <Label className="text-xs mb-2 block">Fotos e vídeos do serviço</Label>
-                  <PhotoUploader obraId={obraId} photos={fotos} onChange={setFotos} compact />
+                  <PhotoUploader obraId={obraId} companyId={companyId} photos={fotos} onChange={setFotos} compact />
                 </div>
               </div>
             )}
@@ -2746,6 +2746,7 @@ function DiaryCard({
             <Label>Fotos / vídeos</Label>
             <PhotoUploader
               obraId={obraId}
+              companyId={companyId}
               photos={e.fotos ?? []}
               onChange={(photos) => setE({ ...e, fotos: photos })}
             />
