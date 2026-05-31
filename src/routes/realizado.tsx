@@ -466,8 +466,8 @@ function RealizadoPage() {
           if (child.isGroup) continue;
           if (!child.item.startsWith(prefixo)) continue;
           previsto += child.total || 0;
-          const c = child.codigo ? custoPorComposicao.get(child.codigo) : undefined;
-          if (c) { mo += c.mo; material += c.material; horas += c.horas; qtdExec += c.qtd; }
+          const c = getCusto(child);
+          mo += c.mo; material += c.material; horas += c.horas; qtdExec += c.qtd;
         }
         const realizado = mo + material;
         rows.push({
@@ -476,7 +476,7 @@ function RealizadoPage() {
           desvioPct: previsto > 0 ? ((realizado - previsto) / previsto) * 100 : 0,
         });
       } else {
-        const c = custoPorComposicao.get(r.codigo) ?? { mo: 0, material: 0, horas: 0, qtd: 0 };
+        const c = getCusto(r);
         const previsto = r.total || 0;
         const realizado = c.mo + c.material;
         rows.push({
@@ -488,7 +488,7 @@ function RealizadoPage() {
       }
     }
     return rows;
-  }, [obra, custoPorComposicao]);
+  }, [obra, getCusto]);
 
 
   // Rollup por etapa — espelho COMPLETO (todas as etapas do orçamento,
