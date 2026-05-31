@@ -753,7 +753,7 @@ function RealizadoPage() {
               />
             </div>
 
-            <Tabs defaultValue="etapas">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList>
                 <TabsTrigger value="etapas">Por Etapa</TabsTrigger>
                 <TabsTrigger value="itens">Por Composição</TabsTrigger>
