@@ -1496,7 +1496,9 @@ function Dashboard({
 
 
           <TabsContent value="documentos">
-            <DocumentsTab obraId={data.id} />
+            <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Carregando documentos…</div>}>
+              <DocumentsTab obraId={data.id} />
+            </Suspense>
           </TabsContent>
         </Tabs>
       </main>
