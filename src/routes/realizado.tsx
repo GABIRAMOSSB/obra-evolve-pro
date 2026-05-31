@@ -335,6 +335,26 @@ function RealizadoPage() {
     return map;
   }, [apontamentosObra, movsObra, apropObra, nfItensObra]);
 
+  // Helper: resolve custo de uma linha do orçamento aceitando que o
+  // apontamento possa ter sido gravado por `codigo` da composição OU pelo
+  // caminho `item` (ex.: "1.5.1.0.1") quando o usuário lança via Diário.
+  const getCusto = useCallback(
+    (row: BudgetRow) => {
+      const empty = { mo: 0, material: 0, horas: 0, qtd: 0 };
+      const a = row.codigo ? custoPorComposicao.get(row.codigo) : undefined;
+      const b = row.item ? custoPorComposicao.get(row.item) : undefined;
+      if (!a && !b) return empty;
+      return {
+        mo: (a?.mo ?? 0) + (b?.mo ?? 0),
+        material: (a?.material ?? 0) + (b?.material ?? 0),
+        horas: (a?.horas ?? 0) + (b?.horas ?? 0),
+        qtd: (a?.qtd ?? 0) + (b?.qtd ?? 0),
+      };
+    },
+    [custoPorComposicao],
+  );
+
+
   // Composição REAL: lista de insumos consumidos por código de composição.
   // Fonte: apropriações de NF-e (rateio) + saídas de estoque + legado item_codigo.
   // Inclui também a mão-de-obra como "insumo" virtual.
@@ -409,6 +429,15 @@ function RealizadoPage() {
     return map;
   }, [apropObra, movsObra, nfItensObra, apontamentosObra]);
 
+  const getInsumos = useCallback(
+    (row: BudgetRow) => {
+      const a = row.codigo ? insumosPorComposicao.get(row.codigo) ?? [] : [];
+      const b = row.item ? insumosPorComposicao.get(row.item) ?? [] : [];
+      return [...a, ...b];
+    },
+    [insumosPorComposicao],
+  );
+
 
   // Comparativo por composição — espelho COMPLETO da planilha:
   // mantém a ordem original (etapas/subetapas como cabeçalhos + composições-folha),
@@ -437,8 +466,8 @@ function RealizadoPage() {
           if (child.isGroup) continue;
           if (!child.item.startsWith(prefixo)) continue;
           previsto += child.total || 0;
-          const c = child.codigo ? custoPorComposicao.get(child.codigo) : undefined;
-          if (c) { mo += c.mo; material += c.material; horas += c.horas; qtdExec += c.qtd; }
+          const c = getCusto(child);
+          mo += c.mo; material += c.material; horas += c.horas; qtdExec += c.qtd;
         }
         const realizado = mo + material;
         rows.push({
@@ -447,7 +476,7 @@ function RealizadoPage() {
           desvioPct: previsto > 0 ? ((realizado - previsto) / previsto) * 100 : 0,
         });
       } else {
-        const c = custoPorComposicao.get(r.codigo) ?? { mo: 0, material: 0, horas: 0, qtd: 0 };
+        const c = getCusto(r);
         const previsto = r.total || 0;
         const realizado = c.mo + c.material;
         rows.push({
@@ -459,7 +488,7 @@ function RealizadoPage() {
       }
     }
     return rows;
-  }, [obra, custoPorComposicao]);
+  }, [obra, getCusto]);
 
 
   // Rollup por etapa — espelho COMPLETO (todas as etapas do orçamento,
@@ -477,8 +506,8 @@ function RealizadoPage() {
         if (r.isGroup) continue;
         if (!r.item.startsWith(prefixo)) continue;
         previsto += r.total || 0;
-        const c = r.codigo ? custoPorComposicao.get(r.codigo) : undefined;
-        if (c) { mo += c.mo; material += c.material; }
+        const c = getCusto(r);
+        mo += c.mo; material += c.material;
       }
       const realizado = mo + material;
       return {
@@ -491,7 +520,7 @@ function RealizadoPage() {
         desvioPct: previsto > 0 ? ((realizado - previsto) / previsto) * 100 : 0,
       };
     });
-  }, [obra, custoPorComposicao]);
+  }, [obra, getCusto]);
 
 
   if (authLoading || companyLoading || loading) {
@@ -673,7 +702,7 @@ function RealizadoPage() {
                               </TableRow>
                             );
                           }
-                          const insumos = insumosPorComposicao.get(c.row.codigo) ?? [];
+                          const insumos = getInsumos(c.row);
                           const hasInsumos = insumos.length > 0;
                           const isOpen = expanded.has(c.row.codigo);
                           const toggle = () => {
