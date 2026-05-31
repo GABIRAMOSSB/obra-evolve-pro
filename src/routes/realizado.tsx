@@ -429,6 +429,15 @@ function RealizadoPage() {
     return map;
   }, [apropObra, movsObra, nfItensObra, apontamentosObra]);
 
+  const getInsumos = useCallback(
+    (row: BudgetRow) => {
+      const a = row.codigo ? insumosPorComposicao.get(row.codigo) ?? [] : [];
+      const b = row.item ? insumosPorComposicao.get(row.item) ?? [] : [];
+      return [...a, ...b];
+    },
+    [insumosPorComposicao],
+  );
+
 
   // Comparativo por composição — espelho COMPLETO da planilha:
   // mantém a ordem original (etapas/subetapas como cabeçalhos + composições-folha),
