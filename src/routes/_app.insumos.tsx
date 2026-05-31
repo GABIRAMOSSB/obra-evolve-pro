@@ -634,7 +634,7 @@ function InsumoDialog({
           <DialogTitle>{insumo ? "Editar insumo" : "Novo insumo"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <div className="col-span-1">
               <Label>Código</Label>
               <Input value={codigo} onChange={(e) => setCodigo(e.target.value)} />
@@ -652,7 +652,7 @@ function InsumoDialog({
               placeholder="Ex.: CIMENTO CP II - SACO 50 KG"
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label>Categoria</Label>
               <Select value={categoriaId} onValueChange={setCategoriaId}>
@@ -750,7 +750,7 @@ function UnidadeDialog({
           <DialogTitle>Nova unidade</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <div>
               <Label>Sigla *</Label>
               <Input value={sigla} onChange={(e) => setSigla(e.target.value)} />
@@ -760,7 +760,7 @@ function UnidadeDialog({
               <Input value={descricao} onChange={(e) => setDescricao(e.target.value)} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label>Unidade base (opcional)</Label>
               <Select value={baseId} onValueChange={setBaseId}>
@@ -869,7 +869,7 @@ function AliasDialog({
               placeholder="Como aparece na NF do fornecedor"
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label>Fornecedor</Label>
               <Input value={fornecedor} onChange={(e) => setFornecedor(e.target.value)} />

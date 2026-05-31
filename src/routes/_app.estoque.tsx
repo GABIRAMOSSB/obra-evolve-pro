@@ -379,7 +379,7 @@ function EstoquePage() {
                       Ao vincular, o custo desta saída é apropriado nesta composição e somado automaticamente na etapa pai (Realizado).
                     </p>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <Label>Quantidade</Label>
                       <Input type="number" step="0.01" value={formQtd} onChange={e => setFormQtd(e.target.value)} />
@@ -465,7 +465,7 @@ function EstoquePage() {
 
       <main className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
         {/* KPIs */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
           <Card className="p-4">
             <div className="text-xs text-muted-foreground">Itens em estoque</div>
             <div className="text-2xl font-bold">{saldos.filter(s => s.saldo > 0).length}</div>

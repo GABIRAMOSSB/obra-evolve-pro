@@ -374,7 +374,7 @@ function EquipePage() {
                         <Copy className="w-3.5 h-3.5" />
                       </Button>
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <Button variant="outline" size="sm" onClick={() => shareWhatsApp(i.email, i.token)}>
                         <MessageCircle className="w-3.5 h-3.5 mr-1.5" /> WhatsApp
                       </Button>
