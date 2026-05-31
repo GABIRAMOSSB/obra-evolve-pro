@@ -1100,6 +1100,9 @@ function Dashboard({
             <Button asChild variant="ghost" size="sm" title="Apontamento de Mão de Obra">
               <Link to="/mao-de-obra"><HardHat className="w-4 h-4 mr-1" /> Mão de Obra</Link>
             </Button>
+            <Button asChild variant="ghost" size="sm" title="Cadastro de Equipamentos">
+              <Link to="/equipamentos"><Wrench className="w-4 h-4 mr-1" /> Equipamentos</Link>
+            </Button>
             <Button asChild variant="ghost" size="sm" title="Previsto × Realizado">
               <Link to="/realizado"><BarChart3 className="w-4 h-4 mr-1" /> Realizado</Link>
             </Button>
