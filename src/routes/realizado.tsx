@@ -149,7 +149,7 @@ function RealizadoPage() {
         supabase
           .from("apontamentos_mao_obra")
           .select(
-            "obra_id, item_codigo, item_descricao, horas_normais, horas_extras, custo_total, quantidade_executada",
+            "obra_id, item_codigo, item_descricao, recurso_tipo, recurso_nome, horas_normais, horas_extras, custo_total, quantidade_executada",
           )
           .eq("company_id", company.id),
         supabase
