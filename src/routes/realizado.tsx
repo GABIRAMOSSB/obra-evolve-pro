@@ -1127,13 +1127,16 @@ function RealizadoPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs">Quantidade {editing?.origem === "apontamento" ? "(horas)" : ""}</Label>
-                <Input type="number" step="any" value={editQtd} onChange={(e) => setEditQtd(e.target.value)} />
+                <Input inputMode="decimal" value={editQtd} onChange={(e) => setEditQtd(e.target.value)} placeholder="0,00" />
               </div>
               <div>
                 <Label className="text-xs">Valor total (R$)</Label>
-                <Input type="number" step="any" value={editValor} onChange={(e) => setEditValor(e.target.value)} disabled={editing?.origem === "nfe_item"} />
+                <Input inputMode="decimal" value={editValor} onChange={(e) => setEditValor(e.target.value)} disabled={editing?.origem === "nfe_item"} placeholder="0,00" />
               </div>
             </div>
+            {editing?.origem === "apontamento" && (
+              <p className="text-xs text-muted-foreground">⚠️ Este lançamento vem do Diário de Obra. Se você editar a entrada do diário depois, este valor será sobrescrito.</p>
+            )}
             {editing?.origem === "nfe_item" && (
               <p className="text-xs text-muted-foreground">Itens de NF-e não podem ter valor/quantidade alterados (vêm do XML). Para corrigir, use rateio na tela de NF-e.</p>
             )}
