@@ -1094,6 +1094,10 @@ function Dashboard({
             <Button asChild variant="ghost" size="sm" title="Cadastro Mestre de Insumos">
               <Link to="/insumos"><Package className="w-4 h-4 mr-1" /> Insumos</Link>
             </Button>
+            <Button asChild variant="ghost" size="sm" title="Composições Próprias">
+              <Link to="/composicoes"><Package className="w-4 h-4 mr-1" /> Composições</Link>
+            </Button>
+
             <Button asChild variant="ghost" size="sm" title="Notas Fiscais (XML NF-e)">
               <Link to="/notas-fiscais"><FileText className="w-4 h-4 mr-1" /> NF-e</Link>
             </Button>
