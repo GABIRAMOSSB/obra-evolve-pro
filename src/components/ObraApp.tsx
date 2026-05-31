@@ -76,6 +76,7 @@ import {
   StickyNote,
   X,
   Package,
+  Database,
 
 
 } from "lucide-react";
@@ -1117,6 +1118,9 @@ function Dashboard({
             </Button>
             <Button asChild variant="ghost" size="sm" title={`Equipe (${companyName})`}>
               <Link to="/equipe"><Users className="w-4 h-4 mr-1" /> {companyName}</Link>
+            </Button>
+            <Button asChild variant="ghost" size="sm" title="Backup e Restauração">
+              <Link to="/backup"><Database className="w-4 h-4 mr-1" /> Backup</Link>
             </Button>
             <Button variant="ghost" size="sm" onClick={onSignOut} title={`Sair (${userEmail})`}>
               <LogOut className="w-4 h-4" />
