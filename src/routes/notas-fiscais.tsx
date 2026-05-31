@@ -822,6 +822,15 @@ function NotasFiscaisPage() {
                   </Table>
                 </div>
               </div>
+
+              <div className="flex items-center justify-between border-t pt-3">
+                <p className="text-xs text-muted-foreground">
+                  As alterações são salvas automaticamente a cada seleção.
+                </p>
+                <Button onClick={() => { toast.success("Apropriação concluída"); setDetailNota(null); refresh(); }}>
+                  Concluir
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
