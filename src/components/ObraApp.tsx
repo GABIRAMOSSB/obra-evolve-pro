@@ -2040,25 +2040,50 @@ function EvolutionDialog({
       setMaoObraLinhas([]);
       setEquipamentoLinhas([]);
       if (dialogCompany) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any)
-          .from("funcoes_mao_obra")
-          .select("id, nome, custo_hora_base")
-          .eq("company_id", dialogCompany.id)
-          .eq("ativo", true)
-          .order("nome")
+        const loadFuncoes = async () => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .then(({ data }: any) => setFuncoesDb(data ?? []));
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any)
-          .from("equipamentos")
-          .select("id, nome, custo_hora")
-          .eq("company_id", dialogCompany.id)
-          .eq("ativo", true)
-          .order("nome")
+          const sb = supabase as any;
+          let { data } = await sb
+            .from("funcoes_mao_obra")
+            .select("id, nome, custo_hora_base")
+            .eq("company_id", dialogCompany.id)
+            .eq("ativo", true)
+            .order("nome");
+          if (!data || data.length === 0) {
+            await sb.rpc("seed_funcoes_base", { _company: dialogCompany.id });
+            ({ data } = await sb
+              .from("funcoes_mao_obra")
+              .select("id, nome, custo_hora_base")
+              .eq("company_id", dialogCompany.id)
+              .eq("ativo", true)
+              .order("nome"));
+          }
+          setFuncoesDb(data ?? []);
+        };
+        const loadEquip = async () => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .then(({ data }: any) => setEquipamentosDb(data ?? []));
+          const sb = supabase as any;
+          let { data } = await sb
+            .from("equipamentos")
+            .select("id, nome, custo_hora")
+            .eq("company_id", dialogCompany.id)
+            .eq("ativo", true)
+            .order("nome");
+          if (!data || data.length === 0) {
+            await sb.rpc("seed_equipamentos_base", { _company: dialogCompany.id });
+            ({ data } = await sb
+              .from("equipamentos")
+              .select("id, nome, custo_hora")
+              .eq("company_id", dialogCompany.id)
+              .eq("ativo", true)
+              .order("nome"));
+          }
+          setEquipamentosDb(data ?? []);
+        };
+        loadFuncoes();
+        loadEquip();
       }
+
     }
   }, [open, openMeasurement, row.quantidade, dialogCompany]);
 
