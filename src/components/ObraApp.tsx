@@ -28,6 +28,8 @@ import {
   buildMeasurementPdfBlob,
 } from "@/lib/pdf";
 import { uploadDocumentBlob } from "@/lib/documents";
+import { syncDiaryApontamentos, deleteDiaryApontamentos } from "@/lib/apontamentos";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -807,6 +809,12 @@ function Dashboard({
 
   const addDiary = (entry: DiaryEntry) => {
     setData({ ...data, diaries: [entry, ...data.diaries] });
+    if (companyId) {
+      syncDiaryApontamentos(companyId, data.id, entry).catch((err: unknown) => {
+        console.error("syncDiaryApontamentos", err);
+        toast.error("Falha ao registrar custo no Realizado");
+      });
+    }
   };
 
   const updateDiary = (entry: DiaryEntry) => {
@@ -814,10 +822,19 @@ function Dashboard({
       ...data,
       diaries: data.diaries.map((d) => (d.id === entry.id ? entry : d)),
     });
+    if (companyId) {
+      syncDiaryApontamentos(companyId, data.id, entry).catch((err: unknown) => {
+        console.error("syncDiaryApontamentos", err);
+        toast.error("Falha ao atualizar custo no Realizado");
+      });
+    }
   };
 
   const removeDiary = (id: string) => {
     setData({ ...data, diaries: data.diaries.filter((d) => d.id !== id) });
+    deleteDiaryApontamentos(id).catch((err: unknown) => {
+      console.error("deleteDiaryApontamentos", err);
+    });
   };
 
   function removeObra() {
@@ -1970,6 +1987,7 @@ function EvolutionDialog({
   obraId: string;
 }) {
   const [open, setOpen] = useState(false);
+  const { company: dialogCompany } = useCompany();
   const metrics = activityMetrics(row, evolution);
   const measurements = metrics.measurements;
   const closedMeasurements = measurements.filter((m) => m.closed);
@@ -1995,6 +2013,14 @@ function EvolutionDialog({
   const [statusDia, setStatusDia] = useState<DiaryEntry["statusDia"]>("Normal");
   const [pendencias, setPendencias] = useState("");
   const [fotos, setFotos] = useState<DiaryPhoto[]>([]);
+  const [maoObraLinhas, setMaoObraLinhas] = useState<import("@/lib/types").MaoObraLinha[]>([]);
+  const [equipamentoLinhas, setEquipamentoLinhas] = useState<import("@/lib/types").EquipamentoLinha[]>([]);
+  const [funcoesDb, setFuncoesDb] = useState<Array<{ id: string; nome: string; custo_hora_base: number }>>([]);
+  const [equipamentosDb, setEquipamentosDb] = useState<Array<{ id: string; nome: string; custo_hora: number }>>([]);
+  const itensOrcamento = useMemo(
+    () => allRows.filter((r) => !r.isGroup).map((r) => ({ codigo: r.item, descricao: r.descricao })),
+    [allRows],
+  );
 
   useEffect(() => {
     if (open) {
@@ -2008,8 +2034,30 @@ function EvolutionDialog({
       setFotos([]);
       setPendencias("");
       setStatusDia("Normal");
+      setMaoObraLinhas([]);
+      setEquipamentoLinhas([]);
+      if (dialogCompany) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any)
+          .from("funcoes_mao_obra")
+          .select("id, nome, custo_hora_base")
+          .eq("company_id", dialogCompany.id)
+          .eq("ativo", true)
+          .order("nome")
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .then(({ data }: any) => setFuncoesDb(data ?? []));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any)
+          .from("equipamentos")
+          .select("id, nome, custo_hora")
+          .eq("company_id", dialogCompany.id)
+          .eq("ativo", true)
+          .order("nome")
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .then(({ data }: any) => setEquipamentosDb(data ?? []));
+      }
     }
-  }, [open, openMeasurement, row.quantidade]);
+  }, [open, openMeasurement, row.quantidade, dialogCompany]);
 
   function handleQuant(v: string) {
     setPeriodo(v);
@@ -2104,6 +2152,12 @@ function EvolutionDialog({
       unidade: row.und,
       quantTotal: row.quantidade,
     });
+    const equipeAuto = maoObraLinhas.length > 0
+      ? maoObraLinhas.map((l) => `${l.quantidade} ${l.funcaoNome}`).join(", ")
+      : equipe;
+    const equipAuto = equipamentoLinhas.length > 0
+      ? equipamentoLinhas.map((l) => `${l.quantidade} ${l.equipamentoNome}`).join(", ")
+      : equipamentos;
     onAddDiary({
       id: crypto.randomUUID(),
       itemKey: row.item,
@@ -2112,8 +2166,8 @@ function EvolutionDialog({
       horaFim,
       statusDia,
       clima,
-      equipe,
-      equipamentos,
+      equipe: equipeAuto,
+      equipamentos: equipAuto,
       pendencias,
       observacoes: diarioObs,
       quantExec: q,
@@ -2121,6 +2175,8 @@ function EvolutionDialog({
       atividade: row.descricao,
       texto,
       fotos,
+      maoObraLinhas,
+      equipamentoLinhas,
       createdAt: new Date().toISOString(),
     });
   }
@@ -2358,47 +2414,39 @@ function EvolutionDialog({
                   </div>
                 </div>
 
-                <ChipMultiSelect
-                  label="Equipe presente"
-                  value={equipe}
-                  onChange={setEquipe}
-                  options={[
-                    "Mestre de obras",
-                    "Encarregado",
-                    "Engenheiro",
-                    "Pedreiro",
-                    "Servente",
-                    "Carpinteiro",
-                    "Armador",
-                    "Eletricista",
-                    "Encanador",
-                    "Pintor",
-                    "Soldador",
-                    "Operador de máquina",
-                  ]}
-                  placeholder="Ex: 2 pedreiros, 3 serventes"
+                <ResourceLinesEditor
+                  titulo="Equipe presente (custo lançado no Realizado)"
+                  tipo="mao_obra"
+                  linhas={maoObraLinhas}
+                  onChange={setMaoObraLinhas}
+                  opcoes={funcoesDb.map((f) => ({ id: f.id, nome: f.nome, custoHora: Number(f.custo_hora_base) || 0 }))}
+                  itens={itensOrcamento}
+                  itemPadrao={row.item}
                 />
 
-                <ChipMultiSelect
-                  label="Equipamentos utilizados"
-                  value={equipamentos}
-                  onChange={setEquipamentos}
-                  options={[
-                    "Betoneira",
-                    "Bomba de concreto",
-                    "Caminhão basculante",
-                    "Retroescavadeira",
-                    "Escavadeira",
-                    "Compactador",
-                    "Serra mármore",
-                    "Furadeira",
-                    "Andaime",
-                    "Vibrador de concreto",
-                    "Caçamba",
-                    "Carrinho de mão",
-                  ]}
-                  placeholder="Ex: 1 betoneira, 2 andaimes"
+                <ResourceLinesEditor
+                  titulo="Equipamentos utilizados"
+                  tipo="equipamento"
+                  linhas={equipamentoLinhas}
+                  onChange={setEquipamentoLinhas}
+                  opcoes={equipamentosDb.map((e) => ({ id: e.id, nome: e.nome, custoHora: Number(e.custo_hora) || 0 }))}
+                  itens={itensOrcamento}
+                  itemPadrao={row.item}
                 />
+
+
+                {/* Texto livre adicional (opcional) */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Equipe (texto livre)</Label>
+                    <Input value={equipe} onChange={(e) => setEquipe(e.target.value)} placeholder="Observações da equipe" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Equipamentos (texto livre)</Label>
+                    <Input value={equipamentos} onChange={(e) => setEquipamentos(e.target.value)} placeholder="Observações dos equipamentos" />
+                  </div>
+                </div>
+
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div>
@@ -2914,6 +2962,149 @@ function ChipMultiSelect({
         placeholder={placeholder}
         className="text-xs"
       />
+    </div>
+  );
+}
+
+interface ResourceOpcao { id: string; nome: string; custoHora: number; }
+interface ResourceLinhaBase {
+  id: string;
+  quantidade: number;
+  horas: number;
+  custoHora: number;
+  itemCodigo?: string;
+  itemDescricao?: string;
+  funcaoId?: string;
+  funcaoNome?: string;
+  equipamentoId?: string;
+  equipamentoNome?: string;
+}
+
+function ResourceLinesEditor<T extends ResourceLinhaBase>({
+  titulo, tipo, linhas, onChange, opcoes, itens, itemPadrao,
+}: {
+  titulo: string;
+  tipo: "mao_obra" | "equipamento";
+  linhas: T[];
+  onChange: (v: T[]) => void;
+  opcoes: ResourceOpcao[];
+  itens: { codigo: string; descricao: string }[];
+  itemPadrao: string;
+}) {
+  const JORNADA = 8;
+  function addLinha(opcaoId?: string) {
+    const op = opcoes.find((o) => o.id === opcaoId);
+    const base: ResourceLinhaBase = {
+      id: crypto.randomUUID(),
+      quantidade: 1,
+      horas: 8,
+      custoHora: op?.custoHora ?? 0,
+      itemCodigo: itemPadrao,
+      itemDescricao: itens.find((i) => i.codigo === itemPadrao)?.descricao,
+    };
+    if (tipo === "mao_obra") {
+      base.funcaoId = op?.id;
+      base.funcaoNome = op?.nome ?? "Função";
+    } else {
+      base.equipamentoId = op?.id;
+      base.equipamentoNome = op?.nome ?? "Equipamento";
+    }
+    onChange([...(linhas as ResourceLinhaBase[]), base] as T[]);
+  }
+  function updateLinha(id: string, patch: Partial<ResourceLinhaBase>) {
+    onChange(linhas.map((l) => (l.id === id ? { ...l, ...patch } : l)) as T[]);
+  }
+  function removeLinha(id: string) {
+    onChange(linhas.filter((l) => l.id !== id) as T[]);
+  }
+  return (
+    <div className="space-y-2">
+      <Label className="text-xs font-semibold">{titulo}</Label>
+      <div className="flex flex-wrap gap-1">
+        {opcoes.map((o) => (
+          <Button key={o.id} type="button" size="sm" variant="outline" className="h-7 text-xs"
+            onClick={() => addLinha(o.id)}>
+            + {o.nome}
+          </Button>
+        ))}
+        <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => addLinha()}>
+          + Linha em branco
+        </Button>
+      </div>
+      {linhas.length > 0 && (
+        <div className="border rounded-md overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="p-1 text-left">{tipo === "mao_obra" ? "Função" : "Equipamento"}</th>
+                <th className="p-1 w-16">Qtd</th>
+                <th className="p-1 w-20">Horas</th>
+                <th className="p-1 w-16">% 8h</th>
+                <th className="p-1 w-16">HE</th>
+                <th className="p-1 w-24">R$/h</th>
+                <th className="p-1">Atividade</th>
+                <th className="p-1 w-24 text-right">Custo</th>
+                <th className="p-1 w-8"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {linhas.map((l) => {
+                const horasTotais = (l.horas || 0) * (l.quantidade || 0);
+                const horasNormais = Math.min(l.horas || 0, JORNADA) * (l.quantidade || 0);
+                const horasExtras = Math.max(0, (l.horas || 0) - JORNADA) * (l.quantidade || 0);
+                const custo = horasNormais * l.custoHora + horasExtras * l.custoHora * 1.5;
+                const pct = ((l.horas || 0) / JORNADA) * 100;
+                const nome = tipo === "mao_obra" ? l.funcaoNome : l.equipamentoNome;
+                return (
+                  <tr key={l.id} className="border-t">
+                    <td className="p-1">
+                      <Input className="h-7 text-xs" value={nome ?? ""}
+                        onChange={(e) => updateLinha(l.id, tipo === "mao_obra"
+                          ? { funcaoNome: e.target.value }
+                          : { equipamentoNome: e.target.value })} />
+                    </td>
+                    <td className="p-1">
+                      <Input className="h-7 text-xs" type="number" min={1} value={l.quantidade}
+                        onChange={(e) => updateLinha(l.id, { quantidade: parseInt(e.target.value) || 0 })} />
+                    </td>
+                    <td className="p-1">
+                      <Input className="h-7 text-xs" type="number" step="0.5" value={l.horas}
+                        onChange={(e) => updateLinha(l.id, { horas: parseFloat(e.target.value) || 0 })} />
+                    </td>
+                    <td className="p-1 text-center text-muted-foreground">{pct.toFixed(0)}%</td>
+                    <td className="p-1 text-center text-muted-foreground">{horasExtras.toFixed(1)}h</td>
+                    <td className="p-1">
+                      <Input className="h-7 text-xs" type="number" step="0.01" value={l.custoHora}
+                        onChange={(e) => updateLinha(l.id, { custoHora: parseFloat(e.target.value) || 0 })} />
+                    </td>
+                    <td className="p-1">
+                      <select className="h-7 text-xs w-full border rounded bg-background px-1"
+                        value={l.itemCodigo ?? ""}
+                        onChange={(e) => {
+                          const it = itens.find((i) => i.codigo === e.target.value);
+                          updateLinha(l.id, { itemCodigo: e.target.value, itemDescricao: it?.descricao });
+                        }}>
+                        <option value="">—</option>
+                        {itens.map((i) => (
+                          <option key={i.codigo} value={i.codigo}>{i.codigo} — {i.descricao.slice(0, 40)}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="p-1 text-right font-medium">
+                      {custo.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                      <div className="text-[10px] text-muted-foreground">{horasTotais.toFixed(1)}h tot</div>
+                    </td>
+                    <td className="p-1">
+                      <Button type="button" size="sm" variant="ghost" className="h-6 w-6 p-0"
+                        onClick={() => removeLinha(l.id)}>×</Button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

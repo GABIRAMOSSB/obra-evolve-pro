@@ -1,120 +1,121 @@
-# Roadmap — Plataforma SOLV de Inteligência de Engenharia
+# Apontamento detalhado de Mão de Obra e Equipamentos no Diário de Obra
 
-Esse escopo (30 módulos) é grande demais para uma única entrega. Sem fasear, o risco de quebrar Orçamento / Realizado / NF-e / Estoque atuais é alto. Proponho **6 fases incrementais**, mantendo tudo que já existe intacto.
+## Objetivo
 
-## Princípios (válidos em todas as fases)
-
-- Zero alteração visual nas telas existentes (Orçamento, Realizado, NF-e, Estoque, Mão de Obra, Insumos, Equipe).
-- Todo módulo novo entra como **rota nova** + menu adicional; nada é reescrito.
-- Orçamento = previsto (imutável automaticamente). Tudo de execução vai em tabelas **novas** (camada Realizado já existente é estendida, nunca substituída).
-- Histórico nunca é apagado — `soft delete` + versionamento.
-- Toda nova tabela: RLS por `company_id` + GRANT para `authenticated`/`service_role`.
+Evoluir o bloco "Equipe presente" e "Equipamentos utilizados" do diário para registrar **quantidade, horas trabalhadas, hora extra e atividade da planilha** de cada recurso. Esse apontamento alimenta automaticamente o módulo **Realizado** usando os valores cadastrados em Mão de Obra / Equipamentos. Se a entrada do diário for apagada, o custo correspondente é removido do Realizado.
 
 ---
 
-## Fase 1 — Fundação de Cadastros e Apropriação (já 70% pronto)
+## Como vai funcionar (visão do usuário)
 
-Itens do briefing: **6, 7, 8, 9, 10, 11, 28 (parcial)**
+No diálogo "Registrar entrada no diário de obra", o bloco **Equipe presente** passa a ser uma lista de linhas. Cada linha tem:
 
-Já existe: `insumos_mestre`, `insumo_categorias`, `insumo_aliases`, `unidades_medida` com `fator_conversao`, seed de ~50 insumos, `nfe_item_apropriacoes` (rateio por quantidade).
+- **Função** (Pedreiro, Servente, Eletricista…)
+- **Quantidade** (ex: 2 pedreiros)
+- **Atividade da planilha** (select com os itens do orçamento da obra)
+- **Horas trabalhadas** (ex: 9h)
+- **% jornada** (calculado: horas / 8h → 112,5%)
+- **Hora extra** (calculado: max(0, horas − 8) × qtd)
+- **Custo** (calculado: qtd × horas normais × R$/h + qtd × HE × R$/h × 1,5)
 
-A fazer:
-- **Expandir seed** de insumos para ~500 itens cobrindo todas as 20 categorias do item 7.
-- **Tela "Apropriar NF-e com rateio"** (substituir o seletor único por diálogo de divisão para várias composições/centros de custo).
-- **Campo `centro_custo`** em `nfe_item_apropriacoes` e em `apontamentos_mao_obra`.
-- **Aprendizado de aliases**: ao apropriar uma descrição de NF-e a um insumo mestre, gravar automático em `insumo_aliases`.
-- **Sugestão por IA** (Lovable AI Gateway, `google/gemini-2.5-flash-lite`) de categoria + insumo mestre na importação de XML.
+Botão "+ Adicionar linha de mão de obra".
 
-Entrega: usuário consegue importar XML, sistema sugere o insumo certo, rateia entre composições e o estoque registra entrada automática.
+Mesma estrutura para **Equipamentos utilizados**:
 
----
+- Equipamento, quantidade, atividade, horas, % uso, custo (do cadastro do equipamento).
 
-## Fase 2 — Estoque, Perdas e Transferências
+Os chips antigos viram atalhos: clicar em "+ Pedreiro" adiciona uma linha já com função preenchida.
 
-Itens: **12, 11 (perdas)**
-
-Tabela `estoque_movimentos` já existe com tipos `entrada/saida/ajuste/transferencia`. Faltam fluxos de UI.
-
-- **Tela de transferência** entre obras / almoxarifado central.
-- **Devolução** (tipo `devolucao` adicionado ao enum lógico).
-- **Apontamento de consumo** vinculado a item do orçamento (fecha o loop "comprado → aplicado").
-- **Indicador de perda** por insumo: `comprado − aplicado − saldo = perda`.
-- **Rastreabilidade**: tela "Histórico do insumo" mostrando NF-e origem → estoque → consumo → obra.
+O campo livre de texto "Mestre de obras, Encarregado…" continua existindo como **resumo automático** gerado a partir das linhas.
 
 ---
 
-## Fase 3 — Mão de Obra Completa, Equipamentos e Produtividade
+## Integração com Realizado
 
-Itens: **13, 14, 15, 16, 17, 18**
+- Ao **salvar a entrada** do diário, o sistema grava em `apontamentos_mao_obra` e `apontamentos_equipamento` (já existem) um registro por linha, com `diary_entry_id` como chave de origem.
+- A tela `/realizado` já lê esses apontamentos — passa a mostrar custo agregado por item do orçamento.
+- Ao **editar** a entrada do diário, o sistema faz `delete + insert` dos apontamentos vinculados àquele `diary_entry_id`.
+- Ao **apagar** a entrada do diário, os apontamentos vinculados são apagados em cascata → custo some do Realizado.
 
-Já existe: `funcionarios`, `funcoes_mao_obra`, `equipes`, `apontamentos_mao_obra` (com `quantidade_executada`).
-
-Novas tabelas:
-- `funcionario_custos` — salário, encargos, benefícios, VT, VA, EPI mensais → cálculo de `custo_hora_real`.
-- `equipamentos` — próprios e locados, horímetro, operador padrão.
-- `apontamentos_equipamento` — horas, obra, item, operador, consumo combustível.
-- `equipamento_manutencoes` e `equipamento_abastecimentos`.
-- `servicos_terceirizados` — frete, munck, concretagem, vinculados ao item do orçamento.
-
-Telas:
-- **Produtividade** — qtd executada / horas trabalhadas por equipe/colaborador, ranking.
-- **Curva de consumo** (item 19): previsto acumulado × realizado acumulado com alertas.
+Valores R$/h vêm de:
+- Mão de obra: `funcoes_mao_obra.custo_hora` (cadastro existente). HE = custo_hora × 1,5.
+- Equipamento: `equipamentos.custo_hora` (será criado se não existir).
 
 ---
 
-## Fase 4 — Banco de Preços, Histórico e Composições Próprias SOLV
+## Etapas de implementação
 
-Itens: **21, 22, 23, 24, 25**
+### 1. Banco de dados (migração)
 
-- View materializada `banco_precos_insumo` agregando todas as NF-e por insumo mestre × fornecedor × UF × mês (mín/máx/médio/último).
-- **Biblioteca técnica**: nova tabela `obra_execucoes_acervo` consolidando por serviço executado (fotos, equipe, prazo, materiais, custo real). Usa storage bucket `obra-fotos` já existente.
-- **Composições SOLV automáticas** — função SQL que, para cada item executado em ≥3 obras, calcula coeficientes médios reais (qtd insumo / qtd serviço, h MO / qtd serviço) e gera `composicoes_solv` versionadas (`composicoes_solv_2026`, `_2027`...).
-- Tela "Composições SOLV" lado a lado com SINAPI/TCPO de referência.
+- Adicionar coluna `diary_entry_id uuid` em `apontamentos_mao_obra` e `apontamentos_equipamento` (FK lógica, sem constraint pra não quebrar dados antigos).
+- Adicionar `quantidade_pessoas int`, `horas_normais numeric`, `horas_extras numeric`, `custo_calculado numeric`, `item_orcamento_codigo text` em `apontamentos_mao_obra` (alguns já existem; verificar).
+- Mesma estrutura em `apontamentos_equipamento`.
+- Garantir tabela `equipamentos` com `custo_hora`. Se não existir, criar mínima (id, company_id, nome, custo_hora, ativo) com RLS por company_id e GRANT para authenticated/service_role.
+- Índices em `diary_entry_id`.
+
+### 2. Tipos no front
+
+- Estender `DiaryEntry` (em `src/lib/types.ts`) com:
+  ```ts
+  maoObraLinhas?: Array<{
+    id: string; funcaoId: string; funcaoNome: string;
+    quantidade: number; horas: number; itemCodigo?: string;
+    custoHora: number;
+  }>;
+  equipamentoLinhas?: Array<{
+    id: string; equipamentoId: string; equipamentoNome: string;
+    quantidade: number; horas: number; itemCodigo?: string;
+    custoHora: number;
+  }>;
+  ```
+- Manter campos antigos `equipe` e `equipamentos` (string) para compatibilidade — gerados automaticamente.
+
+### 3. UI do diálogo do diário
+
+- Em `src/components/ObraApp.tsx` (ou onde o `DiaryDialog` está), substituir o bloco de chips por:
+  - Tabela compacta com linhas editáveis.
+  - Botões "+ Pedreiro" etc. continuam, agora adicionam linha pré-preenchida.
+  - Coluna "Atividade" = `Select` com os itens da planilha (`rows` da obra, só folhas).
+  - Coluna "Horas", "% jornada" (read-only, `horas/8*100`), "HE" (read-only), "Custo" (read-only).
+  - Mesma estrutura para equipamentos.
+- Buscar `funcoes_mao_obra` e `equipamentos` do Supabase via `useQuery` ao abrir o diálogo.
+
+### 4. Persistência
+
+- Ao salvar diário (já passa por algum hook/serviço), após persistir o `diary_entries`:
+  1. `delete from apontamentos_mao_obra where diary_entry_id = :id`
+  2. `insert` uma linha por `maoObraLinhas`.
+  3. Idem equipamentos.
+- Ao deletar entrada do diário: trigger SQL `ON DELETE` em `diary_entries` que apaga apontamentos com aquele `diary_entry_id`. (Ou cascade no app.)
+
+### 5. Realizado
+
+- Em `src/routes/realizado.tsx`, somar `custo_calculado` de `apontamentos_mao_obra` e `apontamentos_equipamento` agrupado por `item_orcamento_codigo`.
+- Mostrar como nova coluna/seção "MO Real" e "Equip. Real" ao lado do material já apurado.
+
+### 6. QA
+
+- Criar entrada com 2 pedreiros × 9h em item X → conferir cálculo (2 × 8 × R$/h + 2 × 1 × R$/h × 1,5) e aparecer em Realizado.
+- Editar a entrada (mudar pra 1 pedreiro) → Realizado atualiza.
+- Apagar entrada → Realizado zera essa contribuição.
 
 ---
 
-## Fase 5 — Centro de Lucro, Índice de Confiabilidade e Auditoria
+## Detalhes técnicos
 
-Itens: **20 (completo), 26, 27, 29**
-
-- Tabela `obra_contrato` — valor, aditivos, faturamentos.
-- Dashboard "Centro de Lucro": receita − custo realizado = margem.
-- Após `obra.status = 'concluida'`: gera `obra_confiabilidade` (precisão = 1 − |realizado − orçado| / orçado).
-- **Auditoria genérica**: tabela `audit_log` + trigger em todas as tabelas críticas (orçamento, NF-e, apropriações, apontamentos) registrando user, antes/depois, timestamp.
-
----
-
-## Fase 6 — Certificado Digital A1 e Integrações
-
-Itens: **5, 4 (avançado), 30**
-
-- Estrutura de storage privado `certificados-digitais` (criptografado).
-- Tabela `empresa_certificados` (CNPJ, validade, senha cifrada via Lovable Cloud secret).
-- Server function `consultarNFeBySefaz` (preparada, sem chamada real até A1 ativo).
-- View consolidada `obra_360` integrando orçamento + compras + estoque + apropriações + apontamentos + medições + financeiro.
+- Linguagem: TypeScript + TanStack Start (sem edge functions; usar `supabase` client direto, padrão do projeto).
+- Hora extra fixa em 1,5× nesta fase. (1,5 dia útil / 2× domingo/feriado pode vir depois.)
+- Jornada padrão = 8h (hardcoded por enquanto; podemos parametrizar por empresa numa Fase 2).
+- A migração não toca em dados existentes — apenas adiciona colunas nullable.
+- Sem mudanças visuais nas telas Realizado / Orçamento além da nova coluna de MO/Equipamento.
 
 ---
 
-## Itens transversais (entram conforme cada fase)
+## Fora de escopo desta entrega
 
-- **3 — Camada Realizado**: já existe a rota `/realizado`, será estendida em cada fase.
-- **1, 2 — Preservação + orçamento como base**: regra arquitetural, validada em cada migration.
-- **30 — Integração total**: emerge naturalmente nas fases 4–6.
+- Cadastro de funcionário individual com nome (continua por função).
+- Folha de pagamento, encargos detalhados (Fase 3 do roadmap).
+- Manutenção/combustível de equipamento (Fase 3).
+- Apontamento via app mobile separado.
 
----
-
-## Tecnologia
-
-- TanStack Start (server functions, sem novas Edge Functions).
-- Supabase Postgres com RLS por `company_id`.
-- Lovable AI Gateway para classificação automática (item 28).
-- Lovable Storage para fotos e certificados.
-- Recharts para curva de consumo e dashboards.
-
----
-
-## Como quer prosseguir?
-
-**Recomendo começar pela Fase 1**, que destrava o fluxo NF-e → composição → estoque que já está parcialmente feito e é a base para todo o resto.
-
-Me confirme qual fase iniciar (ou se quer reordenar). Cada fase será 4–8 entregas separadas para você validar passo a passo.
+Confirma a abordagem? Após o "ok", aplico migração + UI + integração com Realizado.
