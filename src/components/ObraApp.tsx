@@ -1986,6 +1986,7 @@ function EvolutionDialog({
   obraId: string;
 }) {
   const [open, setOpen] = useState(false);
+  const { company: dialogCompany } = useCompany();
   const metrics = activityMetrics(row, evolution);
   const measurements = metrics.measurements;
   const closedMeasurements = measurements.filter((m) => m.closed);
