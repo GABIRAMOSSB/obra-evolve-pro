@@ -4,7 +4,7 @@ import { loadWorkspaceCloud, saveWorkspaceCloud, newObraId, detectMigration, mar
 import { useAuth } from "@/hooks/use-auth";
 import { useCompany } from "@/hooks/use-company";
 import { usePersistedTab } from "@/hooks/use-persisted-tab";
-import { useNavigate, Link } from "@tanstack/react-router";
+import { useNavigate, Link, useRouterState } from "@tanstack/react-router";
 import { ObraInfoDialog } from "@/components/ObraInfoDialog";
 import { PhotoUploader } from "@/components/PhotoUploader";
 import { parseExcel, type ParseResult } from "@/lib/excel";
@@ -974,107 +974,135 @@ function Dashboard({
 
 
   return (
-    <div className="min-h-screen bg-background">
-      {!isAdmin && (
-        <div className="bg-warning/20 border-b border-warning text-foreground text-xs text-center py-1.5 px-4">
-          Modo somente leitura — peça a um administrador para alterar seu papel para Editor ou Admin se precisar editar.
-        </div>
-      )}
-      <header className="bg-card border-b border-border sticky top-0 z-30 shadow-[var(--shadow-card)]">
-        <div className="max-w-[1600px] mx-auto px-6 py-3 flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-lg bg-[var(--measure)] text-[var(--measure-foreground)] flex items-center justify-center font-extrabold text-lg tracking-tight shadow-sm">
-              BM
-            </div>
-            <div>
-              <h1 className="font-bold text-foreground leading-tight text-lg">
-                Acompanhamento de Obras
-              </h1>
-              <p className="text-xs text-muted-foreground font-medium">{data.nome} <span className="text-border mx-1">•</span> {data.fileName}</p>
-            </div>
-          </div>
+    <div className="min-h-screen flex bg-background">
+      {/* ===== Sidebar premium (navy + glow) ===== */}
+      <aside className="hidden lg:flex flex-col w-[240px] shrink-0 bg-gradient-sidebar text-sidebar-foreground sticky top-0 h-screen border-r border-sidebar-border/40 relative overflow-hidden">
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary-glow/50 to-transparent" />
+        <div className="absolute -top-32 -left-20 w-64 h-64 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 -right-20 w-64 h-64 rounded-full bg-primary-glow/15 blur-3xl pointer-events-none" />
 
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1.5 bg-muted rounded-md px-2 py-1 border border-border">
-              <Building2 className="w-4 h-4 text-primary" />
+        <div className="relative px-5 pt-6 pb-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
+            <HardHat className="w-5 h-5 text-primary-foreground" />
+          </div>
+          <div className="min-w-0">
+            <div className="font-display font-bold text-[15px] leading-tight tracking-tight">Obralytics</div>
+            <div className="text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/50 truncate">{companyName}</div>
+          </div>
+        </div>
+
+        <div className="relative px-3 mt-2 flex-1 overflow-y-auto">
+          <div className="px-3 pb-1 text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/40">Obra</div>
+          <SidebarLink to="/" icon={BarChart3} label="Visão geral" exact />
+          <SidebarLink to="/realizado" icon={BarChart3} label="Previsto × Realizado" />
+          <SidebarLink to="/notas-fiscais" icon={FileText} label="Notas Fiscais" />
+          <SidebarLink to="/estoque" icon={Package} label="Estoque" />
+
+          <div className="px-3 pt-5 pb-1 text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/40">Recursos</div>
+          <SidebarLink to="/mao-de-obra" icon={HardHat} label="Mão de obra" />
+          <SidebarLink to="/equipamentos" icon={Wrench} label="Equipamentos" />
+          <SidebarLink to="/insumos" icon={Package} label="Insumos" />
+          <SidebarLink to="/composicoes" icon={Package} label="Composições" />
+
+          <div className="px-3 pt-5 pb-1 text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/40">Administração</div>
+          <SidebarLink to="/equipe" icon={Users} label="Equipe" />
+          <SidebarLink to="/backup" icon={Database} label="Backup" />
+        </div>
+
+        <div className="relative px-3 py-3 border-t border-sidebar-border/40 bg-sidebar/40">
+          <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg">
+            <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-[11px] font-bold text-primary-foreground shadow-sm shrink-0">
+              {(userEmail || "U").slice(0, 1).toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[12px] font-medium truncate">{userEmail}</div>
+              <div className="text-[10px] text-sidebar-foreground/50 truncate uppercase tracking-wider">{isAdmin ? "Administrador" : "Leitor"}</div>
+            </div>
+            <Button variant="ghost" size="icon" onClick={onSignOut} className="h-8 w-8 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/30" title="Sair">
+              <LogOut className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        </div>
+      </aside>
+
+      {/* ===== Conteúdo principal ===== */}
+      <div className="flex-1 min-w-0 flex flex-col">
+        {!isAdmin && (
+          <div className="bg-warning/20 border-b border-warning text-foreground text-xs text-center py-1.5 px-4">
+            Modo somente leitura — peça a um administrador para alterar seu papel.
+          </div>
+        )}
+
+        {/* Top bar enxuta (glass) */}
+        <header className="sticky top-0 z-30 border-b border-border/60 bg-background/75 backdrop-blur-xl">
+          <div className="px-4 sm:px-6 h-14 flex items-center gap-3">
+            {/* Selector de obra mobile-only brand */}
+            <div className="lg:hidden w-9 h-9 rounded-lg bg-gradient-primary flex items-center justify-center shadow-glow shrink-0">
+              <HardHat className="w-4 h-4 text-primary-foreground" />
+            </div>
+
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <Building2 className="w-4 h-4 text-primary shrink-0" />
               <Select value={activeId} onValueChange={onSelectObra}>
-                <SelectTrigger className="h-8 min-w-[180px] border-0 bg-transparent focus:ring-0 text-sm font-medium">
+                <SelectTrigger className="h-9 min-w-[180px] max-w-[320px] border-0 bg-muted/50 hover:bg-muted focus:ring-1 focus:ring-primary/40 text-sm font-medium rounded-lg">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {obras.map((o) => (
-                    <SelectItem key={o.id} value={o.id}>
-                      {o.nome}
-                    </SelectItem>
+                    <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <ObraInfoDialog nome={data.nome} info={data.info} onSave={handleSaveInfo} />
             </div>
 
-            <Button variant="outline" size="sm" className="border-border" onClick={() => exportAcompanhamentoXlsx(filteredRows, data.evolutions, info, data.nome, selectedBM ?? currentMeasNumber, undefined, data.rows)}>
-              <FileSpreadsheet className="w-4 h-4 mr-1 text-success" /> Excel
-            </Button>
-            <Button variant="outline" size="sm" className="border-border" onClick={() => exportRelatorioPdf(filteredRows, data.evolutions, data.fileName)}>
-              <FileText className="w-4 h-4 mr-1 text-destructive" /> PDF
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-border"
-              onClick={() => {
-                const blob = buildMeasurementPdfBlob(
-                  filteredRows,
-                  data.evolutions,
-                  selectedBM ?? currentMeasNumber,
-                  data.nome,
-                  new Date(),
-                  info,
-                  periodoInicio ?? undefined,
-                  data.rows,
-                );
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `${resumoBM.codigoBM}-${data.nome.replace(/[^a-z0-9-_]+/gi, "_")}.pdf`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                toast.success(`Boletim ${resumoBM.codigoBM} exportado`);
-              }}
-            >
-              <FileText className="w-4 h-4 mr-1 text-primary" /> Boletim PDF
-            </Button>
-            <MeasurementClosure
-              data={data}
-              setData={setData}
-              companyId={companyId}
-              userId={userId}
-              userEmail={userEmail}
-              isAdmin={isAdmin}
-              variant="inline"
-            />
+            <div className="hidden md:flex items-center gap-1.5 px-2.5 h-7 rounded-full bg-success/10 border border-success/20 text-success text-[11px] font-medium">
+              <span className={`w-1.5 h-1.5 rounded-full bg-success ${saving ? "animate-pulse" : ""}`} />
+              {saving ? "Sincronizando…" : "Sincronizado"}
+            </div>
+
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="sm" className="h-8 px-2.5" onClick={() => exportAcompanhamentoXlsx(filteredRows, data.evolutions, info, data.nome, selectedBM ?? currentMeasNumber, undefined, data.rows)}>
+                <FileSpreadsheet className="w-4 h-4 text-success" />
+                <span className="hidden xl:inline ml-1">Excel</span>
+              </Button>
+              <Button variant="ghost" size="sm" className="h-8 px-2.5" onClick={() => exportRelatorioPdf(filteredRows, data.evolutions, data.fileName)}>
+                <FileText className="w-4 h-4 text-destructive" />
+                <span className="hidden xl:inline ml-1">PDF</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2.5"
+                onClick={() => {
+                  const blob = buildMeasurementPdfBlob(filteredRows, data.evolutions, selectedBM ?? currentMeasNumber, data.nome, new Date(), info, periodoInicio ?? undefined, data.rows);
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `${resumoBM.codigoBM}-${data.nome.replace(/[^a-z0-9-_]+/gi, "_")}.pdf`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                  toast.success(`Boletim ${resumoBM.codigoBM} exportado`);
+                }}
+              >
+                <FileText className="w-4 h-4 text-primary" />
+                <span className="hidden xl:inline ml-1">Boletim</span>
+              </Button>
+              <MeasurementClosure data={data} setData={setData} companyId={companyId} userId={userId} userEmail={userEmail} isAdmin={isAdmin} variant="inline" />
+            </div>
+
+            <div className="h-6 w-px bg-border/70 hidden md:block" />
 
             <label>
-              <input
-                type="file"
-                accept=".xlsx,.xls"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  e.target.value = "";
-                  if (f) onImportFile(f);
-                }}
-              />
-              <Button asChild size="sm" className="bg-[var(--measure)] hover:bg-[var(--measure-soft)] text-[var(--measure-foreground)] shadow-sm">
-                <span className="cursor-pointer">
-                  <Plus className="w-4 h-4 mr-1" /> Nova obra
-                </span>
+              <input type="file" accept=".xlsx,.xls" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) onImportFile(f); }} />
+              <Button asChild size="sm" className="h-8">
+                <span className="cursor-pointer"><Plus className="w-4 h-4" /> <span className="hidden sm:inline">Nova obra</span></span>
               </Button>
             </label>
 
-            <label>
+            <label className="hidden md:block">
               <input
                 type="file"
                 accept=".xlsx,.xls"
@@ -1097,61 +1125,44 @@ function Dashboard({
                   } catch (err) { toast.error((err as Error).message); }
                 }}
               />
-              <Button asChild variant="ghost" size="sm">
-                <span className="cursor-pointer"><Upload className="w-4 h-4 mr-1" /> Reimportar</span>
+              <Button asChild variant="ghost" size="sm" className="h-8 w-8 p-0" title="Reimportar planilha">
+                <span className="cursor-pointer"><Upload className="w-4 h-4" /></span>
               </Button>
             </label>
 
-            <Button variant="ghost" size="sm" onClick={removeObra} title="Excluir esta obra">
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={removeObra} title="Excluir obra">
               <Trash2 className="w-4 h-4 text-destructive" />
             </Button>
-            {saving && <span className="text-xs text-muted-foreground px-2">Salvando...</span>}
-            <Button asChild variant="ghost" size="sm" title="Cadastro Mestre de Insumos">
-              <Link to="/insumos"><Package className="w-4 h-4 mr-1" /> Insumos</Link>
-            </Button>
-            <Button asChild variant="ghost" size="sm" title="Composições Próprias">
-              <Link to="/composicoes"><Package className="w-4 h-4 mr-1" /> Composições</Link>
-            </Button>
+          </div>
+        </header>
 
-            <Button asChild variant="ghost" size="sm" title="Notas Fiscais (XML NF-e)">
-              <Link to="/notas-fiscais"><FileText className="w-4 h-4 mr-1" /> NF-e</Link>
-            </Button>
-            <Button asChild variant="ghost" size="sm" title="Apontamento de Mão de Obra">
-              <Link to="/mao-de-obra"><HardHat className="w-4 h-4 mr-1" /> Mão de Obra</Link>
-            </Button>
-            <Button asChild variant="ghost" size="sm" title="Cadastro de Equipamentos">
-              <Link to="/equipamentos"><Wrench className="w-4 h-4 mr-1" /> Equipamentos</Link>
-            </Button>
-            <Button asChild variant="ghost" size="sm" title="Previsto × Realizado">
-              <Link to="/realizado"><BarChart3 className="w-4 h-4 mr-1" /> Realizado</Link>
-            </Button>
-            <Button asChild variant="ghost" size="sm" title="Controle de Estoque">
-              <Link to="/estoque"><Package className="w-4 h-4 mr-1" /> Estoque</Link>
-            </Button>
-            <Button asChild variant="ghost" size="sm" title={`Equipe (${companyName})`}>
-              <Link to="/equipe"><Users className="w-4 h-4 mr-1" /> {companyName}</Link>
-            </Button>
-            <Button asChild variant="ghost" size="sm" title="Backup e Restauração">
-              <Link to="/backup"><Database className="w-4 h-4 mr-1" /> Backup</Link>
-            </Button>
-            <Button variant="ghost" size="sm" onClick={onSignOut} title={`Sair (${userEmail})`}>
-              <LogOut className="w-4 h-4" />
-            </Button>
+        {/* Hero strip — nome da obra */}
+        <div className="relative border-b border-border/60 bg-gradient-hero overflow-hidden">
+          <div className="absolute inset-0 opacity-[0.035] pointer-events-none"
+            style={{ backgroundImage: "linear-gradient(var(--foreground) 1px, transparent 1px), linear-gradient(90deg, var(--foreground) 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
+          <div className="relative px-4 sm:px-6 py-6">
+            <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground mb-1.5">
+              <span>Obra ativa</span>
+              <span className="text-border">/</span>
+              <span className="text-foreground/70">{resumoBM.codigoBM}</span>
+            </div>
+            <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight leading-tight">
+              {data.nome}
+            </h1>
+            <p className="text-xs text-muted-foreground mt-1 truncate">{data.fileName}</p>
           </div>
         </div>
-      </header>
 
+        <main className="flex-1 px-4 sm:px-6 py-6 space-y-5 max-w-[1600px] w-full mx-auto">
+          {/* 5 Cards de resumo */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            <SummaryCard label="Valor total da obra" value={fmtBRL(resumoBM.valorTotalObra)} icon="total" />
+            <SummaryCard label="Valor medido nesta medição" value={fmtBRL(resumoBM.valorDestaMedicao)} icon="measure" tone="measure" />
+            <SummaryCard label="Acumulado executado" value={fmtBRL(resumoBM.valorAcumulado)} icon="trend" tone="success" />
+            <SummaryCard label="Saldo restante" value={fmtBRL(resumoBM.saldoRestante)} icon="balance" tone="warning" />
+            <SummaryCard label="Percentual acumulado" value={`${fmtNum(resumoBM.percentualAcumulado)}%`} icon="percent" tone="primary" progress={resumoBM.percentualAcumulado} />
+          </div>
 
-      <main className="max-w-[1600px] mx-auto px-6 py-6 space-y-5">
-        {/* 5 Cards de resumo */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-          <SummaryCard label="Valor total da obra" value={fmtBRL(resumoBM.valorTotalObra)} icon="total" />
-          <SummaryCard label="Valor medido nesta medição" value={fmtBRL(resumoBM.valorDestaMedicao)} icon="measure" tone="measure" />
-          <SummaryCard label="Acumulado executado" value={fmtBRL(resumoBM.valorAcumulado)} icon="trend" tone="success" />
-          <SummaryCard label="Saldo restante" value={fmtBRL(resumoBM.saldoRestante)} icon="balance" tone="warning" />
-          <SummaryCard label="Percentual acumulado" value={`${fmtNum(resumoBM.percentualAcumulado)}%`} icon="percent" tone="primary" progress={resumoBM.percentualAcumulado} />
-
-        </div>
 
         {/* Alerta — campos obrigatórios da obra ausentes */}
         {(() => {
@@ -1475,6 +1486,7 @@ function Dashboard({
           </TabsContent>
         </Tabs>
       </main>
+      </div>
     </div>
   );
 }
@@ -3228,5 +3240,43 @@ function ResourceLinesEditor<T extends ResourceLinhaBase>({
         </div>
       )}
     </div>
+  );
+}
+
+/* ============================================================
+ *  SidebarLink — item de navegação da sidebar premium
+ * ============================================================ */
+function SidebarLink({
+  to,
+  icon: Icon,
+  label,
+  exact,
+}: {
+  to: string;
+  icon: typeof HardHat;
+  label: string;
+  exact?: boolean;
+}) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const active = exact ? pathname === to : pathname === to || pathname.startsWith(`${to}/`);
+  return (
+    <Link
+      to={to}
+      className={`group relative flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200 ${
+        active
+          ? "bg-sidebar-accent/40 text-sidebar-foreground shadow-[inset_0_1px_0_oklch(1_0_0_/_0.06)]"
+          : "text-sidebar-foreground/65 hover:text-sidebar-foreground hover:bg-sidebar-accent/20"
+      }`}
+    >
+      {active && (
+        <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-gradient-to-b from-primary-glow to-primary shadow-[0_0_12px_oklch(0.65_0.22_285_/_0.6)]" />
+      )}
+      <Icon
+        className={`w-4 h-4 shrink-0 transition-colors ${
+          active ? "text-primary-glow" : "text-sidebar-foreground/50 group-hover:text-sidebar-foreground/80"
+        }`}
+      />
+      <span className="truncate">{label}</span>
+    </Link>
   );
 }
