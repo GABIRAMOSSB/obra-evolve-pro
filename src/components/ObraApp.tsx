@@ -2597,9 +2597,10 @@ function DiaryPanel({
       ) : (
         <div className="space-y-3">
           {filtered.map((d) => (
-            <DiaryCard key={d.id} obraId={obraId} entry={d} onUpdate={onUpdate} onRemove={onRemove} />
+            <DiaryCard key={d.id} obraId={obraId} companyId={companyId} entry={d} onUpdate={onUpdate} onRemove={onRemove} />
           ))}
         </div>
+
       )}
     </div>
   );
