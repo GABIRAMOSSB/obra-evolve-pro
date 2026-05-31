@@ -2608,17 +2608,33 @@ function DiaryPanel({
 
 function DiaryCard({
   obraId,
+  companyId,
   entry,
   onUpdate,
   onRemove,
 }: {
   obraId: string;
+  companyId: string;
   entry: DiaryEntry;
   onUpdate: (e: DiaryEntry) => void;
   onRemove: (id: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [e, setE] = useState(entry);
+  const [funcoesDb, setFuncoesDb] = useState<Array<{ id: string; nome: string; custo_hora_base: number }>>([]);
+  const [equipDb, setEquipDb] = useState<Array<{ id: string; nome: string; custo_hora: number }>>([]);
+
+  useEffect(() => {
+    if (!editing || !companyId) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sb = supabase as any;
+    sb.from("funcoes_mao_obra").select("id, nome, custo_hora_base").eq("company_id", companyId).eq("ativo", true).order("nome")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .then(({ data }: any) => setFuncoesDb(data ?? []));
+    sb.from("equipamentos").select("id, nome, custo_hora").eq("company_id", companyId).eq("ativo", true).order("nome")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .then(({ data }: any) => setEquipDb(data ?? []));
+  }, [editing, companyId]);
 
   function save() {
     onUpdate(e);
@@ -2627,6 +2643,7 @@ function DiaryCard({
   }
 
   const fotos = entry.fotos ?? [];
+
 
   return (
     <Card className="p-5">
