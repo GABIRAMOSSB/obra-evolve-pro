@@ -10,6 +10,7 @@ import {
 
 import appCss from "../styles.css?url";
 import { AuthProvider } from "@/hooks/use-auth";
+import { DevWatchdog } from "@/components/DevWatchdog";
 
 function NotFoundComponent() {
   return (
