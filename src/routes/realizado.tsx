@@ -36,7 +36,19 @@ import {
   Minus,
   ChevronRight,
   ChevronDown,
+  Pencil,
+  Trash2,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
 import type { BudgetRow, ProjectData } from "@/lib/types";
 
 
