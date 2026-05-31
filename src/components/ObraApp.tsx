@@ -3056,11 +3056,40 @@ function ResourceLinesEditor<T extends ResourceLinhaBase>({
                 return (
                   <tr key={l.id} className="border-t">
                     <td className="p-1">
-                      <Input className="h-7 text-xs" value={nome ?? ""}
-                        onChange={(e) => updateLinha(l.id, tipo === "mao_obra"
-                          ? { funcaoNome: e.target.value }
-                          : { equipamentoNome: e.target.value })} />
+                      <select
+                        className="h-7 text-xs w-full border rounded bg-background px-1"
+                        value={
+                          (tipo === "mao_obra" ? l.funcaoId : l.equipamentoId) ??
+                          (opcoes.some((o) => o.nome === nome) ? "" : "__custom__")
+                        }
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          if (v === "__custom__") {
+                            updateLinha(l.id, tipo === "mao_obra"
+                              ? { funcaoId: undefined, funcaoNome: "" }
+                              : { equipamentoId: undefined, equipamentoNome: "" });
+                            return;
+                          }
+                          const op = opcoes.find((o) => o.id === v);
+                          updateLinha(l.id, tipo === "mao_obra"
+                            ? { funcaoId: op?.id, funcaoNome: op?.nome ?? "", custoHora: op?.custoHora ?? l.custoHora }
+                            : { equipamentoId: op?.id, equipamentoNome: op?.nome ?? "", custoHora: op?.custoHora ?? l.custoHora });
+                        }}
+                      >
+                        <option value="">— selecione —</option>
+                        {opcoes.map((o) => (
+                          <option key={o.id} value={o.id}>{o.nome}</option>
+                        ))}
+                        <option value="__custom__">Outro (digitar)…</option>
+                      </select>
+                      {!((tipo === "mao_obra" ? l.funcaoId : l.equipamentoId)) && (
+                        <Input className="h-7 text-xs mt-1" placeholder="Nome livre" value={nome ?? ""}
+                          onChange={(e) => updateLinha(l.id, tipo === "mao_obra"
+                            ? { funcaoNome: e.target.value }
+                            : { equipamentoNome: e.target.value })} />
+                      )}
                     </td>
+
                     <td className="p-1">
                       <Input className="h-7 text-xs" type="number" min={1} value={l.quantidade}
                         onChange={(e) => updateLinha(l.id, { quantidade: parseInt(e.target.value) || 0 })} />
