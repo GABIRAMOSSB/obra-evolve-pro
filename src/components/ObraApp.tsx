@@ -325,8 +325,15 @@ export function ObraApp() {
 
   if (companyLoading || !loaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">
-        Carregando...
+      <div className="min-h-screen flex items-center justify-center bg-gradient-hero">
+        <div className="flex flex-col items-center gap-4 animate-fade-in">
+          <div className="relative">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-primary shadow-glow flex items-center justify-center animate-pulse-glow">
+              <HardHat className="w-7 h-7 text-primary-foreground" />
+            </div>
+          </div>
+          <div className="text-sm text-muted-foreground tracking-wide">Carregando seu workspace…</div>
+        </div>
       </div>
     );
   }
