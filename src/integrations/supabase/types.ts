@@ -734,8 +734,12 @@ export type Database = {
           created_by: string | null
           descricao: string
           id: string
+          imagem_url: string | null
+          informacoes_gerais: string | null
           ncm: string | null
+          normas_tecnicas: string | null
           observacoes: string | null
+          sinapi_codigo: string | null
           unidade_id: string | null
           updated_at: string
         }
@@ -748,8 +752,12 @@ export type Database = {
           created_by?: string | null
           descricao: string
           id?: string
+          imagem_url?: string | null
+          informacoes_gerais?: string | null
           ncm?: string | null
+          normas_tecnicas?: string | null
           observacoes?: string | null
+          sinapi_codigo?: string | null
           unidade_id?: string | null
           updated_at?: string
         }
@@ -762,8 +770,12 @@ export type Database = {
           created_by?: string | null
           descricao?: string
           id?: string
+          imagem_url?: string | null
+          informacoes_gerais?: string | null
           ncm?: string | null
+          normas_tecnicas?: string | null
           observacoes?: string | null
+          sinapi_codigo?: string | null
           unidade_id?: string | null
           updated_at?: string
         }
