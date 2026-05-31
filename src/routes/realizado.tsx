@@ -378,31 +378,18 @@ function RealizadoPage() {
   // Fonte: apropriações de NF-e (rateio) + saídas de estoque + legado item_codigo.
   // Inclui também a mão-de-obra como "insumo" virtual.
   const insumosPorComposicao = useMemo(() => {
-    const map = new Map<string, Array<{
-      descricao: string;
-      unidade: string | null;
-      quantidade: number;
-      valor: number;
-      fonte: "NF-e" | "Estoque" | "MO";
-    }>>();
-    const push = (k: string, item: { descricao: string; unidade: string | null; quantidade: number; valor: number; fonte: "NF-e" | "Estoque" | "MO" }) => {
+    const map = new Map<string, InsumoLinha[]>();
+    const push = (k: string, item: InsumoLinha) => {
       const arr = map.get(k) ?? [];
-      // agrega por (descricao + unidade + fonte)
-      const idx = arr.findIndex(
-        (x) => x.descricao === item.descricao && x.unidade === item.unidade && x.fonte === item.fonte,
-      );
-      if (idx >= 0) {
-        arr[idx].quantidade += item.quantidade;
-        arr[idx].valor += item.valor;
-      } else {
-        arr.push({ ...item });
-      }
+      arr.push(item);
       map.set(k, arr);
     };
     for (const a of apropObra) {
       const k = (a.item_codigo ?? "").trim();
       if (!k) continue;
       push(k, {
+        id: a.id,
+        origem: "apropriacao",
         descricao: a.descricao_insumo,
         unidade: a.unidade,
         quantidade: Number(a.quantidade ?? 0),
@@ -414,6 +401,8 @@ function RealizadoPage() {
       const k = (m.item_codigo ?? "").trim();
       if (!k) continue;
       push(k, {
+        id: m.id,
+        origem: "movimento",
         descricao: m.item_descricao ?? "Saída de estoque",
         unidade: null,
         quantidade: Number(m.quantidade ?? 0),
@@ -425,6 +414,8 @@ function RealizadoPage() {
       const k = (i.item_codigo ?? "").trim();
       if (!k) continue;
       push(k, {
+        id: i.id,
+        origem: "nfe_item",
         descricao: i.descricao,
         unidade: null,
         quantidade: Number(i.quantidade ?? 0),
@@ -443,6 +434,8 @@ function RealizadoPage() {
         ? (isEquip ? `Equipamento: ${nome}` : nome)
         : (isEquip ? "Equipamento apontado" : "Mão de obra apontada");
       push(k, {
+        id: ap.id,
+        origem: "apontamento",
         descricao,
         unidade: "h",
         quantidade: horas,
@@ -452,6 +445,7 @@ function RealizadoPage() {
     }
     return map;
   }, [apropObra, movsObra, nfItensObra, apontamentosObra]);
+
 
   const getInsumos = useCallback(
     (row: BudgetRow) => {
