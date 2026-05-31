@@ -2744,7 +2744,26 @@ function DiaryCard({
               onChange={(photos) => setE({ ...e, fotos: photos })}
             />
           </div>
+          <ResourceLinesEditor
+            titulo="Equipe presente (custo lançado no Realizado)"
+            tipo="mao_obra"
+            linhas={e.maoObraLinhas ?? []}
+            onChange={(linhas) => setE({ ...e, maoObraLinhas: linhas })}
+            opcoes={funcoesDb.map((f) => ({ id: f.id, nome: f.nome, custoHora: Number(f.custo_hora_base) || 0 }))}
+            itens={[]}
+            itemPadrao={e.itemKey}
+          />
+          <ResourceLinesEditor
+            titulo="Equipamentos utilizados"
+            tipo="equipamento"
+            linhas={e.equipamentoLinhas ?? []}
+            onChange={(linhas) => setE({ ...e, equipamentoLinhas: linhas })}
+            opcoes={equipDb.map((eq) => ({ id: eq.id, nome: eq.nome, custoHora: Number(eq.custo_hora) || 0 }))}
+            itens={[]}
+            itemPadrao={e.itemKey}
+          />
           <Button onClick={save}>Salvar alterações</Button>
+
         </div>
       ) : (
         <>
