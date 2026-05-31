@@ -2242,7 +2242,7 @@ function EvolutionDialog({
           <Pencil className="w-3 h-3 mr-1" /> Lançar
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {row.item} — {row.descricao}
