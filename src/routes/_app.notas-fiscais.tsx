@@ -638,7 +638,7 @@ function NotasFiscaisPage() {
           </DialogHeader>
           {detailNota && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div>
                   <div className="text-muted-foreground">Chave de acesso</div>
                   <div className="font-mono text-xs break-all">

@@ -1131,7 +1131,7 @@ function RealizadoPage() {
               <Label className="text-xs">Descrição</Label>
               <Input value={editDescricao} onChange={(e) => setEditDescricao(e.target.value)} disabled={editing?.origem === "apontamento"} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs">Quantidade {editing?.origem === "apontamento" ? "(horas)" : ""}</Label>
                 <Input inputMode="decimal" value={editQtd} onChange={(e) => setEditQtd(e.target.value)} placeholder="0,00" />

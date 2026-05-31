@@ -240,7 +240,7 @@ function BackupPage() {
                 <strong>Backup carregado:</strong> {new Date(file.exportedAt).toLocaleString("pt-BR")}
                 {file.companyName && <> · {file.companyName}</>}
               </div>
-              <div className="text-xs text-muted-foreground grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
+              <div className="text-xs text-muted-foreground grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
                 {Object.entries(file.tables).map(([t, arr]) => (
                   <div key={t}>
                     {t}: <strong>{(arr as unknown[]).length}</strong>

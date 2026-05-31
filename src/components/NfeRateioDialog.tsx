@@ -208,7 +208,7 @@ export function NfeRateioDialog({ open, onOpenChange, companyId, item, nota, obr
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="grid grid-cols-4 gap-3 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
             <Info label="NF-e" value={`${nota.numero} • ${nota.emitente_nome ?? ""}`} />
             <Info label="Quantidade total" value={`${item.quantidade.toLocaleString("pt-BR")} ${item.unidade ?? ""}`} />
             <Info label="Valor unitário" value={formatMoney(item.valor_unitario)} />

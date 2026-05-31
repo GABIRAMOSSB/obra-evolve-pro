@@ -271,7 +271,7 @@ function EquipamentosPage() {
                           onChange={(e) => setForm({ ...form, descricao: e.target.value })}
                         />
                       </div>
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         <div>
                           <Label>Tipo</Label>
                           <Select
@@ -320,7 +320,7 @@ function EquipamentosPage() {
                           </Select>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                           <Label>Custo / hora (R$)</Label>
                           <Input

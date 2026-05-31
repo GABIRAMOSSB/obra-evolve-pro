@@ -464,7 +464,7 @@ function FuncoesTab({
                     onChange={(e) => setForm({ ...form, descricao: e.target.value })}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <Label>Custo/hora base (R$)</Label>
                     <Input
@@ -642,7 +642,7 @@ function FuncionariosTab({
                   <Label>Nome</Label>
                   <Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <Label>CPF</Label>
                     <Input value={form.cpf} onChange={(e) => setForm({ ...form, cpf: e.target.value })} />
@@ -682,7 +682,7 @@ function FuncionariosTab({
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <Label>Salário mensal (R$)</Label>
                     <Input type="number" step="0.01" value={form.salario_mensal}
@@ -1002,7 +1002,7 @@ function ApontamentosTab({
                 <DialogTitle>Novo Apontamento</DialogTitle>
               </DialogHeader>
               <div className="grid gap-3">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <Label>Obra *</Label>
                     <Select value={form.obra_id} onValueChange={(v) => setForm({ ...form, obra_id: v })}>
@@ -1019,7 +1019,7 @@ function ApontamentosTab({
                     <Input type="date" value={form.data} onChange={(e) => setForm({ ...form, data: e.target.value })} />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <Label>Item / Código</Label>
                     <Input value={form.item_codigo} onChange={(e) => setForm({ ...form, item_codigo: e.target.value })} />
@@ -1029,7 +1029,7 @@ function ApontamentosTab({
                     <Input value={form.item_descricao} onChange={(e) => setForm({ ...form, item_descricao: e.target.value })} />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <Label>Funcionário</Label>
                     <Select value={form.funcionario_id} onValueChange={onFuncionarioChange}>
@@ -1053,7 +1053,7 @@ function ApontamentosTab({
                     </Select>
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   <div>
                     <Label>Horas normais</Label>
                     <Input type="number" step="0.25" value={form.horas_normais}
@@ -1070,7 +1070,7 @@ function ApontamentosTab({
                       onChange={(e) => setForm({ ...form, custo_hora: e.target.value })} />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <Label>Quantidade executada</Label>
                     <Input type="number" step="0.01" value={form.quantidade_executada}

@@ -382,7 +382,7 @@ export function ObraApp() {
               Podemos enviá-los para a nuvem agora, assim você acessa tudo de qualquer aparelho.
             </p>
           </div>
-          <div className="grid grid-cols-3 gap-3 text-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-center">
             <div className="rounded-md border p-3">
               <div className="text-2xl font-bold text-primary">{plan.obrasCount}</div>
               <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Obras</div>
@@ -456,7 +456,7 @@ export function ObraApp() {
             <p className="text-xs text-muted-foreground">
               Seus dados ficam sincronizados na nuvem e visíveis para toda a sua equipe.
             </p>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Button variant="outline" onClick={checkLocalMigration}>
                 <CloudUpload className="mr-2 w-4 h-4" /> Migrar local
               </Button>
@@ -540,7 +540,7 @@ function ImportPreviewDialog({
           </p>
         </DialogHeader>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
           <PreviewStat label="Linhas válidas" value={result.rows.length} tone="success" />
           <PreviewStat label="Etapas" value={groupCount} />
           <PreviewStat label="Atividades" value={activityCount} />
@@ -1119,7 +1119,7 @@ function Dashboard({
 
         <main className="flex-1 w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
           {/* 5 Cards de resumo */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
             <SummaryCard label="Valor total da obra" value={fmtBRL(resumoBM.valorTotalObra)} icon="total" />
             <SummaryCard label="Valor medido nesta medição" value={fmtBRL(resumoBM.valorDestaMedicao)} icon="measure" tone="measure" />
             <SummaryCard label="Acumulado executado" value={fmtBRL(resumoBM.valorAcumulado)} icon="trend" tone="success" />
@@ -1166,7 +1166,7 @@ function Dashboard({
             </div>
           </div>
           {/* Linha 1 — Identificação */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 divide-x divide-y divide-border border-b border-border text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 divide-x divide-y divide-border border-b border-border text-xs">
             <BMField label="Licitador" value={info.cliente || "—"} />
             <BMField label="Contratante" value={info.contratante || "—"} />
             <BMField label="Empresa Executora" value={info.empresaExecutora || "—"} />
@@ -1175,14 +1175,14 @@ function Dashboard({
             <BMField label="Nº Licitação" value={info.numeroLicitacao || "—"} />
           </div>
           {/* Linha 2 — Obra e localização */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 divide-x divide-y divide-border border-b border-border text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 divide-x divide-y divide-border border-b border-border text-xs">
             <BMField label="Obra" value={data.nome} wide />
             <BMField label="Endereço" value={info.endereco || "—"} wide />
             <BMField label="Município" value={info.municipio || "—"} />
             <BMField label="UF" value={info.estado || "—"} />
           </div>
           {/* Linha 3 — Responsabilidade técnica */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 divide-x divide-y divide-border border-b border-border text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 divide-x divide-y divide-border border-b border-border text-xs">
             <BMField label="Responsável Técnico" value={info.responsavelTecnico || "—"} />
             <BMField label="CREA / CAU" value={info.crea || "—"} />
             <BMField label="Cargo / Função (Resp.)" value={info.cargoResponsavel || "—"} />
@@ -1191,14 +1191,14 @@ function Dashboard({
             <BMField label="Prazo (dias)" value={info.prazoContratualDias ? String(info.prazoContratualDias) : "—"} />
           </div>
           {/* Linha 3b — Fiscalização */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 divide-x divide-y divide-border border-b border-border text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 divide-x divide-y divide-border border-b border-border text-xs">
             <BMField label="Fiscal da Obra" value={info.fiscal || "—"} wide />
             <BMField label="CPF do Fiscal" value={info.cpfFiscal || "—"} />
             <BMField label="Cargo / Função (Fiscal)" value={info.cargoFiscal || "—"} wide />
           </div>
           {/* Linha 4 — Resumo financeiro da medição */}
           {resumoBM.hasMeasurement ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 divide-x divide-y divide-border text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 divide-x divide-y divide-border text-xs">
               <BMField label="Nº do BM" value={resumoBM.descricaoBM} strong tone="primary" />
               <BMField label="Data da Medição" value={resumoBM.dataMedicao} />
               <BMField label="Período da Medição" value={resumoBM.periodoLabel} wide />
@@ -1211,7 +1211,7 @@ function Dashboard({
               <BMField label="Valor total da obra" value={fmtBRL(resumoBM.valorTotalObra)} strong />
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y divide-border text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 divide-x divide-y divide-border text-xs">
               <BMField label="Valor total da obra" value={fmtBRL(resumoBM.valorTotalObra)} strong />
               <BMField label="Acumulado executado" value={fmtBRL(resumoBM.valorAcumulado)} strong tone="success" />
               <BMField label="% Acumulado" value={`${fmtNum(resumoBM.percentualAcumulado)}%`} strong tone="primary" progress={resumoBM.percentualAcumulado} />
@@ -2256,7 +2256,7 @@ function EvolutionDialog({
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-3 text-sm bg-muted/50 p-3 rounded-md">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm bg-muted/50 p-3 rounded-md">
             <div>
               <div className="text-muted-foreground text-xs">Quant. total</div>
               <div className="font-medium">
@@ -2348,7 +2348,7 @@ function EvolutionDialog({
                 · Saldo disponível: {fmtNum(maxPeriodo)} {row.und}
               </span>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label>Quantidade desta medição</Label>
                 <Input value={periodo} onChange={(e) => handleQuant(e.target.value)} inputMode="decimal" />
@@ -2369,7 +2369,7 @@ function EvolutionDialog({
           </div>
 
           {/* Acumulado previsto após salvar */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm bg-muted/40 p-3 rounded-md">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 text-sm bg-muted/40 p-3 rounded-md">
             <div>
               <div className="text-muted-foreground text-xs">Qtd. Acumulada</div>
               <div className="font-medium">{fmtNum(acumuladoPrev)} {row.und}</div>
@@ -2406,7 +2406,7 @@ function EvolutionDialog({
             </label>
             {criarDiario && (
               <div className="space-y-4 bg-muted/30 rounded-lg p-4 border">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <Label className="text-xs">Clima</Label>
                     <Select value={clima} onValueChange={setClima}>
@@ -2471,7 +2471,7 @@ function EvolutionDialog({
 
 
                 {/* Texto livre adicional (opcional) */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <Label className="text-xs">Equipe (texto livre)</Label>
                     <Input value={equipe} onChange={(e) => setEquipe(e.target.value)} placeholder="Observações da equipe" />
@@ -2483,7 +2483,7 @@ function EvolutionDialog({
                 </div>
 
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                   <div>
                     <Label className="text-xs">Hora início</Label>
                     <Input type="time" value={horaInicio} onChange={(e) => setHoraInicio(e.target.value)} />
@@ -2691,7 +2691,7 @@ function DiaryCard({
 
       {editing ? (
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label>Data</Label>
               <Input type="date" value={e.data} onChange={(ev) => setE({ ...e, data: ev.target.value })} />
@@ -2809,7 +2809,7 @@ function DiaryCard({
               <div className="text-xs font-medium text-muted-foreground mb-2">
                 Registro fotográfico ({fotos.length})
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                 {fotos.map((f) => (
                   <a
                     key={f.id}
@@ -2943,7 +2943,7 @@ function AddItemDialog({
           </div>
 
           {tipo === "servico" && (
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <div>
                 <Label>Unidade</Label>
                 <Input value={und} onChange={(e) => setUnd(e.target.value)} placeholder="m², un, kg..." />
