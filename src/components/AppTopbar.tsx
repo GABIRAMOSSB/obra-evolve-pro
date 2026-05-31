@@ -5,17 +5,18 @@ import { useAuth } from "@/hooks/use-auth";
 import { useCompany } from "@/hooks/use-company";
 
 const NAV_ITEMS: { to: string; icon: typeof HardHat; label: string; exact?: boolean }[] = [
-  { to: "/", icon: BarChart3, label: "Visão geral", exact: true },
-  { to: "/realizado", icon: BarChart3, label: "Previsto × Realizado" },
-  { to: "/notas-fiscais", icon: FileText, label: "Notas Fiscais" },
+  { to: "/", icon: BarChart3, label: "Visão", exact: true },
+  { to: "/realizado", icon: BarChart3, label: "Realizado" },
+  { to: "/notas-fiscais", icon: FileText, label: "Notas" },
   { to: "/estoque", icon: Package, label: "Estoque" },
-  { to: "/mao-de-obra", icon: HardHat, label: "Mão de obra" },
-  { to: "/equipamentos", icon: Wrench, label: "Equipamentos" },
+  { to: "/mao-de-obra", icon: HardHat, label: "Mão obra" },
+  { to: "/equipamentos", icon: Wrench, label: "Equip." },
   { to: "/insumos", icon: Package, label: "Insumos" },
-  { to: "/composicoes", icon: Package, label: "Composições" },
+  { to: "/composicoes", icon: Package, label: "Comp." },
   { to: "/equipe", icon: Users, label: "Equipe" },
   { to: "/backup", icon: Database, label: "Backup" },
 ];
+
 
 export function AppTopbar() {
   const { user, signOut } = useAuth();
@@ -88,11 +89,12 @@ function NavItem({
   return (
     <Link
       to={to}
-      className={`group relative flex items-center gap-1.5 px-3 h-9 rounded-lg text-[12px] font-medium whitespace-nowrap transition-all duration-200 ${
+      className={`group relative flex items-center gap-1 px-2 h-9 rounded-lg text-[11px] font-medium whitespace-nowrap transition-all duration-200 ${
         active
           ? "bg-sidebar-accent/40 text-sidebar-foreground"
           : "text-sidebar-foreground/65 hover:text-sidebar-foreground hover:bg-sidebar-accent/20"
       }`}
+
     >
       <Icon
         className={`w-3.5 h-3.5 shrink-0 transition-colors ${
