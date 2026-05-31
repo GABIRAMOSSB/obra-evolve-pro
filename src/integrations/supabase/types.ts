@@ -1055,6 +1055,7 @@ export type Database = {
         Args: { _nota_id: string; _obra_id?: string }
         Returns: number
       }
+      seed_equipamentos_base: { Args: { _company: string }; Returns: undefined }
       seed_funcoes_base: { Args: { _company: string }; Returns: undefined }
       seed_insumos_base: { Args: { _company: string }; Returns: undefined }
     }
