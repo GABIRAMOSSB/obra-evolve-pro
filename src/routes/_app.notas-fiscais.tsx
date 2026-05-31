@@ -738,7 +738,7 @@ function NotasFiscaisPage() {
                                   value={it.insumo_id || "__none__"}
                                   onValueChange={(v) => vincularInsumo(it.id, v === "__none__" ? null : v)}
                                 >
-                                  <SelectTrigger className="w-full min-w-[12rem]"><SelectValue placeholder="Insumo…" /></SelectTrigger>
+                                  <SelectTrigger className="w-full min-w-0"><SelectValue placeholder="Insumo…" /></SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="__none__"><span className="text-muted-foreground">(não vinculado)</span></SelectItem>
                                     {insumos.map((ins) => (
@@ -760,7 +760,7 @@ function NotasFiscaisPage() {
                                   value={it.obra_id || "__none__"}
                                   onValueChange={(v) => vincularApropriacao(it.id, v === "__none__" ? null : v, null)}
                                 >
-                                  <SelectTrigger className="w-full min-w-[10rem]"><SelectValue placeholder="Obra…" /></SelectTrigger>
+                                  <SelectTrigger className="w-full min-w-0"><SelectValue placeholder="Obra…" /></SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="__none__"><span className="text-muted-foreground">(nenhuma)</span></SelectItem>
                                     {obras.map((o) => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
@@ -777,7 +777,7 @@ function NotasFiscaisPage() {
                                   onValueChange={(v) => vincularApropriacao(it.id, it.obra_id, v === "__none__" ? null : v)}
                                   disabled={!it.obra_id}
                                 >
-                                  <SelectTrigger className="w-full min-w-[14rem]">
+                                  <SelectTrigger className="w-full min-w-0">
                                     <SelectValue placeholder={it.obra_id ? "Composição…" : "Defina obra"} />
                                   </SelectTrigger>
                                   <SelectContent>
