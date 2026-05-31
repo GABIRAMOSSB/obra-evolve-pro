@@ -79,6 +79,8 @@ export interface DiaryEntry {
   atividade: string;
   texto: string;
   fotos?: DiaryPhoto[];
+  maoObraLinhas?: MaoObraLinha[];
+  equipamentoLinhas?: EquipamentoLinha[];
   createdAt: string;
 }
 
