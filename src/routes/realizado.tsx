@@ -159,6 +159,7 @@ function RealizadoPage() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = usePersistedTab("realizado", "etapas");
 
   useEffect(() => {
     if (!authLoading && !user) navigate({ to: "/login" });
