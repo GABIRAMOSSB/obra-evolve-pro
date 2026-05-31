@@ -1452,7 +1452,6 @@ function Dashboard({
           </TabsContent>
         </Tabs>
       </main>
-      </div>
     </div>
   );
 }
