@@ -40,6 +40,28 @@ export interface DiaryPhoto {
   tipo?: "antes" | "depois" | "geral" | "video";
 }
 
+export interface MaoObraLinha {
+  id: string;
+  funcaoId?: string;
+  funcaoNome: string;
+  quantidade: number;
+  horas: number;
+  custoHora: number;
+  itemCodigo?: string;
+  itemDescricao?: string;
+}
+
+export interface EquipamentoLinha {
+  id: string;
+  equipamentoId?: string;
+  equipamentoNome: string;
+  quantidade: number;
+  horas: number;
+  custoHora: number;
+  itemCodigo?: string;
+  itemDescricao?: string;
+}
+
 export interface DiaryEntry {
   id: string;
   itemKey: string;
