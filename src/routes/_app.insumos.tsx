@@ -161,10 +161,10 @@ function InsumosPage() {
     try {
       const { data, error } = await supabase.rpc("search_insumos", {
         _company: company.id,
-        _q: debouncedSearch || null,
-        _categoria: filterCat === "all" ? null : filterCat,
-        _unidade: filterUni === "all" ? null : filterUni,
-        _ncm: filterNcm.trim() || null,
+        _q: debouncedSearch || undefined,
+        _categoria: filterCat === "all" ? undefined : filterCat,
+        _unidade: filterUni === "all" ? undefined : filterUni,
+        _ncm: filterNcm.trim() || undefined,
         _page: page,
         _page_size: pageSize,
       });
