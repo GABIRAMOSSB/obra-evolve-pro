@@ -642,6 +642,57 @@ export type Database = {
         }
         Relationships: []
       }
+      historico_importacoes_sinapi: {
+        Row: {
+          arquivo: string | null
+          company_id: string
+          created_at: string
+          data_importacao: string
+          detalhes: Json | null
+          id: string
+          novos_registros: number
+          registros_atualizados: number
+          registros_com_erro: number
+          registros_ignorados: number
+          status: string
+          total_registros: number
+          usuario_id: string | null
+          versao_sinapi: string | null
+        }
+        Insert: {
+          arquivo?: string | null
+          company_id: string
+          created_at?: string
+          data_importacao?: string
+          detalhes?: Json | null
+          id?: string
+          novos_registros?: number
+          registros_atualizados?: number
+          registros_com_erro?: number
+          registros_ignorados?: number
+          status?: string
+          total_registros?: number
+          usuario_id?: string | null
+          versao_sinapi?: string | null
+        }
+        Update: {
+          arquivo?: string | null
+          company_id?: string
+          created_at?: string
+          data_importacao?: string
+          detalhes?: Json | null
+          id?: string
+          novos_registros?: number
+          registros_atualizados?: number
+          registros_com_erro?: number
+          registros_ignorados?: number
+          status?: string
+          total_registros?: number
+          usuario_id?: string | null
+          versao_sinapi?: string | null
+        }
+        Relationships: []
+      }
       insumo_aliases: {
         Row: {
           cnpj_fornecedor: string | null
@@ -729,10 +780,13 @@ export type Database = {
           ativo: boolean
           categoria_id: string | null
           codigo: string | null
+          codigo_interno: string | null
           company_id: string
           created_at: string
           created_by: string | null
           descricao: string
+          descricao_completa: string | null
+          especificacao_tecnica: string | null
           id: string
           imagem_url: string | null
           informacoes_gerais: string | null
@@ -742,15 +796,20 @@ export type Database = {
           sinapi_codigo: string | null
           unidade_id: string | null
           updated_at: string
+          updated_by: string | null
+          versao_sinapi: string | null
         }
         Insert: {
           ativo?: boolean
           categoria_id?: string | null
           codigo?: string | null
+          codigo_interno?: string | null
           company_id: string
           created_at?: string
           created_by?: string | null
           descricao: string
+          descricao_completa?: string | null
+          especificacao_tecnica?: string | null
           id?: string
           imagem_url?: string | null
           informacoes_gerais?: string | null
@@ -760,15 +819,20 @@ export type Database = {
           sinapi_codigo?: string | null
           unidade_id?: string | null
           updated_at?: string
+          updated_by?: string | null
+          versao_sinapi?: string | null
         }
         Update: {
           ativo?: boolean
           categoria_id?: string | null
           codigo?: string | null
+          codigo_interno?: string | null
           company_id?: string
           created_at?: string
           created_by?: string | null
           descricao?: string
+          descricao_completa?: string | null
+          especificacao_tecnica?: string | null
           id?: string
           imagem_url?: string | null
           informacoes_gerais?: string | null
@@ -778,6 +842,8 @@ export type Database = {
           sinapi_codigo?: string | null
           unidade_id?: string | null
           updated_at?: string
+          updated_by?: string | null
+          versao_sinapi?: string | null
         }
         Relationships: [
           {
@@ -1124,6 +1190,7 @@ export type Database = {
           valor_medio: number
         }[]
       }
+      categorizar_descricao: { Args: { _desc: string }; Returns: string }
       current_user_company: { Args: never; Returns: string }
       get_company_member_emails: {
         Args: { _company: string }
@@ -1151,6 +1218,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      import_sinapi_batch: {
+        Args: { _company: string; _rows: Json; _versao: string }
+        Returns: Json
+      }
       is_company_member: {
         Args: { _company: string; _user: string }
         Returns: boolean
@@ -1159,9 +1230,40 @@ export type Database = {
         Args: { _nota_id: string; _obra_id?: string }
         Returns: number
       }
+      search_insumos: {
+        Args: {
+          _categoria?: string
+          _company: string
+          _ncm?: string
+          _page?: number
+          _page_size?: number
+          _q?: string
+          _unidade?: string
+        }
+        Returns: {
+          ativo: boolean
+          categoria_id: string
+          categoria_nome: string
+          codigo: string
+          descricao: string
+          especificacao_tecnica: string
+          id: string
+          imagem_url: string
+          ncm: string
+          normas_tecnicas: string
+          sinapi_codigo: string
+          total_count: number
+          unidade_id: string
+          unidade_sigla: string
+          updated_at: string
+          versao_sinapi: string
+        }[]
+      }
       seed_equipamentos_base: { Args: { _company: string }; Returns: undefined }
       seed_funcoes_base: { Args: { _company: string }; Returns: undefined }
       seed_insumos_base: { Args: { _company: string }; Returns: undefined }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       company_role: "admin" | "member" | "editor"
