@@ -23,6 +23,7 @@ import { Route as AppEquipeRouteImport } from './routes/_app.equipe'
 import { Route as AppEquipamentosRouteImport } from './routes/_app.equipamentos'
 import { Route as AppComposicoesRouteImport } from './routes/_app.composicoes'
 import { Route as AppBackupRouteImport } from './routes/_app.backup'
+import { Route as AppInsumosImportarRouteImport } from './routes/_app.insumos.importar'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -93,6 +94,11 @@ const AppBackupRoute = AppBackupRouteImport.update({
   path: '/backup',
   getParentRoute: () => AppRoute,
 } as any)
+const AppInsumosImportarRoute = AppInsumosImportarRouteImport.update({
+  id: '/importar',
+  path: '/importar',
+  getParentRoute: () => AppInsumosRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -103,11 +109,12 @@ export interface FileRoutesByFullPath {
   '/equipamentos': typeof AppEquipamentosRoute
   '/equipe': typeof AppEquipeRoute
   '/estoque': typeof AppEstoqueRoute
-  '/insumos': typeof AppInsumosRoute
+  '/insumos': typeof AppInsumosRouteWithChildren
   '/mao-de-obra': typeof AppMaoDeObraRoute
   '/notas-fiscais': typeof AppNotasFiscaisRoute
   '/realizado': typeof AppRealizadoRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/insumos/importar': typeof AppInsumosImportarRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -117,12 +124,13 @@ export interface FileRoutesByTo {
   '/equipamentos': typeof AppEquipamentosRoute
   '/equipe': typeof AppEquipeRoute
   '/estoque': typeof AppEstoqueRoute
-  '/insumos': typeof AppInsumosRoute
+  '/insumos': typeof AppInsumosRouteWithChildren
   '/mao-de-obra': typeof AppMaoDeObraRoute
   '/notas-fiscais': typeof AppNotasFiscaisRoute
   '/realizado': typeof AppRealizadoRoute
   '/invite/$token': typeof InviteTokenRoute
   '/': typeof AppIndexRoute
+  '/insumos/importar': typeof AppInsumosImportarRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -134,12 +142,13 @@ export interface FileRoutesById {
   '/_app/equipamentos': typeof AppEquipamentosRoute
   '/_app/equipe': typeof AppEquipeRoute
   '/_app/estoque': typeof AppEstoqueRoute
-  '/_app/insumos': typeof AppInsumosRoute
+  '/_app/insumos': typeof AppInsumosRouteWithChildren
   '/_app/mao-de-obra': typeof AppMaoDeObraRoute
   '/_app/notas-fiscais': typeof AppNotasFiscaisRoute
   '/_app/realizado': typeof AppRealizadoRoute
   '/invite/$token': typeof InviteTokenRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/insumos/importar': typeof AppInsumosImportarRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -157,6 +166,7 @@ export interface FileRouteTypes {
     | '/notas-fiscais'
     | '/realizado'
     | '/invite/$token'
+    | '/insumos/importar'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -172,6 +182,7 @@ export interface FileRouteTypes {
     | '/realizado'
     | '/invite/$token'
     | '/'
+    | '/insumos/importar'
   id:
     | '__root__'
     | '/_app'
@@ -188,6 +199,7 @@ export interface FileRouteTypes {
     | '/_app/realizado'
     | '/invite/$token'
     | '/_app/'
+    | '/_app/insumos/importar'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -297,8 +309,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppBackupRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/insumos/importar': {
+      id: '/_app/insumos/importar'
+      path: '/importar'
+      fullPath: '/insumos/importar'
+      preLoaderRoute: typeof AppInsumosImportarRouteImport
+      parentRoute: typeof AppInsumosRoute
+    }
   }
 }
+
+interface AppInsumosRouteChildren {
+  AppInsumosImportarRoute: typeof AppInsumosImportarRoute
+}
+
+const AppInsumosRouteChildren: AppInsumosRouteChildren = {
+  AppInsumosImportarRoute: AppInsumosImportarRoute,
+}
+
+const AppInsumosRouteWithChildren = AppInsumosRoute._addFileChildren(
+  AppInsumosRouteChildren,
+)
 
 interface AppRouteChildren {
   AppBackupRoute: typeof AppBackupRoute
@@ -306,7 +337,7 @@ interface AppRouteChildren {
   AppEquipamentosRoute: typeof AppEquipamentosRoute
   AppEquipeRoute: typeof AppEquipeRoute
   AppEstoqueRoute: typeof AppEstoqueRoute
-  AppInsumosRoute: typeof AppInsumosRoute
+  AppInsumosRoute: typeof AppInsumosRouteWithChildren
   AppMaoDeObraRoute: typeof AppMaoDeObraRoute
   AppNotasFiscaisRoute: typeof AppNotasFiscaisRoute
   AppRealizadoRoute: typeof AppRealizadoRoute
@@ -319,7 +350,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppEquipamentosRoute: AppEquipamentosRoute,
   AppEquipeRoute: AppEquipeRoute,
   AppEstoqueRoute: AppEstoqueRoute,
-  AppInsumosRoute: AppInsumosRoute,
+  AppInsumosRoute: AppInsumosRouteWithChildren,
   AppMaoDeObraRoute: AppMaoDeObraRoute,
   AppNotasFiscaisRoute: AppNotasFiscaisRoute,
   AppRealizadoRoute: AppRealizadoRoute,
@@ -337,13 +368,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
