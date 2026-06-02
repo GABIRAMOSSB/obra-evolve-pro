@@ -35,6 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { InsumoSelect } from "@/components/InsumoSelect";
 import {
   ArrowLeft,
   FileText,
