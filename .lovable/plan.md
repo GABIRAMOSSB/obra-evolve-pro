@@ -1,86 +1,96 @@
-# Refatoração do Módulo Cadastro Mestre de Insumos
+# Centro de Custo — Plano de Implementação
 
-Transformar o módulo atual (que carrega todos os ~6000 insumos em memória) em uma base corporativa escalável para 20.000+ registros, com importação SINAPI versionada, controle de acesso e busca otimizada.
+## 1. Modelo de dados (migration)
 
-## 1. Banco de dados (migration)
+Criar tabela `centros_custo` por empresa, hierárquica (grupo → subgrupo):
 
-Estender o schema existente (sem quebrar o que já está em `insumos_mestre`, `insumo_categorias`, `unidades_medida`, `insumo_aliases`):
-
-- `insumos_mestre`: adicionar `codigo_interno`, `descricao_completa`, `especificacao_tecnica`, `versao_sinapi`, `updated_by`. Já existem: `sinapi_codigo`, `imagem_url`, `normas_tecnicas`, `informacoes_gerais`, `ncm`, `created_by`.
-- Índices novos: `idx_insumos_sinapi_codigo`, `idx_insumos_categoria`, `idx_insumos_ncm`, índice GIN `pg_trgm` sobre `descricao` para busca rápida `ILIKE`.
-- Nova tabela `historico_importacoes_sinapi` (arquivo, versao_sinapi, usuario_id, data, total, novos, atualizados, ignorados, erros, status). GRANTs + RLS por empresa.
-- Função RPC `import_sinapi_batch(_company, _versao, _rows jsonb)` que faz UPSERT em lote por `(company_id, sinapi_codigo)` retornando contadores.
-- Função RPC `search_insumos(_company, _q, _categoria, _unidade, _ncm, _page, _page_size)` retornando linhas + count total para paginação server-side.
-- Reaproveitar perfis existentes `company_role` (admin/editor/member) como ADMINISTRADOR (admin) e USUÁRIO (member/editor). Apenas admin importa/edita SINAPI; demais leem e usam.
-
-## 2. Categorização automática
-
-Função SQL `categorizar_descricao(_desc text)` com regras por palavra-chave (PVC/TUBO/REGISTRO→Hidráulica; CABO/DISJUNTOR/ELETRODUTO→Elétrica; VERGALHÃO/AÇO/TELA→Aço; CIMENTO/ARGAMASSA/GRAUTE→Concreto; MANTA/SELANTE→Impermeabilização; etc.). Usada durante o import; admin pode reclassificar manualmente na UI.
-
-## 3. Storage de imagens
-
-Bucket `sinapi-imagens` já existe. Adicionar políticas para upload/troca/delete por admins da empresa. Imagens ficam só como `imagem_url` na tabela.
-
-## 4. UI — `_app.insumos.tsx` (reescrita)
-
-- Substituir o load completo por **paginação server-side** via `search_insumos` (20/50/100 por página, exibe página atual / total).
-- Barra de busca com debounce (300ms) — autocomplete por descrição ou código SINAPI.
-- Filtros: categoria (select), unidade (select), NCM (text).
-- Coluna de miniatura quando `imagem_url` existir; click amplia em dialog.
-- Dialog de detalhe com todos os campos (código SINAPI, descrição, categoria, unidade, NCM, especificação, normas, versão, datas, criado/editado por).
-- Edição/exclusão visível apenas para `admin`; demais perfis veem botão "Usar em orçamento/estoque/diário".
-- Upload/troca/remoção de imagem (apenas admin).
-
-## 5. UI — Importação SINAPI (`_app.insumos.importar.tsx`)
-
-Nova rota acessível apenas por admin:
-
-- Upload XLSX/CSV/ZIP (parse client-side com `xlsx` + JSZip para ZIP).
-- Detecta colunas: `Código SINAPI`, `Descrição`, `Unidade`, `NCM`, `Normas`, `Imagem` (opcional).
-- Campo obrigatório `versao_sinapi` (ex.: "2025-04").
-- Envia em lotes de 500 registros via `import_sinapi_batch` (server function `import-sinapi.functions.ts`).
-- Barra de progresso por lote.
-- Ao final: relatório (total, novos, atualizados, ignorados, erros) e registro em `historico_importacoes_sinapi`.
-
-## 6. Histórico
-
-Aba "Histórico de importações" na tela de importação, lista os registros da tabela com paginação.
-
-## 7. Server Functions
-
-`src/lib/insumos.functions.ts` (createServerFn + requireSupabaseAuth):
-- `searchInsumos({ q, categoria, unidade, ncm, page, pageSize })` → chama RPC.
-- `importSinapiBatch({ versao, rows })` → admin only; chama RPC.
-- `listImportHistory({ page, pageSize })`.
-
-## Detalhes técnicos
-
-```text
-search_insumos RPC
-  WHERE company_id = _company
-    AND ativo
-    AND (_q IS NULL OR descricao ILIKE '%'||_q||'%' OR sinapi_codigo = _q OR codigo = _q)
-    AND (_categoria IS NULL OR categoria_id = _categoria)
-    AND (_unidade IS NULL OR unidade_id = _unidade)
-    AND (_ncm IS NULL OR ncm = _ncm)
-  ORDER BY descricao
-  LIMIT _page_size OFFSET (_page-1)*_page_size
-+ COUNT(*) OVER() AS total
+```
+public.centros_custo
+  id, company_id, parent_id (nullable),
+  codigo (text, único por empresa),
+  nome, descricao, tipo (enum: administracao | mao_obra | materiais |
+                          equipamentos | terceiros | indiretos | outros),
+  ordem, ativo, created_at, updated_at
 ```
 
-```text
-import_sinapi_batch
-  FOR row IN rows:
-    INSERT ... ON CONFLICT (company_id, sinapi_codigo) DO UPDATE
-      SET descricao, unidade_id, ncm, normas_tecnicas, versao_sinapi,
-          imagem_url = COALESCE(EXCLUDED.imagem_url, insumos_mestre.imagem_url),
-          updated_by = auth.uid(), updated_at = now()
-    -- contar novos vs atualizados via xmax = 0
-```
+- GRANTs para `authenticated` + `service_role`; RLS por `is_company_member` /
+  `has_company_role` (mesmo padrão das outras tabelas).
+- Função `seed_centros_custo_base(_company uuid)` — popula a estrutura
+  padrão do briefing (Administração, MO Direta, Materiais, Equipamentos,
+  Terceiros, Indiretos + subgrupos).
+- Chamar o seed no trigger `handle_new_user_company` para novas empresas.
+- Endpoint manual ("Carregar centros padrão") para empresas existentes.
 
-Migration entrega: novas colunas + índices + tabela histórico + RPCs + função de categorização + políticas storage. UI entrega: lista paginada, busca, dialog detalhado, tela de importação, histórico.
+## 2. Colunas `centro_custo_id` (substituindo o text livre atual)
 
-## O que NÃO está no escopo
+Adicionar `centro_custo_id uuid` (nullable inicialmente para back-fill,
+depois NOT NULL via validação na UI) em:
 
-- Migrar consumidores (orçamentos/estoque/diário) para nova busca paginada — eles continuam usando os mesmos selects que já fazem; só ganham acesso aos novos campos.
-- Tradução automática de categorias antigas — admin reclassifica conforme necessário.
+- `estoque_movimentos` (já existe `centro_custo text` — manter como
+  legado e migrar para FK).
+- `apontamentos_mao_obra` (idem).
+- `nfe_item_apropriacoes` (idem).
+- `composicoes_proprias` — opcional, centro de custo "sugerido" da
+  composição (usado como default no rateio).
+
+Índices: `(company_id, centro_custo_id)` em cada tabela acima.
+
+## 3. UI — Cadastro (Cadastros → Centros de Custo)
+
+Novo route: `src/routes/_app.centros-custo.tsx`
+
+- Árvore com grupos e subgrupos (expand/collapse).
+- CRUD: criar, editar, mover (alterar `parent_id`), ativar/desativar.
+- Botão "Carregar estrutura padrão" (executa `seed_centros_custo_base`).
+- Apenas `admin`/`editor` editam; demais só leitura.
+- Link adicionado no `AppSidebar` em **Administração**.
+
+## 4. Apropriação obrigatória nos lançamentos
+
+Componente reutilizável `CentroCustoSelect` (combobox com busca,
+mostrando "Grupo › Subgrupo"). Campo passa a ser **obrigatório** em:
+
+- **NFe → rateio** (`NfeRateioDialog`): seletor por linha de apropriação.
+  Bloquear "Salvar" se algum item sem centro de custo.
+- **Estoque** (saídas/entradas manuais em `_app.estoque.tsx`).
+- **Mão de obra / Apontamentos** (`_app.mao-de-obra.tsx`).
+- **Equipamentos** (apontamentos de uso em `_app.equipamentos.tsx`).
+
+Sugestão automática a partir da composição/insumo, mas usuário pode
+sobrescrever.
+
+## 5. Dashboard — Custos por Centro de Custo
+
+Adicionar aba em `_app.realizado.tsx` (ou nova `_app.centros-custo.tsx`
+dependendo do volume):
+
+- **Tabela "Custos por Centro de Custo"**: valor realizado, % da obra.
+- **Gráfico pizza/donut** do percentual por centro (Recharts).
+- **Comparativo Previsto × Realizado × Desvio × Saldo × Margem** por
+  centro, reutilizando `computeCalc` já implementada no realizado.
+- Filtros: obra, período, grupo.
+
+## 6. Tipos / lib
+
+- Adicionar `CentroCusto` em `src/lib/types.ts`.
+- Helper `useCentrosCusto()` em `src/hooks/use-centros-custo.tsx`
+  (lista plana + map por id + árvore).
+- Atualizar funções de cálculo em `src/lib/calc.ts` para agregação por
+  centro de custo.
+
+## 7. Fora de escopo nesta entrega
+
+- Migração automática dos lançamentos antigos que usam `centro_custo`
+  como texto livre — a UI mostra um alerta "sem centro" e oferece
+  reclassificação manual.
+- Centro de custo orçado/previsto por etapa (vem em fase 2, depois que
+  a parametrização de orçamento estiver pronta).
+- Permissões granulares por centro (todos os membros enxergam todos).
+
+## 8. Ordem de execução
+
+1. Migration (tabela + seed + FKs + índices + RLS/GRANTs).
+2. `CentroCustoSelect` + hook.
+3. Tela de cadastro + entrada no sidebar.
+4. Tornar obrigatório nos dialogs de NFe, estoque, MO, equipamentos.
+5. Dashboard e comparativo por centro.
