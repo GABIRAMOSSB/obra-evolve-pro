@@ -906,11 +906,15 @@ function RealizadoPage() {
                           <TableHead className="text-right">Qtd Exec.</TableHead>
                           <TableHead className="text-right">Horas</TableHead>
                           <TableHead className="text-right">Previsto</TableHead>
+                          <TableHead className="text-right">Imp. Nota</TableHead>
+                          <TableHead className="text-right">Lucro</TableHead>
+                          <TableHead className="text-right">Custo Meta</TableHead>
                           <TableHead className="text-right">MO</TableHead>
                           <TableHead className="text-right">Material</TableHead>
                           <TableHead className="text-right">Realizado</TableHead>
-                          <TableHead className="text-right">Desvio</TableHead>
+                          <TableHead className="text-right">Saldo Meta</TableHead>
                           <TableHead className="text-right">%</TableHead>
+                          <TableHead>Status</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -925,11 +929,15 @@ function RealizadoPage() {
                                   <span style={{ paddingLeft: indent }}>{c.row.descricao}</span>
                                 </TableCell>
                                 <TableCell className="text-right text-xs">{fmtMoney(c.previsto)}</TableCell>
+                                <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.impNota)}</TableCell>
+                                <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.lucro)}</TableCell>
+                                <TableCell className="text-right text-xs">{fmtMoney(c.custoMeta)}</TableCell>
                                 <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.mo)}</TableCell>
                                 <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.material)}</TableCell>
                                 <TableCell className="text-right text-xs">{fmtMoney(c.realizado)}</TableCell>
-                                <TableCell className="text-right"><DesvioCell value={c.desvio} /></TableCell>
-                                <TableCell className="text-right"><DesvioCell value={c.desvioPct} suffix="%" /></TableCell>
+                                <TableCell className="text-right"><SaldoCell value={c.saldoMeta} status={c.status} /></TableCell>
+                                <TableCell className="text-right"><SaldoCell value={c.saldoPct} status={c.status} suffix="%" /></TableCell>
+                                <TableCell><StatusBadge status={c.status} /></TableCell>
                               </TableRow>
                             );
                           }
@@ -967,16 +975,20 @@ function RealizadoPage() {
                                 <TableCell className="text-right">{c.qtdExec.toFixed(2)}</TableCell>
                                 <TableCell className="text-right">{c.horas.toFixed(2)}</TableCell>
                                 <TableCell className="text-right">{fmtMoney(c.previsto)}</TableCell>
+                                <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.impNota)}</TableCell>
+                                <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.lucro)}</TableCell>
+                                <TableCell className="text-right font-medium">{fmtMoney(c.custoMeta)}</TableCell>
                                 <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.mo)}</TableCell>
                                 <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.material)}</TableCell>
                                 <TableCell className="text-right font-medium">{fmtMoney(c.realizado)}</TableCell>
-                                <TableCell className="text-right"><DesvioCell value={c.desvio} /></TableCell>
-                                <TableCell className="text-right"><DesvioCell value={c.desvioPct} suffix="%" /></TableCell>
+                                <TableCell className="text-right"><SaldoCell value={c.saldoMeta} status={c.status} /></TableCell>
+                                <TableCell className="text-right"><SaldoCell value={c.saldoPct} status={c.status} suffix="%" /></TableCell>
+                                <TableCell><StatusBadge status={c.status} /></TableCell>
                               </TableRow>
                               {isOpen && hasInsumos && (
                                 <TableRow key={`${idx}-exp`} className="bg-muted/20 hover:bg-muted/20">
                                   <TableCell></TableCell>
-                                  <TableCell colSpan={11} className="p-3">
+                                  <TableCell colSpan={15} className="p-3">
                                     <div className="space-y-2">
                                       <div className="text-xs font-semibold text-muted-foreground uppercase">
                                         Composição real — {c.row.descricao}
