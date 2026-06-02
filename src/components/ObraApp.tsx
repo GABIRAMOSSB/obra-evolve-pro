@@ -1664,15 +1664,22 @@ function ActivitiesTable({
       <div className="overflow-x-auto">
         <table className="w-full text-xs border-collapse" style={{ minWidth: 1400 }}>
           <colgroup>
-            <col style={{ width: 96 }} />
-            <col style={{ minWidth: 320 }} />
-            <col style={{ width: 56 }} />
+            <col style={{ width: 70 }} />
+            <col style={{ width: 80 }} />
+            <col style={{ width: 70 }} />
+            <col style={{ minWidth: 280 }} />
+            <col style={{ width: 50 }} />
+            <col style={{ width: 80 }} />
+            <col style={{ width: 100 }} />
             <col style={{ width: 90 }} />
+            <col style={{ width: 90 }} />
+            <col style={{ width: 100 }} />
             <col style={{ width: 110 }} />
-            <col style={{ width: 120 }} />
-            <col style={{ width: 100 }} />
-            <col style={{ width: 100 }} />
-            <col style={{ width: 100 }} />
+            <col style={{ width: 110 }} />
+            <col style={{ width: 110 }} />
+            <col style={{ width: 110 }} />
+            <col style={{ width: 110 }} />
+            <col style={{ width: 110 }} />
             <col style={{ width: 120 }} />
             <col style={{ width: 120 }} />
             <col style={{ width: 120 }} />
@@ -1681,8 +1688,14 @@ function ActivitiesTable({
           </colgroup>
           <thead className="uppercase sticky top-0 z-10">
             <tr className="text-[10px] tracking-[0.15em]">
-              <th colSpan={6} className="px-3 py-2 text-center border-b border-r border-border bg-primary text-primary-foreground font-bold">
+              <th colSpan={7} className="px-3 py-2 text-center border-b border-r border-border bg-primary text-primary-foreground font-bold">
                 PLANEJAMENTO — ORÇAMENTO CONTRATADO
+              </th>
+              <th colSpan={3} className="px-3 py-2 text-center border-b border-r border-border bg-primary/80 text-primary-foreground font-bold">
+                Valor Unit com BDI
+              </th>
+              <th colSpan={3} className="px-3 py-2 text-center border-b border-r border-border bg-primary/80 text-primary-foreground font-bold">
+                Total
               </th>
               <th colSpan={3} className="px-3 py-2 text-center border-b border-r border-border bg-[var(--measure)] text-[var(--measure-foreground)] font-bold">
                 EXECUTADO FÍSICO (Quantidade)
@@ -1699,10 +1712,17 @@ function ActivitiesTable({
             </tr>
             <tr className="bg-muted text-foreground text-[10px]">
               <th className="px-2 py-2 text-left border-b border-border">Item</th>
+              <th className="px-2 py-2 text-left border-b border-border">Código</th>
+              <th className="px-2 py-2 text-left border-b border-border">Banco</th>
               <th className="px-2 py-2 text-left border-b border-border sticky left-0 bg-muted z-[5]">Descrição</th>
               <th className="px-2 py-2 text-left border-b border-border">Und</th>
               <th className="px-2 py-2 text-right border-b border-border">Quant.</th>
-              <th className="px-2 py-2 text-right border-b border-border">V. Unit c/ BDI</th>
+              <th className="px-2 py-2 text-right border-b border-r border-border">Valor Unit</th>
+              <th className="px-2 py-2 text-right border-b border-border">M.O.</th>
+              <th className="px-2 py-2 text-right border-b border-border">MAT.</th>
+              <th className="px-2 py-2 text-right border-b border-r border-border">Total</th>
+              <th className="px-2 py-2 text-right border-b border-border">M.O.</th>
+              <th className="px-2 py-2 text-right border-b border-border">MAT.</th>
               <th className="px-2 py-2 text-right border-r border-b border-border">Total</th>
               <th className="px-2 py-2 text-right border-b border-border bg-[var(--measure)]/10">Acum. anterior</th>
               <th className="px-2 py-2 text-right border-b border-border bg-[var(--measure)]/20">Período</th>
