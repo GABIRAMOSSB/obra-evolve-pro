@@ -1086,7 +1086,7 @@ function Dashboard({
                     for (const [k, v] of Object.entries(data.evolutions)) {
                       if (validKeys.has(k)) { keptEvolutions[k] = v; kept++; } else dropped++;
                     }
-                    setData({ ...data, fileName: f.name, importedAt: new Date().toISOString(), rows: result.rows, evolutions: keptEvolutions });
+                    setData({ ...data, fileName: f.name, importedAt: new Date().toISOString(), rows: result.rows, evolutions: keptEvolutions, modelo: result.modelo, nomeAba: result.sheetName });
                     toast.success(`Planilha atualizada: ${result.rows.length} linhas. ${kept} evolução(ões) preservada(s)${dropped ? `, ${dropped} descartada(s)` : ""}.`);
                   } catch (err) { toast.error((err as Error).message); }
                 }}
