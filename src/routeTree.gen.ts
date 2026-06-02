@@ -23,6 +23,7 @@ import { Route as AppEstoqueRouteImport } from './routes/_app.estoque'
 import { Route as AppEquipeRouteImport } from './routes/_app.equipe'
 import { Route as AppEquipamentosRouteImport } from './routes/_app.equipamentos'
 import { Route as AppComposicoesRouteImport } from './routes/_app.composicoes'
+import { Route as AppCentrosCustoRouteImport } from './routes/_app.centros-custo'
 import { Route as AppBackupRouteImport } from './routes/_app.backup'
 import { Route as AppInsumosImportarRouteImport } from './routes/_app.insumos.importar'
 
@@ -96,6 +97,11 @@ const AppComposicoesRoute = AppComposicoesRouteImport.update({
   path: '/composicoes',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCentrosCustoRoute = AppCentrosCustoRouteImport.update({
+  id: '/centros-custo',
+  path: '/centros-custo',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppBackupRoute = AppBackupRouteImport.update({
   id: '/backup',
   path: '/backup',
@@ -112,6 +118,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/backup': typeof AppBackupRoute
+  '/centros-custo': typeof AppCentrosCustoRoute
   '/composicoes': typeof AppComposicoesRoute
   '/equipamentos': typeof AppEquipamentosRoute
   '/equipe': typeof AppEquipeRoute
@@ -128,6 +135,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/backup': typeof AppBackupRoute
+  '/centros-custo': typeof AppCentrosCustoRoute
   '/composicoes': typeof AppComposicoesRoute
   '/equipamentos': typeof AppEquipamentosRoute
   '/equipe': typeof AppEquipeRoute
@@ -147,6 +155,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_app/backup': typeof AppBackupRoute
+  '/_app/centros-custo': typeof AppCentrosCustoRoute
   '/_app/composicoes': typeof AppComposicoesRoute
   '/_app/equipamentos': typeof AppEquipamentosRoute
   '/_app/equipe': typeof AppEquipeRoute
@@ -167,6 +176,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/backup'
+    | '/centros-custo'
     | '/composicoes'
     | '/equipamentos'
     | '/equipe'
@@ -183,6 +193,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/backup'
+    | '/centros-custo'
     | '/composicoes'
     | '/equipamentos'
     | '/equipe'
@@ -201,6 +212,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/_app/backup'
+    | '/_app/centros-custo'
     | '/_app/composicoes'
     | '/_app/equipamentos'
     | '/_app/equipe'
@@ -322,6 +334,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppComposicoesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/centros-custo': {
+      id: '/_app/centros-custo'
+      path: '/centros-custo'
+      fullPath: '/centros-custo'
+      preLoaderRoute: typeof AppCentrosCustoRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/backup': {
       id: '/_app/backup'
       path: '/backup'
@@ -353,6 +372,7 @@ const AppInsumosRouteWithChildren = AppInsumosRoute._addFileChildren(
 
 interface AppRouteChildren {
   AppBackupRoute: typeof AppBackupRoute
+  AppCentrosCustoRoute: typeof AppCentrosCustoRoute
   AppComposicoesRoute: typeof AppComposicoesRoute
   AppEquipamentosRoute: typeof AppEquipamentosRoute
   AppEquipeRoute: typeof AppEquipeRoute
@@ -367,6 +387,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppBackupRoute: AppBackupRoute,
+  AppCentrosCustoRoute: AppCentrosCustoRoute,
   AppComposicoesRoute: AppComposicoesRoute,
   AppEquipamentosRoute: AppEquipamentosRoute,
   AppEquipeRoute: AppEquipeRoute,
@@ -390,3 +411,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
