@@ -15,6 +15,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as AppRealizadoRouteImport } from './routes/_app.realizado'
+import { Route as AppParametrosFinanceirosRouteImport } from './routes/_app.parametros-financeiros'
 import { Route as AppNotasFiscaisRouteImport } from './routes/_app.notas-fiscais'
 import { Route as AppMaoDeObraRouteImport } from './routes/_app.mao-de-obra'
 import { Route as AppInsumosRouteImport } from './routes/_app.insumos'
@@ -54,6 +55,12 @@ const AppRealizadoRoute = AppRealizadoRouteImport.update({
   path: '/realizado',
   getParentRoute: () => AppRoute,
 } as any)
+const AppParametrosFinanceirosRoute =
+  AppParametrosFinanceirosRouteImport.update({
+    id: '/parametros-financeiros',
+    path: '/parametros-financeiros',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppNotasFiscaisRoute = AppNotasFiscaisRouteImport.update({
   id: '/notas-fiscais',
   path: '/notas-fiscais',
@@ -112,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/insumos': typeof AppInsumosRouteWithChildren
   '/mao-de-obra': typeof AppMaoDeObraRoute
   '/notas-fiscais': typeof AppNotasFiscaisRoute
+  '/parametros-financeiros': typeof AppParametrosFinanceirosRoute
   '/realizado': typeof AppRealizadoRoute
   '/invite/$token': typeof InviteTokenRoute
   '/insumos/importar': typeof AppInsumosImportarRoute
@@ -127,6 +135,7 @@ export interface FileRoutesByTo {
   '/insumos': typeof AppInsumosRouteWithChildren
   '/mao-de-obra': typeof AppMaoDeObraRoute
   '/notas-fiscais': typeof AppNotasFiscaisRoute
+  '/parametros-financeiros': typeof AppParametrosFinanceirosRoute
   '/realizado': typeof AppRealizadoRoute
   '/invite/$token': typeof InviteTokenRoute
   '/': typeof AppIndexRoute
@@ -145,6 +154,7 @@ export interface FileRoutesById {
   '/_app/insumos': typeof AppInsumosRouteWithChildren
   '/_app/mao-de-obra': typeof AppMaoDeObraRoute
   '/_app/notas-fiscais': typeof AppNotasFiscaisRoute
+  '/_app/parametros-financeiros': typeof AppParametrosFinanceirosRoute
   '/_app/realizado': typeof AppRealizadoRoute
   '/invite/$token': typeof InviteTokenRoute
   '/_app/': typeof AppIndexRoute
@@ -164,6 +174,7 @@ export interface FileRouteTypes {
     | '/insumos'
     | '/mao-de-obra'
     | '/notas-fiscais'
+    | '/parametros-financeiros'
     | '/realizado'
     | '/invite/$token'
     | '/insumos/importar'
@@ -179,6 +190,7 @@ export interface FileRouteTypes {
     | '/insumos'
     | '/mao-de-obra'
     | '/notas-fiscais'
+    | '/parametros-financeiros'
     | '/realizado'
     | '/invite/$token'
     | '/'
@@ -196,6 +208,7 @@ export interface FileRouteTypes {
     | '/_app/insumos'
     | '/_app/mao-de-obra'
     | '/_app/notas-fiscais'
+    | '/_app/parametros-financeiros'
     | '/_app/realizado'
     | '/invite/$token'
     | '/_app/'
@@ -251,6 +264,13 @@ declare module '@tanstack/react-router' {
       path: '/realizado'
       fullPath: '/realizado'
       preLoaderRoute: typeof AppRealizadoRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/parametros-financeiros': {
+      id: '/_app/parametros-financeiros'
+      path: '/parametros-financeiros'
+      fullPath: '/parametros-financeiros'
+      preLoaderRoute: typeof AppParametrosFinanceirosRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/notas-fiscais': {
@@ -340,6 +360,7 @@ interface AppRouteChildren {
   AppInsumosRoute: typeof AppInsumosRouteWithChildren
   AppMaoDeObraRoute: typeof AppMaoDeObraRoute
   AppNotasFiscaisRoute: typeof AppNotasFiscaisRoute
+  AppParametrosFinanceirosRoute: typeof AppParametrosFinanceirosRoute
   AppRealizadoRoute: typeof AppRealizadoRoute
   AppIndexRoute: typeof AppIndexRoute
 }
@@ -353,6 +374,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppInsumosRoute: AppInsumosRouteWithChildren,
   AppMaoDeObraRoute: AppMaoDeObraRoute,
   AppNotasFiscaisRoute: AppNotasFiscaisRoute,
+  AppParametrosFinanceirosRoute: AppParametrosFinanceirosRoute,
   AppRealizadoRoute: AppRealizadoRoute,
   AppIndexRoute: AppIndexRoute,
 }
