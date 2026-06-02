@@ -1838,7 +1838,7 @@ function ActivitiesTable({
           </tbody>
           <tfoot>
             <tr className="bg-primary text-primary-foreground font-bold uppercase tracking-wider text-[11px]">
-              <td className="px-3 py-2.5" colSpan={5}>TOTAL GERAL</td>
+              <td className="px-3 py-2.5" colSpan={12}>TOTAL GERAL</td>
               <td className="px-2 py-2.5 text-right border-r border-primary-foreground/20">{fmtBRL(contratoTotal)}</td>
               <td className="px-2 py-2.5 bg-[var(--measure)] text-[var(--measure-foreground)]" colSpan={3}></td>
               <td className="px-2 py-2.5 text-right bg-[var(--primary-soft)]">{fmtBRL(tFinAnterior)}</td>
