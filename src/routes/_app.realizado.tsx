@@ -847,11 +847,15 @@ function RealizadoPage() {
                           <TableHead>Código</TableHead>
                           <TableHead>Etapa</TableHead>
                           <TableHead className="text-right">Previsto</TableHead>
+                          <TableHead className="text-right">Imp. Nota</TableHead>
+                          <TableHead className="text-right">Lucro</TableHead>
+                          <TableHead className="text-right">Custo Meta</TableHead>
                           <TableHead className="text-right">MO</TableHead>
                           <TableHead className="text-right">Material</TableHead>
                           <TableHead className="text-right">Realizado</TableHead>
-                          <TableHead className="text-right">Desvio</TableHead>
+                          <TableHead className="text-right">Saldo Meta</TableHead>
                           <TableHead className="text-right">%</TableHead>
+                          <TableHead>Status</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -860,11 +864,15 @@ function RealizadoPage() {
                             <TableCell className="font-mono text-xs">{e.row.item}</TableCell>
                             <TableCell className="text-xs font-medium">{e.row.descricao}</TableCell>
                             <TableCell className="text-right">{fmtMoney(e.previsto)}</TableCell>
+                            <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(e.impNota)}</TableCell>
+                            <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(e.lucro)}</TableCell>
+                            <TableCell className="text-right font-medium">{fmtMoney(e.custoMeta)}</TableCell>
                             <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(e.mo)}</TableCell>
                             <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(e.material)}</TableCell>
                             <TableCell className="text-right font-medium">{fmtMoney(e.realizado)}</TableCell>
-                            <TableCell className="text-right"><DesvioCell value={e.desvio} /></TableCell>
-                            <TableCell className="text-right"><DesvioCell value={e.desvioPct} suffix="%" /></TableCell>
+                            <TableCell className="text-right"><SaldoCell value={e.saldoMeta} status={e.status} /></TableCell>
+                            <TableCell className="text-right"><SaldoCell value={e.saldoPct} status={e.status} suffix="%" /></TableCell>
+                            <TableCell><StatusBadge status={e.status} /></TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
