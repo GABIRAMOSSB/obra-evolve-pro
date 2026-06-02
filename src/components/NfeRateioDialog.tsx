@@ -20,6 +20,7 @@ import { Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { formatMoney } from "@/lib/nfe-parser";
 import type { BudgetRow } from "@/lib/types";
+import { CentroCustoSelect } from "@/components/CentroCustoSelect";
 
 export type RateioItem = {
   id: string;
