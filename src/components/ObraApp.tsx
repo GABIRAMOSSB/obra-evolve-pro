@@ -1745,22 +1745,6 @@ function ActivitiesTable({
                 // Agregar acumulado anterior + período do grupo
                 let gFinAnt = 0;
                 let gFinPer = 0;
-                for (const child of allRows) {
-                  if (child.isGroup) continue;
-                  if (child.item !== r.item && !child.item.startsWith(r.item + ".")) continue;
-                  const list = evolutions[child.item]?.measurements ?? [];
-                  const qAnt = list
-                    .filter((m) => m.number < viewMeasurement)
-                    .reduce((a, m) => a + (m.quantExec || 0), 0);
-                  const meas = list.find((m) => m.number === viewMeasurement);
-                  gFinAnt += qAnt * (child.valorUnitBDI || 0);
-                  if (meas) gFinPer += (meas.quantExec || 0) * (child.valorUnitBDI || 0);
-                }
-                const gFinAtual = gFinAnt + gFinPer;
-                const gDesvio = contratoTotal > 0 ? (gFinAtual / contratoTotal) * 100 : 0;
-                // Agregar acumulado anterior + período do grupo
-                let gFinAnt = 0;
-                let gFinPer = 0;
                 let gMO = 0;
                 let gMat = 0;
                 for (const child of allRows) {
