@@ -367,7 +367,7 @@ function CentroNode({
         </span>
         {node.codigo && <span className="text-[10px] font-mono text-muted-foreground">{node.codigo}</span>}
         {canEdit && (
-          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex gap-1">
             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onAddChild(node)} title="Adicionar subgrupo">
               <Plus className="w-3.5 h-3.5" />
             </Button>
