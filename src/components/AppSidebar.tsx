@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { BarChart3, FileText, Package, HardHat, Wrench, Users, Database, LogOut } from "lucide-react";
+import { BarChart3, FileText, Package, HardHat, Wrench, Users, Database, LogOut, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useCompany } from "@/hooks/use-company";
@@ -42,6 +42,7 @@ export function AppSidebar() {
 
         <div className="px-3 pt-5 pb-1 text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/40">Administração</div>
         <SidebarLink to="/equipe" icon={Users} label="Equipe" />
+        <SidebarLink to="/parametros-financeiros" icon={Calculator} label="Parâmetros Financeiros" />
         <SidebarLink to="/backup" icon={Database} label="Backup" />
       </div>
 

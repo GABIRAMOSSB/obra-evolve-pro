@@ -158,6 +158,17 @@ function RealizadoPage() {
   const [apropriacoes, setApropriacoes] = useState<Apropriacao[]>([]);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
+  // Parâmetros financeiros (tributos, lucro, encargos MO) — Lucro Presumido
+  const [params, setParams] = useState({
+    iss: 5.0,
+    pis: 0.65,
+    cofins: 3.0,
+    irpj: 4.8,
+    csll: 2.88,
+    lucro: 25.0,
+    encargosMO: 100.0,
+  });
+
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = usePersistedTab("realizado", "etapas");
 
@@ -239,6 +250,34 @@ function RealizadoPage() {
       });
 
   }, [company]);
+
+  // Carrega parâmetros financeiros (tributos, lucro, encargos MO)
+  useEffect(() => {
+    if (!company) return;
+    supabase
+      .from("parametros_financeiros")
+      .select(
+        "iss_percent, pis_percent, cofins_percent, irpj_percent, csll_percent, lucro_pretendido_percent, encargos_mao_obra_percent",
+      )
+      .eq("company_id", company.id)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (error) return console.error(error);
+        if (!data) return;
+        setParams({
+          iss: Number(data.iss_percent),
+          pis: Number(data.pis_percent),
+          cofins: Number(data.cofins_percent),
+          irpj: Number(data.irpj_percent),
+          csll: Number(data.csll_percent),
+          lucro: Number(data.lucro_pretendido_percent),
+          encargosMO: Number(data.encargos_mao_obra_percent),
+        });
+      });
+  }, [company]);
+
+
+
 
 
   // IDs de itens de NF-e que já têm rateio (apropriação) — evitam duplicidade
@@ -593,88 +632,118 @@ function RealizadoPage() {
 
 
 
+  // Percentual total de tributos sobre nota
+  const tribTotalPct =
+    params.iss + params.pis + params.cofins + params.irpj + params.csll;
+
+  // Helper: aplica encargos sobre MO e calcula metas (custo meta, saldo, status)
+  type Calc = {
+    previsto: number;
+    impNota: number;
+    lucro: number;
+    custoMeta: number;
+    moBase: number;
+    mo: number; // MO com encargos
+    material: number;
+    realizado: number;
+    saldoMeta: number;
+    saldoPct: number;
+    status: "dentro" | "atencao" | "acima" | "vazio";
+  };
+
+  const computeCalc = (
+    previsto: number,
+    moBase: number,
+    material: number,
+  ): Calc => {
+    const impNota = previsto * (tribTotalPct / 100);
+    const lucroV = previsto * (params.lucro / 100);
+    const custoMeta = previsto - impNota - lucroV;
+    const mo = moBase * (1 + params.encargosMO / 100);
+    const realizado = mo + material;
+    const saldoMeta = custoMeta - realizado;
+    const saldoPct = custoMeta > 0 ? (saldoMeta / custoMeta) * 100 : 0;
+    let status: Calc["status"] = "vazio";
+    if (previsto > 0) {
+      if (saldoMeta < 0) status = "acima";
+      else if (custoMeta > 0 && saldoMeta < custoMeta * 0.2) status = "atencao";
+      else status = "dentro";
+    }
+    return {
+      previsto,
+      impNota,
+      lucro: lucroV,
+      custoMeta,
+      moBase,
+      mo,
+      material,
+      realizado,
+      saldoMeta,
+      saldoPct,
+      status,
+    };
+  };
+
   // Comparativo por composição — espelho COMPLETO da planilha:
   // mantém a ordem original (etapas/subetapas como cabeçalhos + composições-folha),
   // permitindo enxergar a hierarquia da planilha de orçamento.
   const comparativoItens = useMemo(() => {
     if (!obra) return [];
-    type Row = {
+    type Row = Calc & {
       row: BudgetRow;
       isGroup: boolean;
-      previsto: number;
-      realizado: number;
-      mo: number;
-      material: number;
       horas: number;
       qtdExec: number;
-      desvio: number;
-      desvioPct: number;
     };
     const rows: Row[] = [];
     for (const r of obra.rows) {
       if (r.isGroup) {
-        // Rollup: soma das folhas descendentes
         const prefixo = `${r.item}.`;
-        let previsto = 0, mo = 0, material = 0, horas = 0, qtdExec = 0;
+        let previsto = 0, moBase = 0, material = 0, horas = 0, qtdExec = 0;
         for (const child of obra.rows) {
           if (child.isGroup) continue;
           if (!child.item.startsWith(prefixo)) continue;
           previsto += child.total || 0;
           const c = getCusto(child);
-          mo += c.mo; material += c.material; horas += c.horas; qtdExec += c.qtd;
+          moBase += c.mo; material += c.material; horas += c.horas; qtdExec += c.qtd;
         }
-        const realizado = mo + material;
-        rows.push({
-          row: r, isGroup: true, previsto, realizado, mo, material, horas, qtdExec,
-          desvio: realizado - previsto,
-          desvioPct: previsto > 0 ? ((realizado - previsto) / previsto) * 100 : 0,
-        });
+        rows.push({ row: r, isGroup: true, horas, qtdExec, ...computeCalc(previsto, moBase, material) });
       } else {
         const c = getCusto(r);
-        const previsto = r.total || 0;
-        const realizado = c.mo + c.material;
         rows.push({
-          row: r, isGroup: false, previsto, realizado,
-          mo: c.mo, material: c.material, horas: c.horas, qtdExec: c.qtd,
-          desvio: realizado - previsto,
-          desvioPct: previsto > 0 ? ((realizado - previsto) / previsto) * 100 : 0,
+          row: r,
+          isGroup: false,
+          horas: c.horas,
+          qtdExec: c.qtd,
+          ...computeCalc(r.total || 0, c.mo, c.material),
         });
       }
     }
     return rows;
-  }, [obra, getCusto]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [obra, getCusto, params]);
 
 
-  // Rollup por etapa — espelho COMPLETO (todas as etapas do orçamento,
-  // mesmo zeradas). Etapas são linhas isGroup de nível 1 (ex.: "1", "2"…)
-  // e NÃO têm "codigo" — a hierarquia é feita pelo campo `item`.
+  // Rollup por etapa
   const comparativoEtapas = useMemo(() => {
     if (!obra) return [];
     const etapas = obra.rows.filter((r) => r.isGroup && r.level === 1);
     return etapas.map((et) => {
       const prefixo = `${et.item}.`;
       let previsto = 0;
-      let mo = 0;
+      let moBase = 0;
       let material = 0;
       for (const r of obra.rows) {
         if (r.isGroup) continue;
         if (!r.item.startsWith(prefixo)) continue;
         previsto += r.total || 0;
         const c = getCusto(r);
-        mo += c.mo; material += c.material;
+        moBase += c.mo; material += c.material;
       }
-      const realizado = mo + material;
-      return {
-        row: et,
-        previsto,
-        realizado,
-        mo,
-        material,
-        desvio: realizado - previsto,
-        desvioPct: previsto > 0 ? ((realizado - previsto) / previsto) * 100 : 0,
-      };
+      return { row: et, ...computeCalc(previsto, moBase, material) };
     });
-  }, [obra, getCusto]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [obra, getCusto, params]);
 
 
   if (authLoading || companyLoading || loading) {
@@ -778,11 +847,15 @@ function RealizadoPage() {
                           <TableHead>Código</TableHead>
                           <TableHead>Etapa</TableHead>
                           <TableHead className="text-right">Previsto</TableHead>
+                          <TableHead className="text-right">Imp. Nota</TableHead>
+                          <TableHead className="text-right">Lucro</TableHead>
+                          <TableHead className="text-right">Custo Meta</TableHead>
                           <TableHead className="text-right">MO</TableHead>
                           <TableHead className="text-right">Material</TableHead>
                           <TableHead className="text-right">Realizado</TableHead>
-                          <TableHead className="text-right">Desvio</TableHead>
+                          <TableHead className="text-right">Saldo Meta</TableHead>
                           <TableHead className="text-right">%</TableHead>
+                          <TableHead>Status</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -791,11 +864,15 @@ function RealizadoPage() {
                             <TableCell className="font-mono text-xs">{e.row.item}</TableCell>
                             <TableCell className="text-xs font-medium">{e.row.descricao}</TableCell>
                             <TableCell className="text-right">{fmtMoney(e.previsto)}</TableCell>
+                            <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(e.impNota)}</TableCell>
+                            <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(e.lucro)}</TableCell>
+                            <TableCell className="text-right font-medium">{fmtMoney(e.custoMeta)}</TableCell>
                             <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(e.mo)}</TableCell>
                             <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(e.material)}</TableCell>
                             <TableCell className="text-right font-medium">{fmtMoney(e.realizado)}</TableCell>
-                            <TableCell className="text-right"><DesvioCell value={e.desvio} /></TableCell>
-                            <TableCell className="text-right"><DesvioCell value={e.desvioPct} suffix="%" /></TableCell>
+                            <TableCell className="text-right"><SaldoCell value={e.saldoMeta} status={e.status} /></TableCell>
+                            <TableCell className="text-right"><SaldoCell value={e.saldoPct} status={e.status} suffix="%" /></TableCell>
+                            <TableCell><StatusBadge status={e.status} /></TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -829,11 +906,15 @@ function RealizadoPage() {
                           <TableHead className="text-right">Qtd Exec.</TableHead>
                           <TableHead className="text-right">Horas</TableHead>
                           <TableHead className="text-right">Previsto</TableHead>
+                          <TableHead className="text-right">Imp. Nota</TableHead>
+                          <TableHead className="text-right">Lucro</TableHead>
+                          <TableHead className="text-right">Custo Meta</TableHead>
                           <TableHead className="text-right">MO</TableHead>
                           <TableHead className="text-right">Material</TableHead>
                           <TableHead className="text-right">Realizado</TableHead>
-                          <TableHead className="text-right">Desvio</TableHead>
+                          <TableHead className="text-right">Saldo Meta</TableHead>
                           <TableHead className="text-right">%</TableHead>
+                          <TableHead>Status</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -848,11 +929,15 @@ function RealizadoPage() {
                                   <span style={{ paddingLeft: indent }}>{c.row.descricao}</span>
                                 </TableCell>
                                 <TableCell className="text-right text-xs">{fmtMoney(c.previsto)}</TableCell>
+                                <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.impNota)}</TableCell>
+                                <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.lucro)}</TableCell>
+                                <TableCell className="text-right text-xs">{fmtMoney(c.custoMeta)}</TableCell>
                                 <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.mo)}</TableCell>
                                 <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.material)}</TableCell>
                                 <TableCell className="text-right text-xs">{fmtMoney(c.realizado)}</TableCell>
-                                <TableCell className="text-right"><DesvioCell value={c.desvio} /></TableCell>
-                                <TableCell className="text-right"><DesvioCell value={c.desvioPct} suffix="%" /></TableCell>
+                                <TableCell className="text-right"><SaldoCell value={c.saldoMeta} status={c.status} /></TableCell>
+                                <TableCell className="text-right"><SaldoCell value={c.saldoPct} status={c.status} suffix="%" /></TableCell>
+                                <TableCell><StatusBadge status={c.status} /></TableCell>
                               </TableRow>
                             );
                           }
@@ -890,16 +975,20 @@ function RealizadoPage() {
                                 <TableCell className="text-right">{c.qtdExec.toFixed(2)}</TableCell>
                                 <TableCell className="text-right">{c.horas.toFixed(2)}</TableCell>
                                 <TableCell className="text-right">{fmtMoney(c.previsto)}</TableCell>
+                                <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.impNota)}</TableCell>
+                                <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.lucro)}</TableCell>
+                                <TableCell className="text-right font-medium">{fmtMoney(c.custoMeta)}</TableCell>
                                 <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.mo)}</TableCell>
                                 <TableCell className="text-right text-xs text-muted-foreground">{fmtMoney(c.material)}</TableCell>
                                 <TableCell className="text-right font-medium">{fmtMoney(c.realizado)}</TableCell>
-                                <TableCell className="text-right"><DesvioCell value={c.desvio} /></TableCell>
-                                <TableCell className="text-right"><DesvioCell value={c.desvioPct} suffix="%" /></TableCell>
+                                <TableCell className="text-right"><SaldoCell value={c.saldoMeta} status={c.status} /></TableCell>
+                                <TableCell className="text-right"><SaldoCell value={c.saldoPct} status={c.status} suffix="%" /></TableCell>
+                                <TableCell><StatusBadge status={c.status} /></TableCell>
                               </TableRow>
                               {isOpen && hasInsumos && (
                                 <TableRow key={`${idx}-exp`} className="bg-muted/20 hover:bg-muted/20">
                                   <TableCell></TableCell>
-                                  <TableCell colSpan={11} className="p-3">
+                                  <TableCell colSpan={15} className="p-3">
                                     <div className="space-y-2">
                                       <div className="text-xs font-semibold text-muted-foreground uppercase">
                                         Composição real — {c.row.descricao}
@@ -1205,3 +1294,34 @@ function DesvioCell({ value, suffix = "" }: { value: number; suffix?: string }) 
     </span>
   );
 }
+
+type CalcStatus = "dentro" | "atencao" | "acima" | "vazio";
+
+function SaldoCell({ value, status, suffix = "" }: { value: number; status: CalcStatus; suffix?: string }) {
+  if (!Number.isFinite(value) || status === "vazio") return <span className="text-muted-foreground">—</span>;
+  const color =
+    status === "acima"
+      ? "text-destructive"
+      : status === "atencao"
+        ? "text-amber-600 dark:text-amber-400"
+        : "text-emerald-600 dark:text-emerald-400";
+  const formatted = suffix === "%" ? `${value.toFixed(1)}%` : fmtMoney(value);
+  return <span className={`font-medium ${color}`}>{formatted}</span>;
+}
+
+function StatusBadge({ status }: { status: CalcStatus }) {
+  if (status === "vazio")
+    return <span className="text-xs text-muted-foreground">—</span>;
+  const cfg =
+    status === "acima"
+      ? { label: "Acima do custo meta", cls: "bg-destructive/15 text-destructive border-destructive/30" }
+      : status === "atencao"
+        ? { label: "Atenção", cls: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30" }
+        : { label: "Dentro da meta", cls: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30" };
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-medium whitespace-nowrap ${cfg.cls}`}>
+      {cfg.label}
+    </span>
+  );
+}
+

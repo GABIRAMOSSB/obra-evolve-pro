@@ -1114,6 +1114,51 @@ export type Database = {
         }
         Relationships: []
       }
+      parametros_financeiros: {
+        Row: {
+          cofins_percent: number
+          company_id: string
+          created_at: string
+          csll_percent: number
+          encargos_mao_obra_percent: number
+          id: string
+          irpj_percent: number
+          iss_percent: number
+          lucro_pretendido_percent: number
+          pis_percent: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          cofins_percent?: number
+          company_id: string
+          created_at?: string
+          csll_percent?: number
+          encargos_mao_obra_percent?: number
+          id?: string
+          irpj_percent?: number
+          iss_percent?: number
+          lucro_pretendido_percent?: number
+          pis_percent?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          cofins_percent?: number
+          company_id?: string
+          created_at?: string
+          csll_percent?: number
+          encargos_mao_obra_percent?: number
+          id?: string
+          irpj_percent?: number
+          iss_percent?: number
+          lucro_pretendido_percent?: number
+          pis_percent?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       unidades_medida: {
         Row: {
           company_id: string
