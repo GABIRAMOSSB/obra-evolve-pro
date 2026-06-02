@@ -44,12 +44,19 @@ export interface ParseResult {
   modelo: ModeloImportacao;
 }
 
-export async function parseExcel(file: File): Promise<ParseResult> {
+export type ForcedModel = "auto" | "modelo_antigo" | "modelo_orcamento_sintetico";
+
+export async function parseExcel(file: File, forced: ForcedModel = "auto"): Promise<ParseResult> {
   const buf = await file.arrayBuffer();
   const wb = XLSX.read(buf, { type: "array" });
 
-  // Detecta o modelo "Orçamento Sintético" pelo nome da aba.
-  const sinteticoSheet = findSinteticoSheet(wb.SheetNames);
+  // Detecta o modelo "Orçamento Sintético" pelo nome da aba (a menos que o usuário force o antigo).
+  const sinteticoSheet = forced === "modelo_antigo" ? null : findSinteticoSheet(wb.SheetNames);
+  if (forced === "modelo_orcamento_sintetico" && !sinteticoSheet) {
+    throw new Error(
+      'Modelo "Orçamento Sintético" selecionado, mas a planilha não possui aba compatível. Verifique o arquivo ou escolha "Detectar automaticamente".',
+    );
+  }
   if (sinteticoSheet) {
     const r = await parseExcelSintetico(file, sinteticoSheet);
     return {

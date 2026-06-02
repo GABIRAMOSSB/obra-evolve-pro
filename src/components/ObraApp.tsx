@@ -25,8 +25,8 @@ import {
 // Lazy loaders — mantêm xlsx/jspdf fora do bundle inicial.
 const loadExcel = () => import("@/lib/excel");
 const loadPdf = () => import("@/lib/pdf");
-const parseExcel: (file: File) => ReturnType<typeof import("@/lib/excel").parseExcel> =
-  async (file) => (await loadExcel()).parseExcel(file);
+const parseExcel: (file: File, forced?: import("@/lib/excel").ForcedModel) => ReturnType<typeof import("@/lib/excel").parseExcel> =
+  async (file, forced) => (await loadExcel()).parseExcel(file, forced);
 const exportAcompanhamentoXlsx = async (
   ...args: Parameters<typeof import("@/lib/pdf").exportAcompanhamentoXlsx>
 ) => (await loadPdf()).exportAcompanhamentoXlsx(...args);
@@ -177,6 +177,7 @@ export function ObraApp() {
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState<{ result: ParseResult; fileName: string; elapsedMs?: number } | null>(null);
+  const [uploadModel, setUploadModel] = useState<import("@/lib/excel").ForcedModel>("auto");
   const [migration, setMigration] = useState<
     | { stage: "prompt"; plan: MigrationPlan }
     | { stage: "running"; plan: MigrationPlan }
@@ -293,7 +294,7 @@ export function ObraApp() {
   async function handleFile(file: File) {
     try {
       const t0 = performance.now();
-      const result = await parseExcel(file);
+      const result = await parseExcel(file, uploadModel);
       const elapsedMs = Math.round(performance.now() - t0);
       setPreview({ result, fileName: file.name, elapsedMs });
     } catch (e) {
@@ -440,6 +441,19 @@ export function ObraApp() {
                 <span className="font-semibold text-foreground">{company.name}</span> — importe sua primeira planilha orçamentária para começar.
               </p>
             </div>
+            <div className="space-y-2 text-left">
+              <Label className="text-xs font-medium">Modelo da planilha</Label>
+              <Select value={uploadModel} onValueChange={(v) => setUploadModel(v as import("@/lib/excel").ForcedModel)}>
+                <SelectTrigger className="h-9 w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto">Detectar automaticamente</SelectItem>
+                  <SelectItem value="modelo_antigo">Modelo antigo (padrão Solv)</SelectItem>
+                  <SelectItem value="modelo_orcamento_sintetico">Orçamento Sintético (BDI M.O./MAT.)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <label className="block">
               <input
                 type="file"
@@ -503,6 +517,8 @@ export function ObraApp() {
         companyName={company.name}
         isAdmin={company.role === "admin" || company.role === "editor"}
         onSignOut={handleSignOut}
+        uploadModel={uploadModel}
+        onUploadModelChange={setUploadModel}
       />
       <ImportPreviewDialog
         preview={preview}
@@ -741,6 +757,8 @@ function Dashboard({
   companyName,
   isAdmin,
   onSignOut,
+  uploadModel,
+  onUploadModelChange,
 }: {
   data: ProjectData;
   setData: (d: ProjectData) => void;
@@ -757,6 +775,8 @@ function Dashboard({
   companyName: string;
   isAdmin: boolean;
   onSignOut: () => void;
+  uploadModel: import("@/lib/excel").ForcedModel;
+  onUploadModelChange: (m: import("@/lib/excel").ForcedModel) => void;
 }) {
 
   const [activeTab, setActiveTab] = usePersistedTab("dashboard", "atividades");
@@ -1081,6 +1101,20 @@ function Dashboard({
 
             <div className="h-6 w-px bg-border/70 hidden md:block" />
 
+            <Select value={uploadModel} onValueChange={(v) => onUploadModelChange(v as import("@/lib/excel").ForcedModel)}>
+              <SelectTrigger
+                className="h-8 w-[180px] hidden md:flex text-xs"
+                title="Modelo aplicado ao próximo upload de planilha"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto">Detectar automaticamente</SelectItem>
+                <SelectItem value="modelo_antigo">Modelo antigo</SelectItem>
+                <SelectItem value="modelo_orcamento_sintetico">Orçamento Sintético</SelectItem>
+              </SelectContent>
+            </Select>
+
             <label>
               <input type="file" accept=".xlsx,.xls" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) onImportFile(f); }} />
               <Button asChild size="sm" className="h-8">
@@ -1098,7 +1132,7 @@ function Dashboard({
                   e.target.value = "";
                   if (!f) return;
                   try {
-                    const result = await parseExcel(f);
+                    const result = await parseExcel(f, uploadModel);
                     const validKeys = new Set(result.rows.map((r) => r.item));
                     const keptEvolutions: Record<string, Evolution> = {};
                     let kept = 0;
@@ -1107,7 +1141,7 @@ function Dashboard({
                       if (validKeys.has(k)) { keptEvolutions[k] = v; kept++; } else dropped++;
                     }
                     setData({ ...data, fileName: f.name, importedAt: new Date().toISOString(), rows: result.rows, evolutions: keptEvolutions, modelo: result.modelo, nomeAba: result.sheetName });
-                    toast.success(`Planilha atualizada: ${result.rows.length} linhas. ${kept} evolução(ões) preservada(s)${dropped ? `, ${dropped} descartada(s)` : ""}.`);
+                    toast.success(`Planilha atualizada (${result.modelo === "modelo_orcamento_sintetico" ? "Orçamento Sintético" : "Modelo antigo"}): ${result.rows.length} linhas. ${kept} evolução(ões) preservada(s)${dropped ? `, ${dropped} descartada(s)` : ""}.`);
                   } catch (err) { toast.error((err as Error).message); }
                 }}
               />
