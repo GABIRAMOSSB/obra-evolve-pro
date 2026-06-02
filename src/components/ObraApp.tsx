@@ -176,7 +176,7 @@ export function ObraApp() {
   const [ws, setWs] = useState<Workspace>({ obras: [], activeId: null });
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [preview, setPreview] = useState<{ result: ParseResult; fileName: string } | null>(null);
+  const [preview, setPreview] = useState<{ result: ParseResult; fileName: string; elapsedMs?: number } | null>(null);
   const [migration, setMigration] = useState<
     | { stage: "prompt"; plan: MigrationPlan }
     | { stage: "running"; plan: MigrationPlan }
