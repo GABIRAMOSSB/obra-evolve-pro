@@ -45,6 +45,7 @@ type RateioRow = {
   id: string | null; // db id, if existing
   obra_id: string;
   item_codigo: string;
+  centro_custo_id: string | null;
   centro_custo: string;
   frente_servico: string;
   quantidade: number;
