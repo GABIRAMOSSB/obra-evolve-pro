@@ -557,11 +557,16 @@ function ImportPreviewDialog({
           </div>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
           <PreviewStat label="Linhas válidas" value={result.rows.length} tone="success" />
           <PreviewStat label="Etapas" value={groupCount} />
-          <PreviewStat label="Atividades" value={activityCount} />
-          <PreviewStat label="Linhas ignoradas" value={result.skipped.length} tone="warn" />
+          <PreviewStat label="Composições" value={activityCount} />
+          <PreviewStat label="Ignoradas" value={result.skipped.length} tone="warn" />
+          <PreviewStat label="Valor total" value={fmtBRL(valorTotalImportado)} />
+          <PreviewStat
+            label="Tempo"
+            value={elapsedMs != null ? `${(elapsedMs / 1000).toFixed(2)}s` : "—"}
+          />
         </div>
 
         <div className="space-y-2">
