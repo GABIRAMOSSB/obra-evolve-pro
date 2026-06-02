@@ -263,10 +263,10 @@
     box-shadow: var(--shadow-elevated);
   }
 
-  /* Anel de foco com glow indigo */
+  /* Anel de foco com glow dourado */
   .focus-glow:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px oklch(0.55 0.2 275 / 0.25);
+    box-shadow: 0 0 0 3px oklch(0.67 0.045 70 / 0.30);
   }
 
   /* Animações */
