@@ -708,7 +708,7 @@ function PreviewStat({
   tone,
 }: {
   label: string;
-  value: number;
+  value: number | string;
   tone?: "success" | "warn";
 }) {
   const cls =
