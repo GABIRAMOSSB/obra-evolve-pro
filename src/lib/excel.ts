@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx";
-import type { BudgetRow } from "./types";
+import type { BudgetRow, ModeloImportacao } from "./types";
+import { findSinteticoSheet, parseExcelSintetico } from "./excel-sintetico";
 
 function norm(s: unknown): string {
   return String(s ?? "")
