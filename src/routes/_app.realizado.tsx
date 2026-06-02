@@ -274,6 +274,10 @@ function RealizadoPage() {
           encargosMO: Number(data.encargos_mao_obra_percent),
         });
       });
+  }, [company]);
+
+
+
 
 
   // IDs de itens de NF-e que já têm rateio (apropriação) — evitam duplicidade
