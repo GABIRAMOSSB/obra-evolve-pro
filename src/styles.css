@@ -5,10 +5,10 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Premium SaaS design system — "Midnight Indigo"
- * Paleta: deep navy + indigo elétrico
+ * Solv Construtora design system
+ * Paleta: marrom/dourado #b19777 + neutros (#171717, #323232, #ececec)
+ * Acento positivo: verde #21bd5c
  * Tipografia: Sora (headings) + Manrope (body)
- * Sombras com glow indigo · gradientes · superfícies em camadas
  */
 
 @theme inline {
