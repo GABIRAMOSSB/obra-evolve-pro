@@ -71,7 +71,7 @@ export function NfeRateioDialog({ open, onOpenChange, companyId, item, nota, obr
     setLoading(true);
     supabase
       .from("nfe_item_apropriacoes")
-      .select("id,obra_id,item_codigo,centro_custo,frente_servico,quantidade")
+      .select("id,obra_id,item_codigo,centro_custo,centro_custo_id,frente_servico,quantidade")
       .eq("nota_fiscal_item_id", item.id)
       .then(({ data, error }) => {
         if (error) {
@@ -84,6 +84,7 @@ export function NfeRateioDialog({ open, onOpenChange, companyId, item, nota, obr
           id: r.id,
           obra_id: r.obra_id ?? "",
           item_codigo: r.item_codigo ?? "",
+          centro_custo_id: (r as { centro_custo_id?: string | null }).centro_custo_id ?? null,
           centro_custo: r.centro_custo ?? "",
           frente_servico: r.frente_servico ?? "",
           quantidade: Number(r.quantidade ?? 0),
@@ -94,6 +95,7 @@ export function NfeRateioDialog({ open, onOpenChange, companyId, item, nota, obr
             id: null,
             obra_id: "",
             item_codigo: "",
+            centro_custo_id: null,
             centro_custo: "",
             frente_servico: "",
             quantidade: item.quantidade,
