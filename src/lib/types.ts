@@ -141,6 +141,10 @@ export interface ProjectData {
   evolutions: Record<string, Evolution>;
   diaries: DiaryEntry[];
   info?: ObraInfo;
+  /** Modelo de planilha detectado na importação. */
+  modelo?: ModeloImportacao;
+  /** Nome da aba importada na planilha (informativo). */
+  nomeAba?: string;
   /** Número da medição atualmente em aberto (global, 1-based). */
   currentMeasurement?: number;
   /** Auditoria de fechamento/reabertura de medições. */
