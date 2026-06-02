@@ -1,3 +1,5 @@
+export type ModeloImportacao = "modelo_antigo" | "modelo_orcamento_sintetico";
+
 export interface BudgetRow {
   item: string;
   codigo: string;
@@ -11,6 +13,21 @@ export interface BudgetRow {
   peso: number;
   isGroup: boolean;
   level: number;
+  // ----- Campos do modelo "Orçamento Sintético" (opcionais) -----
+  modelo?: ModeloImportacao;
+  valorUnitMO?: number;
+  valorUnitMaterial?: number;
+  totalMO?: number;
+  totalMaterial?: number;
+  /** Igual a `total` no sintético; mantido para rastreabilidade. */
+  precoVendaTotal?: number;
+  /** Snapshots calculados no momento da importação (recalculáveis). */
+  impostosNota?: number;
+  lucroPlanejado?: number;
+  custoMeta?: number;
+  itemPai?: string;
+  nivelHierarquico?: number;
+  tipoLinha?: "etapa" | "composicao";
 }
 
 export interface Measurement {
