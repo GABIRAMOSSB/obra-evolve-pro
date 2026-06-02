@@ -120,6 +120,7 @@ export function NfeRateioDialog({ open, onOpenChange, companyId, item, nota, obr
         id: null,
         obra_id: "",
         item_codigo: "",
+        centro_custo_id: null,
         centro_custo: "",
         frente_servico: "",
         quantidade: Math.max(0, restante),
