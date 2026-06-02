@@ -158,6 +158,17 @@ function RealizadoPage() {
   const [apropriacoes, setApropriacoes] = useState<Apropriacao[]>([]);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
+  // Parâmetros financeiros (tributos, lucro, encargos MO) — Lucro Presumido
+  const [params, setParams] = useState({
+    iss: 5.0,
+    pis: 0.65,
+    cofins: 3.0,
+    irpj: 4.8,
+    csll: 2.88,
+    lucro: 25.0,
+    encargosMO: 100.0,
+  });
+
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = usePersistedTab("realizado", "etapas");
 
