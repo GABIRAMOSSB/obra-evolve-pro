@@ -311,6 +311,8 @@ export function ObraApp() {
       rows: preview.result.rows,
       evolutions: {},
       diaries: [],
+      modelo: preview.result.modelo,
+      nomeAba: preview.result.sheetName,
     };
     setWs((prev) => ({ obras: [...prev.obras, obra], activeId: obra.id }));
     toast.success(`Obra "${nome}" criada com ${preview.result.rows.length} linhas`);
