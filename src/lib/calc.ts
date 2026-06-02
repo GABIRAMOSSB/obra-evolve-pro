@@ -277,3 +277,57 @@ export const fmtNum = (n: number, dec = 2) =>
   n.toLocaleString("pt-BR", { minimumFractionDigits: dec, maximumFractionDigits: dec });
 
 export const fmtDate = (iso?: string | Date | null) => formatarDataBR(iso);
+
+// =========================================================================
+// Modelo "Orçamento Sintético" — Impostos, Lucro Planejado e Custo Meta
+// =========================================================================
+
+export interface MetaParams {
+  iss: number;
+  pis: number;
+  cofins: number;
+  irpj: number;
+  csll: number;
+  lucro: number;
+}
+
+export interface MetaCalc {
+  precoVendaTotal: number;
+  tributosPercent: number;
+  impostosNota: number;
+  lucroPercent: number;
+  lucroPlanejado: number;
+  custoMeta: number;
+}
+
+/** Calcula impostos sobre nota, lucro planejado e custo meta para uma composição. */
+export function computeMetaCalc(row: BudgetRow, params: MetaParams): MetaCalc {
+  const precoVendaTotal = row.precoVendaTotal ?? row.total ?? 0;
+  const tributosPercent =
+    (params.iss || 0) +
+    (params.pis || 0) +
+    (params.cofins || 0) +
+    (params.irpj || 0) +
+    (params.csll || 0);
+  const impostosNota = precoVendaTotal * (tributosPercent / 100);
+  const lucroPercent = params.lucro || 0;
+  const lucroPlanejado = precoVendaTotal * (lucroPercent / 100);
+  const custoMeta = precoVendaTotal - impostosNota - lucroPlanejado;
+  return {
+    precoVendaTotal,
+    tributosPercent,
+    impostosNota,
+    lucroPercent,
+    lucroPlanejado,
+    custoMeta,
+  };
+}
+
+/** Status de custo meta a partir do saldo. */
+export type MetaStatus = "dentro" | "atencao" | "acima";
+
+export function metaStatus(saldoMeta: number, custoMeta: number): MetaStatus {
+  if (saldoMeta <= 0) return "acima";
+  if (custoMeta > 0 && saldoMeta < custoMeta * 0.2) return "atencao";
+  return "dentro";
+}

@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx";
-import type { BudgetRow } from "./types";
+import type { BudgetRow, ModeloImportacao } from "./types";
+import { findSinteticoSheet, parseExcelSintetico } from "./excel-sintetico";
 
 function norm(s: unknown): string {
   return String(s ?? "")
@@ -40,11 +41,30 @@ export interface ParseResult {
   headerMap: Record<string, number>; // logical key -> column index
   sheetName: string;
   totalRows: number;
+  modelo: ModeloImportacao;
 }
 
 export async function parseExcel(file: File): Promise<ParseResult> {
   const buf = await file.arrayBuffer();
   const wb = XLSX.read(buf, { type: "array" });
+
+  // Detecta o modelo "Orçamento Sintético" pelo nome da aba.
+  const sinteticoSheet = findSinteticoSheet(wb.SheetNames);
+  if (sinteticoSheet) {
+    const r = await parseExcelSintetico(file, sinteticoSheet);
+    return {
+      rows: r.rows,
+      parsed: r.parsed,
+      skipped: r.skipped,
+      headerRowIndex: r.headerRowIndex,
+      headerLabels: r.headerLabels,
+      headerMap: r.headerMap,
+      sheetName: r.sheetName,
+      totalRows: r.totalRows,
+      modelo: "modelo_orcamento_sintetico",
+    };
+  }
+
   const sheetName = wb.SheetNames[0];
   const ws = wb.Sheets[sheetName];
   const matrix: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
@@ -272,5 +292,6 @@ export async function parseExcel(file: File): Promise<ParseResult> {
     headerMap,
     sheetName,
     totalRows: matrix.length,
+    modelo: "modelo_antigo",
   };
 }

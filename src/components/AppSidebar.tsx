@@ -31,6 +31,7 @@ export function AppSidebar() {
         <div className="px-3 pb-1 text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/40">Obra</div>
         <SidebarLink to="/" icon={BarChart3} label="Visão geral" exact />
         <SidebarLink to="/realizado" icon={BarChart3} label="Previsto × Realizado" />
+        <SidebarLink to="/comparativo-composicao" icon={Calculator} label="Comparativo Composição" />
         <SidebarLink to="/notas-fiscais" icon={FileText} label="Notas Fiscais" />
         <SidebarLink to="/estoque" icon={Package} label="Estoque" />
 

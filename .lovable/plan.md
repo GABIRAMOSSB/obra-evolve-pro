@@ -1,96 +1,105 @@
-# Centro de Custo — Plano de Implementação
 
-## 1. Modelo de dados (migration)
+# Importação do modelo "Orçamento Sintético"
 
-Criar tabela `centros_custo` por empresa, hierárquica (grupo → subgrupo):
+## 1. Detecção automática do modelo no upload
+
+No `src/lib/excel.ts` (`parseExcel`):
+
+- Em vez de pegar sempre `wb.SheetNames[0]`, varrer todas as abas.
+- Se existir aba cujo nome normalizado contenha `orcamento sintetico`, classificar como **`modelo_orcamento_sintetico`** e usar essa aba.
+- Caso contrário, manter fluxo atual → **`modelo_antigo`**.
+- Retornar `modelo: "modelo_antigo" | "modelo_orcamento_sintetico"` no `ParseResult`.
+
+## 2. Parser do novo modelo
+
+Novo módulo `src/lib/excel-sintetico.ts`:
+
+- Detecta cabeçalho de 2 linhas: linha 1 com `Item, Código, Banco, Descrição, Und, Quant., Valor Unit, Valor Unit com BDI, Total`; linha 2 com sub-cabeçalhos `M.O. | MAT. | Total` sob "Valor Unit com BDI" e sob "Total".
+- Mapeia colunas para:
+  - `item`, `codigo`, `banco`, `descricao`, `und`, `quantidade`
+  - `valorUnitSemBDI`
+  - `valorUnitMOcomBDI`, `valorUnitMATcomBDI`, `valorUnitTotalcomBDI` (= `precoUnitarioVenda`)
+  - `totalMO`, `totalMAT`, `totalGeral` (= `precoVendaTotal`)
+- Classifica linha:
+  - **Etapa/grupo**: item + descrição preenchidos, sem código/banco/und/quantidade.
+  - **Composição**: item + código + banco + descrição + und + quantidade.
+- Calcula `nivelHierarquico` pelos segmentos do item ("1.2.3" → nível 3) e `itemPai` (`1.2`).
+- Ignora linhas totalmente vazias; coleta `skipped` com motivo igual ao parser antigo.
+
+## 3. Modelo de dados (BudgetRow + persistência)
+
+Estender `BudgetRow` em `src/lib/types.ts` (campos opcionais para não quebrar modelo antigo):
 
 ```
-public.centros_custo
-  id, company_id, parent_id (nullable),
-  codigo (text, único por empresa),
-  nome, descricao, tipo (enum: administracao | mao_obra | materiais |
-                          equipamentos | terceiros | indiretos | outros),
-  ordem, ativo, created_at, updated_at
+modelo?: "modelo_antigo" | "modelo_orcamento_sintetico"
+nomeAba?: string
+valorUnitMO?: number
+valorUnitMaterial?: number
+totalMO?: number
+totalMaterial?: number
+precoVendaTotal?: number     // = total atual quando sintético
+impostosNota?: number        // calculado
+lucroPlanejado?: number      // calculado
+custoMeta?: number           // calculado
+itemPai?: string
+nivelHierarquico?: number
+tipoLinha?: "etapa" | "composicao"
 ```
 
-- GRANTs para `authenticated` + `service_role`; RLS por `is_company_member` /
-  `has_company_role` (mesmo padrão das outras tabelas).
-- Função `seed_centros_custo_base(_company uuid)` — popula a estrutura
-  padrão do briefing (Administração, MO Direta, Materiais, Equipamentos,
-  Terceiros, Indiretos + subgrupos).
-- Chamar o seed no trigger `handle_new_user_company` para novas empresas.
-- Endpoint manual ("Carregar centros padrão") para empresas existentes.
+Persistência: o workspace já guarda `rows` em JSONB (`company_workspaces.workspace`), então não precisa migration — os novos campos viajam junto. Adicionar `modelo` e `nomeAba` em `ProjectData`.
 
-## 2. Colunas `centro_custo_id` (substituindo o text livre atual)
+## 4. Cálculos (impostos, lucro, custo meta)
 
-Adicionar `centro_custo_id uuid` (nullable inicialmente para back-fill,
-depois NOT NULL via validação na UI) em:
+Em `src/lib/calc.ts`, nova função `computeMetaCalc(row, params)`:
 
-- `estoque_movimentos` (já existe `centro_custo text` — manter como
-  legado e migrar para FK).
-- `apontamentos_mao_obra` (idem).
-- `nfe_item_apropriacoes` (idem).
-- `composicoes_proprias` — opcional, centro de custo "sugerido" da
-  composição (usado como default no rateio).
+```
+tributos% = ISS + PIS + COFINS + IRPJ + CSLL  (já em parametros_financeiros)
+impostosNota   = precoVendaTotal * tributos%
+lucroPlanejado = precoVendaTotal * lucroPretendido%
+custoMeta      = precoVendaTotal - impostosNota - lucroPlanejado
+```
 
-Índices: `(company_id, centro_custo_id)` em cada tabela acima.
+Aplicado no momento da importação (snapshot) **e** recalculado em runtime quando os parâmetros mudarem (mesmo padrão usado hoje em `_app.realizado.tsx`).
 
-## 3. UI — Cadastro (Cadastros → Centros de Custo)
+## 5. UI — importação e conferência
 
-Novo route: `src/routes/_app.centros-custo.tsx`
+Em `_app.index.tsx` / fluxo de upload (`ObraApp`):
 
-- Árvore com grupos e subgrupos (expand/collapse).
-- CRUD: criar, editar, mover (alterar `parent_id`), ativar/desativar.
-- Botão "Carregar estrutura padrão" (executa `seed_centros_custo_base`).
-- Apenas `admin`/`editor` editam; demais só leitura.
-- Link adicionado no `AppSidebar` em **Administração**.
+- Após o `parseExcel`, mostrar diálogo de conferência com:
+  - Nome do arquivo, **modelo detectado**, aba importada,
+  - # etapas, # composições, valor total importado (somatório das composições),
+  - # linhas ignoradas (lista expansível já existente).
 
-## 4. Apropriação obrigatória nos lançamentos
+## 6. Comparativo por composição
 
-Componente reutilizável `CentroCustoSelect` (combobox com busca,
-mostrando "Grupo › Subgrupo"). Campo passa a ser **obrigatório** em:
+Em `_app.realizado.tsx` (ou aba dedicada), para obras com `modelo_orcamento_sintetico`:
 
-- **NFe → rateio** (`NfeRateioDialog`): seletor por linha de apropriação.
-  Bloquear "Salvar" se algum item sem centro de custo.
-- **Estoque** (saídas/entradas manuais em `_app.estoque.tsx`).
-- **Mão de obra / Apontamentos** (`_app.mao-de-obra.tsx`).
-- **Equipamentos** (apontamentos de uso em `_app.equipamentos.tsx`).
+- Adicionar colunas: Preço Venda, Impostos Nota, Lucro Planejado, Custo Meta, MO Prevista, Material Previsto, Previsto Técnico, MO Realizada, Material Consumido, Equipamento Apropriado, Realizado Total, **Saldo Meta**, Lucro Atual, Margem Atual %, Status.
+- Status:
+  - `Saldo Meta > 20% custoMeta` → verde "Dentro da Meta"
+  - `0 < Saldo Meta ≤ 20% custoMeta` → amarelo "Atenção"
+  - `Saldo Meta ≤ 0` → vermelho "Acima do Custo Meta"
+- Botão **"Ver memória de cálculo"** abre dialog com: Preço Venda Total, % e R$ de tributos, % e R$ de lucro, Custo Meta, Realizado Total, Saldo Meta, Lucro Atual, Margem Atual.
 
-Sugestão automática a partir da composição/insumo, mas usuário pode
-sobrescrever.
+Para obras com `modelo_antigo`, manter a tela como está hoje.
 
-## 5. Dashboard — Custos por Centro de Custo
+## 7. Compatibilidade
 
-Adicionar aba em `_app.realizado.tsx` (ou nova `_app.centros-custo.tsx`
-dependendo do volume):
-
-- **Tabela "Custos por Centro de Custo"**: valor realizado, % da obra.
-- **Gráfico pizza/donut** do percentual por centro (Recharts).
-- **Comparativo Previsto × Realizado × Desvio × Saldo × Margem** por
-  centro, reutilizando `computeCalc` já implementada no realizado.
-- Filtros: obra, período, grupo.
-
-## 6. Tipos / lib
-
-- Adicionar `CentroCusto` em `src/lib/types.ts`.
-- Helper `useCentrosCusto()` em `src/hooks/use-centros-custo.tsx`
-  (lista plana + map por id + árvore).
-- Atualizar funções de cálculo em `src/lib/calc.ts` para agregação por
-  centro de custo.
-
-## 7. Fora de escopo nesta entrega
-
-- Migração automática dos lançamentos antigos que usam `centro_custo`
-  como texto livre — a UI mostra um alerta "sem centro" e oferece
-  reclassificação manual.
-- Centro de custo orçado/previsto por etapa (vem em fase 2, depois que
-  a parametrização de orçamento estiver pronta).
-- Permissões granulares por centro (todos os membros enxergam todos).
+- `parseExcel` continua aceitando o modelo antigo sem mudança no chamador.
+- `BudgetRow.modelo` ausente ⇒ tratar como `modelo_antigo`.
+- Telas existentes que leem `row.total` seguem funcionando (no sintético, `total = precoVendaTotal`).
 
 ## 8. Ordem de execução
 
-1. Migration (tabela + seed + FKs + índices + RLS/GRANTs).
-2. `CentroCustoSelect` + hook.
-3. Tela de cadastro + entrada no sidebar.
-4. Tornar obrigatório nos dialogs de NFe, estoque, MO, equipamentos.
-5. Dashboard e comparativo por centro.
+1. `excel-sintetico.ts` + detecção em `parseExcel` (retorna `modelo`/`nomeAba`).
+2. Extensão de `BudgetRow` e `ProjectData`.
+3. `computeMetaCalc` em `calc.ts`.
+4. Diálogo de conferência pós-upload com modelo detectado.
+5. Comparativo por composição + memória de cálculo (apenas modelo sintético).
+
+## 9. Fora de escopo desta entrega
+
+- Vínculo automático etapa↔centro de custo (continua manual via `CentroCustoSelect`).
+- DRE da obra / dashboard de margem por centro (próxima fase, depois que o comparativo estiver validado).
+- Base MRP (depende de quantidades de insumo por composição, que o sintético não traz).
+- Migração retroativa de obras antigas para o novo schema de colunas.

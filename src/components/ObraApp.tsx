@@ -311,6 +311,8 @@ export function ObraApp() {
       rows: preview.result.rows,
       evolutions: {},
       diaries: [],
+      modelo: preview.result.modelo,
+      nomeAba: preview.result.sheetName,
     };
     setWs((prev) => ({ obras: [...prev.obras, obra], activeId: obra.id }));
     toast.success(`Obra "${nome}" criada com ${preview.result.rows.length} linhas`);
@@ -538,6 +540,16 @@ function ImportPreviewDialog({
             {fileName} — aba <strong>{result.sheetName}</strong> • cabeçalho na linha{" "}
             <strong>{result.headerRowIndex}</strong>
           </p>
+          <div className="pt-1">
+            <Badge
+              variant={result.modelo === "modelo_orcamento_sintetico" ? "default" : "secondary"}
+              className="text-[10px] uppercase tracking-wider"
+            >
+              {result.modelo === "modelo_orcamento_sintetico"
+                ? "Modelo: Orçamento Sintético"
+                : "Modelo: Padrão"}
+            </Badge>
+          </div>
         </DialogHeader>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
@@ -1084,7 +1096,7 @@ function Dashboard({
                     for (const [k, v] of Object.entries(data.evolutions)) {
                       if (validKeys.has(k)) { keptEvolutions[k] = v; kept++; } else dropped++;
                     }
-                    setData({ ...data, fileName: f.name, importedAt: new Date().toISOString(), rows: result.rows, evolutions: keptEvolutions });
+                    setData({ ...data, fileName: f.name, importedAt: new Date().toISOString(), rows: result.rows, evolutions: keptEvolutions, modelo: result.modelo, nomeAba: result.sheetName });
                     toast.success(`Planilha atualizada: ${result.rows.length} linhas. ${kept} evolução(ões) preservada(s)${dropped ? `, ${dropped} descartada(s)` : ""}.`);
                   } catch (err) { toast.error((err as Error).message); }
                 }}
