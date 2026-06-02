@@ -441,6 +441,19 @@ export function ObraApp() {
                 <span className="font-semibold text-foreground">{company.name}</span> — importe sua primeira planilha orçamentária para começar.
               </p>
             </div>
+            <div className="space-y-2 text-left">
+              <Label className="text-xs font-medium">Modelo da planilha</Label>
+              <Select value={uploadModel} onValueChange={(v) => setUploadModel(v as import("@/lib/excel").ForcedModel)}>
+                <SelectTrigger className="h-9 w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto">Detectar automaticamente</SelectItem>
+                  <SelectItem value="modelo_antigo">Modelo antigo (padrão Solv)</SelectItem>
+                  <SelectItem value="modelo_orcamento_sintetico">Orçamento Sintético (BDI M.O./MAT.)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <label className="block">
               <input
                 type="file"
