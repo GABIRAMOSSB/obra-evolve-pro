@@ -517,6 +517,8 @@ export function ObraApp() {
         companyName={company.name}
         isAdmin={company.role === "admin" || company.role === "editor"}
         onSignOut={handleSignOut}
+        uploadModel={uploadModel}
+        onUploadModelChange={setUploadModel}
       />
       <ImportPreviewDialog
         preview={preview}
