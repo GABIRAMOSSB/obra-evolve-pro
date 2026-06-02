@@ -25,8 +25,8 @@ import {
 // Lazy loaders — mantêm xlsx/jspdf fora do bundle inicial.
 const loadExcel = () => import("@/lib/excel");
 const loadPdf = () => import("@/lib/pdf");
-const parseExcel: (file: File) => ReturnType<typeof import("@/lib/excel").parseExcel> =
-  async (file) => (await loadExcel()).parseExcel(file);
+const parseExcel: (file: File, forced?: import("@/lib/excel").ForcedModel) => ReturnType<typeof import("@/lib/excel").parseExcel> =
+  async (file, forced) => (await loadExcel()).parseExcel(file, forced);
 const exportAcompanhamentoXlsx = async (
   ...args: Parameters<typeof import("@/lib/pdf").exportAcompanhamentoXlsx>
 ) => (await loadPdf()).exportAcompanhamentoXlsx(...args);
