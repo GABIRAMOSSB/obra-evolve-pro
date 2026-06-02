@@ -540,6 +540,16 @@ function ImportPreviewDialog({
             {fileName} — aba <strong>{result.sheetName}</strong> • cabeçalho na linha{" "}
             <strong>{result.headerRowIndex}</strong>
           </p>
+          <div className="pt-1">
+            <Badge
+              variant={result.modelo === "modelo_orcamento_sintetico" ? "default" : "secondary"}
+              className="text-[10px] uppercase tracking-wider"
+            >
+              {result.modelo === "modelo_orcamento_sintetico"
+                ? "Modelo: Orçamento Sintético"
+                : "Modelo: Padrão"}
+            </Badge>
+          </div>
         </DialogHeader>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
