@@ -251,6 +251,30 @@ function RealizadoPage() {
 
   }, [company]);
 
+  // Carrega parâmetros financeiros (tributos, lucro, encargos MO)
+  useEffect(() => {
+    if (!company) return;
+    supabase
+      .from("parametros_financeiros")
+      .select(
+        "iss_percent, pis_percent, cofins_percent, irpj_percent, csll_percent, lucro_pretendido_percent, encargos_mao_obra_percent",
+      )
+      .eq("company_id", company.id)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (error) return console.error(error);
+        if (!data) return;
+        setParams({
+          iss: Number(data.iss_percent),
+          pis: Number(data.pis_percent),
+          cofins: Number(data.cofins_percent),
+          irpj: Number(data.irpj_percent),
+          csll: Number(data.csll_percent),
+          lucro: Number(data.lucro_pretendido_percent),
+          encargosMO: Number(data.encargos_mao_obra_percent),
+        });
+      });
+
 
   // IDs de itens de NF-e que já têm rateio (apropriação) — evitam duplicidade
   // entre o caminho NOVO (nfe_item_apropriacoes) e o LEGADO (item.item_codigo).
