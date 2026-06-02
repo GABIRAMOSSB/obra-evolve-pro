@@ -17,6 +17,7 @@ export type Database = {
       apontamentos_mao_obra: {
         Row: {
           centro_custo: string | null
+          centro_custo_id: string | null
           company_id: string
           created_at: string
           created_by: string | null
@@ -47,6 +48,7 @@ export type Database = {
         }
         Insert: {
           centro_custo?: string | null
+          centro_custo_id?: string | null
           company_id: string
           created_at?: string
           created_by?: string | null
@@ -77,6 +79,7 @@ export type Database = {
         }
         Update: {
           centro_custo?: string | null
+          centro_custo_id?: string | null
           company_id?: string
           created_at?: string
           created_by?: string | null
@@ -107,6 +110,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "apontamentos_mao_obra_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "apontamentos_mao_obra_equipe_id_fkey"
             columns: ["equipe_id"]
             isOneToOne: false
@@ -125,6 +135,59 @@ export type Database = {
             columns: ["funcionario_id"]
             isOneToOne: false
             referencedRelation: "funcionarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      centros_custo: {
+        Row: {
+          ativo: boolean
+          codigo: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          id: string
+          nome: string
+          ordem: number
+          parent_id: string | null
+          tipo: Database["public"]["Enums"]["centro_custo_tipo"]
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          codigo?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          nome: string
+          ordem?: number
+          parent_id?: string | null
+          tipo?: Database["public"]["Enums"]["centro_custo_tipo"]
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          codigo?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          nome?: string
+          ordem?: number
+          parent_id?: string | null
+          tipo?: Database["public"]["Enums"]["centro_custo_tipo"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "centros_custo_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
             referencedColumns: ["id"]
           },
         ]
@@ -258,6 +321,7 @@ export type Database = {
       composicoes_proprias: {
         Row: {
           ativo: boolean
+          centro_custo_id: string | null
           codigo: string
           company_id: string
           created_at: string
@@ -271,6 +335,7 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          centro_custo_id?: string | null
           codigo: string
           company_id: string
           created_at?: string
@@ -284,6 +349,7 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          centro_custo_id?: string | null
           codigo?: string
           company_id?: string
           created_at?: string
@@ -295,7 +361,15 @@ export type Database = {
           unidade?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "composicoes_proprias_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       composicoes_proprias_insumos: {
         Row: {
@@ -479,6 +553,7 @@ export type Database = {
         Row: {
           apontamento_id: string | null
           centro_custo: string | null
+          centro_custo_id: string | null
           company_id: string
           created_at: string
           created_by: string | null
@@ -502,6 +577,7 @@ export type Database = {
         Insert: {
           apontamento_id?: string | null
           centro_custo?: string | null
+          centro_custo_id?: string | null
           company_id: string
           created_at?: string
           created_by?: string | null
@@ -525,6 +601,7 @@ export type Database = {
         Update: {
           apontamento_id?: string | null
           centro_custo?: string | null
+          centro_custo_id?: string | null
           company_id?: string
           created_at?: string
           created_by?: string | null
@@ -545,7 +622,15 @@ export type Database = {
           valor_total?: number
           valor_unitario?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "estoque_movimentos_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       funcionarios: {
         Row: {
@@ -865,6 +950,7 @@ export type Database = {
       nfe_item_apropriacoes: {
         Row: {
           centro_custo: string | null
+          centro_custo_id: string | null
           company_id: string
           created_at: string
           created_by: string | null
@@ -887,6 +973,7 @@ export type Database = {
         }
         Insert: {
           centro_custo?: string | null
+          centro_custo_id?: string | null
           company_id: string
           created_at?: string
           created_by?: string | null
@@ -909,6 +996,7 @@ export type Database = {
         }
         Update: {
           centro_custo?: string | null
+          centro_custo_id?: string | null
           company_id?: string
           created_at?: string
           created_by?: string | null
@@ -929,7 +1017,15 @@ export type Database = {
           valor_total?: number
           valor_unitario?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "nfe_item_apropriacoes_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       nota_fiscal_itens: {
         Row: {
@@ -1304,6 +1400,10 @@ export type Database = {
           versao_sinapi: string
         }[]
       }
+      seed_centros_custo_base: {
+        Args: { _company: string }
+        Returns: undefined
+      }
       seed_equipamentos_base: { Args: { _company: string }; Returns: undefined }
       seed_funcoes_base: { Args: { _company: string }; Returns: undefined }
       seed_insumos_base: { Args: { _company: string }; Returns: undefined }
@@ -1311,6 +1411,14 @@ export type Database = {
       show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
+      centro_custo_tipo:
+        | "administracao"
+        | "mao_obra"
+        | "materiais"
+        | "equipamentos"
+        | "terceiros"
+        | "indiretos"
+        | "outros"
       company_role: "admin" | "member" | "editor"
     }
     CompositeTypes: {
@@ -1439,6 +1547,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      centro_custo_tipo: [
+        "administracao",
+        "mao_obra",
+        "materiais",
+        "equipamentos",
+        "terceiros",
+        "indiretos",
+        "outros",
+      ],
       company_role: ["admin", "member", "editor"],
     },
   },

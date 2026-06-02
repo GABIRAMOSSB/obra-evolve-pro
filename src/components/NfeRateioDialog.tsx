@@ -20,6 +20,7 @@ import { Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { formatMoney } from "@/lib/nfe-parser";
 import type { BudgetRow } from "@/lib/types";
+import { CentroCustoSelect } from "@/components/CentroCustoSelect";
 
 export type RateioItem = {
   id: string;
@@ -44,6 +45,7 @@ type RateioRow = {
   id: string | null; // db id, if existing
   obra_id: string;
   item_codigo: string;
+  centro_custo_id: string | null;
   centro_custo: string;
   frente_servico: string;
   quantidade: number;
@@ -69,7 +71,7 @@ export function NfeRateioDialog({ open, onOpenChange, companyId, item, nota, obr
     setLoading(true);
     supabase
       .from("nfe_item_apropriacoes")
-      .select("id,obra_id,item_codigo,centro_custo,frente_servico,quantidade")
+      .select("id,obra_id,item_codigo,centro_custo,centro_custo_id,frente_servico,quantidade")
       .eq("nota_fiscal_item_id", item.id)
       .then(({ data, error }) => {
         if (error) {
@@ -82,6 +84,7 @@ export function NfeRateioDialog({ open, onOpenChange, companyId, item, nota, obr
           id: r.id,
           obra_id: r.obra_id ?? "",
           item_codigo: r.item_codigo ?? "",
+          centro_custo_id: (r as { centro_custo_id?: string | null }).centro_custo_id ?? null,
           centro_custo: r.centro_custo ?? "",
           frente_servico: r.frente_servico ?? "",
           quantidade: Number(r.quantidade ?? 0),
@@ -92,6 +95,7 @@ export function NfeRateioDialog({ open, onOpenChange, companyId, item, nota, obr
             id: null,
             obra_id: "",
             item_codigo: "",
+            centro_custo_id: null,
             centro_custo: "",
             frente_servico: "",
             quantidade: item.quantidade,
@@ -116,6 +120,7 @@ export function NfeRateioDialog({ open, onOpenChange, companyId, item, nota, obr
         id: null,
         obra_id: "",
         item_codigo: "",
+        centro_custo_id: null,
         centro_custo: "",
         frente_servico: "",
         quantidade: Math.max(0, restante),
@@ -145,6 +150,11 @@ export function NfeRateioDialog({ open, onOpenChange, companyId, item, nota, obr
     const invalid = rows.find((r) => !r.obra_id || !r.item_codigo || !r.quantidade);
     if (invalid) {
       toast.error("Preencha obra, composição e quantidade em todas as linhas");
+      return;
+    }
+    const semCentro = rows.find((r) => !r.centro_custo_id);
+    if (semCentro) {
+      toast.error("Centro de custo é obrigatório em todas as linhas");
       return;
     }
     if (totalQtd > item.quantidade + 0.001) {
@@ -181,6 +191,7 @@ export function NfeRateioDialog({ open, onOpenChange, companyId, item, nota, obr
         quantidade: r.quantidade,
         valor_unitario: valorUnit,
         valor_total,
+        centro_custo_id: r.centro_custo_id,
         centro_custo: r.centro_custo || null,
         frente_servico: r.frente_servico || null,
       };
@@ -275,10 +286,10 @@ export function NfeRateioDialog({ open, onOpenChange, companyId, item, nota, obr
                           </Select>
                         </TableCell>
                         <TableCell>
-                          <Input
-                            placeholder="Centro custo"
-                            value={r.centro_custo}
-                            onChange={(e) => updateRow(r.key, { centro_custo: e.target.value })}
+                          <CentroCustoSelect
+                            value={r.centro_custo_id}
+                            onChange={(v) => updateRow(r.key, { centro_custo_id: v })}
+                            required
                             className="w-full min-w-0"
                           />
                         </TableCell>
