@@ -294,7 +294,7 @@ export function ObraApp() {
   async function handleFile(file: File) {
     try {
       const t0 = performance.now();
-      const result = await parseExcel(file);
+      const result = await parseExcel(file, uploadModel);
       const elapsedMs = Math.round(performance.now() - t0);
       setPreview({ result, fileName: file.name, elapsedMs });
     } catch (e) {
