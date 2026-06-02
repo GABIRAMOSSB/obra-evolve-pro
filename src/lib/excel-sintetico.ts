@@ -157,11 +157,15 @@ function detectHeader(matrix: unknown[][]): {
 
     const labels: string[] = [];
     const headerVals = matrix[i] ?? [];
+    const subHeaderVals = matrix[i + 1] ?? [];
     Object.values(map)
       .filter((v) => typeof v === "number" && v >= 0)
       .sort((a, b) => (a as number) - (b as number))
       .forEach((idx) => {
-        labels.push(String((headerVals as unknown[])[idx as number] ?? "").trim());
+        const main = String((headerVals as unknown[])[idx as number] ?? "").trim();
+        const sub = String((subHeaderVals as unknown[])[idx as number] ?? "").trim();
+        // Se a linha 1 estiver vazia (cabeçalho mesclado), usa o sub-cabeçalho da linha 2.
+        labels.push(main || sub);
       });
 
     return { headerRow: i, map, labels };
