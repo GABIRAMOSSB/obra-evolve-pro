@@ -292,5 +292,6 @@ export async function parseExcel(file: File): Promise<ParseResult> {
     headerMap,
     sheetName,
     totalRows: matrix.length,
+    modelo: "modelo_antigo",
   };
 }
