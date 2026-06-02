@@ -1101,6 +1101,20 @@ function Dashboard({
 
             <div className="h-6 w-px bg-border/70 hidden md:block" />
 
+            <Select value={uploadModel} onValueChange={(v) => onUploadModelChange(v as import("@/lib/excel").ForcedModel)}>
+              <SelectTrigger
+                className="h-8 w-[180px] hidden md:flex text-xs"
+                title="Modelo aplicado ao próximo upload de planilha"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto">Detectar automaticamente</SelectItem>
+                <SelectItem value="modelo_antigo">Modelo antigo</SelectItem>
+                <SelectItem value="modelo_orcamento_sintetico">Orçamento Sintético</SelectItem>
+              </SelectContent>
+            </Select>
+
             <label>
               <input type="file" accept=".xlsx,.xls" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) onImportFile(f); }} />
               <Button asChild size="sm" className="h-8">
@@ -1118,7 +1132,7 @@ function Dashboard({
                   e.target.value = "";
                   if (!f) return;
                   try {
-                    const result = await parseExcel(f);
+                    const result = await parseExcel(f, uploadModel);
                     const validKeys = new Set(result.rows.map((r) => r.item));
                     const keptEvolutions: Record<string, Evolution> = {};
                     let kept = 0;
@@ -1127,7 +1141,7 @@ function Dashboard({
                       if (validKeys.has(k)) { keptEvolutions[k] = v; kept++; } else dropped++;
                     }
                     setData({ ...data, fileName: f.name, importedAt: new Date().toISOString(), rows: result.rows, evolutions: keptEvolutions, modelo: result.modelo, nomeAba: result.sheetName });
-                    toast.success(`Planilha atualizada: ${result.rows.length} linhas. ${kept} evolução(ões) preservada(s)${dropped ? `, ${dropped} descartada(s)` : ""}.`);
+                    toast.success(`Planilha atualizada (${result.modelo === "modelo_orcamento_sintetico" ? "Orçamento Sintético" : "Modelo antigo"}): ${result.rows.length} linhas. ${kept} evolução(ões) preservada(s)${dropped ? `, ${dropped} descartada(s)` : ""}.`);
                   } catch (err) { toast.error((err as Error).message); }
                 }}
               />
