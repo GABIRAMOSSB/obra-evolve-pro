@@ -191,6 +191,7 @@ export function NfeRateioDialog({ open, onOpenChange, companyId, item, nota, obr
         quantidade: r.quantidade,
         valor_unitario: valorUnit,
         valor_total,
+        centro_custo_id: r.centro_custo_id,
         centro_custo: r.centro_custo || null,
         frente_servico: r.frente_servico || null,
       };
