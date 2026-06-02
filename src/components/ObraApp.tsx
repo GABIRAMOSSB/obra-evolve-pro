@@ -524,9 +524,12 @@ function ImportPreviewDialog({
   onConfirm: () => void;
 }) {
   if (!preview) return null;
-  const { result, fileName } = preview;
+  const { result, fileName, elapsedMs } = preview;
   const groupCount = result.rows.filter((r) => r.isGroup).length;
   const activityCount = result.rows.length - groupCount;
+  const valorTotalImportado = result.rows
+    .filter((r) => !r.isGroup)
+    .reduce((acc, r) => acc + (r.total || 0), 0);
   const previewLimit = 100;
   const skippedLimit = 50;
 
