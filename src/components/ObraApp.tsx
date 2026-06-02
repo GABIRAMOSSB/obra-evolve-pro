@@ -177,6 +177,7 @@ export function ObraApp() {
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState<{ result: ParseResult; fileName: string; elapsedMs?: number } | null>(null);
+  const [uploadModel, setUploadModel] = useState<import("@/lib/excel").ForcedModel>("auto");
   const [migration, setMigration] = useState<
     | { stage: "prompt"; plan: MigrationPlan }
     | { stage: "running"; plan: MigrationPlan }
