@@ -35,6 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { InsumoSelect } from "@/components/InsumoSelect";
 import {
   ArrowLeft,
   FileText,
@@ -734,26 +735,19 @@ function NotasFiscaisPage() {
                             <TableCell className="text-right">{formatMoney(it.valor_total)}</TableCell>
                             <TableCell>
                               {canEdit ? (
-                                <Select
-                                  value={it.insumo_id || "__none__"}
-                                  onValueChange={(v) => vincularInsumo(it.id, v === "__none__" ? null : v)}
-                                >
-                                  <SelectTrigger className="w-full min-w-0"><SelectValue placeholder="Insumo…" /></SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="__none__"><span className="text-muted-foreground">(não vinculado)</span></SelectItem>
-                                    {insumos.map((ins) => (
-                                      <SelectItem key={ins.id} value={ins.id}>
-                                        {ins.codigo ? `[${ins.codigo}] ` : ""}{ins.descricao}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
+                                <InsumoSelect
+                                  value={it.insumo_id}
+                                  onChange={(v) => vincularInsumo(it.id, v)}
+                                  insumos={insumos}
+                                  className="w-full min-w-0"
+                                />
                               ) : it.insumo_id ? (
                                 <Badge variant="secondary"><Link2 className="w-3 h-3 mr-1" /> ok</Badge>
                               ) : (
                                 <Badge variant="outline">pendente</Badge>
                               )}
                             </TableCell>
+
                             <TableCell>
                               {canEdit ? (
                                 <Select
