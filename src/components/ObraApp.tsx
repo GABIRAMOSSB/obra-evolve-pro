@@ -176,7 +176,7 @@ export function ObraApp() {
   const [ws, setWs] = useState<Workspace>({ obras: [], activeId: null });
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [preview, setPreview] = useState<{ result: ParseResult; fileName: string } | null>(null);
+  const [preview, setPreview] = useState<{ result: ParseResult; fileName: string; elapsedMs?: number } | null>(null);
   const [migration, setMigration] = useState<
     | { stage: "prompt"; plan: MigrationPlan }
     | { stage: "running"; plan: MigrationPlan }
@@ -292,8 +292,10 @@ export function ObraApp() {
 
   async function handleFile(file: File) {
     try {
+      const t0 = performance.now();
       const result = await parseExcel(file);
-      setPreview({ result, fileName: file.name });
+      const elapsedMs = Math.round(performance.now() - t0);
+      setPreview({ result, fileName: file.name, elapsedMs });
     } catch (e) {
       toast.error((e as Error).message);
     }
@@ -517,14 +519,17 @@ function ImportPreviewDialog({
   onCancel,
   onConfirm,
 }: {
-  preview: { result: ParseResult; fileName: string } | null;
+  preview: { result: ParseResult; fileName: string; elapsedMs?: number } | null;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
   if (!preview) return null;
-  const { result, fileName } = preview;
+  const { result, fileName, elapsedMs } = preview;
   const groupCount = result.rows.filter((r) => r.isGroup).length;
   const activityCount = result.rows.length - groupCount;
+  const valorTotalImportado = result.rows
+    .filter((r) => !r.isGroup)
+    .reduce((acc, r) => acc + (r.total || 0), 0);
   const previewLimit = 100;
   const skippedLimit = 50;
 
@@ -552,11 +557,16 @@ function ImportPreviewDialog({
           </div>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
           <PreviewStat label="Linhas válidas" value={result.rows.length} tone="success" />
           <PreviewStat label="Etapas" value={groupCount} />
-          <PreviewStat label="Atividades" value={activityCount} />
-          <PreviewStat label="Linhas ignoradas" value={result.skipped.length} tone="warn" />
+          <PreviewStat label="Composições" value={activityCount} />
+          <PreviewStat label="Ignoradas" value={result.skipped.length} tone="warn" />
+          <PreviewStat label="Valor total" value={fmtBRL(valorTotalImportado)} />
+          <PreviewStat
+            label="Tempo"
+            value={elapsedMs != null ? `${(elapsedMs / 1000).toFixed(2)}s` : "—"}
+          />
         </div>
 
         <div className="space-y-2">
@@ -698,7 +708,7 @@ function PreviewStat({
   tone,
 }: {
   label: string;
-  value: number;
+  value: number | string;
   tone?: "success" | "warn";
 }) {
   const cls =
