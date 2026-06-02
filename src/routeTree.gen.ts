@@ -23,6 +23,7 @@ import { Route as AppEstoqueRouteImport } from './routes/_app.estoque'
 import { Route as AppEquipeRouteImport } from './routes/_app.equipe'
 import { Route as AppEquipamentosRouteImport } from './routes/_app.equipamentos'
 import { Route as AppComposicoesRouteImport } from './routes/_app.composicoes'
+import { Route as AppComparativoComposicaoRouteImport } from './routes/_app.comparativo-composicao'
 import { Route as AppCentrosCustoRouteImport } from './routes/_app.centros-custo'
 import { Route as AppBackupRouteImport } from './routes/_app.backup'
 import { Route as AppInsumosImportarRouteImport } from './routes/_app.insumos.importar'
@@ -97,6 +98,12 @@ const AppComposicoesRoute = AppComposicoesRouteImport.update({
   path: '/composicoes',
   getParentRoute: () => AppRoute,
 } as any)
+const AppComparativoComposicaoRoute =
+  AppComparativoComposicaoRouteImport.update({
+    id: '/comparativo-composicao',
+    path: '/comparativo-composicao',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppCentrosCustoRoute = AppCentrosCustoRouteImport.update({
   id: '/centros-custo',
   path: '/centros-custo',
@@ -119,6 +126,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/backup': typeof AppBackupRoute
   '/centros-custo': typeof AppCentrosCustoRoute
+  '/comparativo-composicao': typeof AppComparativoComposicaoRoute
   '/composicoes': typeof AppComposicoesRoute
   '/equipamentos': typeof AppEquipamentosRoute
   '/equipe': typeof AppEquipeRoute
@@ -136,6 +144,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/backup': typeof AppBackupRoute
   '/centros-custo': typeof AppCentrosCustoRoute
+  '/comparativo-composicao': typeof AppComparativoComposicaoRoute
   '/composicoes': typeof AppComposicoesRoute
   '/equipamentos': typeof AppEquipamentosRoute
   '/equipe': typeof AppEquipeRoute
@@ -156,6 +165,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/_app/backup': typeof AppBackupRoute
   '/_app/centros-custo': typeof AppCentrosCustoRoute
+  '/_app/comparativo-composicao': typeof AppComparativoComposicaoRoute
   '/_app/composicoes': typeof AppComposicoesRoute
   '/_app/equipamentos': typeof AppEquipamentosRoute
   '/_app/equipe': typeof AppEquipeRoute
@@ -177,6 +187,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/backup'
     | '/centros-custo'
+    | '/comparativo-composicao'
     | '/composicoes'
     | '/equipamentos'
     | '/equipe'
@@ -194,6 +205,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/backup'
     | '/centros-custo'
+    | '/comparativo-composicao'
     | '/composicoes'
     | '/equipamentos'
     | '/equipe'
@@ -213,6 +225,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/_app/backup'
     | '/_app/centros-custo'
+    | '/_app/comparativo-composicao'
     | '/_app/composicoes'
     | '/_app/equipamentos'
     | '/_app/equipe'
@@ -334,6 +347,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppComposicoesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/comparativo-composicao': {
+      id: '/_app/comparativo-composicao'
+      path: '/comparativo-composicao'
+      fullPath: '/comparativo-composicao'
+      preLoaderRoute: typeof AppComparativoComposicaoRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/centros-custo': {
       id: '/_app/centros-custo'
       path: '/centros-custo'
@@ -373,6 +393,7 @@ const AppInsumosRouteWithChildren = AppInsumosRoute._addFileChildren(
 interface AppRouteChildren {
   AppBackupRoute: typeof AppBackupRoute
   AppCentrosCustoRoute: typeof AppCentrosCustoRoute
+  AppComparativoComposicaoRoute: typeof AppComparativoComposicaoRoute
   AppComposicoesRoute: typeof AppComposicoesRoute
   AppEquipamentosRoute: typeof AppEquipamentosRoute
   AppEquipeRoute: typeof AppEquipeRoute
@@ -388,6 +409,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppBackupRoute: AppBackupRoute,
   AppCentrosCustoRoute: AppCentrosCustoRoute,
+  AppComparativoComposicaoRoute: AppComparativoComposicaoRoute,
   AppComposicoesRoute: AppComposicoesRoute,
   AppEquipamentosRoute: AppEquipamentosRoute,
   AppEquipeRoute: AppEquipeRoute,
