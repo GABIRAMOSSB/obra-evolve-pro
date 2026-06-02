@@ -755,6 +755,8 @@ function Dashboard({
   companyName,
   isAdmin,
   onSignOut,
+  uploadModel,
+  onUploadModelChange,
 }: {
   data: ProjectData;
   setData: (d: ProjectData) => void;
@@ -771,6 +773,8 @@ function Dashboard({
   companyName: string;
   isAdmin: boolean;
   onSignOut: () => void;
+  uploadModel: import("@/lib/excel").ForcedModel;
+  onUploadModelChange: (m: import("@/lib/excel").ForcedModel) => void;
 }) {
 
   const [activeTab, setActiveTab] = usePersistedTab("dashboard", "atividades");
