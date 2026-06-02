@@ -151,14 +151,25 @@ function NotasFiscaisPage() {
 
   const loadInsumos = async () => {
     if (!companyId) return;
-    const { data } = await supabase
-      .from("insumos_mestre")
-      .select("id,codigo,descricao")
-      .eq("company_id", companyId)
-      .eq("ativo", true)
-      .order("descricao")
-      .limit(2000);
-    setInsumos((data as InsumoOption[]) || []);
+    const all: InsumoOption[] = [];
+    const pageSize = 1000;
+    for (let from = 0; ; from += pageSize) {
+      const { data, error } = await supabase
+        .from("insumos_mestre")
+        .select("id,codigo,descricao")
+        .eq("company_id", companyId)
+        .eq("ativo", true)
+        .order("descricao")
+        .range(from, from + pageSize - 1);
+      if (error) {
+        toast.error(error.message);
+        break;
+      }
+      const rows = (data as InsumoOption[]) || [];
+      all.push(...rows);
+      if (rows.length < pageSize) break;
+    }
+    setInsumos(all);
   };
 
   const loadObras = async () => {
