@@ -1294,3 +1294,34 @@ function DesvioCell({ value, suffix = "" }: { value: number; suffix?: string }) 
     </span>
   );
 }
+
+type CalcStatus = "dentro" | "atencao" | "acima" | "vazio";
+
+function SaldoCell({ value, status, suffix = "" }: { value: number; status: CalcStatus; suffix?: string }) {
+  if (!Number.isFinite(value) || status === "vazio") return <span className="text-muted-foreground">—</span>;
+  const color =
+    status === "acima"
+      ? "text-destructive"
+      : status === "atencao"
+        ? "text-amber-600 dark:text-amber-400"
+        : "text-emerald-600 dark:text-emerald-400";
+  const formatted = suffix === "%" ? `${value.toFixed(1)}%` : fmtMoney(value);
+  return <span className={`font-medium ${color}`}>{formatted}</span>;
+}
+
+function StatusBadge({ status }: { status: CalcStatus }) {
+  if (status === "vazio")
+    return <span className="text-xs text-muted-foreground">—</span>;
+  const cfg =
+    status === "acima"
+      ? { label: "Acima do custo meta", cls: "bg-destructive/15 text-destructive border-destructive/30" }
+      : status === "atencao"
+        ? { label: "Atenção", cls: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30" }
+        : { label: "Dentro da meta", cls: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30" };
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-medium whitespace-nowrap ${cfg.cls}`}>
+      {cfg.label}
+    </span>
+  );
+}
+
