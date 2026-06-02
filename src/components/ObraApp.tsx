@@ -1758,6 +1758,26 @@ function ActivitiesTable({
                 }
                 const gFinAtual = gFinAnt + gFinPer;
                 const gDesvio = contratoTotal > 0 ? (gFinAtual / contratoTotal) * 100 : 0;
+                // Agregar acumulado anterior + período do grupo
+                let gFinAnt = 0;
+                let gFinPer = 0;
+                let gMO = 0;
+                let gMat = 0;
+                for (const child of allRows) {
+                  if (child.isGroup) continue;
+                  if (child.item !== r.item && !child.item.startsWith(r.item + ".")) continue;
+                  const list = evolutions[child.item]?.measurements ?? [];
+                  const qAnt = list
+                    .filter((m) => m.number < viewMeasurement)
+                    .reduce((a, m) => a + (m.quantExec || 0), 0);
+                  const meas = list.find((m) => m.number === viewMeasurement);
+                  gFinAnt += qAnt * (child.valorUnitBDI || 0);
+                  if (meas) gFinPer += (meas.quantExec || 0) * (child.valorUnitBDI || 0);
+                  gMO += child.totalMO || 0;
+                  gMat += child.totalMaterial || 0;
+                }
+                const gFinAtual = gFinAnt + gFinPer;
+                const gDesvio = contratoTotal > 0 ? (gFinAtual / contratoTotal) * 100 : 0;
                 const rowCls = isEtapa
                   ? "bg-primary/15 border-y-2 border-primary/30 font-bold text-primary"
                   : isSub
@@ -1779,6 +1799,8 @@ function ActivitiesTable({
                         <span>{r.item}</span>
                       </button>
                     </td>
+                    <td className="px-2 py-1.5"></td>
+                    <td className="px-2 py-1.5"></td>
                     <td
                       className={`px-2 py-1.5 sticky left-0 z-[4] ${rowCls} ${isEtapa ? "uppercase tracking-wide" : isSub ? "uppercase tracking-wide" : ""}`}
                       style={{ paddingLeft: 8 + indent }}
@@ -1787,7 +1809,12 @@ function ActivitiesTable({
                     </td>
                     <td className="px-2 py-1.5"></td>
                     <td className="px-2 py-1.5"></td>
+                    <td className="px-2 py-1.5 border-r border-border"></td>
                     <td className="px-2 py-1.5"></td>
+                    <td className="px-2 py-1.5"></td>
+                    <td className="px-2 py-1.5 border-r border-border"></td>
+                    <td className="px-2 py-1.5 text-right">{gMO ? fmtBRL(gMO) : ""}</td>
+                    <td className="px-2 py-1.5 text-right">{gMat ? fmtBRL(gMat) : ""}</td>
                     <td className="px-2 py-1.5 text-right border-r border-border">{fmtBRL(g.total)}</td>
                     <td className="px-2 py-1.5 bg-[var(--measure)]/5"></td>
                     <td className="px-2 py-1.5 bg-[var(--measure)]/10"></td>
