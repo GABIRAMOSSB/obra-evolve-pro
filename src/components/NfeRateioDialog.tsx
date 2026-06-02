@@ -152,6 +152,11 @@ export function NfeRateioDialog({ open, onOpenChange, companyId, item, nota, obr
       toast.error("Preencha obra, composição e quantidade em todas as linhas");
       return;
     }
+    const semCentro = rows.find((r) => !r.centro_custo_id);
+    if (semCentro) {
+      toast.error("Centro de custo é obrigatório em todas as linhas");
+      return;
+    }
     if (totalQtd > item.quantidade + 0.001) {
       toast.error(`Quantidade total (${totalQtd}) ultrapassa o item (${item.quantidade})`);
       return;
