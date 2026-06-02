@@ -519,7 +519,7 @@ function ImportPreviewDialog({
   onCancel,
   onConfirm,
 }: {
-  preview: { result: ParseResult; fileName: string } | null;
+  preview: { result: ParseResult; fileName: string; elapsedMs?: number } | null;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
