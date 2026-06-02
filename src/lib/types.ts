@@ -28,6 +28,29 @@ export interface BudgetRow {
   itemPai?: string;
   nivelHierarquico?: number;
   tipoLinha?: "etapa" | "composicao";
+  // ----- Fase 8: preparação para apropriação (estrutural, sem lógica) -----
+  moRealizada?: number;
+  materialConsumido?: number;
+  equipamentoApropriado?: number;
+  terceirosRealizados?: number;
+  freteRealizado?: number;
+  realizadoTotal?: number;
+  // ----- Fase 9: preparação para centro de custo -----
+  centroCustoId?: string | null;
+  subcentroCustoId?: string | null;
+  // ----- Fase 10: preparação para custo meta -----
+  precoVenda?: number;
+  saldoMeta?: number;
+  lucroAtual?: number;
+  margemAtual?: number;
+  // ----- Fase 11: preparação para MRP -----
+  quantidadeComprada?: number;
+  quantidadeConsumida?: number;
+  estoqueAtual?: number;
+  necessidadeCompra?: number;
+  // ----- Fase 12: vínculos futuros (insumo mestre, fornecedor) -----
+  insumoMestreId?: string | null;
+  fornecedorId?: string | null;
 }
 
 export interface Measurement {
