@@ -1942,12 +1942,19 @@ function ServiceRow({
         <td className="px-2 py-1.5 font-mono whitespace-nowrap" style={{ paddingLeft: 8 + indent }}>
           {row.item}
         </td>
+        <td className="px-2 py-1.5 font-mono text-[11px] text-muted-foreground">{row.codigo || ""}</td>
+        <td className="px-2 py-1.5 text-[11px]">{row.banco && row.banco !== "MANUAL" ? row.banco : ""}</td>
         <td className="px-2 py-1.5 sticky left-0 bg-card z-[4]" style={{ paddingLeft: 8 + indent }}>
           {row.descricao}
         </td>
         <td className="px-2 py-1.5">{row.und}</td>
         <td className="px-2 py-1.5 text-right">{row.quantidade ? fmtNum(row.quantidade) : ""}</td>
-        <td className="px-2 py-1.5 text-right">{vu ? fmtBRL(vu) : ""}</td>
+        <td className="px-2 py-1.5 text-right border-r border-border">{row.valorUnit ? fmtBRL(row.valorUnit) : ""}</td>
+        <td className="px-2 py-1.5 text-right">{row.valorUnitMO ? fmtBRL(row.valorUnitMO) : ""}</td>
+        <td className="px-2 py-1.5 text-right">{row.valorUnitMaterial ? fmtBRL(row.valorUnitMaterial) : ""}</td>
+        <td className="px-2 py-1.5 text-right border-r border-border">{vu ? fmtBRL(vu) : ""}</td>
+        <td className="px-2 py-1.5 text-right">{row.totalMO ? fmtBRL(row.totalMO) : ""}</td>
+        <td className="px-2 py-1.5 text-right">{row.totalMaterial ? fmtBRL(row.totalMaterial) : ""}</td>
         <td className="px-2 py-1.5 text-right font-medium border-r border-border">{fmtBRL(row.total)}</td>
         <td className="px-2 py-1.5 text-right bg-[var(--measure)]/5 text-muted-foreground">
           {qtdAnterior > 0 ? fmtNum(qtdAnterior) : "—"}
@@ -2010,12 +2017,16 @@ function ServiceRow({
       {temExcesso && (
         <tr className="border-t bg-destructive/10 text-destructive text-[11px]">
           <td className="px-2 py-1 font-mono" style={{ paddingLeft: 8 + indent }}>{row.item}</td>
+          <td className="px-2 py-1"></td>
+          <td className="px-2 py-1"></td>
           <td className="px-2 py-1 sticky left-0 bg-destructive/10 z-[4] font-medium" style={{ paddingLeft: 8 + indent }}>
             ⚠ EXCESSO ({row.quantidade > 0 ? fmtNum((excesso / row.quantidade) * 100) : "0,00"}% acima do previsto)
           </td>
           <td className="px-2 py-1">{row.und}</td>
           <td className="px-2 py-1 text-right font-semibold">{fmtNum(excesso)}</td>
-          <td className="px-2 py-1 text-right">{vu ? fmtBRL(vu) : ""}</td>
+          <td className="px-2 py-1 text-right border-r border-border">{vu ? fmtBRL(vu) : ""}</td>
+          <td className="px-2 py-1" colSpan={3}></td>
+          <td className="px-2 py-1" colSpan={2}></td>
           <td className="px-2 py-1 text-right font-semibold border-r border-border">{fmtBRL(excesso * vu)}</td>
           <td colSpan={8} className="px-2 py-1 text-right">
             <Badge variant="destructive" className="text-[10px]">EXCEDIDO</Badge>
