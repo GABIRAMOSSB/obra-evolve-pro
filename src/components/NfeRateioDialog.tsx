@@ -286,10 +286,10 @@ export function NfeRateioDialog({ open, onOpenChange, companyId, item, nota, obr
                           </Select>
                         </TableCell>
                         <TableCell>
-                          <Input
-                            placeholder="Centro custo"
-                            value={r.centro_custo}
-                            onChange={(e) => updateRow(r.key, { centro_custo: e.target.value })}
+                          <CentroCustoSelect
+                            value={r.centro_custo_id}
+                            onChange={(v) => updateRow(r.key, { centro_custo_id: v })}
+                            required
                             className="w-full min-w-0"
                           />
                         </TableCell>
