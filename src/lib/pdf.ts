@@ -3,6 +3,7 @@ import autoTable from "jspdf-autotable";
 import XLSX from "xlsx-js-style";
 import type { BudgetRow, DiaryEntry, Evolution, ObraInfo } from "./types";
 import { activityMetrics, calcularResumoCabecalhoBM, fmtBRL, fmtNum, projectMetrics } from "./calc";
+import { REPORT_RGB } from "./report-theme";
 
 function fmtDateBR(d: Date) {
   return d.toLocaleDateString("pt-BR");
