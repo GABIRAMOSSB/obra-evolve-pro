@@ -1044,16 +1044,16 @@ function Dashboard({
 
         {/* Top bar enxuta (glass) */}
         <header className="sticky top-0 z-30 border-b border-border/60 bg-background/75 backdrop-blur-xl">
-          <div className="px-4 sm:px-6 h-14 flex items-center gap-3">
+          <div className="px-3 sm:px-4 lg:px-6 min-h-14 py-2 flex items-center gap-2 flex-wrap">
             {/* Selector de obra mobile-only brand */}
             <div className="lg:hidden w-9 h-9 rounded-lg bg-gradient-primary flex items-center justify-center shadow-glow shrink-0">
               <HardHat className="w-4 h-4 text-primary-foreground" />
             </div>
 
-            <div className="flex items-center gap-2 min-w-0 flex-1">
+            <div className="flex items-center gap-2 min-w-0 max-w-full sm:max-w-[18rem] lg:max-w-[22rem] flex-1 sm:flex-initial">
               <Building2 className="w-4 h-4 text-primary shrink-0" />
               <Select value={activeId} onValueChange={onSelectObra}>
-                <SelectTrigger className="h-9 w-full sm:min-w-[12rem] sm:max-w-[20rem] border-0 bg-muted/50 hover:bg-muted focus:ring-1 focus:ring-primary/40 text-sm font-medium rounded-lg">
+                <SelectTrigger className="h-9 w-full min-w-0 border-0 bg-muted/50 hover:bg-muted focus:ring-1 focus:ring-primary/40 text-sm font-medium rounded-lg [&>span]:truncate [&>span]:block [&>span]:min-w-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1062,8 +1062,11 @@ function Dashboard({
                   ))}
                 </SelectContent>
               </Select>
-              <ObraInfoDialog nome={data.nome} info={data.info} onSave={handleSaveInfo} />
+              <div className="shrink-0">
+                <ObraInfoDialog nome={data.nome} info={data.info} onSave={handleSaveInfo} />
+              </div>
             </div>
+
 
             <div className="hidden md:flex items-center gap-1.5 px-2.5 h-7 rounded-full bg-success/10 border border-success/20 text-success text-[11px] font-medium">
               <span className={`w-1.5 h-1.5 rounded-full bg-success ${saving ? "animate-pulse" : ""}`} />
@@ -1699,76 +1702,77 @@ function ActivitiesTable({
   return (
     <Card className="overflow-hidden border-border shadow-[var(--shadow-card)]">
       <div className="overflow-x-auto">
-        <table className="w-full text-xs border-collapse" style={{ minWidth: 1400 }}>
+        <table className="w-full text-[11px] border-collapse table-fixed">
           <colgroup>
-            <col style={{ width: 70 }} />
-            <col style={{ width: 80 }} />
-            <col style={{ width: 70 }} />
-            <col style={{ minWidth: 280 }} />
-            <col style={{ width: 50 }} />
-            <col style={{ width: 80 }} />
-            <col style={{ width: 100 }} />
-            <col style={{ width: 90 }} />
-            <col style={{ width: 90 }} />
-            <col style={{ width: 100 }} />
-            <col style={{ width: 110 }} />
-            <col style={{ width: 110 }} />
-            <col style={{ width: 110 }} />
-            <col style={{ width: 110 }} />
-            <col style={{ width: 110 }} />
-            <col style={{ width: 110 }} />
-            <col style={{ width: 120 }} />
-            <col style={{ width: 120 }} />
-            <col style={{ width: 120 }} />
-            <col style={{ width: 80 }} />
-            <col style={{ width: 90 }} />
+            <col style={{ width: "3.2%" }} />
+            <col style={{ width: "4%" }} />
+            <col style={{ width: "3.2%" }} />
+            <col style={{ width: "16%" }} />
+            <col style={{ width: "2.6%" }} />
+            <col style={{ width: "4%" }} />
+            <col style={{ width: "5%" }} />
+            <col style={{ width: "4.4%" }} />
+            <col style={{ width: "4.4%" }} />
+            <col style={{ width: "5%" }} />
+            <col style={{ width: "4.8%" }} />
+            <col style={{ width: "4.8%" }} />
+            <col style={{ width: "5.2%" }} />
+            <col style={{ width: "4.6%" }} />
+            <col style={{ width: "4.6%" }} />
+            <col style={{ width: "4.6%" }} />
+            <col style={{ width: "5%" }} />
+            <col style={{ width: "5%" }} />
+            <col style={{ width: "5.2%" }} />
+            <col style={{ width: "3.2%" }} />
+            <col style={{ width: "4%" }} />
           </colgroup>
           <thead className="uppercase sticky top-0 z-10">
-            <tr className="text-[10px] tracking-[0.15em]">
-              <th colSpan={7} className="px-3 py-2 text-center border-b border-r border-border bg-primary text-primary-foreground font-bold">
+            <tr className="text-[9px] tracking-[0.1em]">
+              <th colSpan={7} className="px-1 py-1.5 text-center border-b border-r border-border bg-primary text-primary-foreground font-bold">
+
                 PLANEJAMENTO — ORÇAMENTO CONTRATADO
               </th>
-              <th colSpan={3} className="px-3 py-2 text-center border-b border-r border-border bg-primary/80 text-primary-foreground font-bold">
+              <th colSpan={3} className="px-1 py-1.5 text-center border-b border-r border-border bg-primary/80 text-primary-foreground font-bold">
                 Valor Unit com BDI
               </th>
-              <th colSpan={3} className="px-3 py-2 text-center border-b border-r border-border bg-primary/80 text-primary-foreground font-bold">
+              <th colSpan={3} className="px-1 py-1.5 text-center border-b border-r border-border bg-primary/80 text-primary-foreground font-bold">
                 Total
               </th>
-              <th colSpan={3} className="px-3 py-2 text-center border-b border-r border-border bg-[var(--measure)] text-[var(--measure-foreground)] font-bold">
+              <th colSpan={3} className="px-1 py-1.5 text-center border-b border-r border-border bg-[var(--measure)] text-[var(--measure-foreground)] font-bold">
                 EXECUTADO FÍSICO (Quantidade)
               </th>
-              <th colSpan={3} className="px-3 py-2 text-center border-b border-r border-border bg-[var(--primary-soft)] text-primary-foreground font-bold">
+              <th colSpan={3} className="px-1 py-1.5 text-center border-b border-r border-border bg-[var(--primary-soft)] text-primary-foreground font-bold">
                 EXECUTADO FINANCEIRO (R$)
               </th>
-              <th className="px-3 py-2 text-center border-b border-r border-border bg-success text-success-foreground font-bold">
+              <th className="px-1 py-1.5 text-center border-b border-r border-border bg-success text-success-foreground font-bold">
                 DESVIO
               </th>
-              <th className="px-3 py-2 text-center border-b border-border bg-primary text-primary-foreground font-bold">
+              <th className="px-1 py-1.5 text-center border-b border-border bg-primary text-primary-foreground font-bold">
                 AÇÕES
               </th>
             </tr>
             <tr className="bg-muted text-foreground text-[10px]">
-              <th className="px-2 py-2 text-left border-b border-border">Item</th>
-              <th className="px-2 py-2 text-left border-b border-border">Código</th>
-              <th className="px-2 py-2 text-left border-b border-border">Banco</th>
-              <th className="px-2 py-2 text-left border-b border-border sticky left-0 bg-muted z-[5]">Descrição</th>
-              <th className="px-2 py-2 text-left border-b border-border">Und</th>
-              <th className="px-2 py-2 text-right border-b border-border">Quant.</th>
-              <th className="px-2 py-2 text-right border-b border-r border-border">Valor Unit</th>
-              <th className="px-2 py-2 text-right border-b border-border">M.O.</th>
-              <th className="px-2 py-2 text-right border-b border-border">MAT.</th>
-              <th className="px-2 py-2 text-right border-b border-r border-border">Total</th>
-              <th className="px-2 py-2 text-right border-b border-border">M.O.</th>
-              <th className="px-2 py-2 text-right border-b border-border">MAT.</th>
-              <th className="px-2 py-2 text-right border-r border-b border-border">Total</th>
-              <th className="px-2 py-2 text-right border-b border-border bg-[var(--measure)]/10">Acum. anterior</th>
-              <th className="px-2 py-2 text-right border-b border-border bg-[var(--measure)]/20">Período</th>
-              <th className="px-2 py-2 text-right border-r border-b border-border bg-[var(--measure)]/10">Acum. atual</th>
-              <th className="px-2 py-2 text-right border-b border-border bg-[var(--primary-soft)]/10">Acum. anterior</th>
-              <th className="px-2 py-2 text-right border-b border-border bg-[var(--primary-soft)]/20">Período</th>
-              <th className="px-2 py-2 text-right border-r border-b border-border bg-[var(--primary-soft)]/10">Acum. atual</th>
-              <th className="px-2 py-2 text-right border-r border-b border-border bg-success/10">%</th>
-              <th className="px-2 py-2 text-center border-b border-border">Ações</th>
+              <th className="px-1 py-1.5 text-left border-b border-border">Item</th>
+              <th className="px-1 py-1.5 text-left border-b border-border">Código</th>
+              <th className="px-1 py-1.5 text-left border-b border-border">Banco</th>
+              <th className="px-1 py-1.5 text-left border-b border-border sticky left-0 bg-muted z-[5]">Descrição</th>
+              <th className="px-1 py-1.5 text-left border-b border-border">Und</th>
+              <th className="px-1 py-1.5 text-right border-b border-border">Quant.</th>
+              <th className="px-1 py-1.5 text-right border-b border-r border-border">Valor Unit</th>
+              <th className="px-1 py-1.5 text-right border-b border-border">M.O.</th>
+              <th className="px-1 py-1.5 text-right border-b border-border">MAT.</th>
+              <th className="px-1 py-1.5 text-right border-b border-r border-border">Total</th>
+              <th className="px-1 py-1.5 text-right border-b border-border">M.O.</th>
+              <th className="px-1 py-1.5 text-right border-b border-border">MAT.</th>
+              <th className="px-1 py-1.5 text-right border-r border-b border-border">Total</th>
+              <th className="px-1 py-1.5 text-right border-b border-border bg-[var(--measure)]/10">Acum. anterior</th>
+              <th className="px-1 py-1.5 text-right border-b border-border bg-[var(--measure)]/20">Período</th>
+              <th className="px-1 py-1.5 text-right border-r border-b border-border bg-[var(--measure)]/10">Acum. atual</th>
+              <th className="px-1 py-1.5 text-right border-b border-border bg-[var(--primary-soft)]/10">Acum. anterior</th>
+              <th className="px-1 py-1.5 text-right border-b border-border bg-[var(--primary-soft)]/20">Período</th>
+              <th className="px-1 py-1.5 text-right border-r border-b border-border bg-[var(--primary-soft)]/10">Acum. atual</th>
+              <th className="px-1 py-1.5 text-right border-r border-b border-border bg-success/10">%</th>
+              <th className="px-1 py-1.5 text-center border-b border-border">Ações</th>
             </tr>
           </thead>
 
@@ -1807,7 +1811,7 @@ function ActivitiesTable({
                 return (
                   <tr key={r.item} className={rowCls}>
                     <td
-                      className="px-2 py-1.5 font-mono"
+                      className="px-1 py-1 font-mono"
                       style={{ paddingLeft: 8 + indent }}
                     >
                       <button
@@ -1820,31 +1824,31 @@ function ActivitiesTable({
                         <span>{r.item}</span>
                       </button>
                     </td>
-                    <td className="px-2 py-1.5"></td>
-                    <td className="px-2 py-1.5"></td>
+                    <td className="px-1 py-1"></td>
+                    <td className="px-1 py-1"></td>
                     <td
-                      className={`px-2 py-1.5 sticky left-0 z-[4] ${rowCls} ${isEtapa ? "uppercase tracking-wide" : isSub ? "uppercase tracking-wide" : ""}`}
+                      className={`px-1 py-1 sticky left-0 z-[4] ${rowCls} ${isEtapa ? "uppercase tracking-wide" : isSub ? "uppercase tracking-wide" : ""}`}
                       style={{ paddingLeft: 8 + indent }}
                     >
                       {r.descricao}
                     </td>
-                    <td className="px-2 py-1.5"></td>
-                    <td className="px-2 py-1.5"></td>
-                    <td className="px-2 py-1.5 border-r border-border"></td>
-                    <td className="px-2 py-1.5"></td>
-                    <td className="px-2 py-1.5"></td>
-                    <td className="px-2 py-1.5 border-r border-border"></td>
-                    <td className="px-2 py-1.5 text-right">{gMO ? fmtBRL(gMO) : ""}</td>
-                    <td className="px-2 py-1.5 text-right">{gMat ? fmtBRL(gMat) : ""}</td>
-                    <td className="px-2 py-1.5 text-right border-r border-border">{fmtBRL(g.total)}</td>
-                    <td className="px-2 py-1.5 bg-[var(--measure)]/5"></td>
-                    <td className="px-2 py-1.5 bg-[var(--measure)]/10"></td>
-                    <td className="px-2 py-1.5 border-r border-border bg-[var(--measure)]/5"></td>
-                    <td className="px-2 py-1.5 text-right bg-[var(--primary-soft)]/5">{fmtBRL(gFinAnt)}</td>
-                    <td className="px-2 py-1.5 text-right bg-[var(--primary-soft)]/10 text-[var(--measure)] font-medium">{fmtBRL(gFinPer)}</td>
-                    <td className="px-2 py-1.5 text-right border-r border-border bg-[var(--primary-soft)]/5 text-[var(--success)] font-semibold">{fmtBRL(gFinAtual)}</td>
-                    <td className="px-2 py-1.5 text-right border-r border-border bg-success/5 font-medium">{fmtNum(gDesvio)}%</td>
-                    <td className="px-2 py-1.5 text-center">
+                    <td className="px-1 py-1"></td>
+                    <td className="px-1 py-1"></td>
+                    <td className="px-1 py-1 border-r border-border"></td>
+                    <td className="px-1 py-1"></td>
+                    <td className="px-1 py-1"></td>
+                    <td className="px-1 py-1 border-r border-border"></td>
+                    <td className="px-1 py-1 text-right">{gMO ? fmtBRL(gMO) : ""}</td>
+                    <td className="px-1 py-1 text-right">{gMat ? fmtBRL(gMat) : ""}</td>
+                    <td className="px-1 py-1 text-right border-r border-border">{fmtBRL(g.total)}</td>
+                    <td className="px-1 py-1 bg-[var(--measure)]/5"></td>
+                    <td className="px-1 py-1 bg-[var(--measure)]/10"></td>
+                    <td className="px-1 py-1 border-r border-border bg-[var(--measure)]/5"></td>
+                    <td className="px-1 py-1 text-right bg-[var(--primary-soft)]/5">{fmtBRL(gFinAnt)}</td>
+                    <td className="px-1 py-1 text-right bg-[var(--primary-soft)]/10 text-[var(--measure)] font-medium">{fmtBRL(gFinPer)}</td>
+                    <td className="px-1 py-1 text-right border-r border-border bg-[var(--primary-soft)]/5 text-[var(--success)] font-semibold">{fmtBRL(gFinAtual)}</td>
+                    <td className="px-1 py-1 text-right border-r border-border bg-success/5 font-medium">{fmtNum(gDesvio)}%</td>
+                    <td className="px-1 py-1 text-center">
                       {r.banco === "MANUAL" && (
                         <Button size="sm" variant="ghost" onClick={() => onRemove(r.item)} title="Remover">
                           <Trash2 className="w-3.5 h-3.5 text-destructive" />
@@ -1876,15 +1880,15 @@ function ActivitiesTable({
           <tfoot>
             <tr className="bg-primary text-primary-foreground font-bold uppercase tracking-wider text-[11px]">
               <td className="px-3 py-2.5" colSpan={12}>TOTAL GERAL</td>
-              <td className="px-2 py-2.5 text-right border-r border-primary-foreground/20">{fmtBRL(contratoTotal)}</td>
-              <td className="px-2 py-2.5 bg-[var(--measure)] text-[var(--measure-foreground)]" colSpan={3}></td>
-              <td className="px-2 py-2.5 text-right bg-[var(--primary-soft)]">{fmtBRL(tFinAnterior)}</td>
-              <td className="px-2 py-2.5 text-right bg-[var(--primary-soft)]">{fmtBRL(tFinPeriodo)}</td>
-              <td className="px-2 py-2.5 text-right border-r border-primary-foreground/20 bg-[var(--primary-soft)]">{fmtBRL(tFinAtual)}</td>
-              <td className="px-2 py-2.5 text-right border-r border-primary-foreground/20 bg-success text-success-foreground">
+              <td className="px-1 py-1.5 text-right border-r border-primary-foreground/20">{fmtBRL(contratoTotal)}</td>
+              <td className="px-1 py-1.5 bg-[var(--measure)] text-[var(--measure-foreground)]" colSpan={3}></td>
+              <td className="px-1 py-1.5 text-right bg-[var(--primary-soft)]">{fmtBRL(tFinAnterior)}</td>
+              <td className="px-1 py-1.5 text-right bg-[var(--primary-soft)]">{fmtBRL(tFinPeriodo)}</td>
+              <td className="px-1 py-1.5 text-right border-r border-primary-foreground/20 bg-[var(--primary-soft)]">{fmtBRL(tFinAtual)}</td>
+              <td className="px-1 py-1.5 text-right border-r border-primary-foreground/20 bg-success text-success-foreground">
                 {fmtNum(contratoTotal > 0 ? (tFinAtual / contratoTotal) * 100 : 0)}%
               </td>
-              <td className="px-2 py-2.5" />
+              <td className="px-1 py-1.5" />
             </tr>
           </tfoot>
         </table>
