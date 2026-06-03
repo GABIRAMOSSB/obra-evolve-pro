@@ -1252,7 +1252,7 @@ function Dashboard({
           {/* Linha 3b — Fiscalização */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 divide-x divide-y divide-border border-b border-border text-xs">
             <BMField label="Fiscal da Obra" value={info.fiscal || "—"} wide />
-            <BMField label="CPF do Fiscal" value={info.cpfFiscal || "—"} />
+            <BMField label="CREA/CAU do Fiscal" value={info.creaFiscal || "—"} />
             <BMField label="Cargo / Função (Fiscal)" value={info.cargoFiscal || "—"} wide />
           </div>
           {/* Linha 4 — Resumo financeiro da medição */}
