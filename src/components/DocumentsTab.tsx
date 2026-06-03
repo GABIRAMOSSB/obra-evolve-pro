@@ -255,5 +255,4 @@ export default function DocumentsTab({ obraId }: Props) {
     </div>
   );
 }
-  );
-}
+
