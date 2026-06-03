@@ -545,7 +545,7 @@ export function buildMeasurementPdfBlob(
       { content: tMat ? fmtBRL(tMat) : "", styles: { halign: "right" } },
       { content: fmtBRL(r.total), styles: { halign: "right", fontStyle: "bold" } },
       { content: fmtNum(qAnt), styles: { halign: "right" } },
-      { content: fmtNum(qPer), styles: { halign: "right", fillColor: [253, 235, 220] } },
+      { content: fmtNum(qPer), styles: { halign: "right", fillColor: [253, 235, 220], textColor: orange, fontStyle: "bold" } },
       { content: fmtNum(qAtual), styles: { halign: "right", fontStyle: "bold" } },
       { content: fmtBRL(finAnt), styles: { halign: "right" } },
       { content: fmtBRL(finPer), styles: { halign: "right", fillColor: [253, 235, 220], textColor: orange, fontStyle: "bold" } },
