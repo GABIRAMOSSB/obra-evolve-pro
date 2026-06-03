@@ -1255,6 +1255,345 @@ export type Database = {
         }
         Relationships: []
       }
+      signature_events: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          event_description: string | null
+          event_type: string
+          external_event_id: string | null
+          id: string
+          payload: Json | null
+          signature_request_id: string
+          signer_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          event_description?: string | null
+          event_type: string
+          external_event_id?: string | null
+          id?: string
+          payload?: Json | null
+          signature_request_id: string
+          signer_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          event_description?: string | null
+          event_type?: string
+          external_event_id?: string | null
+          id?: string
+          payload?: Json | null
+          signature_request_id?: string
+          signer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signature_events_signature_request_id_fkey"
+            columns: ["signature_request_id"]
+            isOneToOne: false
+            referencedRelation: "signature_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signature_events_signer_id_fkey"
+            columns: ["signer_id"]
+            isOneToOne: false
+            referencedRelation: "signature_signers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      signature_fields: {
+        Row: {
+          created_at: string
+          field_type: string
+          id: string
+          page: number
+          relative_position_bottom: number
+          relative_position_left: number
+          relative_size_x: number
+          relative_size_y: number
+          signature_request_id: string
+          signer_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          field_type?: string
+          id?: string
+          page?: number
+          relative_position_bottom: number
+          relative_position_left: number
+          relative_size_x: number
+          relative_size_y: number
+          signature_request_id: string
+          signer_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          field_type?: string
+          id?: string
+          page?: number
+          relative_position_bottom?: number
+          relative_position_left?: number
+          relative_size_x?: number
+          relative_size_y?: number
+          signature_request_id?: string
+          signer_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signature_fields_signature_request_id_fkey"
+            columns: ["signature_request_id"]
+            isOneToOne: false
+            referencedRelation: "signature_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signature_fields_signer_id_fkey"
+            columns: ["signer_id"]
+            isOneToOne: false
+            referencedRelation: "signature_signers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      signature_requests: {
+        Row: {
+          authentication_mode: string
+          canceled_at: string | null
+          cancellation_reason: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          document_folder: string
+          document_name: string
+          document_path: string
+          error_message: string | null
+          expiration_date: string | null
+          id: string
+          obra_id: string
+          original_file_hash: string | null
+          sandbox: boolean
+          signed_at: string | null
+          signed_file_hash: string | null
+          signed_file_path: string | null
+          status: string
+          updated_at: string
+          version: number
+          zapsign_document_token: string | null
+          zapsign_open_id: string | null
+        }
+        Insert: {
+          authentication_mode?: string
+          canceled_at?: string | null
+          cancellation_reason?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          document_folder: string
+          document_name: string
+          document_path: string
+          error_message?: string | null
+          expiration_date?: string | null
+          id?: string
+          obra_id: string
+          original_file_hash?: string | null
+          sandbox?: boolean
+          signed_at?: string | null
+          signed_file_hash?: string | null
+          signed_file_path?: string | null
+          status?: string
+          updated_at?: string
+          version?: number
+          zapsign_document_token?: string | null
+          zapsign_open_id?: string | null
+        }
+        Update: {
+          authentication_mode?: string
+          canceled_at?: string | null
+          cancellation_reason?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          document_folder?: string
+          document_name?: string
+          document_path?: string
+          error_message?: string | null
+          expiration_date?: string | null
+          id?: string
+          obra_id?: string
+          original_file_hash?: string | null
+          sandbox?: boolean
+          signed_at?: string | null
+          signed_file_hash?: string | null
+          signed_file_path?: string | null
+          status?: string
+          updated_at?: string
+          version?: number
+          zapsign_document_token?: string | null
+          zapsign_open_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signature_requests_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      signature_settings: {
+        Row: {
+          automatic_email: boolean
+          automatic_whatsapp: boolean
+          company_id: string
+          created_at: string
+          default_auth_mode: string
+          environment: string
+          id: string
+          last_connection_test_at: string | null
+          last_connection_test_status: string | null
+          last_webhook_received_at: string | null
+          manual_whatsapp_enabled: boolean
+          updated_at: string
+          webhook_configured: boolean
+        }
+        Insert: {
+          automatic_email?: boolean
+          automatic_whatsapp?: boolean
+          company_id: string
+          created_at?: string
+          default_auth_mode?: string
+          environment?: string
+          id?: string
+          last_connection_test_at?: string | null
+          last_connection_test_status?: string | null
+          last_webhook_received_at?: string | null
+          manual_whatsapp_enabled?: boolean
+          updated_at?: string
+          webhook_configured?: boolean
+        }
+        Update: {
+          automatic_email?: boolean
+          automatic_whatsapp?: boolean
+          company_id?: string
+          created_at?: string
+          default_auth_mode?: string
+          environment?: string
+          id?: string
+          last_connection_test_at?: string | null
+          last_connection_test_status?: string | null
+          last_webhook_received_at?: string | null
+          manual_whatsapp_enabled?: boolean
+          updated_at?: string
+          webhook_configured?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signature_settings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      signature_signers: {
+        Row: {
+          auth_mode: string
+          company: string | null
+          cpf: string | null
+          created_at: string
+          custom_message: string | null
+          email: string | null
+          id: string
+          last_shared_at: string | null
+          mandatory: boolean
+          name: string
+          phone_country: string | null
+          phone_number: string | null
+          refusal_reason: string | null
+          refused_at: string | null
+          role: string | null
+          send_automatic_email: boolean
+          send_automatic_whatsapp: boolean
+          signature_request_id: string
+          signed_at: string | null
+          signing_order: number | null
+          status: string
+          updated_at: string
+          zapsign_sign_url: string | null
+          zapsign_signer_token: string | null
+        }
+        Insert: {
+          auth_mode?: string
+          company?: string | null
+          cpf?: string | null
+          created_at?: string
+          custom_message?: string | null
+          email?: string | null
+          id?: string
+          last_shared_at?: string | null
+          mandatory?: boolean
+          name: string
+          phone_country?: string | null
+          phone_number?: string | null
+          refusal_reason?: string | null
+          refused_at?: string | null
+          role?: string | null
+          send_automatic_email?: boolean
+          send_automatic_whatsapp?: boolean
+          signature_request_id: string
+          signed_at?: string | null
+          signing_order?: number | null
+          status?: string
+          updated_at?: string
+          zapsign_sign_url?: string | null
+          zapsign_signer_token?: string | null
+        }
+        Update: {
+          auth_mode?: string
+          company?: string | null
+          cpf?: string | null
+          created_at?: string
+          custom_message?: string | null
+          email?: string | null
+          id?: string
+          last_shared_at?: string | null
+          mandatory?: boolean
+          name?: string
+          phone_country?: string | null
+          phone_number?: string | null
+          refusal_reason?: string | null
+          refused_at?: string | null
+          role?: string | null
+          send_automatic_email?: boolean
+          send_automatic_whatsapp?: boolean
+          signature_request_id?: string
+          signed_at?: string | null
+          signing_order?: number | null
+          status?: string
+          updated_at?: string
+          zapsign_sign_url?: string | null
+          zapsign_signer_token?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signature_signers_signature_request_id_fkey"
+            columns: ["signature_request_id"]
+            isOneToOne: false
+            referencedRelation: "signature_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       unidades_medida: {
         Row: {
           company_id: string
