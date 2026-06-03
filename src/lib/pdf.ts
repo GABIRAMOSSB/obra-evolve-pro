@@ -478,10 +478,12 @@ export function buildMeasurementPdfBlob(
   doc.setTextColor(0, 0, 0);
   y += 10;
 
-  // Tabela — 14 colunas igual ao Excel/tela
+  // Tabela — colunas alinhadas com a página de Atividades (Planejamento — Orçamento Contratado)
   type CellDef = string | number | { content: string; colSpan?: number; rowSpan?: number; styles?: Record<string, unknown> };
   const body: CellDef[][] = [];
   let totalContrato = 0;
+  let totalContratoMO = 0;
+  let totalContratoMat = 0;
   let totalFisicoAnt = 0;
   let totalFisicoPer = 0;
   let totalFisicoAtual = 0;
@@ -489,11 +491,16 @@ export function buildMeasurementPdfBlob(
   let totalFinPer = 0;
   let totalFinAtual = 0;
 
+  const headerBg: [number, number, number] = [215, 226, 240];
+
   for (const r of rows) {
     if (r.isGroup) {
       body.push([
         { content: r.item, styles: { fontStyle: "bold", halign: "center", fillColor: [232, 238, 247], textColor: navy } },
-        { content: r.descricao.toUpperCase(), colSpan: 12, styles: { fontStyle: "bold", halign: "left", fillColor: [232, 238, 247], textColor: navy } },
+        { content: "", styles: { fillColor: [232, 238, 247] } },
+        { content: "", styles: { fillColor: [232, 238, 247] } },
+        { content: r.descricao.toUpperCase(), colSpan: 16, styles: { fontStyle: "bold", halign: "left", fillColor: [232, 238, 247], textColor: navy } },
+        { content: "", styles: { fillColor: [232, 238, 247] } },
         { content: "ETAPA", styles: { fontStyle: "bold", halign: "center", fillColor: [232, 238, 247], textColor: navy } },
       ]);
       continue;
@@ -505,10 +512,16 @@ export function buildMeasurementPdfBlob(
     const qPer = med?.quantExec ?? 0;
     const qAtual = qAnt + qPer;
     const vu = r.valorUnitBDI || r.valorUnit || 0;
+    const vuMO = r.valorUnitMO || 0;
+    const vuMat = r.valorUnitMaterial || 0;
+    const tMO = r.totalMO || 0;
+    const tMat = r.totalMaterial || 0;
     const finAnt = qAnt * vu;
     const finPer = qPer * vu;
     const finAtual = qAtual * vu;
     totalContrato += r.total || 0;
+    totalContratoMO += tMO;
+    totalContratoMat += tMat;
     totalFisicoAnt += qAnt;
     totalFisicoPer += qPer;
     totalFisicoAtual += qAtual;
@@ -519,11 +532,18 @@ export function buildMeasurementPdfBlob(
     const pct = r.total > 0 ? (finAtual / r.total) * 100 : 0;
     body.push([
       { content: r.item, styles: { fontStyle: "bold", halign: "center" } },
+      { content: r.codigo || "", styles: { halign: "center" } },
+      { content: r.banco || "", styles: { halign: "center" } },
       { content: r.descricao, styles: { halign: "left" } },
       { content: r.und, styles: { halign: "center" } },
       { content: fmtNum(r.quantidade), styles: { halign: "right" } },
+      { content: fmtBRL(r.valorUnit || 0), styles: { halign: "right" } },
+      { content: vuMO ? fmtBRL(vuMO) : "", styles: { halign: "right" } },
+      { content: vuMat ? fmtBRL(vuMat) : "", styles: { halign: "right" } },
       { content: fmtBRL(vu), styles: { halign: "right" } },
-      { content: fmtBRL(r.total), styles: { halign: "right" } },
+      { content: tMO ? fmtBRL(tMO) : "", styles: { halign: "right" } },
+      { content: tMat ? fmtBRL(tMat) : "", styles: { halign: "right" } },
+      { content: fmtBRL(r.total), styles: { halign: "right", fontStyle: "bold" } },
       { content: fmtNum(qAnt), styles: { halign: "right" } },
       { content: fmtNum(qPer), styles: { halign: "right", fillColor: [253, 235, 220] } },
       { content: fmtNum(qAtual), styles: { halign: "right", fontStyle: "bold" } },
@@ -540,50 +560,68 @@ export function buildMeasurementPdfBlob(
   autoTable(doc, {
     head: [
       [
-        { content: "PLANEJAMENTO", colSpan: 6, styles: { fillColor: navy, textColor: 255, halign: "center", fontStyle: "bold" } },
+        { content: "PLANEJAMENTO — ORÇAMENTO CONTRATADO", colSpan: 7, styles: { fillColor: navy, textColor: 255, halign: "center", fontStyle: "bold" } },
+        { content: "VALOR UNIT COM BDI", colSpan: 3, styles: { fillColor: navy, textColor: 255, halign: "center", fontStyle: "bold" } },
+        { content: "TOTAL", colSpan: 3, styles: { fillColor: navy, textColor: 255, halign: "center", fontStyle: "bold" } },
         { content: "EXECUTADO FÍSICO", colSpan: 3, styles: { fillColor: [180, 83, 9], textColor: 255, halign: "center", fontStyle: "bold" } },
         { content: "EXECUTADO FINANCEIRO (R$)", colSpan: 3, styles: { fillColor: [22, 101, 52], textColor: 255, halign: "center", fontStyle: "bold" } },
         { content: "DESVIO", rowSpan: 2, styles: { fillColor: navy, textColor: 255, halign: "center", fontStyle: "bold", valign: "middle" } },
         { content: "STATUS", rowSpan: 2, styles: { fillColor: navy, textColor: 255, halign: "center", fontStyle: "bold", valign: "middle" } },
       ],
       [
-        { content: "Item", styles: { fillColor: [215, 226, 240], textColor: 20, halign: "center" } },
-        { content: "Descrição", styles: { fillColor: [215, 226, 240], textColor: 20, halign: "center" } },
-        { content: "Und", styles: { fillColor: [215, 226, 240], textColor: 20, halign: "center" } },
-        { content: "Quant.", styles: { fillColor: [215, 226, 240], textColor: 20, halign: "center" } },
-        { content: "V.Unit c/BDI", styles: { fillColor: [215, 226, 240], textColor: 20, halign: "center" } },
-        { content: "Total", styles: { fillColor: [215, 226, 240], textColor: 20, halign: "center" } },
-        { content: "Acum. Ant.", styles: { fillColor: [215, 226, 240], textColor: 20, halign: "center" } },
+        { content: "Item", styles: { fillColor: headerBg, textColor: 20, halign: "center" } },
+        { content: "Código", styles: { fillColor: headerBg, textColor: 20, halign: "center" } },
+        { content: "Banco", styles: { fillColor: headerBg, textColor: 20, halign: "center" } },
+        { content: "Descrição", styles: { fillColor: headerBg, textColor: 20, halign: "center" } },
+        { content: "Und", styles: { fillColor: headerBg, textColor: 20, halign: "center" } },
+        { content: "Quant.", styles: { fillColor: headerBg, textColor: 20, halign: "center" } },
+        { content: "Valor Unit", styles: { fillColor: headerBg, textColor: 20, halign: "center" } },
+        { content: "M.O.", styles: { fillColor: headerBg, textColor: 20, halign: "center" } },
+        { content: "MAT.", styles: { fillColor: headerBg, textColor: 20, halign: "center" } },
+        { content: "Total", styles: { fillColor: headerBg, textColor: 20, halign: "center" } },
+        { content: "M.O.", styles: { fillColor: headerBg, textColor: 20, halign: "center" } },
+        { content: "MAT.", styles: { fillColor: headerBg, textColor: 20, halign: "center" } },
+        { content: "Total", styles: { fillColor: headerBg, textColor: 20, halign: "center" } },
+        { content: "Acum. Ant.", styles: { fillColor: headerBg, textColor: 20, halign: "center" } },
         { content: "Período", styles: { fillColor: [253, 235, 220], textColor: orange, halign: "center", fontStyle: "bold" } },
-        { content: "Acum. Atual", styles: { fillColor: [215, 226, 240], textColor: 20, halign: "center" } },
-        { content: "Acum. Ant.", styles: { fillColor: [215, 226, 240], textColor: 20, halign: "center" } },
+        { content: "Acum. Atual", styles: { fillColor: headerBg, textColor: 20, halign: "center" } },
+        { content: "Acum. Ant.", styles: { fillColor: headerBg, textColor: 20, halign: "center" } },
         { content: "Período", styles: { fillColor: [253, 235, 220], textColor: orange, halign: "center", fontStyle: "bold" } },
         { content: "Acum. Atual", styles: { fillColor: [220, 252, 231], textColor: green, halign: "center", fontStyle: "bold" } },
       ],
     ],
-    body: body.length ? body : [[{ content: "Sem lançamentos neste período", colSpan: 14, styles: { halign: "center", fontStyle: "italic", textColor: 120 } }]],
+    body: body.length ? body : [[{ content: "Sem lançamentos neste período", colSpan: 21, styles: { halign: "center", fontStyle: "italic", textColor: 120 } }]],
     startY: y,
     margin: { left: 6, right: 6, top: 18, bottom: 14 },
-    styles: { fontSize: 6.5, cellPadding: 1.2, lineColor: [200, 207, 219], lineWidth: 0.1, overflow: "linebreak" },
-    headStyles: { fontSize: 7, lineColor: [180, 187, 200], lineWidth: 0.15 },
+    styles: { fontSize: 5.6, cellPadding: 0.9, lineColor: [200, 207, 219], lineWidth: 0.1, overflow: "linebreak" },
+    headStyles: { fontSize: 6.2, lineColor: [180, 187, 200], lineWidth: 0.15 },
     columnStyles: {
-      0: { cellWidth: 16 },
-      1: { cellWidth: 62 },
+      0: { cellWidth: 10 },
+      1: { cellWidth: 12 },
       2: { cellWidth: 10 },
-      3: { cellWidth: 16 },
-      4: { cellWidth: 18 },
-      5: { cellWidth: 20 },
-      6: { cellWidth: 17 },
-      7: { cellWidth: 17 },
-      8: { cellWidth: 17 },
-      9: { cellWidth: 20 },
-      10: { cellWidth: 20 },
-      11: { cellWidth: 22 },
-      12: { cellWidth: 12 },
-      13: { cellWidth: 18 },
+      3: { cellWidth: 42 },
+      4: { cellWidth: 8 },
+      5: { cellWidth: 12 },
+      6: { cellWidth: 14 },
+      7: { cellWidth: 13 },
+      8: { cellWidth: 13 },
+      9: { cellWidth: 14 },
+      10: { cellWidth: 14 },
+      11: { cellWidth: 14 },
+      12: { cellWidth: 15 },
+      13: { cellWidth: 12 },
+      14: { cellWidth: 12 },
+      15: { cellWidth: 12 },
+      16: { cellWidth: 14 },
+      17: { cellWidth: 14 },
+      18: { cellWidth: 15 },
+      19: { cellWidth: 10 },
+      20: { cellWidth: 12 },
     },
     foot: [[
-      { content: "TOTAL GERAL", colSpan: 5, styles: { halign: "left", fontStyle: "bold" } },
+      { content: "TOTAL GERAL", colSpan: 10, styles: { halign: "left", fontStyle: "bold" } },
+      { content: fmtBRL(totalContratoMO), styles: { halign: "right", fontStyle: "bold" } },
+      { content: fmtBRL(totalContratoMat), styles: { halign: "right", fontStyle: "bold" } },
       { content: fmtBRL(totalContrato), styles: { halign: "right", fontStyle: "bold" } },
       { content: fmtNum(totalFisicoAnt), styles: { halign: "right", fontStyle: "bold" } },
       { content: fmtNum(totalFisicoPer), styles: { halign: "right", fontStyle: "bold", fillColor: [253, 235, 220], textColor: orange } },
@@ -594,7 +632,7 @@ export function buildMeasurementPdfBlob(
       { content: `${fmtNum(totalPctGeral)}%`, styles: { halign: "right", fontStyle: "bold" } },
       { content: "", styles: {} },
     ]],
-    footStyles: { fillColor: navy, textColor: 255, fontSize: 7 },
+    footStyles: { fillColor: navy, textColor: 255, fontSize: 6.5 },
     // Cabeçalho do BM repetido em todas as páginas (a partir da pág. 2)
     didDrawPage: (data) => {
       if (data.pageNumber > 1) {
