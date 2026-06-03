@@ -278,7 +278,7 @@ export const Route = createFileRoute("/api/public/zapsign-webhook")({
           event_type: payload.event_type || "webhook",
           event_description: `Webhook: ${payload.event_type || "unknown"} → ${finalStatus || "no-status-change"}`,
           external_event_id: eventId,
-          payload: payload as unknown as Record<string, unknown>,
+          payload: JSON.parse(JSON.stringify(payload)),
         });
 
         // Touch settings last_webhook_received_at
