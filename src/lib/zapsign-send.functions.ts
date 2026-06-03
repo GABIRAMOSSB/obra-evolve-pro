@@ -116,7 +116,7 @@ export const sendDocumentForSignature = createServerFn({ method: "POST" })
         obra_id: data.obraId,
         document_path: data.documentPath,
         document_name: data.documentName,
-        document_folder: data.documentFolder ?? null,
+        document_folder: data.documentFolder ?? "Outros Documentos",
         status: "preparing",
         authentication_mode: defaultAuth,
         sandbox,
