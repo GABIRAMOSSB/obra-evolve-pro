@@ -492,17 +492,18 @@ export function buildMeasurementPdfBlob(
   let totalFinPer = 0;
   let totalFinAtual = 0;
 
-  const headerBg: [number, number, number] = [215, 226, 240];
+  const headerBg: [number, number, number] = REPORT_RGB.headerBg;
+  const groupBg: [number, number, number] = REPORT_RGB.groupBg;
 
   for (const r of rows) {
     if (r.isGroup) {
       body.push([
-        { content: r.item, styles: { fontStyle: "bold", halign: "center", fillColor: [232, 238, 247], textColor: navy } },
-        { content: "", styles: { fillColor: [232, 238, 247] } },
-        { content: "", styles: { fillColor: [232, 238, 247] } },
-        { content: r.descricao.toUpperCase(), colSpan: 16, styles: { fontStyle: "bold", halign: "left", fillColor: [232, 238, 247], textColor: navy } },
-        { content: "", styles: { fillColor: [232, 238, 247] } },
-        { content: "ETAPA", styles: { fontStyle: "bold", halign: "center", fillColor: [232, 238, 247], textColor: navy } },
+        { content: r.item, styles: { fontStyle: "bold", halign: "center", fillColor: groupBg, textColor: navy } },
+        { content: "", styles: { fillColor: groupBg } },
+        { content: "", styles: { fillColor: groupBg } },
+        { content: r.descricao.toUpperCase(), colSpan: 16, styles: { fontStyle: "bold", halign: "left", fillColor: groupBg, textColor: navy } },
+        { content: "", styles: { fillColor: groupBg } },
+        { content: "ETAPA", styles: { fontStyle: "bold", halign: "center", fillColor: groupBg, textColor: navy } },
       ]);
       continue;
     }
