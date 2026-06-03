@@ -1252,7 +1252,7 @@ function Dashboard({
           {/* Linha 3b — Fiscalização */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 divide-x divide-y divide-border border-b border-border text-xs">
             <BMField label="Fiscal da Obra" value={info.fiscal || "—"} wide />
-            <BMField label="CPF do Fiscal" value={info.cpfFiscal || "—"} />
+            <BMField label="CREA/CAU do Fiscal" value={info.creaFiscal || "—"} />
             <BMField label="Cargo / Função (Fiscal)" value={info.cargoFiscal || "—"} wide />
           </div>
           {/* Linha 4 — Resumo financeiro da medição */}
@@ -1624,7 +1624,7 @@ function SignatureBlock({ info, municipio }: { info: ObraInfo; municipio?: strin
             <div className="border-t border-foreground/70 mx-6 mb-2" />
             <div className="text-sm font-bold uppercase">{info.fiscal || "____________________"}</div>
             <div className="text-[11px] text-muted-foreground mt-0.5">
-              {info.cargoFiscal || "Fiscal da Obra"} {info.cpfFiscal ? `• CPF ${info.cpfFiscal}` : ""}
+              {info.cargoFiscal || "Fiscal da Obra"} {info.creaFiscal ? `• CREA/CAU ${info.creaFiscal}` : ""}
             </div>
           </div>
         </div>
