@@ -395,6 +395,10 @@ export function buildMeasurementPdfBlob(
 ): Blob {
   const doc = new jsPDF({ orientation: "landscape", format: "a4", unit: "mm" });
   const pageW = doc.internal.pageSize.getWidth();
+  // Margem horizontal única — usada em TODO o documento (banner, dados da obra,
+  // resumo financeiro, tabela e assinaturas) para garantir simetria visual.
+  const MARGIN = 10;
+  const usableW = pageW - 2 * MARGIN;
   const navy: [number, number, number] = REPORT_RGB.primaryDark;
   const orange: [number, number, number] = REPORT_RGB.measure;
   const green: [number, number, number] = REPORT_RGB.success;
@@ -410,11 +414,11 @@ export function buildMeasurementPdfBlob(
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
-  doc.text(bm, 8, 9);
+  doc.text(bm, MARGIN, 9);
   doc.setFontSize(13);
   doc.text("BOLETIM DE MEDIÇÃO", pageW / 2, 9.5, { align: "center" });
   doc.setFontSize(9);
-  doc.text(`Período: ${periodoLabel}`, pageW - 8, 9, { align: "right" });
+  doc.text(`Período: ${periodoLabel}`, pageW - MARGIN, 9, { align: "right" });
   doc.setTextColor(0, 0, 0);
 
   // Dados da obra (3 lines)
@@ -430,35 +434,35 @@ export function buildMeasurementPdfBlob(
     doc.text(lines[0] ?? "—", x, yy + 3.5);
   };
   let y = 18;
-  const col = (pageW - 16) / 4;
-  dy("Licitador", info.cliente || "—", 8, y, col - 2);
-  dy("Contratante", info.contratante || "—", 8 + col, y, col - 2);
-  dy("Empresa Executora", info.empresaExecutora || "—", 8 + 2 * col, y, col - 2);
-  dy("CNPJ", info.cnpj || "—", 8 + 3 * col, y, col - 2);
+  const col = usableW / 4;
+  dy("Licitador", info.cliente || "—", MARGIN, y, col - 2);
+  dy("Contratante", info.contratante || "—", MARGIN + col, y, col - 2);
+  dy("Empresa Executora", info.empresaExecutora || "—", MARGIN + 2 * col, y, col - 2);
+  dy("CNPJ", info.cnpj || "—", MARGIN + 3 * col, y, col - 2);
   y += 7.5;
-  dy("Obra", projectName, 8, y, col * 2 - 2);
-  dy("Endereço", info.endereco || "—", 8 + 2 * col, y, col - 2);
-  dy("Município / UF", `${info.municipio || "—"}${info.estado ? " / " + info.estado : ""}`, 8 + 3 * col, y, col - 2);
+  dy("Obra", projectName, MARGIN, y, col * 2 - 2);
+  dy("Endereço", info.endereco || "—", MARGIN + 2 * col, y, col - 2);
+  dy("Município / UF", `${info.municipio || "—"}${info.estado ? " / " + info.estado : ""}`, MARGIN + 3 * col, y, col - 2);
   y += 7.5;
-  dy("Nº Contrato", info.numeroContrato || "—", 8, y, col - 2);
-  dy("Nº Licitação", info.numeroLicitacao || "—", 8 + col, y, col - 2);
-  dy("Resp. Técnico", `${info.responsavelTecnico || "—"}${info.crea ? " — " + info.crea : ""}`, 8 + 2 * col, y, col - 2);
-  dy("Cargo / Função (Resp.)", info.cargoResponsavel || "—", 8 + 3 * col, y, col - 2);
+  dy("Nº Contrato", info.numeroContrato || "—", MARGIN, y, col - 2);
+  dy("Nº Licitação", info.numeroLicitacao || "—", MARGIN + col, y, col - 2);
+  dy("Resp. Técnico", `${info.responsavelTecnico || "—"}${info.crea ? " — " + info.crea : ""}`, MARGIN + 2 * col, y, col - 2);
+  dy("Cargo / Função (Resp.)", info.cargoResponsavel || "—", MARGIN + 3 * col, y, col - 2);
   y += 7.5;
-  dy("Fiscal da Obra", info.fiscal || "—", 8, y, col - 2);
-  dy("CREA/CAU do Fiscal", info.creaFiscal || "—", 8 + col, y, col - 2);
-  dy("Cargo / Função (Fiscal)", info.cargoFiscal || "—", 8 + 2 * col, y, col - 2);
-  dy("ART / RRT", info.artRrt || "—", 8 + 3 * col, y, col - 2);
+  dy("Fiscal da Obra", info.fiscal || "—", MARGIN, y, col - 2);
+  dy("CREA/CAU do Fiscal", info.creaFiscal || "—", MARGIN + col, y, col - 2);
+  dy("Cargo / Função (Fiscal)", info.cargoFiscal || "—", MARGIN + 2 * col, y, col - 2);
+  dy("ART / RRT", info.artRrt || "—", MARGIN + 3 * col, y, col - 2);
   y += 8;
 
   // Resumo financeiro do BM (faixa única — 7 colunas, como na tela)
-  const col7 = (pageW - 16) / 7;
+  const col7 = usableW / 7;
   doc.setFillColor(240, 244, 250);
-  doc.rect(8, y - 4, pageW - 16, 10, "F");
+  doc.rect(MARGIN, y - 4, usableW, 10, "F");
   doc.setDrawColor(200, 207, 219);
-  doc.rect(8, y - 4, pageW - 16, 10, "S");
+  doc.rect(MARGIN, y - 4, usableW, 10, "S");
   const cell = (lbl: string, val: string, idx: number, color?: [number, number, number]) => {
-    const x = 8 + idx * col7 + 1;
+    const x = MARGIN + idx * col7 + 1;
     doc.setFont("helvetica", "bold");
     doc.setFontSize(6.2);
     doc.setTextColor(110);
@@ -478,6 +482,7 @@ export function buildMeasurementPdfBlob(
   cell("Saldo restante", fmtBRL(resumo.saldoRestante), 6);
   doc.setTextColor(0, 0, 0);
   y += 10;
+
 
   // Tabela — colunas alinhadas com a página de Atividades (Planejamento — Orçamento Contratado)
   type CellDef = string | number | { content: string; colSpan?: number; rowSpan?: number; styles?: Record<string, unknown> };
