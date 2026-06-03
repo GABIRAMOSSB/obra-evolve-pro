@@ -387,9 +387,43 @@ export default function SendForSignatureDialog({
               <Button
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                disabled={submitting}
+                disabled={loadingPdf}
               >
                 Cancelar
+              </Button>
+              <Button onClick={goToPlacements} disabled={loadingPdf}>
+                {loadingPdf ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                ) : (
+                  <ArrowRight className="h-4 w-4 mr-1" />
+                )}
+                Posicionar campos
+              </Button>
+            </DialogFooter>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {pdfUrl ? (
+              <PdfFieldPlacer
+                pdfUrl={pdfUrl}
+                signers={signers.map((s) => ({ name: s.name }))}
+                value={placements}
+                onChange={setPlacements}
+              />
+            ) : null}
+            <div className="text-xs text-muted-foreground">
+              {placements.length === 0
+                ? "Opcional: você pode enviar sem campos visuais. Os signatários assinarão usando os pontos padrão da ZapSign."
+                : `${placements.length} campo(s) posicionado(s).`}
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setStep("signers")}
+                disabled={submitting}
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Voltar
               </Button>
               <Button onClick={submit} disabled={submitting}>
                 {submitting ? (
