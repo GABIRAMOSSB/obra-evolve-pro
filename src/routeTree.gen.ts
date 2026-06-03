@@ -26,6 +26,7 @@ import { Route as AppComposicoesRouteImport } from './routes/_app.composicoes'
 import { Route as AppComparativoComposicaoRouteImport } from './routes/_app.comparativo-composicao'
 import { Route as AppCentrosCustoRouteImport } from './routes/_app.centros-custo'
 import { Route as AppBackupRouteImport } from './routes/_app.backup'
+import { Route as AppAssinaturasRouteImport } from './routes/_app.assinaturas'
 import { Route as ApiPublicZapsignWebhookRouteImport } from './routes/api.public.zapsign-webhook'
 import { Route as AppInsumosImportarRouteImport } from './routes/_app.insumos.importar'
 import { Route as AppConfiguracoesZapsignRouteImport } from './routes/_app.configuracoes.zapsign'
@@ -116,6 +117,11 @@ const AppBackupRoute = AppBackupRouteImport.update({
   path: '/backup',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAssinaturasRoute = AppAssinaturasRouteImport.update({
+  id: '/assinaturas',
+  path: '/assinaturas',
+  getParentRoute: () => AppRoute,
+} as any)
 const ApiPublicZapsignWebhookRoute = ApiPublicZapsignWebhookRouteImport.update({
   id: '/api/public/zapsign-webhook',
   path: '/api/public/zapsign-webhook',
@@ -136,6 +142,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/assinaturas': typeof AppAssinaturasRoute
   '/backup': typeof AppBackupRoute
   '/centros-custo': typeof AppCentrosCustoRoute
   '/comparativo-composicao': typeof AppComparativoComposicaoRoute
@@ -156,6 +163,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/assinaturas': typeof AppAssinaturasRoute
   '/backup': typeof AppBackupRoute
   '/centros-custo': typeof AppCentrosCustoRoute
   '/comparativo-composicao': typeof AppComparativoComposicaoRoute
@@ -179,6 +187,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/_app/assinaturas': typeof AppAssinaturasRoute
   '/_app/backup': typeof AppBackupRoute
   '/_app/centros-custo': typeof AppCentrosCustoRoute
   '/_app/comparativo-composicao': typeof AppComparativoComposicaoRoute
@@ -203,6 +212,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/reset-password'
+    | '/assinaturas'
     | '/backup'
     | '/centros-custo'
     | '/comparativo-composicao'
@@ -223,6 +233,7 @@ export interface FileRouteTypes {
   to:
     | '/login'
     | '/reset-password'
+    | '/assinaturas'
     | '/backup'
     | '/centros-custo'
     | '/comparativo-composicao'
@@ -245,6 +256,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/login'
     | '/reset-password'
+    | '/_app/assinaturas'
     | '/_app/backup'
     | '/_app/centros-custo'
     | '/_app/comparativo-composicao'
@@ -393,6 +405,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppBackupRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/assinaturas': {
+      id: '/_app/assinaturas'
+      path: '/assinaturas'
+      fullPath: '/assinaturas'
+      preLoaderRoute: typeof AppAssinaturasRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/api/public/zapsign-webhook': {
       id: '/api/public/zapsign-webhook'
       path: '/api/public/zapsign-webhook'
@@ -430,6 +449,7 @@ const AppInsumosRouteWithChildren = AppInsumosRoute._addFileChildren(
 )
 
 interface AppRouteChildren {
+  AppAssinaturasRoute: typeof AppAssinaturasRoute
   AppBackupRoute: typeof AppBackupRoute
   AppCentrosCustoRoute: typeof AppCentrosCustoRoute
   AppComparativoComposicaoRoute: typeof AppComparativoComposicaoRoute
@@ -447,6 +467,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAssinaturasRoute: AppAssinaturasRoute,
   AppBackupRoute: AppBackupRoute,
   AppCentrosCustoRoute: AppCentrosCustoRoute,
   AppComparativoComposicaoRoute: AppComparativoComposicaoRoute,
@@ -475,3 +496,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
