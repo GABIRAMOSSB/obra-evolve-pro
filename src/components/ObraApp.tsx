@@ -1044,16 +1044,16 @@ function Dashboard({
 
         {/* Top bar enxuta (glass) */}
         <header className="sticky top-0 z-30 border-b border-border/60 bg-background/75 backdrop-blur-xl">
-          <div className="px-4 sm:px-6 h-14 flex items-center gap-3">
+          <div className="px-3 sm:px-4 lg:px-6 min-h-14 py-2 flex items-center gap-2 flex-wrap">
             {/* Selector de obra mobile-only brand */}
             <div className="lg:hidden w-9 h-9 rounded-lg bg-gradient-primary flex items-center justify-center shadow-glow shrink-0">
               <HardHat className="w-4 h-4 text-primary-foreground" />
             </div>
 
-            <div className="flex items-center gap-2 min-w-0 flex-1">
+            <div className="flex items-center gap-2 min-w-0 max-w-full sm:max-w-[18rem] lg:max-w-[22rem] flex-1 sm:flex-initial">
               <Building2 className="w-4 h-4 text-primary shrink-0" />
               <Select value={activeId} onValueChange={onSelectObra}>
-                <SelectTrigger className="h-9 w-full sm:min-w-[12rem] sm:max-w-[20rem] border-0 bg-muted/50 hover:bg-muted focus:ring-1 focus:ring-primary/40 text-sm font-medium rounded-lg">
+                <SelectTrigger className="h-9 w-full min-w-0 border-0 bg-muted/50 hover:bg-muted focus:ring-1 focus:ring-primary/40 text-sm font-medium rounded-lg [&>span]:truncate [&>span]:block [&>span]:min-w-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1062,8 +1062,11 @@ function Dashboard({
                   ))}
                 </SelectContent>
               </Select>
-              <ObraInfoDialog nome={data.nome} info={data.info} onSave={handleSaveInfo} />
+              <div className="shrink-0">
+                <ObraInfoDialog nome={data.nome} info={data.info} onSave={handleSaveInfo} />
+              </div>
             </div>
+
 
             <div className="hidden md:flex items-center gap-1.5 px-2.5 h-7 rounded-full bg-success/10 border border-success/20 text-success text-[11px] font-medium">
               <span className={`w-1.5 h-1.5 rounded-full bg-success ${saving ? "animate-pulse" : ""}`} />
