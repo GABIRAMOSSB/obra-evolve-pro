@@ -679,7 +679,7 @@ export function buildMeasurementPdfBlob(
   doc.setFontSize(9);
   doc.setTextColor(20);
   const local = info.municipio ? `${info.municipio}${info.estado ? "/" + info.estado : ""}` : "____________________";
-  doc.text(`${local}, ${closedAt.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}.`, 10, endY);
+  doc.text(`${local}, ${closedAt.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}.`, MARGIN, endY);
   endY += 20;
 
   const sigW = 90;
