@@ -223,6 +223,46 @@ function ZapSignSettingsPage() {
           </div>
         )}
       </Card>
+
+      <Card className="p-6 space-y-4">
+        <div className="flex items-center gap-2">
+          <Webhook className="h-4 w-4 text-primary" />
+          <h2 className="font-display text-base font-semibold">Webhook</h2>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Configure esta URL no painel da ZapSign em <strong>Configurações → Webhooks</strong>. Eventos: <code>doc_signed</code>, <code>signer_signed</code>, <code>doc_refused</code>, <code>doc_expired</code>.
+        </p>
+        <WebhookUrlField configured={Boolean(status?.webhookSecretConfigured)} />
+        {!status?.webhookSecretConfigured && (
+          <div className="text-xs text-amber-700 dark:text-amber-400">
+            Adicione o secret <code className="font-mono">ZAPSIGN_WEBHOOK_SECRET</code> para habilitar a recepção segura.
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+function WebhookUrlField({ configured }: { configured: boolean }) {
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const url = `${origin}/api/public/zapsign-webhook${
+    configured ? "?secret=<ZAPSIGN_WEBHOOK_SECRET>" : ""
+  }`;
+  return (
+    <div className="flex items-center gap-2">
+      <code className="flex-1 font-mono text-[11px] px-3 py-2 rounded bg-muted break-all">
+        {url}
+      </code>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => {
+          navigator.clipboard.writeText(url);
+          toast("URL copiada");
+        }}
+      >
+        Copiar
+      </Button>
     </div>
   );
 }
