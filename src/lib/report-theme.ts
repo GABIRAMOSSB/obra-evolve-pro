@@ -1,0 +1,52 @@
+/**
+ * Tema centralizado de cores para relatórios e boletins.
+ *
+ * Mantém PARIDADE VISUAL entre a tela (Atividades / Medição) e os arquivos
+ * exportados (PDF, XLSX, impressão). Sempre que uma cor da UI mudar em
+ * `src/styles.css`, atualize aqui também — ambos devem ficar em sintonia.
+ *
+ * Paleta Solv:
+ *  - primary  marrom/dourado #b19777
+ *  - measure  laranja medição #c94b16
+ *  - success  verde positivo  #21bd5c
+ */
+
+export type RGB = [number, number, number];
+
+/** Hex sem `#` (para xlsx-js-style). */
+export const REPORT_HEX = {
+  primary: "B19777",
+  primaryDark: "785F44",
+  primarySoft: "DFCFBC",
+  primarySofter: "EFE8DC",
+  groupBg: "EFE8DC",
+  subGroupBg: "F5EFE5",
+  headerBg: "EAE1D2",
+  measure: "C94B16",
+  measureSoft: "FDEBDC",
+  success: "21BD5C",
+  successSoft: "DCFCE7",
+  border: "D9CFBE",
+  textOnDark: "FFFFFF",
+  textOnLight: "1F2937",
+  navyBM: "785F44",
+} as const;
+
+/** RGB triplets (para jsPDF / autoTable). */
+export const REPORT_RGB: Record<keyof typeof REPORT_HEX, RGB> = {
+  primary: [177, 151, 119],
+  primaryDark: [120, 95, 68],
+  primarySoft: [223, 207, 188],
+  primarySofter: [239, 232, 220],
+  groupBg: [239, 232, 220],
+  subGroupBg: [245, 239, 229],
+  headerBg: [234, 225, 210],
+  measure: [201, 75, 22],
+  measureSoft: [253, 235, 220],
+  success: [33, 189, 92],
+  successSoft: [220, 252, 231],
+  border: [217, 207, 190],
+  textOnDark: [255, 255, 255],
+  textOnLight: [31, 41, 55],
+  navyBM: [120, 95, 68],
+};

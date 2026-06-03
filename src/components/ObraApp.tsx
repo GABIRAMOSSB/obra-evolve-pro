@@ -1176,7 +1176,7 @@ function Dashboard({
           </div>
         </div>
 
-        <main className="flex-1 w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+        <main className="flex-1 w-full px-3 sm:px-4 lg:px-6 xl:px-8 py-6 space-y-5">
           {/* 5 Cards de resumo */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
             <SummaryCard label="Valor total da obra" value={fmtBRL(resumoBM.valorTotalObra)} icon="total" />

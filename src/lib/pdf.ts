@@ -3,6 +3,7 @@ import autoTable from "jspdf-autotable";
 import XLSX from "xlsx-js-style";
 import type { BudgetRow, DiaryEntry, Evolution, ObraInfo } from "./types";
 import { activityMetrics, calcularResumoCabecalhoBM, fmtBRL, fmtNum, projectMetrics } from "./calc";
+import { REPORT_RGB } from "./report-theme";
 
 function fmtDateBR(d: Date) {
   return d.toLocaleDateString("pt-BR");
@@ -394,9 +395,9 @@ export function buildMeasurementPdfBlob(
 ): Blob {
   const doc = new jsPDF({ orientation: "landscape", format: "a4", unit: "mm" });
   const pageW = doc.internal.pageSize.getWidth();
-  const navy: [number, number, number] = [8, 43, 92];
-  const orange: [number, number, number] = [201, 75, 22];
-  const green: [number, number, number] = [21, 128, 61];
+  const navy: [number, number, number] = REPORT_RGB.primaryDark;
+  const orange: [number, number, number] = REPORT_RGB.measure;
+  const green: [number, number, number] = REPORT_RGB.success;
   // Resumo do cabeçalho — usa SEMPRE allRows (lista completa), nunca a
   // lista filtrada. Garante que os totais do cabeçalho não mudem com filtros.
   const resumo = calcularResumoCabecalhoBM(allRows ?? rows, evolutions, measurementNumber, info);
@@ -491,17 +492,18 @@ export function buildMeasurementPdfBlob(
   let totalFinPer = 0;
   let totalFinAtual = 0;
 
-  const headerBg: [number, number, number] = [215, 226, 240];
+  const headerBg: [number, number, number] = REPORT_RGB.headerBg;
+  const groupBg: [number, number, number] = REPORT_RGB.groupBg;
 
   for (const r of rows) {
     if (r.isGroup) {
       body.push([
-        { content: r.item, styles: { fontStyle: "bold", halign: "center", fillColor: [232, 238, 247], textColor: navy } },
-        { content: "", styles: { fillColor: [232, 238, 247] } },
-        { content: "", styles: { fillColor: [232, 238, 247] } },
-        { content: r.descricao.toUpperCase(), colSpan: 16, styles: { fontStyle: "bold", halign: "left", fillColor: [232, 238, 247], textColor: navy } },
-        { content: "", styles: { fillColor: [232, 238, 247] } },
-        { content: "ETAPA", styles: { fontStyle: "bold", halign: "center", fillColor: [232, 238, 247], textColor: navy } },
+        { content: r.item, styles: { fontStyle: "bold", halign: "center", fillColor: groupBg, textColor: navy } },
+        { content: "", styles: { fillColor: groupBg } },
+        { content: "", styles: { fillColor: groupBg } },
+        { content: r.descricao.toUpperCase(), colSpan: 16, styles: { fontStyle: "bold", halign: "left", fillColor: groupBg, textColor: navy } },
+        { content: "", styles: { fillColor: groupBg } },
+        { content: "ETAPA", styles: { fontStyle: "bold", halign: "center", fillColor: groupBg, textColor: navy } },
       ]);
       continue;
     }
@@ -563,9 +565,9 @@ export function buildMeasurementPdfBlob(
         { content: "PLANEJAMENTO — ORÇAMENTO CONTRATADO", colSpan: 7, styles: { fillColor: navy, textColor: 255, halign: "center", fontStyle: "bold" } },
         { content: "VALOR UNIT COM BDI", colSpan: 3, styles: { fillColor: navy, textColor: 255, halign: "center", fontStyle: "bold" } },
         { content: "TOTAL", colSpan: 3, styles: { fillColor: navy, textColor: 255, halign: "center", fontStyle: "bold" } },
-        { content: "EXECUTADO FÍSICO", colSpan: 3, styles: { fillColor: [180, 83, 9], textColor: 255, halign: "center", fontStyle: "bold" } },
-        { content: "EXECUTADO FINANCEIRO (R$)", colSpan: 3, styles: { fillColor: [22, 101, 52], textColor: 255, halign: "center", fontStyle: "bold" } },
-        { content: "DESVIO", rowSpan: 2, styles: { fillColor: navy, textColor: 255, halign: "center", fontStyle: "bold", valign: "middle" } },
+        { content: "EXECUTADO FÍSICO", colSpan: 3, styles: { fillColor: orange, textColor: 255, halign: "center", fontStyle: "bold" } },
+        { content: "EXECUTADO FINANCEIRO (R$)", colSpan: 3, styles: { fillColor: green, textColor: 255, halign: "center", fontStyle: "bold" } },
+        { content: "DESVIO", rowSpan: 2, styles: { fillColor: green, textColor: 255, halign: "center", fontStyle: "bold", valign: "middle" } },
         { content: "STATUS", rowSpan: 2, styles: { fillColor: navy, textColor: 255, halign: "center", fontStyle: "bold", valign: "middle" } },
       ],
       [
