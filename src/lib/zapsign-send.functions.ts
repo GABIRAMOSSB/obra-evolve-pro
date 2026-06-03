@@ -233,11 +233,47 @@ export const sendDocumentForSignature = createServerFn({ method: "POST" })
       await supabase.from("signature_signers").insert(rows);
     }
 
+    // Apply visual placements (rubricas) if provided
+    let placementsApplied = 0;
+    if (data.placements && data.placements.length > 0 && Array.isArray(zapDoc.signers)) {
+      const tokens = zapDoc.signers.map((s) => s.token);
+      const rubricas = data.placements
+        .filter((p) => tokens[p.signerIndex])
+        .map((p) => ({
+          page: p.page - 1,
+          // ZapSign uses percentages 0..100, origin at bottom-left
+          relative_position_bottom: Number(((1 - p.y - p.h) * 100).toFixed(2)),
+          relative_position_left: Number((p.x * 100).toFixed(2)),
+          relative_size_x: Number((p.w * 100).toFixed(2)),
+          relative_size_y: Number((p.h * 100).toFixed(2)),
+          type: p.type,
+          signer_token: tokens[p.signerIndex],
+        }));
+      if (rubricas.length > 0) {
+        try {
+          await zapsignRequest({
+            method: "POST",
+            path: `/docs/${zapDoc.token}/rubricas/`,
+            body: { rubricas },
+          });
+          placementsApplied = rubricas.length;
+        } catch (e) {
+          console.error("[zapsign] failed to apply rubricas", e);
+          await supabase.from("signature_events").insert({
+            signature_request_id: requestRow.id,
+            event_type: "rubricas_failed",
+            event_description: "Falha ao aplicar campos visuais",
+            payload: { error: (e as Error).message },
+          });
+        }
+      }
+    }
+
     await supabase.from("signature_events").insert({
       signature_request_id: requestRow.id,
       event_type: "request_created",
       event_description: `Documento enviado para ${data.signers.length} signatário(s)`,
-      payload: { zapsign_token: zapDoc.token },
+      payload: { zapsign_token: zapDoc.token, placements_applied: placementsApplied },
     });
 
     return {
