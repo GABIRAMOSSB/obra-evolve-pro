@@ -69,6 +69,10 @@ export default function SendForSignatureDialog({
   const [expirationDays, setExpirationDays] = useState<string>("30");
   const [customMessage, setCustomMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [step, setStep] = useState<"signers" | "placements">("signers");
+  const [placements, setPlacements] = useState<Placement[]>([]);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [loadingPdf, setLoadingPdf] = useState(false);
   const [result, setResult] = useState<{
     signers: Array<{ name?: string; email?: string; signUrl?: string }>;
   } | null>(null);
@@ -78,6 +82,9 @@ export default function SendForSignatureDialog({
     setExpirationDays("30");
     setCustomMessage("");
     setResult(null);
+    setStep("signers");
+    setPlacements([]);
+    setPdfUrl(null);
   };
 
   const update = (i: number, patch: Partial<SignerDraft>) => {
