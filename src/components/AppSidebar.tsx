@@ -34,6 +34,7 @@ export function AppSidebar() {
         <SidebarLink to="/comparativo-composicao" icon={Calculator} label="Comparativo Composição" />
         <SidebarLink to="/notas-fiscais" icon={FileText} label="Notas Fiscais" />
         <SidebarLink to="/estoque" icon={Package} label="Estoque" />
+        <SidebarLink to="/assinaturas" icon={PenTool} label="Assinaturas" />
 
         <div className="px-3 pt-5 pb-1 text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/40">Recursos</div>
         <SidebarLink to="/mao-de-obra" icon={HardHat} label="Mão de obra" />
@@ -46,7 +47,7 @@ export function AppSidebar() {
         <SidebarLink to="/equipe" icon={Users} label="Equipe" />
         <SidebarLink to="/parametros-financeiros" icon={Calculator} label="Parâmetros Financeiros" />
         <SidebarLink to="/backup" icon={Database} label="Backup" />
-        <SidebarLink to="/configuracoes/zapsign" icon={PenTool} label="Assinaturas (ZapSign)" />
+        <SidebarLink to="/configuracoes/zapsign" icon={PenTool} label="Config. ZapSign" />
       </div>
 
       <div className="relative px-3 py-3 border-t border-sidebar-border/40 bg-sidebar/40">
