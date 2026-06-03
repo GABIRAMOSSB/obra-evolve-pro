@@ -115,7 +115,7 @@ export function ObraInfoDialog({ nome, info, onSave }: Props) {
               {field("cargoResponsavel", "Cargo / Função do engenheiro")}
               {field("artRrt", "ART / RRT")}
               {field("fiscal", "Fiscal da obra")}
-              {field("cpfFiscal", "CPF do fiscal", "000.000.000-00")}
+              {field("creaFiscal", "CREA/CAU do fiscal")}
               {field("cargoFiscal", "Cargo / Função do fiscal")}
             </div>
           </section>
