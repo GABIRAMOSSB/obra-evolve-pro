@@ -186,7 +186,7 @@ export const sendDocumentForSignature = createServerFn({ method: "POST" })
       .update({
         status: "awaiting_signature",
         zapsign_document_token: zapDoc.token,
-        zapsign_open_id: zapDoc.open_id ?? null,
+        zapsign_open_id: zapDoc.open_id != null ? String(zapDoc.open_id) : null,
       })
       .eq("id", requestRow.id);
 
