@@ -650,11 +650,11 @@ export function buildMeasurementPdfBlob(
         doc.setTextColor(255, 255, 255);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(10);
-        doc.text(bm, 8, 9);
+        doc.text(bm, MARGIN, 9);
         doc.setFontSize(13);
         doc.text("BOLETIM DE MEDIÇÃO", pageW / 2, 9.5, { align: "center" });
         doc.setFontSize(9);
-        doc.text(`Período: ${periodoLabel}`, pageW - 8, 9, { align: "right" });
+        doc.text(`Período: ${periodoLabel}`, pageW - MARGIN, 9, { align: "right" });
         doc.setTextColor(0, 0, 0);
       }
       const pH = doc.internal.pageSize.getHeight();
