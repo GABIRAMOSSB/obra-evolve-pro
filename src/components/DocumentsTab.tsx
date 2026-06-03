@@ -23,7 +23,9 @@ import {
   FileText,
   Loader2,
   ArrowLeft,
+  PenTool,
 } from "lucide-react";
+import SendForSignatureDialog from "@/components/SendForSignatureDialog";
 
 interface Props {
   obraId: string;
