@@ -93,20 +93,40 @@ export default function SendForSignatureDialog({
     );
   };
 
-  const submit = async () => {
-    // Basic validation
+  const validateSigners = () => {
     for (const [i, s] of signers.entries()) {
       if (!s.name.trim()) {
         toast.error(`Signatário ${i + 1}: nome é obrigatório`);
-        return;
+        return false;
       }
       if (!s.email.trim() && !s.phone_number.trim()) {
         toast.error(
           `Signatário ${i + 1}: informe e-mail ou WhatsApp para envio`,
         );
-        return;
+        return false;
       }
     }
+    return true;
+  };
+
+  const goToPlacements = async () => {
+    if (!validateSigners()) return;
+    setLoadingPdf(true);
+    try {
+      const res = await createDocumentPreviewUrl({ data: { documentPath } });
+      setPdfUrl(res.url);
+      setStep("placements");
+    } catch (e) {
+      toast.error("Não foi possível carregar o PDF", {
+        description: (e as Error).message,
+      });
+    } finally {
+      setLoadingPdf(false);
+    }
+  };
+
+  const submit = async () => {
+    if (!validateSigners()) return;
     setSubmitting(true);
     try {
       const res = await sendDocumentForSignature({
@@ -126,6 +146,7 @@ export default function SendForSignatureDialog({
             role: s.role.trim() || undefined,
             auth_mode: s.auth_mode,
           })),
+          placements: placements.length > 0 ? placements : undefined,
         },
       });
       toast.success("Documento enviado para assinatura");
