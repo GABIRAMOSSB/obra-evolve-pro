@@ -1702,33 +1702,34 @@ function ActivitiesTable({
   return (
     <Card className="overflow-hidden border-border shadow-[var(--shadow-card)]">
       <div className="overflow-x-auto">
-        <table className="w-full text-xs border-collapse" style={{ minWidth: 1400 }}>
+        <table className="w-full text-[11px] border-collapse table-fixed">
           <colgroup>
-            <col style={{ width: 70 }} />
-            <col style={{ width: 80 }} />
-            <col style={{ width: 70 }} />
-            <col style={{ minWidth: 280 }} />
-            <col style={{ width: 50 }} />
-            <col style={{ width: 80 }} />
-            <col style={{ width: 100 }} />
-            <col style={{ width: 90 }} />
-            <col style={{ width: 90 }} />
-            <col style={{ width: 100 }} />
-            <col style={{ width: 110 }} />
-            <col style={{ width: 110 }} />
-            <col style={{ width: 110 }} />
-            <col style={{ width: 110 }} />
-            <col style={{ width: 110 }} />
-            <col style={{ width: 110 }} />
-            <col style={{ width: 120 }} />
-            <col style={{ width: 120 }} />
-            <col style={{ width: 120 }} />
-            <col style={{ width: 80 }} />
-            <col style={{ width: 90 }} />
+            <col style={{ width: "3.2%" }} />
+            <col style={{ width: "4%" }} />
+            <col style={{ width: "3.2%" }} />
+            <col style={{ width: "16%" }} />
+            <col style={{ width: "2.6%" }} />
+            <col style={{ width: "4%" }} />
+            <col style={{ width: "5%" }} />
+            <col style={{ width: "4.4%" }} />
+            <col style={{ width: "4.4%" }} />
+            <col style={{ width: "5%" }} />
+            <col style={{ width: "4.8%" }} />
+            <col style={{ width: "4.8%" }} />
+            <col style={{ width: "5.2%" }} />
+            <col style={{ width: "4.6%" }} />
+            <col style={{ width: "4.6%" }} />
+            <col style={{ width: "4.6%" }} />
+            <col style={{ width: "5%" }} />
+            <col style={{ width: "5%" }} />
+            <col style={{ width: "5.2%" }} />
+            <col style={{ width: "3.2%" }} />
+            <col style={{ width: "4%" }} />
           </colgroup>
           <thead className="uppercase sticky top-0 z-10">
-            <tr className="text-[10px] tracking-[0.15em]">
-              <th colSpan={7} className="px-3 py-2 text-center border-b border-r border-border bg-primary text-primary-foreground font-bold">
+            <tr className="text-[9px] tracking-[0.1em]">
+              <th colSpan={7} className="px-1 py-1.5 text-center border-b border-r border-border bg-primary text-primary-foreground font-bold">
+
                 PLANEJAMENTO — ORÇAMENTO CONTRATADO
               </th>
               <th colSpan={3} className="px-3 py-2 text-center border-b border-r border-border bg-primary/80 text-primary-foreground font-bold">
