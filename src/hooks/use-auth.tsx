@@ -21,16 +21,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
-      setSession(s);
+    // Dedupe: ignore auth events that don't actually change the user identity
+    // or access token. Without this, TOKEN_REFRESHED (fired when the tab regains
+    // focus) creates a new session reference, which cascades into full-screen
+    // re-loads downstream (useCompany, workspace fetch, etc).
+    const applySession = (next: Session | null) => {
+      setSession((prev) => {
+        if (prev === next) return prev;
+        if (
+          prev &&
+          next &&
+          prev.user.id === next.user.id &&
+          prev.access_token === next.access_token
+        ) {
+          return prev;
+        }
+        return next;
+      });
       setLoading(false);
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
+      applySession(s);
     });
     supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setLoading(false);
+      applySession(data.session);
     });
     return () => subscription.unsubscribe();
   }, []);
+
 
   return (
     <Ctx.Provider
