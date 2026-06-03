@@ -545,7 +545,7 @@ export function buildMeasurementPdfBlob(
       { content: tMat ? fmtBRL(tMat) : "", styles: { halign: "right" } },
       { content: fmtBRL(r.total), styles: { halign: "right", fontStyle: "bold" } },
       { content: fmtNum(qAnt), styles: { halign: "right" } },
-      { content: fmtNum(qPer), styles: { halign: "right", fillColor: [253, 235, 220] } },
+      { content: fmtNum(qPer), styles: { halign: "right", fillColor: [253, 235, 220], textColor: orange, fontStyle: "bold" } },
       { content: fmtNum(qAtual), styles: { halign: "right", fontStyle: "bold" } },
       { content: fmtBRL(finAnt), styles: { halign: "right" } },
       { content: fmtBRL(finPer), styles: { halign: "right", fillColor: [253, 235, 220], textColor: orange, fontStyle: "bold" } },
@@ -666,20 +666,11 @@ export function buildMeasurementPdfBlob(
     endY = 20;
   }
 
-  doc.setFont("helvetica", "italic");
-  doc.setFontSize(8);
-  doc.setTextColor(80);
-  doc.text(
-    "Os valores desta medição estão de acordo com o cronograma físico-financeiro e com as condições contratuais estabelecidas.",
-    pageW / 2, endY, { align: "center", maxWidth: pageW - 20 },
-  );
-  endY += 14;
-
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(20);
   const local = info.municipio ? `${info.municipio}${info.estado ? "/" + info.estado : ""}` : "____________________";
-  doc.text(`${local}, ${closedAt.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}.`, pageW / 2, endY, { align: "center" });
+  doc.text(`${local}, ${closedAt.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}.`, 10, endY);
   endY += 20;
 
   const sigW = 90;
@@ -701,7 +692,7 @@ export function buildMeasurementPdfBlob(
   );
   if (info.artRrt) doc.text(`ART/RRT: ${info.artRrt}`, xL + sigW / 2, endY + 14, { align: "center" });
   doc.text(
-    `${info.cargoFiscal || "Fiscal da Obra"}${info.cpfFiscal ? " — CPF " + info.cpfFiscal : ""}`,
+    `${info.cargoFiscal || "Fiscal da Obra"}${info.creaFiscal ? " — CREA/CAU " + info.creaFiscal : ""}`,
     xR + sigW / 2, endY + 10, { align: "center" },
   );
 
