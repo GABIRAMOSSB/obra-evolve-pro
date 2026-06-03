@@ -16,6 +16,24 @@ const signerSchema = z.object({
   send_automatic_whatsapp: z.boolean().optional(),
 });
 
+const placementSchema = z.object({
+  signerIndex: z.number().int().min(0).max(19),
+  page: z.number().int().min(1).max(500),
+  type: z.enum([
+    "signature",
+    "visto",
+    "name",
+    "date",
+    "cpf",
+    "email",
+    "text",
+  ]),
+  x: z.number().min(0).max(1),
+  y: z.number().min(0).max(1),
+  w: z.number().min(0.01).max(1),
+  h: z.number().min(0.01).max(1),
+});
+
 const sendSchema = z.object({
   documentPath: z.string().min(1),
   documentName: z.string().min(1).max(255),
@@ -25,6 +43,7 @@ const sendSchema = z.object({
   lang: z.enum(["pt-br", "en", "es"]).optional(),
   expirationDays: z.number().int().min(1).max(365).optional(),
   customMessage: z.string().max(2000).optional(),
+  placements: z.array(placementSchema).max(200).optional(),
 });
 
 const BUCKET = "obra-documentos";
