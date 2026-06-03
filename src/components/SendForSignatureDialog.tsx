@@ -233,7 +233,7 @@ export default function SendForSignatureDialog({
               <Button onClick={() => onOpenChange(false)}>Concluir</Button>
             </DialogFooter>
           </div>
-        ) : (
+        ) : step === "signers" ? (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
