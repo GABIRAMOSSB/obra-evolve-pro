@@ -1624,7 +1624,7 @@ function SignatureBlock({ info, municipio }: { info: ObraInfo; municipio?: strin
             <div className="border-t border-foreground/70 mx-6 mb-2" />
             <div className="text-sm font-bold uppercase">{info.fiscal || "____________________"}</div>
             <div className="text-[11px] text-muted-foreground mt-0.5">
-              {info.cargoFiscal || "Fiscal da Obra"} {info.cpfFiscal ? `• CPF ${info.cpfFiscal}` : ""}
+              {info.cargoFiscal || "Fiscal da Obra"} {info.creaFiscal ? `• CREA/CAU ${info.creaFiscal}` : ""}
             </div>
           </div>
         </div>
