@@ -99,9 +99,29 @@ export async function uploadDocumentBlob(
   fileName: string,
   blob: Blob,
   contentType?: string,
+  options?: { replaceMatching?: (name: string) => boolean },
 ): Promise<void> {
   const safeName = sanitizeSegment(fileName);
-  const path = `${basePath(companyId, obraId, folder)}/${Date.now()}-${safeName}`;
+  const prefix = basePath(companyId, obraId, folder);
+
+  // Remove arquivos anteriores que correspondam ao filtro (ex.: mesma medição)
+  if (options?.replaceMatching) {
+    try {
+      const { data: existing } = await supabase.storage
+        .from(BUCKET)
+        .list(prefix, { limit: 1000 });
+      const toRemove = (existing ?? [])
+        .filter((o) => o.name && options.replaceMatching!(o.name.replace(/^\d+-/, "")))
+        .map((o) => `${prefix}/${o.name}`);
+      if (toRemove.length > 0) {
+        await supabase.storage.from(BUCKET).remove(toRemove);
+      }
+    } catch (e) {
+      console.warn("Falha ao remover versões anteriores:", e);
+    }
+  }
+
+  const path = `${prefix}/${Date.now()}-${safeName}`;
   const { error } = await supabase.storage.from(BUCKET).upload(path, blob, {
     upsert: false,
     contentType: contentType || blob.type || undefined,
