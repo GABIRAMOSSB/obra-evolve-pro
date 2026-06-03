@@ -16,6 +16,24 @@ const signerSchema = z.object({
   send_automatic_whatsapp: z.boolean().optional(),
 });
 
+const placementSchema = z.object({
+  signerIndex: z.number().int().min(0).max(19),
+  page: z.number().int().min(1).max(500),
+  type: z.enum([
+    "signature",
+    "visto",
+    "name",
+    "date",
+    "cpf",
+    "email",
+    "text",
+  ]),
+  x: z.number().min(0).max(1),
+  y: z.number().min(0).max(1),
+  w: z.number().min(0.01).max(1),
+  h: z.number().min(0.01).max(1),
+});
+
 const sendSchema = z.object({
   documentPath: z.string().min(1),
   documentName: z.string().min(1).max(255),
@@ -25,6 +43,7 @@ const sendSchema = z.object({
   lang: z.enum(["pt-br", "en", "es"]).optional(),
   expirationDays: z.number().int().min(1).max(365).optional(),
   customMessage: z.string().max(2000).optional(),
+  placements: z.array(placementSchema).max(200).optional(),
 });
 
 const BUCKET = "obra-documentos";
@@ -214,11 +233,47 @@ export const sendDocumentForSignature = createServerFn({ method: "POST" })
       await supabase.from("signature_signers").insert(rows);
     }
 
+    // Apply visual placements (rubricas) if provided
+    let placementsApplied = 0;
+    if (data.placements && data.placements.length > 0 && Array.isArray(zapDoc.signers)) {
+      const tokens = zapDoc.signers.map((s) => s.token);
+      const rubricas = data.placements
+        .filter((p) => tokens[p.signerIndex])
+        .map((p) => ({
+          page: p.page - 1,
+          // ZapSign uses percentages 0..100, origin at bottom-left
+          relative_position_bottom: Number(((1 - p.y - p.h) * 100).toFixed(2)),
+          relative_position_left: Number((p.x * 100).toFixed(2)),
+          relative_size_x: Number((p.w * 100).toFixed(2)),
+          relative_size_y: Number((p.h * 100).toFixed(2)),
+          type: p.type,
+          signer_token: tokens[p.signerIndex],
+        }));
+      if (rubricas.length > 0) {
+        try {
+          await zapsignRequest({
+            method: "POST",
+            path: `/docs/${zapDoc.token}/rubricas/`,
+            body: { rubricas },
+          });
+          placementsApplied = rubricas.length;
+        } catch (e) {
+          console.error("[zapsign] failed to apply rubricas", e);
+          await supabase.from("signature_events").insert({
+            signature_request_id: requestRow.id,
+            event_type: "rubricas_failed",
+            event_description: "Falha ao aplicar campos visuais",
+            payload: { error: (e as Error).message },
+          });
+        }
+      }
+    }
+
     await supabase.from("signature_events").insert({
       signature_request_id: requestRow.id,
       event_type: "request_created",
       event_description: `Documento enviado para ${data.signers.length} signatário(s)`,
-      payload: { zapsign_token: zapDoc.token },
+      payload: { zapsign_token: zapDoc.token, placements_applied: placementsApplied },
     });
 
     return {
@@ -250,4 +305,20 @@ export const listSignatureRequestsForObra = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return rows ?? [];
+  });
+
+export const createDocumentPreviewUrl = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { documentPath: string }) =>
+    z.object({ documentPath: z.string().min(1).max(1024) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: signed, error } = await supabase.storage
+      .from(BUCKET)
+      .createSignedUrl(data.documentPath, 60 * 10);
+    if (error || !signed?.signedUrl) {
+      throw new Error(error?.message || "Falha ao gerar URL do documento.");
+    }
+    return { url: signed.signedUrl };
   });

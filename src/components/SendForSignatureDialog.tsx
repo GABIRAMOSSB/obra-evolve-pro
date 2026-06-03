@@ -19,9 +19,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { Loader2, Plus, Trash2, PenTool, ExternalLink } from "lucide-react";
+import { Loader2, Plus, Trash2, PenTool, ExternalLink, ArrowLeft, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
-import { sendDocumentForSignature } from "@/lib/zapsign-send.functions";
+import { sendDocumentForSignature, createDocumentPreviewUrl } from "@/lib/zapsign-send.functions";
+import PdfFieldPlacer, { type Placement } from "@/components/PdfFieldPlacer";
 
 interface SignerDraft {
   name: string;
@@ -68,6 +69,10 @@ export default function SendForSignatureDialog({
   const [expirationDays, setExpirationDays] = useState<string>("30");
   const [customMessage, setCustomMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [step, setStep] = useState<"signers" | "placements">("signers");
+  const [placements, setPlacements] = useState<Placement[]>([]);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [loadingPdf, setLoadingPdf] = useState(false);
   const [result, setResult] = useState<{
     signers: Array<{ name?: string; email?: string; signUrl?: string }>;
   } | null>(null);
@@ -77,6 +82,9 @@ export default function SendForSignatureDialog({
     setExpirationDays("30");
     setCustomMessage("");
     setResult(null);
+    setStep("signers");
+    setPlacements([]);
+    setPdfUrl(null);
   };
 
   const update = (i: number, patch: Partial<SignerDraft>) => {
@@ -85,20 +93,40 @@ export default function SendForSignatureDialog({
     );
   };
 
-  const submit = async () => {
-    // Basic validation
+  const validateSigners = () => {
     for (const [i, s] of signers.entries()) {
       if (!s.name.trim()) {
         toast.error(`Signatário ${i + 1}: nome é obrigatório`);
-        return;
+        return false;
       }
       if (!s.email.trim() && !s.phone_number.trim()) {
         toast.error(
           `Signatário ${i + 1}: informe e-mail ou WhatsApp para envio`,
         );
-        return;
+        return false;
       }
     }
+    return true;
+  };
+
+  const goToPlacements = async () => {
+    if (!validateSigners()) return;
+    setLoadingPdf(true);
+    try {
+      const res = await createDocumentPreviewUrl({ data: { documentPath } });
+      setPdfUrl(res.url);
+      setStep("placements");
+    } catch (e) {
+      toast.error("Não foi possível carregar o PDF", {
+        description: (e as Error).message,
+      });
+    } finally {
+      setLoadingPdf(false);
+    }
+  };
+
+  const submit = async () => {
+    if (!validateSigners()) return;
     setSubmitting(true);
     try {
       const res = await sendDocumentForSignature({
@@ -118,6 +146,7 @@ export default function SendForSignatureDialog({
             role: s.role.trim() || undefined,
             auth_mode: s.auth_mode,
           })),
+          placements: placements.length > 0 ? placements : undefined,
         },
       });
       toast.success("Documento enviado para assinatura");
@@ -140,7 +169,21 @@ export default function SendForSignatureDialog({
         if (!o) reset();
       }}
     >
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto">
+        {step === "signers" && !result ? (
+          <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="font-semibold text-primary">1. Signatários</span>
+            <ArrowRight className="h-3 w-3" />
+            <span>2. Posicionar campos</span>
+          </div>
+        ) : null}
+        {step === "placements" && !result ? (
+          <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
+            <span>1. Signatários</span>
+            <ArrowRight className="h-3 w-3" />
+            <span className="font-semibold text-primary">2. Posicionar campos</span>
+          </div>
+        ) : null}
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <PenTool className="h-5 w-5 text-primary" />
@@ -190,7 +233,7 @@ export default function SendForSignatureDialog({
               <Button onClick={() => onOpenChange(false)}>Concluir</Button>
             </DialogFooter>
           </div>
-        ) : (
+        ) : step === "signers" ? (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -344,9 +387,43 @@ export default function SendForSignatureDialog({
               <Button
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                disabled={submitting}
+                disabled={loadingPdf}
               >
                 Cancelar
+              </Button>
+              <Button onClick={goToPlacements} disabled={loadingPdf}>
+                {loadingPdf ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                ) : (
+                  <ArrowRight className="h-4 w-4 mr-1" />
+                )}
+                Posicionar campos
+              </Button>
+            </DialogFooter>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {pdfUrl ? (
+              <PdfFieldPlacer
+                pdfUrl={pdfUrl}
+                signers={signers.map((s) => ({ name: s.name }))}
+                value={placements}
+                onChange={setPlacements}
+              />
+            ) : null}
+            <div className="text-xs text-muted-foreground">
+              {placements.length === 0
+                ? "Opcional: você pode enviar sem campos visuais. Os signatários assinarão usando os pontos padrão da ZapSign."
+                : `${placements.length} campo(s) posicionado(s).`}
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setStep("signers")}
+                disabled={submitting}
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Voltar
               </Button>
               <Button onClick={submit} disabled={submitting}>
                 {submitting ? (
