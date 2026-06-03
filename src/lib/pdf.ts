@@ -445,7 +445,7 @@ export function buildMeasurementPdfBlob(
   dy("Cargo / Função (Resp.)", info.cargoResponsavel || "—", 8 + 3 * col, y, col - 2);
   y += 7.5;
   dy("Fiscal da Obra", info.fiscal || "—", 8, y, col - 2);
-  dy("CPF do Fiscal", info.cpfFiscal || "—", 8 + col, y, col - 2);
+  dy("CREA/CAU do Fiscal", info.creaFiscal || "—", 8 + col, y, col - 2);
   dy("Cargo / Função (Fiscal)", info.cargoFiscal || "—", 8 + 2 * col, y, col - 2);
   dy("ART / RRT", info.artRrt || "—", 8 + 3 * col, y, col - 2);
   y += 8;
