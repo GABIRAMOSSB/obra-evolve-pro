@@ -46,6 +46,7 @@ export function AppSidebar() {
         <SidebarLink to="/equipe" icon={Users} label="Equipe" />
         <SidebarLink to="/parametros-financeiros" icon={Calculator} label="Parâmetros Financeiros" />
         <SidebarLink to="/backup" icon={Database} label="Backup" />
+        <SidebarLink to="/configuracoes/zapsign" icon={PenTool} label="Assinaturas (ZapSign)" />
       </div>
 
       <div className="relative px-3 py-3 border-t border-sidebar-border/40 bg-sidebar/40">
