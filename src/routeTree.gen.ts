@@ -26,6 +26,7 @@ import { Route as AppComposicoesRouteImport } from './routes/_app.composicoes'
 import { Route as AppComparativoComposicaoRouteImport } from './routes/_app.comparativo-composicao'
 import { Route as AppCentrosCustoRouteImport } from './routes/_app.centros-custo'
 import { Route as AppBackupRouteImport } from './routes/_app.backup'
+import { Route as ApiPublicZapsignWebhookRouteImport } from './routes/api.public.zapsign-webhook'
 import { Route as AppInsumosImportarRouteImport } from './routes/_app.insumos.importar'
 import { Route as AppConfiguracoesZapsignRouteImport } from './routes/_app.configuracoes.zapsign'
 
@@ -115,6 +116,11 @@ const AppBackupRoute = AppBackupRouteImport.update({
   path: '/backup',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiPublicZapsignWebhookRoute = ApiPublicZapsignWebhookRouteImport.update({
+  id: '/api/public/zapsign-webhook',
+  path: '/api/public/zapsign-webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppInsumosImportarRoute = AppInsumosImportarRouteImport.update({
   id: '/importar',
   path: '/importar',
@@ -145,6 +151,7 @@ export interface FileRoutesByFullPath {
   '/invite/$token': typeof InviteTokenRoute
   '/configuracoes/zapsign': typeof AppConfiguracoesZapsignRoute
   '/insumos/importar': typeof AppInsumosImportarRoute
+  '/api/public/zapsign-webhook': typeof ApiPublicZapsignWebhookRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -165,6 +172,7 @@ export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
   '/configuracoes/zapsign': typeof AppConfiguracoesZapsignRoute
   '/insumos/importar': typeof AppInsumosImportarRoute
+  '/api/public/zapsign-webhook': typeof ApiPublicZapsignWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -187,6 +195,7 @@ export interface FileRoutesById {
   '/_app/': typeof AppIndexRoute
   '/_app/configuracoes/zapsign': typeof AppConfiguracoesZapsignRoute
   '/_app/insumos/importar': typeof AppInsumosImportarRoute
+  '/api/public/zapsign-webhook': typeof ApiPublicZapsignWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -209,6 +218,7 @@ export interface FileRouteTypes {
     | '/invite/$token'
     | '/configuracoes/zapsign'
     | '/insumos/importar'
+    | '/api/public/zapsign-webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -229,6 +239,7 @@ export interface FileRouteTypes {
     | '/'
     | '/configuracoes/zapsign'
     | '/insumos/importar'
+    | '/api/public/zapsign-webhook'
   id:
     | '__root__'
     | '/_app'
@@ -250,6 +261,7 @@ export interface FileRouteTypes {
     | '/_app/'
     | '/_app/configuracoes/zapsign'
     | '/_app/insumos/importar'
+    | '/api/public/zapsign-webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -257,6 +269,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   InviteTokenRoute: typeof InviteTokenRoute
+  ApiPublicZapsignWebhookRoute: typeof ApiPublicZapsignWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -380,6 +393,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppBackupRouteImport
       parentRoute: typeof AppRoute
     }
+    '/api/public/zapsign-webhook': {
+      id: '/api/public/zapsign-webhook'
+      path: '/api/public/zapsign-webhook'
+      fullPath: '/api/public/zapsign-webhook'
+      preLoaderRoute: typeof ApiPublicZapsignWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/insumos/importar': {
       id: '/_app/insumos/importar'
       path: '/importar'
@@ -450,7 +470,18 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   InviteTokenRoute: InviteTokenRoute,
+  ApiPublicZapsignWebhookRoute: ApiPublicZapsignWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
