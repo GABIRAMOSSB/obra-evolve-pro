@@ -216,6 +216,16 @@ export default function DocumentsTab({ obraId }: Props) {
                   {item.updatedAt && ` · ${new Date(item.updatedAt).toLocaleString("pt-BR")}`}
                 </div>
               </div>
+              {item.name.toLowerCase().endsWith(".pdf") ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  title="Enviar para assinatura"
+                  onClick={() => setSignItem(item)}
+                >
+                  <PenTool className="h-4 w-4" />
+                </Button>
+              ) : null}
               <Button variant="ghost" size="sm" onClick={() => onDownload(item)}>
                 <Download className="h-4 w-4" />
               </Button>
@@ -231,6 +241,19 @@ export default function DocumentsTab({ obraId }: Props) {
           ))}
         </Card>
       )}
+
+      {signItem && active ? (
+        <SendForSignatureDialog
+          open={!!signItem}
+          onOpenChange={(o) => !o && setSignItem(null)}
+          obraId={obraId}
+          documentPath={signItem.path}
+          documentName={signItem.name}
+          documentFolder={active}
+        />
+      ) : null}
     </div>
+  );
+}
   );
 }
