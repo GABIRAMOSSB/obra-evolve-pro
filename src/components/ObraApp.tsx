@@ -187,12 +187,14 @@ export function ObraApp() {
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipNextSave = useRef(true);
 
+  const userId = user?.id ?? null;
+  const companyId = company?.id ?? null;
   useEffect(() => {
-    if (!user || !company) return;
+    if (!userId || !companyId) return;
     let cancelled = false;
     (async () => {
       try {
-        const remote = await loadWorkspaceCloud(company.id);
+        const remote = await loadWorkspaceCloud(companyId);
         if (cancelled) return;
         const plan = detectMigration();
         const shouldPrompt = plan.needed && remote.obras.length === 0;
@@ -209,7 +211,8 @@ export function ObraApp() {
     return () => {
       cancelled = true;
     };
-  }, [user, company]);
+  }, [userId, companyId]);
+
 
   async function runMigration() {
     if (!company || !migration || !migration.plan.local) return;
