@@ -196,7 +196,12 @@ export const Route = createFileRoute("/api/public/zapsign-webhook")({
 
         for (const sg of signerList) {
           if (!sg.token) continue;
-          const patch: Record<string, unknown> = {
+          const patch: {
+            status: string;
+            signed_at?: string;
+            refused_at?: string;
+            refusal_reason?: string;
+          } = {
             status: mapSignerStatus(sg),
           };
           if (sg.signed_at) patch.signed_at = sg.signed_at;
