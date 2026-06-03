@@ -1,7 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
 import {
   getZapSignStatus,
   getOrCreateZapSignSettings,
@@ -27,18 +25,22 @@ export const Route = createFileRoute("/_app/configuracoes/zapsign")({
   component: ZapSignSettingsPage,
 });
 
+type UpdatePatch = {
+  environment?: "sandbox" | "production";
+  default_auth_mode?: string;
+  automatic_email?: boolean;
+  automatic_whatsapp?: boolean;
+  manual_whatsapp_enabled?: boolean;
+};
+
 function ZapSignSettingsPage() {
   const qc = useQueryClient();
-  const statusFn = useServerFn(getZapSignStatus);
-  const settingsFn = useServerFn(getOrCreateZapSignSettings);
-  const testFn = useServerFn(testZapSignConnection);
-  const updateFn = useServerFn(updateZapSignSettings);
 
-  const statusQ = useQuery({ queryKey: ["zapsign", "status"], queryFn: () => statusFn() });
-  const settingsQ = useQuery({ queryKey: ["zapsign", "settings"], queryFn: () => settingsFn() });
+  const statusQ = useQuery({ queryKey: ["zapsign", "status"], queryFn: () => getZapSignStatus() });
+  const settingsQ = useQuery({ queryKey: ["zapsign", "settings"], queryFn: () => getOrCreateZapSignSettings() });
 
   const testMut = useMutation({
-    mutationFn: () => testFn(),
+    mutationFn: () => testZapSignConnection(),
     onSuccess: (r) => {
       if (r.ok) toast.success("Conexão validada com sucesso.");
       else toast.error("Falha na conexão", { description: r.message });
@@ -48,7 +50,7 @@ function ZapSignSettingsPage() {
   });
 
   const updateMut = useMutation({
-    mutationFn: (patch: Parameters<typeof updateFn>[0]["data"]) => updateFn({ data: patch }),
+    mutationFn: (patch: UpdatePatch) => updateZapSignSettings({ data: patch }),
     onSuccess: () => {
       toast.success("Configuração salva.");
       qc.invalidateQueries({ queryKey: ["zapsign", "settings"] });
