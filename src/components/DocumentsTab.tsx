@@ -23,7 +23,9 @@ import {
   FileText,
   Loader2,
   ArrowLeft,
+  PenTool,
 } from "lucide-react";
+import SendForSignatureDialog from "@/components/SendForSignatureDialog";
 
 interface Props {
   obraId: string;
@@ -37,6 +39,8 @@ export default function DocumentsTab({ obraId }: Props) {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [signItem, setSignItem] = useState<DocumentItem | null>(null);
+
 
   useEffect(() => {
     supabase.rpc("current_user_company").then(({ data }) => {
@@ -212,6 +216,16 @@ export default function DocumentsTab({ obraId }: Props) {
                   {item.updatedAt && ` · ${new Date(item.updatedAt).toLocaleString("pt-BR")}`}
                 </div>
               </div>
+              {item.name.toLowerCase().endsWith(".pdf") ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  title="Enviar para assinatura"
+                  onClick={() => setSignItem(item)}
+                >
+                  <PenTool className="h-4 w-4" />
+                </Button>
+              ) : null}
               <Button variant="ghost" size="sm" onClick={() => onDownload(item)}>
                 <Download className="h-4 w-4" />
               </Button>
@@ -227,6 +241,18 @@ export default function DocumentsTab({ obraId }: Props) {
           ))}
         </Card>
       )}
+
+      {signItem && active ? (
+        <SendForSignatureDialog
+          open={!!signItem}
+          onOpenChange={(o) => !o && setSignItem(null)}
+          obraId={obraId}
+          documentPath={signItem.path}
+          documentName={signItem.name}
+          documentFolder={active}
+        />
+      ) : null}
     </div>
   );
 }
+
