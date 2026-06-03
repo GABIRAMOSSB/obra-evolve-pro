@@ -1732,47 +1732,47 @@ function ActivitiesTable({
 
                 PLANEJAMENTO — ORÇAMENTO CONTRATADO
               </th>
-              <th colSpan={3} className="px-3 py-2 text-center border-b border-r border-border bg-primary/80 text-primary-foreground font-bold">
+              <th colSpan={3} className="px-1 py-1.5 text-center border-b border-r border-border bg-primary/80 text-primary-foreground font-bold">
                 Valor Unit com BDI
               </th>
-              <th colSpan={3} className="px-3 py-2 text-center border-b border-r border-border bg-primary/80 text-primary-foreground font-bold">
+              <th colSpan={3} className="px-1 py-1.5 text-center border-b border-r border-border bg-primary/80 text-primary-foreground font-bold">
                 Total
               </th>
-              <th colSpan={3} className="px-3 py-2 text-center border-b border-r border-border bg-[var(--measure)] text-[var(--measure-foreground)] font-bold">
+              <th colSpan={3} className="px-1 py-1.5 text-center border-b border-r border-border bg-[var(--measure)] text-[var(--measure-foreground)] font-bold">
                 EXECUTADO FÍSICO (Quantidade)
               </th>
-              <th colSpan={3} className="px-3 py-2 text-center border-b border-r border-border bg-[var(--primary-soft)] text-primary-foreground font-bold">
+              <th colSpan={3} className="px-1 py-1.5 text-center border-b border-r border-border bg-[var(--primary-soft)] text-primary-foreground font-bold">
                 EXECUTADO FINANCEIRO (R$)
               </th>
-              <th className="px-3 py-2 text-center border-b border-r border-border bg-success text-success-foreground font-bold">
+              <th className="px-1 py-1.5 text-center border-b border-r border-border bg-success text-success-foreground font-bold">
                 DESVIO
               </th>
-              <th className="px-3 py-2 text-center border-b border-border bg-primary text-primary-foreground font-bold">
+              <th className="px-1 py-1.5 text-center border-b border-border bg-primary text-primary-foreground font-bold">
                 AÇÕES
               </th>
             </tr>
             <tr className="bg-muted text-foreground text-[10px]">
-              <th className="px-2 py-2 text-left border-b border-border">Item</th>
-              <th className="px-2 py-2 text-left border-b border-border">Código</th>
-              <th className="px-2 py-2 text-left border-b border-border">Banco</th>
-              <th className="px-2 py-2 text-left border-b border-border sticky left-0 bg-muted z-[5]">Descrição</th>
-              <th className="px-2 py-2 text-left border-b border-border">Und</th>
-              <th className="px-2 py-2 text-right border-b border-border">Quant.</th>
-              <th className="px-2 py-2 text-right border-b border-r border-border">Valor Unit</th>
-              <th className="px-2 py-2 text-right border-b border-border">M.O.</th>
-              <th className="px-2 py-2 text-right border-b border-border">MAT.</th>
-              <th className="px-2 py-2 text-right border-b border-r border-border">Total</th>
-              <th className="px-2 py-2 text-right border-b border-border">M.O.</th>
-              <th className="px-2 py-2 text-right border-b border-border">MAT.</th>
-              <th className="px-2 py-2 text-right border-r border-b border-border">Total</th>
-              <th className="px-2 py-2 text-right border-b border-border bg-[var(--measure)]/10">Acum. anterior</th>
-              <th className="px-2 py-2 text-right border-b border-border bg-[var(--measure)]/20">Período</th>
-              <th className="px-2 py-2 text-right border-r border-b border-border bg-[var(--measure)]/10">Acum. atual</th>
-              <th className="px-2 py-2 text-right border-b border-border bg-[var(--primary-soft)]/10">Acum. anterior</th>
-              <th className="px-2 py-2 text-right border-b border-border bg-[var(--primary-soft)]/20">Período</th>
-              <th className="px-2 py-2 text-right border-r border-b border-border bg-[var(--primary-soft)]/10">Acum. atual</th>
-              <th className="px-2 py-2 text-right border-r border-b border-border bg-success/10">%</th>
-              <th className="px-2 py-2 text-center border-b border-border">Ações</th>
+              <th className="px-1 py-1.5 text-left border-b border-border">Item</th>
+              <th className="px-1 py-1.5 text-left border-b border-border">Código</th>
+              <th className="px-1 py-1.5 text-left border-b border-border">Banco</th>
+              <th className="px-1 py-1.5 text-left border-b border-border sticky left-0 bg-muted z-[5]">Descrição</th>
+              <th className="px-1 py-1.5 text-left border-b border-border">Und</th>
+              <th className="px-1 py-1.5 text-right border-b border-border">Quant.</th>
+              <th className="px-1 py-1.5 text-right border-b border-r border-border">Valor Unit</th>
+              <th className="px-1 py-1.5 text-right border-b border-border">M.O.</th>
+              <th className="px-1 py-1.5 text-right border-b border-border">MAT.</th>
+              <th className="px-1 py-1.5 text-right border-b border-r border-border">Total</th>
+              <th className="px-1 py-1.5 text-right border-b border-border">M.O.</th>
+              <th className="px-1 py-1.5 text-right border-b border-border">MAT.</th>
+              <th className="px-1 py-1.5 text-right border-r border-b border-border">Total</th>
+              <th className="px-1 py-1.5 text-right border-b border-border bg-[var(--measure)]/10">Acum. anterior</th>
+              <th className="px-1 py-1.5 text-right border-b border-border bg-[var(--measure)]/20">Período</th>
+              <th className="px-1 py-1.5 text-right border-r border-b border-border bg-[var(--measure)]/10">Acum. atual</th>
+              <th className="px-1 py-1.5 text-right border-b border-border bg-[var(--primary-soft)]/10">Acum. anterior</th>
+              <th className="px-1 py-1.5 text-right border-b border-border bg-[var(--primary-soft)]/20">Período</th>
+              <th className="px-1 py-1.5 text-right border-r border-b border-border bg-[var(--primary-soft)]/10">Acum. atual</th>
+              <th className="px-1 py-1.5 text-right border-r border-b border-border bg-success/10">%</th>
+              <th className="px-1 py-1.5 text-center border-b border-border">Ações</th>
             </tr>
           </thead>
 
