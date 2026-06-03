@@ -231,7 +231,13 @@ export const Route = createFileRoute("/api/public/zapsign-webhook")({
           }
         }
 
-        const updates: Record<string, unknown> = {};
+        const updates: {
+          status?: string;
+          signed_file_path?: string;
+          signed_file_hash?: string;
+          signed_at?: string;
+          cancellation_reason?: string | null;
+        } = {};
         if (finalStatus) updates.status = finalStatus;
 
         // --- Archive signed PDF on fully signed ---
