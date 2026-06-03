@@ -1811,7 +1811,7 @@ function ActivitiesTable({
                 return (
                   <tr key={r.item} className={rowCls}>
                     <td
-                      className="px-2 py-1.5 font-mono"
+                      className="px-1 py-1 font-mono"
                       style={{ paddingLeft: 8 + indent }}
                     >
                       <button
@@ -1824,31 +1824,31 @@ function ActivitiesTable({
                         <span>{r.item}</span>
                       </button>
                     </td>
-                    <td className="px-2 py-1.5"></td>
-                    <td className="px-2 py-1.5"></td>
+                    <td className="px-1 py-1"></td>
+                    <td className="px-1 py-1"></td>
                     <td
-                      className={`px-2 py-1.5 sticky left-0 z-[4] ${rowCls} ${isEtapa ? "uppercase tracking-wide" : isSub ? "uppercase tracking-wide" : ""}`}
+                      className={`px-1 py-1 sticky left-0 z-[4] ${rowCls} ${isEtapa ? "uppercase tracking-wide" : isSub ? "uppercase tracking-wide" : ""}`}
                       style={{ paddingLeft: 8 + indent }}
                     >
                       {r.descricao}
                     </td>
-                    <td className="px-2 py-1.5"></td>
-                    <td className="px-2 py-1.5"></td>
-                    <td className="px-2 py-1.5 border-r border-border"></td>
-                    <td className="px-2 py-1.5"></td>
-                    <td className="px-2 py-1.5"></td>
-                    <td className="px-2 py-1.5 border-r border-border"></td>
-                    <td className="px-2 py-1.5 text-right">{gMO ? fmtBRL(gMO) : ""}</td>
-                    <td className="px-2 py-1.5 text-right">{gMat ? fmtBRL(gMat) : ""}</td>
-                    <td className="px-2 py-1.5 text-right border-r border-border">{fmtBRL(g.total)}</td>
-                    <td className="px-2 py-1.5 bg-[var(--measure)]/5"></td>
-                    <td className="px-2 py-1.5 bg-[var(--measure)]/10"></td>
-                    <td className="px-2 py-1.5 border-r border-border bg-[var(--measure)]/5"></td>
-                    <td className="px-2 py-1.5 text-right bg-[var(--primary-soft)]/5">{fmtBRL(gFinAnt)}</td>
-                    <td className="px-2 py-1.5 text-right bg-[var(--primary-soft)]/10 text-[var(--measure)] font-medium">{fmtBRL(gFinPer)}</td>
-                    <td className="px-2 py-1.5 text-right border-r border-border bg-[var(--primary-soft)]/5 text-[var(--success)] font-semibold">{fmtBRL(gFinAtual)}</td>
-                    <td className="px-2 py-1.5 text-right border-r border-border bg-success/5 font-medium">{fmtNum(gDesvio)}%</td>
-                    <td className="px-2 py-1.5 text-center">
+                    <td className="px-1 py-1"></td>
+                    <td className="px-1 py-1"></td>
+                    <td className="px-1 py-1 border-r border-border"></td>
+                    <td className="px-1 py-1"></td>
+                    <td className="px-1 py-1"></td>
+                    <td className="px-1 py-1 border-r border-border"></td>
+                    <td className="px-1 py-1 text-right">{gMO ? fmtBRL(gMO) : ""}</td>
+                    <td className="px-1 py-1 text-right">{gMat ? fmtBRL(gMat) : ""}</td>
+                    <td className="px-1 py-1 text-right border-r border-border">{fmtBRL(g.total)}</td>
+                    <td className="px-1 py-1 bg-[var(--measure)]/5"></td>
+                    <td className="px-1 py-1 bg-[var(--measure)]/10"></td>
+                    <td className="px-1 py-1 border-r border-border bg-[var(--measure)]/5"></td>
+                    <td className="px-1 py-1 text-right bg-[var(--primary-soft)]/5">{fmtBRL(gFinAnt)}</td>
+                    <td className="px-1 py-1 text-right bg-[var(--primary-soft)]/10 text-[var(--measure)] font-medium">{fmtBRL(gFinPer)}</td>
+                    <td className="px-1 py-1 text-right border-r border-border bg-[var(--primary-soft)]/5 text-[var(--success)] font-semibold">{fmtBRL(gFinAtual)}</td>
+                    <td className="px-1 py-1 text-right border-r border-border bg-success/5 font-medium">{fmtNum(gDesvio)}%</td>
+                    <td className="px-1 py-1 text-center">
                       {r.banco === "MANUAL" && (
                         <Button size="sm" variant="ghost" onClick={() => onRemove(r.item)} title="Remover">
                           <Trash2 className="w-3.5 h-3.5 text-destructive" />
@@ -1880,15 +1880,15 @@ function ActivitiesTable({
           <tfoot>
             <tr className="bg-primary text-primary-foreground font-bold uppercase tracking-wider text-[11px]">
               <td className="px-3 py-2.5" colSpan={12}>TOTAL GERAL</td>
-              <td className="px-2 py-2.5 text-right border-r border-primary-foreground/20">{fmtBRL(contratoTotal)}</td>
-              <td className="px-2 py-2.5 bg-[var(--measure)] text-[var(--measure-foreground)]" colSpan={3}></td>
-              <td className="px-2 py-2.5 text-right bg-[var(--primary-soft)]">{fmtBRL(tFinAnterior)}</td>
-              <td className="px-2 py-2.5 text-right bg-[var(--primary-soft)]">{fmtBRL(tFinPeriodo)}</td>
-              <td className="px-2 py-2.5 text-right border-r border-primary-foreground/20 bg-[var(--primary-soft)]">{fmtBRL(tFinAtual)}</td>
-              <td className="px-2 py-2.5 text-right border-r border-primary-foreground/20 bg-success text-success-foreground">
+              <td className="px-1 py-1.5 text-right border-r border-primary-foreground/20">{fmtBRL(contratoTotal)}</td>
+              <td className="px-1 py-1.5 bg-[var(--measure)] text-[var(--measure-foreground)]" colSpan={3}></td>
+              <td className="px-1 py-1.5 text-right bg-[var(--primary-soft)]">{fmtBRL(tFinAnterior)}</td>
+              <td className="px-1 py-1.5 text-right bg-[var(--primary-soft)]">{fmtBRL(tFinPeriodo)}</td>
+              <td className="px-1 py-1.5 text-right border-r border-primary-foreground/20 bg-[var(--primary-soft)]">{fmtBRL(tFinAtual)}</td>
+              <td className="px-1 py-1.5 text-right border-r border-primary-foreground/20 bg-success text-success-foreground">
                 {fmtNum(contratoTotal > 0 ? (tFinAtual / contratoTotal) * 100 : 0)}%
               </td>
-              <td className="px-2 py-2.5" />
+              <td className="px-1 py-1.5" />
             </tr>
           </tfoot>
         </table>
