@@ -27,6 +27,7 @@ import { Route as AppComparativoComposicaoRouteImport } from './routes/_app.comp
 import { Route as AppCentrosCustoRouteImport } from './routes/_app.centros-custo'
 import { Route as AppBackupRouteImport } from './routes/_app.backup'
 import { Route as AppInsumosImportarRouteImport } from './routes/_app.insumos.importar'
+import { Route as AppConfiguracoesZapsignRouteImport } from './routes/_app.configuracoes.zapsign'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -119,6 +120,11 @@ const AppInsumosImportarRoute = AppInsumosImportarRouteImport.update({
   path: '/importar',
   getParentRoute: () => AppInsumosRoute,
 } as any)
+const AppConfiguracoesZapsignRoute = AppConfiguracoesZapsignRouteImport.update({
+  id: '/configuracoes/zapsign',
+  path: '/configuracoes/zapsign',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -137,6 +143,7 @@ export interface FileRoutesByFullPath {
   '/parametros-financeiros': typeof AppParametrosFinanceirosRoute
   '/realizado': typeof AppRealizadoRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/configuracoes/zapsign': typeof AppConfiguracoesZapsignRoute
   '/insumos/importar': typeof AppInsumosImportarRoute
 }
 export interface FileRoutesByTo {
@@ -156,6 +163,7 @@ export interface FileRoutesByTo {
   '/realizado': typeof AppRealizadoRoute
   '/invite/$token': typeof InviteTokenRoute
   '/': typeof AppIndexRoute
+  '/configuracoes/zapsign': typeof AppConfiguracoesZapsignRoute
   '/insumos/importar': typeof AppInsumosImportarRoute
 }
 export interface FileRoutesById {
@@ -177,6 +185,7 @@ export interface FileRoutesById {
   '/_app/realizado': typeof AppRealizadoRoute
   '/invite/$token': typeof InviteTokenRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/configuracoes/zapsign': typeof AppConfiguracoesZapsignRoute
   '/_app/insumos/importar': typeof AppInsumosImportarRoute
 }
 export interface FileRouteTypes {
@@ -198,6 +207,7 @@ export interface FileRouteTypes {
     | '/parametros-financeiros'
     | '/realizado'
     | '/invite/$token'
+    | '/configuracoes/zapsign'
     | '/insumos/importar'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -217,6 +227,7 @@ export interface FileRouteTypes {
     | '/realizado'
     | '/invite/$token'
     | '/'
+    | '/configuracoes/zapsign'
     | '/insumos/importar'
   id:
     | '__root__'
@@ -237,6 +248,7 @@ export interface FileRouteTypes {
     | '/_app/realizado'
     | '/invite/$token'
     | '/_app/'
+    | '/_app/configuracoes/zapsign'
     | '/_app/insumos/importar'
   fileRoutesById: FileRoutesById
 }
@@ -375,6 +387,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppInsumosImportarRouteImport
       parentRoute: typeof AppInsumosRoute
     }
+    '/_app/configuracoes/zapsign': {
+      id: '/_app/configuracoes/zapsign'
+      path: '/configuracoes/zapsign'
+      fullPath: '/configuracoes/zapsign'
+      preLoaderRoute: typeof AppConfiguracoesZapsignRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -404,6 +423,7 @@ interface AppRouteChildren {
   AppParametrosFinanceirosRoute: typeof AppParametrosFinanceirosRoute
   AppRealizadoRoute: typeof AppRealizadoRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppConfiguracoesZapsignRoute: typeof AppConfiguracoesZapsignRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -420,6 +440,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppParametrosFinanceirosRoute: AppParametrosFinanceirosRoute,
   AppRealizadoRoute: AppRealizadoRoute,
   AppIndexRoute: AppIndexRoute,
+  AppConfiguracoesZapsignRoute: AppConfiguracoesZapsignRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
