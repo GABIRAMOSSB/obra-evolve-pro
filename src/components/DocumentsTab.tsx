@@ -39,6 +39,8 @@ export default function DocumentsTab({ obraId }: Props) {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [signItem, setSignItem] = useState<DocumentItem | null>(null);
+
 
   useEffect(() => {
     supabase.rpc("current_user_company").then(({ data }) => {
