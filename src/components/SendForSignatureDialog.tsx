@@ -169,7 +169,21 @@ export default function SendForSignatureDialog({
         if (!o) reset();
       }}
     >
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto">
+        {step === "signers" && !result ? (
+          <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="font-semibold text-primary">1. Signatários</span>
+            <ArrowRight className="h-3 w-3" />
+            <span>2. Posicionar campos</span>
+          </div>
+        ) : null}
+        {step === "placements" && !result ? (
+          <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
+            <span>1. Signatários</span>
+            <ArrowRight className="h-3 w-3" />
+            <span className="font-semibold text-primary">2. Posicionar campos</span>
+          </div>
+        ) : null}
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <PenTool className="h-5 w-5 text-primary" />
