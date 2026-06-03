@@ -306,3 +306,19 @@ export const listSignatureRequestsForObra = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return rows ?? [];
   });
+
+export const createDocumentPreviewUrl = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { documentPath: string }) =>
+    z.object({ documentPath: z.string().min(1).max(1024) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: signed, error } = await supabase.storage
+      .from(BUCKET)
+      .createSignedUrl(data.documentPath, 60 * 10);
+    if (error || !signed?.signedUrl) {
+      throw new Error(error?.message || "Falha ao gerar URL do documento.");
+    }
+    return { url: signed.signedUrl };
+  });
