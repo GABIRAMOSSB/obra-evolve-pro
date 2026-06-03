@@ -173,6 +173,10 @@ export function MeasurementClosure({
           `medicao-${String(current).padStart(2, "0")}-${data.nome}.pdf`,
           blob,
           "application/pdf",
+          {
+            replaceMatching: (name) =>
+              name.toLowerCase().startsWith(`medicao-${String(current).padStart(2, "0")}-`),
+          },
         );
       } catch (e) {
         console.error("Falha ao salvar PDF da medição:", e);
