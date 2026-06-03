@@ -19,9 +19,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { Loader2, Plus, Trash2, PenTool, ExternalLink } from "lucide-react";
+import { Loader2, Plus, Trash2, PenTool, ExternalLink, ArrowLeft, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
-import { sendDocumentForSignature } from "@/lib/zapsign-send.functions";
+import { sendDocumentForSignature, createDocumentPreviewUrl } from "@/lib/zapsign-send.functions";
+import PdfFieldPlacer, { type Placement } from "@/components/PdfFieldPlacer";
 
 interface SignerDraft {
   name: string;
