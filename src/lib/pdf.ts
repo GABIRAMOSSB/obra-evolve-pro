@@ -567,7 +567,7 @@ export function buildMeasurementPdfBlob(
         { content: "TOTAL", colSpan: 3, styles: { fillColor: navy, textColor: 255, halign: "center", fontStyle: "bold" } },
         { content: "EXECUTADO FÍSICO", colSpan: 3, styles: { fillColor: orange, textColor: 255, halign: "center", fontStyle: "bold" } },
         { content: "EXECUTADO FINANCEIRO (R$)", colSpan: 3, styles: { fillColor: green, textColor: 255, halign: "center", fontStyle: "bold" } },
-        { content: "DESVIO", rowSpan: 2, styles: { fillColor: navy, textColor: 255, halign: "center", fontStyle: "bold", valign: "middle" } },
+        { content: "DESVIO", rowSpan: 2, styles: { fillColor: green, textColor: 255, halign: "center", fontStyle: "bold", valign: "middle" } },
         { content: "STATUS", rowSpan: 2, styles: { fillColor: navy, textColor: 255, halign: "center", fontStyle: "bold", valign: "middle" } },
       ],
       [
