@@ -1702,30 +1702,31 @@ function ActivitiesTable({
   return (
     <Card className="overflow-hidden border-border shadow-[var(--shadow-card)]">
       <div className="overflow-x-auto">
-        <table className="w-full text-[11px] border-collapse table-fixed">
+        <table className="text-[11px] border-collapse w-full" style={{ minWidth: 1700 }}>
           <colgroup>
-            <col style={{ width: "3.2%" }} />
-            <col style={{ width: "4%" }} />
-            <col style={{ width: "3.2%" }} />
-            <col style={{ width: "16%" }} />
-            <col style={{ width: "2.6%" }} />
-            <col style={{ width: "4%" }} />
-            <col style={{ width: "5%" }} />
-            <col style={{ width: "4.4%" }} />
-            <col style={{ width: "4.4%" }} />
-            <col style={{ width: "5%" }} />
-            <col style={{ width: "4.8%" }} />
-            <col style={{ width: "4.8%" }} />
-            <col style={{ width: "5.2%" }} />
-            <col style={{ width: "4.6%" }} />
-            <col style={{ width: "4.6%" }} />
-            <col style={{ width: "4.6%" }} />
-            <col style={{ width: "5%" }} />
-            <col style={{ width: "5%" }} />
-            <col style={{ width: "5.2%" }} />
-            <col style={{ width: "3.2%" }} />
-            <col style={{ width: "4%" }} />
+            <col style={{ width: 50 }} />
+            <col style={{ width: 60 }} />
+            <col style={{ width: 50 }} />
+            <col style={{ minWidth: 240, width: 260 }} />
+            <col style={{ width: 38 }} />
+            <col style={{ width: 60 }} />
+            <col style={{ width: 80 }} />
+            <col style={{ width: 75 }} />
+            <col style={{ width: 75 }} />
+            <col style={{ width: 85 }} />
+            <col style={{ width: 90 }} />
+            <col style={{ width: 90 }} />
+            <col style={{ width: 95 }} />
+            <col style={{ width: 85 }} />
+            <col style={{ width: 85 }} />
+            <col style={{ width: 90 }} />
+            <col style={{ width: 95 }} />
+            <col style={{ width: 95 }} />
+            <col style={{ width: 100 }} />
+            <col style={{ width: 55 }} />
+            <col style={{ width: 80 }} />
           </colgroup>
+
           <thead className="uppercase sticky top-0 z-10">
             <tr className="text-[9px] tracking-[0.1em]">
               <th colSpan={7} className="px-1 py-1.5 text-center border-b border-r border-border bg-primary text-primary-foreground font-bold">
