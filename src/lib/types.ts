@@ -135,6 +135,7 @@ export interface ObraInfo {
   cargoResponsavel?: string;
   fiscal?: string;
   cpfFiscal?: string;
+  creaFiscal?: string;
   cargoFiscal?: string;
   artRrt?: string;
   empresaExecutora?: string;
