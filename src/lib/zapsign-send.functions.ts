@@ -131,7 +131,7 @@ export const sendDocumentForSignature = createServerFn({ method: "POST" })
 
     let zapDoc: ZapSignCreateResponse;
     try {
-      const expirationDate = data.expirationDays
+      const expirationDate: string | undefined = data.expirationDays
         ? new Date(Date.now() + data.expirationDays * 86400000)
             .toISOString()
             .slice(0, 10)
