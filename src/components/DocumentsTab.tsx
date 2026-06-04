@@ -24,8 +24,14 @@ import {
   Loader2,
   ArrowLeft,
   PenTool,
+  Layers,
+  X,
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import SendForSignatureDialog from "@/components/SendForSignatureDialog";
+import BatchSendForSignatureDialog, {
+  type BatchDocument,
+} from "@/components/BatchSendForSignatureDialog";
 
 interface Props {
   obraId: string;
