@@ -96,6 +96,16 @@ export default function SendForSignatureDialog({
     );
   };
 
+  const move = (i: number, dir: -1 | 1) => {
+    setSigners((prev) => {
+      const j = i + dir;
+      if (j < 0 || j >= prev.length) return prev;
+      const next = prev.slice();
+      [next[i], next[j]] = [next[j], next[i]];
+      return next;
+    });
+  };
+
   const validateSigners = () => {
     for (const [i, s] of signers.entries()) {
       if (!s.name.trim()) {
