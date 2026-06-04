@@ -212,6 +212,7 @@ function ComplianceModule() {
           <TabsTrigger value="certs"><FileText className="w-4 h-4 mr-1.5" />Certidões</TabsTrigger>
           <TabsTrigger value="history"><History className="w-4 h-4 mr-1.5" />Histórico</TabsTrigger>
           <TabsTrigger value="alerts"><Bell className="w-4 h-4 mr-1.5" />Alertas</TabsTrigger>
+          <TabsTrigger value="rules"><BellRing className="w-4 h-4 mr-1.5" />Regras</TabsTrigger>
           <TabsTrigger value="logs"><ScrollText className="w-4 h-4 mr-1.5" />Logs</TabsTrigger>
           <TabsTrigger value="settings"><Settings className="w-4 h-4 mr-1.5" />Configurações</TabsTrigger>
         </TabsList>
