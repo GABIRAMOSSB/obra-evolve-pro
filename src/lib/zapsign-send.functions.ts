@@ -44,6 +44,7 @@ const sendSchema = z.object({
   expirationDays: z.number().int().min(1).max(365).optional(),
   customMessage: z.string().max(2000).optional(),
   placements: z.array(placementSchema).max(200).optional(),
+  signingOrderActive: z.boolean().optional(),
 });
 
 const batchSchema = z.object({
@@ -63,6 +64,7 @@ const batchSchema = z.object({
   expirationDays: z.number().int().min(1).max(365).optional(),
   customMessage: z.string().max(2000).optional(),
   placements: z.array(placementSchema).max(200).optional(),
+  signingOrderActive: z.boolean().optional(),
 });
 
 const BUCKET = "obra-documentos";
@@ -187,12 +189,13 @@ async function processSignatureSend(
         folder_path: data.documentFolder ?? "/",
         created_by: "",
         date_limit_to_sign: expirationDate,
-        signature_order_active: false,
+        signature_order_active: Boolean(data.signingOrderActive),
         observers: [],
         signers: data.signers.map((s, i) => ({
           name: s.name,
           email: s.email || undefined,
           auth_mode: s.auth_mode || defaultAuth,
+          order_group: data.signingOrderActive ? i + 1 : undefined,
           send_automatic_email: s.send_automatic_email ?? Boolean(s.email),
           send_automatic_whatsapp:
             s.send_automatic_whatsapp ?? Boolean(s.phone_number),
@@ -357,6 +360,7 @@ export const sendBatchDocumentsForSignature = createServerFn({ method: "POST" })
             expirationDays: data.expirationDays,
             customMessage: data.customMessage,
             placements: data.placements,
+            signingOrderActive: data.signingOrderActive,
           },
           supabase,
           userId,

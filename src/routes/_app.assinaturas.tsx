@@ -333,6 +333,9 @@ function RequestDetailDialog({
     queryFn: () => getSignatureRequest({ data: { id } }),
   });
 
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+
   const cancelMut = useMutation({
     mutationFn: () => cancelSignatureRequest({ data: { id } }),
     onSuccess: () => {
@@ -354,6 +357,18 @@ function RequestDetailDialog({
       window.open(url, "_blank", "noopener,noreferrer");
     },
   });
+
+  const previewMut = useMutation({
+    mutationFn: () => getSignedDocumentUrl({ data: { id } }),
+    onSuccess: ({ url }) => {
+      if (!url) {
+        toast.error("PDF assinado ainda não disponível");
+        return;
+      }
+      setPreviewUrl(url);
+    },
+  });
+
 
   const resendMut = useMutation({
     mutationFn: (vars: { signerId: string; channel: "whatsapp" | "email" }) =>
@@ -507,14 +522,24 @@ function RequestDetailDialog({
 
             <div className="flex items-center justify-end gap-2 pt-2">
               {data.signed_file_path ? (
-                <Button
-                  variant="outline"
-                  onClick={() => downloadMut.mutate()}
-                  disabled={downloadMut.isPending}
-                >
-                  <Download className="h-4 w-4 mr-1" />
-                  Baixar PDF assinado
-                </Button>
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => previewMut.mutate()}
+                    disabled={previewMut.isPending}
+                  >
+                    <Eye className="h-4 w-4 mr-1" />
+                    Visualizar
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => downloadMut.mutate()}
+                    disabled={downloadMut.isPending}
+                  >
+                    <Download className="h-4 w-4 mr-1" />
+                    Baixar PDF assinado
+                  </Button>
+                </>
               ) : null}
               {!["signed", "canceled", "refused", "expired"].includes(
                 data.status,
@@ -538,6 +563,22 @@ function RequestDetailDialog({
             </div>
           </div>
         )}
+        {previewUrl ? (
+          <Dialog open onOpenChange={(o) => !o && setPreviewUrl(null)}>
+            <DialogContent className="max-w-5xl h-[90vh] p-0 overflow-hidden flex flex-col">
+              <DialogHeader className="p-4 pb-2">
+                <DialogTitle className="flex items-center gap-2 text-base">
+                  <Eye className="h-4 w-4" /> {data?.document_name}
+                </DialogTitle>
+              </DialogHeader>
+              <iframe
+                src={previewUrl}
+                title="PDF assinado"
+                className="flex-1 w-full border-0"
+              />
+            </DialogContent>
+          </Dialog>
+        ) : null}
       </DialogContent>
     </Dialog>
   );

@@ -19,7 +19,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { Loader2, Plus, Trash2, PenTool, ExternalLink, ArrowLeft, ArrowRight } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Loader2, Plus, Trash2, PenTool, ExternalLink, ArrowLeft, ArrowRight, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import { sendDocumentForSignature, createDocumentPreviewUrl } from "@/lib/zapsign-send.functions";
 import PdfFieldPlacer, { type Placement } from "@/components/PdfFieldPlacer";
@@ -68,6 +69,7 @@ export default function SendForSignatureDialog({
   const [signers, setSigners] = useState<SignerDraft[]>([emptySigner()]);
   const [expirationDays, setExpirationDays] = useState<string>("30");
   const [customMessage, setCustomMessage] = useState("");
+  const [signingOrderActive, setSigningOrderActive] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [step, setStep] = useState<"signers" | "placements">("signers");
   const [placements, setPlacements] = useState<Placement[]>([]);
@@ -81,6 +83,7 @@ export default function SendForSignatureDialog({
     setSigners([emptySigner()]);
     setExpirationDays("30");
     setCustomMessage("");
+    setSigningOrderActive(false);
     setResult(null);
     setStep("signers");
     setPlacements([]);
@@ -91,6 +94,16 @@ export default function SendForSignatureDialog({
     setSigners((prev) =>
       prev.map((s, idx) => (idx === i ? { ...s, ...patch } : s)),
     );
+  };
+
+  const move = (i: number, dir: -1 | 1) => {
+    setSigners((prev) => {
+      const j = i + dir;
+      if (j < 0 || j >= prev.length) return prev;
+      const next = prev.slice();
+      [next[i], next[j]] = [next[j], next[i]];
+      return next;
+    });
   };
 
   const validateSigners = () => {
@@ -147,6 +160,7 @@ export default function SendForSignatureDialog({
             auth_mode: s.auth_mode,
           })),
           placements: placements.length > 0 ? placements : undefined,
+          signingOrderActive,
         },
       });
       toast.success("Documento enviado para assinatura");
@@ -253,41 +267,77 @@ export default function SendForSignatureDialog({
             </div>
 
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
                 <Label>Signatários</Label>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    setSigners((p) => [...p, emptySigner()])
-                  }
-                  disabled={signers.length >= 10}
-                >
-                  <Plus className="h-3.5 w-3.5 mr-1" />
-                  Adicionar
-                </Button>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="signing-order"
+                      checked={signingOrderActive}
+                      onCheckedChange={setSigningOrderActive}
+                    />
+                    <Label htmlFor="signing-order" className="text-xs cursor-pointer">
+                      Exigir ordem de assinatura
+                    </Label>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setSigners((p) => [...p, emptySigner()])
+                    }
+                    disabled={signers.length >= 10}
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1" />
+                    Adicionar
+                  </Button>
+                </div>
               </div>
 
               {signers.map((s, i) => (
                 <Card key={i} className="p-3 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-muted-foreground">
-                      Signatário {i + 1}
+                      {signingOrderActive ? `${i + 1}º · ` : ""}Signatário {i + 1}
                     </span>
-                    {signers.length > 1 ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() =>
-                          setSigners((p) =>
-                            p.filter((_, idx) => idx !== i),
-                          )
-                        }
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    ) : null}
+                    <div className="flex items-center gap-1">
+                      {signingOrderActive ? (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={i === 0}
+                            onClick={() => move(i, -1)}
+                            title="Mover para cima"
+                          >
+                            <ArrowUp className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={i === signers.length - 1}
+                            onClick={() => move(i, 1)}
+                            title="Mover para baixo"
+                          >
+                            <ArrowDown className="h-3.5 w-3.5" />
+                          </Button>
+                        </>
+                      ) : null}
+                      {signers.length > 1 ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() =>
+                            setSigners((p) =>
+                              p.filter((_, idx) => idx !== i),
+                            )
+                          }
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      ) : null}
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="col-span-2">
