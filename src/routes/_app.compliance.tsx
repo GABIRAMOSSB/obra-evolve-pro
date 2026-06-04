@@ -18,6 +18,10 @@ import {
   requestProductionActivation,
   clearSandboxData,
   getCertificateDetails,
+  listNotificationRules,
+  listCertificateTypesForRules,
+  upsertNotificationRule,
+  deleteNotificationRule,
 } from "@/lib/compliance.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,6 +32,8 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   ShieldCheck,
   RefreshCw,
@@ -45,6 +51,10 @@ import {
   Activity,
   ScrollText,
   Eye,
+  Plus,
+  Pencil,
+  Trash2,
+  BellRing,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -202,6 +212,7 @@ function ComplianceModule() {
           <TabsTrigger value="certs"><FileText className="w-4 h-4 mr-1.5" />Certidões</TabsTrigger>
           <TabsTrigger value="history"><History className="w-4 h-4 mr-1.5" />Histórico</TabsTrigger>
           <TabsTrigger value="alerts"><Bell className="w-4 h-4 mr-1.5" />Alertas</TabsTrigger>
+          <TabsTrigger value="rules"><BellRing className="w-4 h-4 mr-1.5" />Regras</TabsTrigger>
           <TabsTrigger value="logs"><ScrollText className="w-4 h-4 mr-1.5" />Logs</TabsTrigger>
           <TabsTrigger value="settings"><Settings className="w-4 h-4 mr-1.5" />Configurações</TabsTrigger>
         </TabsList>
@@ -340,6 +351,11 @@ function ComplianceModule() {
               )}
             </div>
           </Card>
+        </TabsContent>
+
+        {/* RULES */}
+        <TabsContent value="rules">
+          <NotificationRulesPanel />
         </TabsContent>
 
         {/* LOGS */}
@@ -763,3 +779,246 @@ function CertDetailsDrawer({
     </Sheet>
   );
 }
+
+/* ----------------------- NOTIFICATION RULES PANEL ----------------------- */
+
+type RuleRow = {
+  id: string;
+  certificate_type_id: string | null;
+  warning_days: number;
+  notify_on_expired: boolean;
+  notify_on_error: boolean;
+  notify_on_status_change: boolean;
+  active: boolean;
+  certificate_types: { id: string; code: string; short_name: string | null; name: string } | null;
+};
+
+type CertType = {
+  id: string;
+  code: string;
+  short_name: string | null;
+  name: string;
+};
+
+function NotificationRulesPanel() {
+  const qc = useQueryClient();
+  const listRules = useServerFn(listNotificationRules);
+  const listTypes = useServerFn(listCertificateTypesForRules);
+  const upsertFn = useServerFn(upsertNotificationRule);
+  const deleteFn = useServerFn(deleteNotificationRule);
+
+  const rulesQ = useQuery({ queryKey: ["compliance-rules"], queryFn: () => listRules() });
+  const typesQ = useQuery({ queryKey: ["compliance-cert-types"], queryFn: () => listTypes() });
+
+  const [editing, setEditing] = useState<Partial<RuleRow> | null>(null);
+
+  const upsertMut = useMutation({
+    mutationFn: (payload: {
+      id?: string;
+      certificate_type_id: string | null;
+      warning_days: number;
+      notify_on_expired: boolean;
+      notify_on_error: boolean;
+      notify_on_status_change: boolean;
+      active: boolean;
+    }) => upsertFn({ data: payload }),
+    onSuccess: () => {
+      toast.success("Regra salva.");
+      setEditing(null);
+      qc.invalidateQueries({ queryKey: ["compliance-rules"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => deleteFn({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Regra removida.");
+      qc.invalidateQueries({ queryKey: ["compliance-rules"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const rules = (rulesQ.data ?? []) as RuleRow[];
+  const types = (typesQ.data ?? []) as CertType[];
+
+  function openNew() {
+    setEditing({
+      certificate_type_id: null,
+      warning_days: 30,
+      notify_on_expired: true,
+      notify_on_error: true,
+      notify_on_status_change: true,
+      active: true,
+    });
+  }
+
+  return (
+    <Card className="p-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-base font-semibold">Regras de notificação</h3>
+          <p className="text-xs text-muted-foreground">
+            Configure quando alertas devem ser gerados para cada tipo de certidão.
+            Regras sem tipo se aplicam a todas as certidões (padrão).
+          </p>
+        </div>
+        <Button size="sm" onClick={openNew}>
+          <Plus className="w-4 h-4 mr-1.5" />Nova regra
+        </Button>
+      </div>
+
+      {rulesQ.isLoading ? (
+        <div className="text-sm text-muted-foreground py-6 text-center">Carregando…</div>
+      ) : rules.length === 0 ? (
+        <div className="text-sm text-muted-foreground py-6 text-center border border-dashed border-border rounded-md">
+          Nenhuma regra cadastrada. Clique em <strong>Nova regra</strong> para começar.
+        </div>
+      ) : (
+        <div className="divide-y divide-border/40 border border-border/60 rounded-md">
+          {rules.map((r) => (
+            <div key={r.id} className="flex items-center justify-between gap-3 p-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-medium text-sm truncate">
+                    {r.certificate_types?.short_name ?? r.certificate_types?.name ?? "Todas as certidões"}
+                  </span>
+                  {!r.active && (
+                    <Badge variant="outline" className="text-[10px]">Inativa</Badge>
+                  )}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1 flex items-center gap-3 flex-wrap">
+                  <span>Aviso: <strong>{r.warning_days}</strong> dias antes</span>
+                  {r.notify_on_expired && <span>• Vencidas</span>}
+                  {r.notify_on_error && <span>• Erros</span>}
+                  {r.notify_on_status_change && <span>• Mudanças de status</span>}
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Button size="sm" variant="ghost" onClick={() => setEditing(r)}>
+                  <Pencil className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    if (confirm("Remover esta regra?")) deleteMut.mutate(r.id);
+                  }}
+                  disabled={deleteMut.isPending}
+                >
+                  <Trash2 className="w-4 h-4 text-red-400" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editing?.id ? "Editar regra" : "Nova regra"}</DialogTitle>
+          </DialogHeader>
+          {editing && (
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label>Tipo de certidão</Label>
+                <Select
+                  value={editing.certificate_type_id ?? "__all__"}
+                  onValueChange={(v) =>
+                    setEditing({ ...editing, certificate_type_id: v === "__all__" ? null : v })
+                  }
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">Todas as certidões (padrão)</SelectItem>
+                    {types.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.short_name ?? t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Avisar quantos dias antes do vencimento</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={365}
+                  value={editing.warning_days ?? 30}
+                  onChange={(e) =>
+                    setEditing({ ...editing, warning_days: Number(e.target.value) || 0 })
+                  }
+                />
+              </div>
+
+              <div className="space-y-3 pt-2 border-t border-border/40">
+                <RuleSwitch
+                  label="Notificar quando vencer"
+                  checked={!!editing.notify_on_expired}
+                  onChange={(v) => setEditing({ ...editing, notify_on_expired: v })}
+                />
+                <RuleSwitch
+                  label="Notificar em caso de erro"
+                  checked={!!editing.notify_on_error}
+                  onChange={(v) => setEditing({ ...editing, notify_on_error: v })}
+                />
+                <RuleSwitch
+                  label="Notificar mudanças de status"
+                  checked={!!editing.notify_on_status_change}
+                  onChange={(v) => setEditing({ ...editing, notify_on_status_change: v })}
+                />
+                <RuleSwitch
+                  label="Regra ativa"
+                  checked={editing.active !== false}
+                  onChange={(v) => setEditing({ ...editing, active: v })}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setEditing(null)}>Cancelar</Button>
+            <Button
+              onClick={() => {
+                if (!editing) return;
+                upsertMut.mutate({
+                  id: editing.id,
+                  certificate_type_id: editing.certificate_type_id ?? null,
+                  warning_days: editing.warning_days ?? 30,
+                  notify_on_expired: !!editing.notify_on_expired,
+                  notify_on_error: !!editing.notify_on_error,
+                  notify_on_status_change: !!editing.notify_on_status_change,
+                  active: editing.active !== false,
+                });
+              }}
+              disabled={upsertMut.isPending}
+            >
+              {upsertMut.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
+
+function RuleSwitch({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <Label className="text-sm font-normal">{label}</Label>
+      <Switch checked={checked} onCheckedChange={onChange} />
+    </div>
+  );
+}
+

@@ -883,3 +883,93 @@ export const getCertificateDetails = createServerFn({ method: "POST" })
 
     return { cert, versions: versions ?? [], checks: checks ?? [] };
   });
+
+/* --------------------- NOTIFICATION RULES (CRUD) --------------------- */
+
+export const listNotificationRules = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase } = context;
+    const companyId = await resolveCompanyId(supabase, context.userId);
+    const { data, error } = await supabase
+      .from("notification_rules")
+      .select("*, certificate_types(id, code, short_name, name)")
+      .eq("company_id", companyId)
+      .order("created_at", { ascending: true });
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
+export const listCertificateTypesForRules = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase } = context;
+    await resolveCompanyId(supabase, context.userId);
+    const { data, error } = await supabase
+      .from("certificate_types")
+      .select("id, code, short_name, name, display_order")
+      .order("display_order", { ascending: true });
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
+export const upsertNotificationRule = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        id: z.string().uuid().optional(),
+        certificate_type_id: z.string().uuid().nullable(),
+        warning_days: z.number().int().min(0).max(365),
+        notify_on_expired: z.boolean(),
+        notify_on_error: z.boolean(),
+        notify_on_status_change: z.boolean(),
+        active: z.boolean(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    const { supabase } = context;
+    const { companyId } = await requireAdminEditor(supabase, context.userId);
+    const payload = {
+      company_id: companyId,
+      certificate_type_id: data.certificate_type_id,
+      warning_days: data.warning_days,
+      notify_on_expired: data.notify_on_expired,
+      notify_on_error: data.notify_on_error,
+      notify_on_status_change: data.notify_on_status_change,
+      active: data.active,
+    };
+    if (data.id) {
+      const { error } = await supabase
+        .from("notification_rules")
+        .update(payload)
+        .eq("id", data.id)
+        .eq("company_id", companyId);
+      if (error) throw new Error(error.message);
+      return { ok: true, id: data.id };
+    }
+    const { data: inserted, error } = await supabase
+      .from("notification_rules")
+      .insert(payload)
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    return { ok: true, id: inserted!.id };
+  });
+
+export const deleteNotificationRule = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ context, data }) => {
+    const { supabase } = context;
+    const { companyId } = await requireAdminEditor(supabase, context.userId);
+    const { error } = await supabase
+      .from("notification_rules")
+      .delete()
+      .eq("id", data.id)
+      .eq("company_id", companyId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
