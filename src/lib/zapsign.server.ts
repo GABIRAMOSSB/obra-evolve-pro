@@ -26,12 +26,18 @@ export function getZapSignConfig(): ZapSignConfig {
       "ZAPSIGN_API_TOKEN não configurado. Adicione o token nos Secrets do projeto.",
     );
   }
+  let baseUrl = (process.env.ZAPSIGN_API_BASE_URL || DEFAULT_BASE).replace(/\/+$/, "");
+  // Auto-append /api/v1 if missing (common misconfiguration).
+  if (!/\/api\/v\d+$/.test(baseUrl)) {
+    baseUrl = `${baseUrl}/api/v1`;
+  }
   return {
     token,
-    baseUrl: (process.env.ZAPSIGN_API_BASE_URL || DEFAULT_BASE).replace(/\/+$/, ""),
+    baseUrl,
     webhookSecret: process.env.ZAPSIGN_WEBHOOK_SECRET,
   };
 }
+
 
 export function maskToken(token: string): string {
   if (!token || token.length < 8) return "••••••••";
@@ -71,12 +77,15 @@ export async function zapsignRequest<T = unknown>(
       parsed = text;
     }
     if (!res.ok) {
+      const isHtml = text.trim().startsWith("<");
       const msg =
         (parsed && typeof parsed === "object" && "message" in parsed
           ? String((parsed as { message: unknown }).message)
           : null) ||
-        (typeof parsed === "string" ? parsed : null) ||
-        `ZapSign HTTP ${res.status}`;
+        (!isHtml && typeof parsed === "string" ? parsed : null) ||
+        `ZapSign HTTP ${res.status} em ${opts.method ?? "GET"} ${url}${
+          isHtml ? " (endpoint não encontrado — verifique ZAPSIGN_API_BASE_URL)" : ""
+        }`;
       throw new Error(msg);
     }
     return parsed as T;
