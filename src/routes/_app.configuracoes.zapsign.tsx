@@ -229,6 +229,78 @@ function ZapSignSettingsPage() {
         )}
       </Card>
 
+      {settings && (
+        <Card className="p-6 space-y-4">
+          <div className="flex items-center gap-2">
+            <Bell className="h-4 w-4 text-primary" />
+            <h2 className="font-display text-base font-semibold">Lembretes automáticos</h2>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Reenvio periódico do link de assinatura para signatários pendentes. Um job diário avalia a cadência abaixo.
+          </p>
+          <Toggle
+            label="Ativar lembretes automáticos"
+            description="Quando ativo, signatários pendentes recebem o link novamente conforme a cadência."
+            checked={settings.reminder_enabled}
+            onChange={(v) => updateMut.mutate({ reminder_enabled: v })}
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Intervalo (dias)</Label>
+              <Input
+                type="number"
+                min={1}
+                max={30}
+                defaultValue={settings.reminder_interval_days}
+                onBlur={(e) => {
+                  const v = Math.max(1, Math.min(30, Number(e.target.value) || 3));
+                  if (v !== settings.reminder_interval_days)
+                    updateMut.mutate({ reminder_interval_days: v });
+                }}
+                disabled={!settings.reminder_enabled}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Máx. de lembretes</Label>
+              <Input
+                type="number"
+                min={1}
+                max={10}
+                defaultValue={settings.reminder_max_count}
+                onBlur={(e) => {
+                  const v = Math.max(1, Math.min(10, Number(e.target.value) || 3));
+                  if (v !== settings.reminder_max_count)
+                    updateMut.mutate({ reminder_max_count: v });
+                }}
+                disabled={!settings.reminder_enabled}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Canal</Label>
+              <Select
+                value={settings.reminder_channel}
+                onValueChange={(v) =>
+                  updateMut.mutate({ reminder_channel: v as "whatsapp" | "email" | "sms" })
+                }
+                disabled={!settings.reminder_enabled}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                  <SelectItem value="email">E-mail</SelectItem>
+                  <SelectItem value="sms">SMS</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="text-[11px] text-muted-foreground">
+            Configure o cron diário no banco apontando para <code>/api/public/zapsign-reminders?secret=&lt;ZAPSIGN_WEBHOOK_SECRET&gt;</code>.
+          </div>
+        </Card>
+      )}
+
       <Card className="p-6 space-y-4">
         <div className="flex items-center gap-2">
           <Webhook className="h-4 w-4 text-primary" />
