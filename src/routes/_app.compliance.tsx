@@ -353,6 +353,11 @@ function ComplianceModule() {
           </Card>
         </TabsContent>
 
+        {/* RULES */}
+        <TabsContent value="rules">
+          <NotificationRulesPanel />
+        </TabsContent>
+
         {/* LOGS */}
         <TabsContent value="logs">
           <Card className="p-4">
