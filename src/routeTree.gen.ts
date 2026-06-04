@@ -31,6 +31,7 @@ import { Route as ApiPublicZapsignWebhookRouteImport } from './routes/api.public
 import { Route as ApiPublicZapsignRemindersRouteImport } from './routes/api.public.zapsign-reminders'
 import { Route as AppInsumosImportarRouteImport } from './routes/_app.insumos.importar'
 import { Route as AppConfiguracoesZapsignRouteImport } from './routes/_app.configuracoes.zapsign'
+import { Route as AppAssinaturasRelatorioRouteImport } from './routes/_app.assinaturas.relatorio'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -144,12 +145,17 @@ const AppConfiguracoesZapsignRoute = AppConfiguracoesZapsignRouteImport.update({
   path: '/configuracoes/zapsign',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAssinaturasRelatorioRoute = AppAssinaturasRelatorioRouteImport.update({
+  id: '/relatorio',
+  path: '/relatorio',
+  getParentRoute: () => AppAssinaturasRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/assinaturas': typeof AppAssinaturasRoute
+  '/assinaturas': typeof AppAssinaturasRouteWithChildren
   '/backup': typeof AppBackupRoute
   '/centros-custo': typeof AppCentrosCustoRoute
   '/comparativo-composicao': typeof AppComparativoComposicaoRoute
@@ -163,6 +169,7 @@ export interface FileRoutesByFullPath {
   '/parametros-financeiros': typeof AppParametrosFinanceirosRoute
   '/realizado': typeof AppRealizadoRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/assinaturas/relatorio': typeof AppAssinaturasRelatorioRoute
   '/configuracoes/zapsign': typeof AppConfiguracoesZapsignRoute
   '/insumos/importar': typeof AppInsumosImportarRoute
   '/api/public/zapsign-reminders': typeof ApiPublicZapsignRemindersRoute
@@ -171,7 +178,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/assinaturas': typeof AppAssinaturasRoute
+  '/assinaturas': typeof AppAssinaturasRouteWithChildren
   '/backup': typeof AppBackupRoute
   '/centros-custo': typeof AppCentrosCustoRoute
   '/comparativo-composicao': typeof AppComparativoComposicaoRoute
@@ -186,6 +193,7 @@ export interface FileRoutesByTo {
   '/realizado': typeof AppRealizadoRoute
   '/invite/$token': typeof InviteTokenRoute
   '/': typeof AppIndexRoute
+  '/assinaturas/relatorio': typeof AppAssinaturasRelatorioRoute
   '/configuracoes/zapsign': typeof AppConfiguracoesZapsignRoute
   '/insumos/importar': typeof AppInsumosImportarRoute
   '/api/public/zapsign-reminders': typeof ApiPublicZapsignRemindersRoute
@@ -196,7 +204,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/_app/assinaturas': typeof AppAssinaturasRoute
+  '/_app/assinaturas': typeof AppAssinaturasRouteWithChildren
   '/_app/backup': typeof AppBackupRoute
   '/_app/centros-custo': typeof AppCentrosCustoRoute
   '/_app/comparativo-composicao': typeof AppComparativoComposicaoRoute
@@ -211,6 +219,7 @@ export interface FileRoutesById {
   '/_app/realizado': typeof AppRealizadoRoute
   '/invite/$token': typeof InviteTokenRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/assinaturas/relatorio': typeof AppAssinaturasRelatorioRoute
   '/_app/configuracoes/zapsign': typeof AppConfiguracoesZapsignRoute
   '/_app/insumos/importar': typeof AppInsumosImportarRoute
   '/api/public/zapsign-reminders': typeof ApiPublicZapsignRemindersRoute
@@ -236,6 +245,7 @@ export interface FileRouteTypes {
     | '/parametros-financeiros'
     | '/realizado'
     | '/invite/$token'
+    | '/assinaturas/relatorio'
     | '/configuracoes/zapsign'
     | '/insumos/importar'
     | '/api/public/zapsign-reminders'
@@ -259,6 +269,7 @@ export interface FileRouteTypes {
     | '/realizado'
     | '/invite/$token'
     | '/'
+    | '/assinaturas/relatorio'
     | '/configuracoes/zapsign'
     | '/insumos/importar'
     | '/api/public/zapsign-reminders'
@@ -283,6 +294,7 @@ export interface FileRouteTypes {
     | '/_app/realizado'
     | '/invite/$token'
     | '/_app/'
+    | '/_app/assinaturas/relatorio'
     | '/_app/configuracoes/zapsign'
     | '/_app/insumos/importar'
     | '/api/public/zapsign-reminders'
@@ -454,8 +466,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppConfiguracoesZapsignRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/assinaturas/relatorio': {
+      id: '/_app/assinaturas/relatorio'
+      path: '/relatorio'
+      fullPath: '/assinaturas/relatorio'
+      preLoaderRoute: typeof AppAssinaturasRelatorioRouteImport
+      parentRoute: typeof AppAssinaturasRoute
+    }
   }
 }
+
+interface AppAssinaturasRouteChildren {
+  AppAssinaturasRelatorioRoute: typeof AppAssinaturasRelatorioRoute
+}
+
+const AppAssinaturasRouteChildren: AppAssinaturasRouteChildren = {
+  AppAssinaturasRelatorioRoute: AppAssinaturasRelatorioRoute,
+}
+
+const AppAssinaturasRouteWithChildren = AppAssinaturasRoute._addFileChildren(
+  AppAssinaturasRouteChildren,
+)
 
 interface AppInsumosRouteChildren {
   AppInsumosImportarRoute: typeof AppInsumosImportarRoute
@@ -470,7 +501,7 @@ const AppInsumosRouteWithChildren = AppInsumosRoute._addFileChildren(
 )
 
 interface AppRouteChildren {
-  AppAssinaturasRoute: typeof AppAssinaturasRoute
+  AppAssinaturasRoute: typeof AppAssinaturasRouteWithChildren
   AppBackupRoute: typeof AppBackupRoute
   AppCentrosCustoRoute: typeof AppCentrosCustoRoute
   AppComparativoComposicaoRoute: typeof AppComparativoComposicaoRoute
@@ -488,7 +519,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
-  AppAssinaturasRoute: AppAssinaturasRoute,
+  AppAssinaturasRoute: AppAssinaturasRouteWithChildren,
   AppBackupRoute: AppBackupRoute,
   AppCentrosCustoRoute: AppCentrosCustoRoute,
   AppComparativoComposicaoRoute: AppComparativoComposicaoRoute,

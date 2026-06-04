@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -42,6 +42,7 @@ import {
   Ban,
   FileSignature,
   Send,
+  BarChart3,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_app/assinaturas")({
@@ -130,6 +131,12 @@ function AssinaturasPage() {
             Acompanhe todos os documentos enviados para assinatura via ZapSign.
           </p>
         </div>
+        <Button variant="outline" size="sm" asChild>
+          <Link to="/assinaturas/relatorio">
+            <BarChart3 className="h-4 w-4 mr-1" />
+            Relatório
+          </Link>
+        </Button>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
