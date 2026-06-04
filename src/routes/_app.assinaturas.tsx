@@ -579,8 +579,6 @@ function RequestDetailDialog({
             </DialogContent>
           </Dialog>
         ) : null}
-          </div>
-        )}
       </DialogContent>
     </Dialog>
   );
