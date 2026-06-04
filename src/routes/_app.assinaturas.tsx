@@ -103,7 +103,34 @@ function AssinaturasPage() {
           obraId: obraFilter || undefined,
         },
       }),
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
   });
+
+  // Realtime: refletir webhook do ZapSign assim que o status muda.
+  useEffect(() => {
+    const channel = supabase
+      .channel("signature-updates")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "signature_requests" },
+        () => {
+          qc.invalidateQueries({ queryKey: ["signature-requests"] });
+          qc.invalidateQueries({ queryKey: ["signature-request"] });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "signature_signers" },
+        () => {
+          qc.invalidateQueries({ queryKey: ["signature-request"] });
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [qc]);
 
   const counters = useMemo(() => {
     const c = { total: rows.length, signed: 0, pending: 0, refused: 0 };
