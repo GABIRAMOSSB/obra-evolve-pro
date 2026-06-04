@@ -192,29 +192,393 @@ export type Database = {
           },
         ]
       }
-      companies: {
+      certificate_checks: {
         Row: {
-          created_at: string
+          certificate_type_id: string
+          company_certificate_id: string | null
+          company_id: string
+          completed_at: string | null
+          created_by: string | null
+          duration_ms: number | null
+          error_code: string | null
+          error_message: string | null
+          execution_mode: string
+          http_status: number | null
           id: string
+          provider: string | null
+          provider_service_key: string | null
+          raw_response_json: Json | null
+          request_reference: string | null
+          result_summary: string | null
+          started_at: string
+          status: string
+          trigger_type: string
+        }
+        Insert: {
+          certificate_type_id: string
+          company_certificate_id?: string | null
+          company_id: string
+          completed_at?: string | null
+          created_by?: string | null
+          duration_ms?: number | null
+          error_code?: string | null
+          error_message?: string | null
+          execution_mode: string
+          http_status?: number | null
+          id?: string
+          provider?: string | null
+          provider_service_key?: string | null
+          raw_response_json?: Json | null
+          request_reference?: string | null
+          result_summary?: string | null
+          started_at?: string
+          status: string
+          trigger_type: string
+        }
+        Update: {
+          certificate_type_id?: string
+          company_certificate_id?: string | null
+          company_id?: string
+          completed_at?: string | null
+          created_by?: string | null
+          duration_ms?: number | null
+          error_code?: string | null
+          error_message?: string | null
+          execution_mode?: string
+          http_status?: number | null
+          id?: string
+          provider?: string | null
+          provider_service_key?: string | null
+          raw_response_json?: Json | null
+          request_reference?: string | null
+          result_summary?: string | null
+          started_at?: string
+          status?: string
+          trigger_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificate_checks_certificate_type_id_fkey"
+            columns: ["certificate_type_id"]
+            isOneToOne: false
+            referencedRelation: "certificate_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificate_checks_company_certificate_id_fkey"
+            columns: ["company_certificate_id"]
+            isOneToOne: false
+            referencedRelation: "company_certificates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificate_checks_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      certificate_types: {
+        Row: {
+          active: boolean
+          automatic_enabled: boolean
+          category: string
+          city: string | null
+          code: string
+          created_at: string
+          default_check_frequency_days: number
+          default_warning_days: number
+          description: string | null
+          display_order: number
+          id: string
+          issuing_authority: string
+          manual_upload_enabled: boolean
           name: string
-          owner_id: string
+          official_portal_url: string | null
+          provider: string | null
+          provider_service_key: string | null
+          scope: string
+          short_name: string
+          state: string | null
           updated_at: string
         }
         Insert: {
+          active?: boolean
+          automatic_enabled?: boolean
+          category: string
+          city?: string | null
+          code: string
           created_at?: string
+          default_check_frequency_days?: number
+          default_warning_days?: number
+          description?: string | null
+          display_order?: number
           id?: string
-          name?: string
-          owner_id: string
+          issuing_authority: string
+          manual_upload_enabled?: boolean
+          name: string
+          official_portal_url?: string | null
+          provider?: string | null
+          provider_service_key?: string | null
+          scope: string
+          short_name: string
+          state?: string | null
           updated_at?: string
         }
         Update: {
+          active?: boolean
+          automatic_enabled?: boolean
+          category?: string
+          city?: string | null
+          code?: string
           created_at?: string
+          default_check_frequency_days?: number
+          default_warning_days?: number
+          description?: string | null
+          display_order?: number
           id?: string
+          issuing_authority?: string
+          manual_upload_enabled?: boolean
           name?: string
-          owner_id?: string
+          official_portal_url?: string | null
+          provider?: string | null
+          provider_service_key?: string | null
+          scope?: string
+          short_name?: string
+          state?: string | null
           updated_at?: string
         }
         Relationships: []
+      }
+      certificate_versions: {
+        Row: {
+          api_provider: string | null
+          authentication_code: string | null
+          certificate_number: string | null
+          company_certificate_id: string
+          created_at: string
+          created_by: string | null
+          expiration_date: string | null
+          file_hash: string | null
+          file_name: string | null
+          file_size: number | null
+          id: string
+          issue_date: string | null
+          mime_type: string | null
+          normalized_payload_json: Json | null
+          provider_service_key: string | null
+          raw_payload_json: Json | null
+          source_type: string | null
+          status: string | null
+          status_message: string | null
+          storage_path: string | null
+          version_number: number
+        }
+        Insert: {
+          api_provider?: string | null
+          authentication_code?: string | null
+          certificate_number?: string | null
+          company_certificate_id: string
+          created_at?: string
+          created_by?: string | null
+          expiration_date?: string | null
+          file_hash?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          id?: string
+          issue_date?: string | null
+          mime_type?: string | null
+          normalized_payload_json?: Json | null
+          provider_service_key?: string | null
+          raw_payload_json?: Json | null
+          source_type?: string | null
+          status?: string | null
+          status_message?: string | null
+          storage_path?: string | null
+          version_number: number
+        }
+        Update: {
+          api_provider?: string | null
+          authentication_code?: string | null
+          certificate_number?: string | null
+          company_certificate_id?: string
+          created_at?: string
+          created_by?: string | null
+          expiration_date?: string | null
+          file_hash?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          id?: string
+          issue_date?: string | null
+          mime_type?: string | null
+          normalized_payload_json?: Json | null
+          provider_service_key?: string | null
+          raw_payload_json?: Json | null
+          source_type?: string | null
+          status?: string | null
+          status_message?: string | null
+          storage_path?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificate_versions_company_certificate_id_fkey"
+            columns: ["company_certificate_id"]
+            isOneToOne: false
+            referencedRelation: "company_certificates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      companies: {
+        Row: {
+          active: boolean
+          address: string | null
+          city: string | null
+          cnpj: string | null
+          created_at: string
+          id: string
+          legal_name: string | null
+          municipal_registration: string | null
+          name: string
+          owner_id: string
+          state: string | null
+          state_registration: string | null
+          trade_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          address?: string | null
+          city?: string | null
+          cnpj?: string | null
+          created_at?: string
+          id?: string
+          legal_name?: string | null
+          municipal_registration?: string | null
+          name?: string
+          owner_id: string
+          state?: string | null
+          state_registration?: string | null
+          trade_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          address?: string | null
+          city?: string | null
+          cnpj?: string | null
+          created_at?: string
+          id?: string
+          legal_name?: string | null
+          municipal_registration?: string | null
+          name?: string
+          owner_id?: string
+          state?: string | null
+          state_registration?: string | null
+          trade_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      company_certificates: {
+        Row: {
+          api_provider: string | null
+          authentication_code: string | null
+          automatic_update_enabled: boolean
+          certificate_number: string | null
+          certificate_type_id: string
+          company_id: string
+          created_at: string
+          current_version_id: string | null
+          expiration_date: string | null
+          file_available: boolean
+          id: string
+          issue_date: string | null
+          last_checked_at: string | null
+          last_error_at: string | null
+          last_error_message: string | null
+          last_success_at: string | null
+          manual_review_required: boolean
+          next_check_at: string | null
+          source_type: string | null
+          status: string
+          status_message: string | null
+          updated_at: string
+        }
+        Insert: {
+          api_provider?: string | null
+          authentication_code?: string | null
+          automatic_update_enabled?: boolean
+          certificate_number?: string | null
+          certificate_type_id: string
+          company_id: string
+          created_at?: string
+          current_version_id?: string | null
+          expiration_date?: string | null
+          file_available?: boolean
+          id?: string
+          issue_date?: string | null
+          last_checked_at?: string | null
+          last_error_at?: string | null
+          last_error_message?: string | null
+          last_success_at?: string | null
+          manual_review_required?: boolean
+          next_check_at?: string | null
+          source_type?: string | null
+          status?: string
+          status_message?: string | null
+          updated_at?: string
+        }
+        Update: {
+          api_provider?: string | null
+          authentication_code?: string | null
+          automatic_update_enabled?: boolean
+          certificate_number?: string | null
+          certificate_type_id?: string
+          company_id?: string
+          created_at?: string
+          current_version_id?: string | null
+          expiration_date?: string | null
+          file_available?: boolean
+          id?: string
+          issue_date?: string | null
+          last_checked_at?: string | null
+          last_error_at?: string | null
+          last_error_message?: string | null
+          last_success_at?: string | null
+          manual_review_required?: boolean
+          next_check_at?: string | null
+          source_type?: string | null
+          status?: string
+          status_message?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_certificates_certificate_type_id_fkey"
+            columns: ["certificate_type_id"]
+            isOneToOne: false
+            referencedRelation: "certificate_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_certificates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_certificates_current_version_fk"
+            columns: ["current_version_id"]
+            isOneToOne: false
+            referencedRelation: "certificate_versions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       company_invites: {
         Row: {
@@ -313,6 +677,117 @@ export type Database = {
             foreignKeyName: "company_workspaces_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      compliance_alerts: {
+        Row: {
+          alert_type: string
+          certificate_type_id: string | null
+          company_certificate_id: string | null
+          company_id: string
+          created_at: string
+          id: string
+          message: string | null
+          read: boolean
+          resolved: boolean
+          resolved_at: string | null
+          severity: string
+          title: string
+        }
+        Insert: {
+          alert_type: string
+          certificate_type_id?: string | null
+          company_certificate_id?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          read?: boolean
+          resolved?: boolean
+          resolved_at?: string | null
+          severity: string
+          title: string
+        }
+        Update: {
+          alert_type?: string
+          certificate_type_id?: string | null
+          company_certificate_id?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          read?: boolean
+          resolved?: boolean
+          resolved_at?: string | null
+          severity?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_alerts_certificate_type_id_fkey"
+            columns: ["certificate_type_id"]
+            isOneToOne: false
+            referencedRelation: "certificate_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compliance_alerts_company_certificate_id_fkey"
+            columns: ["company_certificate_id"]
+            isOneToOne: false
+            referencedRelation: "company_certificates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compliance_alerts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      compliance_audit_logs: {
+        Row: {
+          action: string
+          company_id: string | null
+          created_at: string
+          description: string | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          metadata_json: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          company_id?: string | null
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          metadata_json?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          company_id?: string | null
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          metadata_json?: Json | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_audit_logs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
@@ -947,6 +1422,48 @@ export type Database = {
           },
         ]
       }
+      integration_settings: {
+        Row: {
+          created_at: string
+          endpoint_base_url: string | null
+          id: string
+          last_health_check_at: string | null
+          last_health_check_status: string | null
+          notes: string | null
+          production_enabled: boolean
+          provider: string
+          sandbox_mode: boolean
+          token_configured: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          endpoint_base_url?: string | null
+          id?: string
+          last_health_check_at?: string | null
+          last_health_check_status?: string | null
+          notes?: string | null
+          production_enabled?: boolean
+          provider: string
+          sandbox_mode?: boolean
+          token_configured?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          endpoint_base_url?: string | null
+          id?: string
+          last_health_check_at?: string | null
+          last_health_check_status?: string | null
+          notes?: string | null
+          production_enabled?: boolean
+          provider?: string
+          sandbox_mode?: boolean
+          token_configured?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       nfe_item_apropriacoes: {
         Row: {
           centro_custo: string | null
@@ -1209,6 +1726,60 @@ export type Database = {
           xml_content?: string | null
         }
         Relationships: []
+      }
+      notification_rules: {
+        Row: {
+          active: boolean
+          certificate_type_id: string | null
+          company_id: string
+          created_at: string
+          id: string
+          notify_on_error: boolean
+          notify_on_expired: boolean
+          notify_on_status_change: boolean
+          updated_at: string
+          warning_days: number
+        }
+        Insert: {
+          active?: boolean
+          certificate_type_id?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          notify_on_error?: boolean
+          notify_on_expired?: boolean
+          notify_on_status_change?: boolean
+          updated_at?: string
+          warning_days: number
+        }
+        Update: {
+          active?: boolean
+          certificate_type_id?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          notify_on_error?: boolean
+          notify_on_expired?: boolean
+          notify_on_status_change?: boolean
+          updated_at?: string
+          warning_days?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_rules_certificate_type_id_fkey"
+            columns: ["certificate_type_id"]
+            isOneToOne: false
+            referencedRelation: "certificate_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_rules_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       parametros_financeiros: {
         Row: {
@@ -1756,22 +2327,23 @@ export type Database = {
           role: Database["public"]["Enums"]["company_role"]
         }[]
       }
-      has_company_role: {
-        Args: {
-          _company: string
-          _role: Database["public"]["Enums"]["company_role"]
-          _user: string
-        }
-        Returns: boolean
-      }
+      has_company_role:
+        | { Args: { _company_id: string; _roles: string[] }; Returns: boolean }
+        | {
+            Args: {
+              _company: string
+              _role: Database["public"]["Enums"]["company_role"]
+              _user: string
+            }
+            Returns: boolean
+          }
       import_sinapi_batch: {
         Args: { _company: string; _rows: Json; _versao: string }
         Returns: Json
       }
-      is_company_member: {
-        Args: { _company: string; _user: string }
-        Returns: boolean
-      }
+      is_company_member:
+        | { Args: { _company_id: string }; Returns: boolean }
+        | { Args: { _company: string; _user: string }; Returns: boolean }
       registrar_entrada_nfe: {
         Args: { _nota_id: string; _obra_id?: string }
         Returns: number

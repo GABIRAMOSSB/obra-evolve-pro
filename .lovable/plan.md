@@ -1,105 +1,89 @@
+## Módulo Governança e Compliance — Central de Certidões
 
-# Importação do modelo "Orçamento Sintético"
+Vou implementar um módulo completo de compliance documental para a Solv Construtora, em **modo sandbox** desde o início, sem quebrar nenhuma funcionalidade existente do aplicativo (assinaturas, obras, NF-e, etc).
 
-## 1. Detecção automática do modelo no upload
+> **Importante sobre arquitetura:** Este projeto roda em **TanStack Start** (não Next.js). A diretriz padrão da stack é usar **server functions (`createServerFn`)** para lógica de backend em vez de Supabase Edge Functions. Vou seguir esse padrão (que é o correto para o projeto), mas mantendo exatamente a separação de responsabilidades que você descreveu (adapter, update, update-all, scheduled, upload, health-check). O token da InfoSimples ficará só nos Secrets do backend, lido via `process.env` dentro do handler — nunca exposto ao frontend. Se preferir Edge Functions Supabase mesmo assim, me avise antes de eu começar.
 
-No `src/lib/excel.ts` (`parseExcel`):
+---
 
-- Em vez de pegar sempre `wb.SheetNames[0]`, varrer todas as abas.
-- Se existir aba cujo nome normalizado contenha `orcamento sintetico`, classificar como **`modelo_orcamento_sintetico`** e usar essa aba.
-- Caso contrário, manter fluxo atual → **`modelo_antigo`**.
-- Retornar `modelo: "modelo_antigo" | "modelo_orcamento_sintetico"` no `ParseResult`.
+### 1. Banco de dados (migration única)
 
-## 2. Parser do novo modelo
+Reutilizo a tabela `companies` existente (já tem Solv cadastrada via `company_members`). Adiciono colunas que faltam (`cnpj`, `legal_name`, `trade_name`, `city`, `state`, `address`, etc) sem quebrar nada.
 
-Novo módulo `src/lib/excel-sintetico.ts`:
+Novas tabelas (todas com RLS, escopadas por `company_id` + `has_role`):
+- `certificate_types` — catálogo extensível
+- `company_certificates` — estado atual (1 por empresa+tipo)
+- `certificate_versions` — histórico imutável com hash
+- `certificate_checks` — log de cada tentativa
+- `integration_settings` — sandbox/produção, sem token
+- `notification_rules` — regras de alerta
+- `compliance_alerts` — alertas gerados (prefixo para não colidir)
+- `compliance_audit_logs` — trilha de auditoria
+- `user_roles` + enum `app_role` (`admin`, `compliance_manager`, `viewer`) + função `has_role` — padrão Lovable
 
-- Detecta cabeçalho de 2 linhas: linha 1 com `Item, Código, Banco, Descrição, Und, Quant., Valor Unit, Valor Unit com BDI, Total`; linha 2 com sub-cabeçalhos `M.O. | MAT. | Total` sob "Valor Unit com BDI" e sob "Total".
-- Mapeia colunas para:
-  - `item`, `codigo`, `banco`, `descricao`, `und`, `quantidade`
-  - `valorUnitSemBDI`
-  - `valorUnitMOcomBDI`, `valorUnitMATcomBDI`, `valorUnitTotalcomBDI` (= `precoUnitarioVenda`)
-  - `totalMO`, `totalMAT`, `totalGeral` (= `precoVendaTotal`)
-- Classifica linha:
-  - **Etapa/grupo**: item + descrição preenchidos, sem código/banco/und/quantidade.
-  - **Composição**: item + código + banco + descrição + und + quantidade.
-- Calcula `nivelHierarquico` pelos segmentos do item ("1.2.3" → nível 3) e `itemPai` (`1.2`).
-- Ignora linhas totalmente vazias; coleta `skipped` com motivo igual ao parser antigo.
+Seeds: 9 certidões iniciais no catálogo + linhas em `company_certificates` para Solv + regras de notificação padrão (30/15/7/1/0).
 
-## 3. Modelo de dados (BudgetRow + persistência)
+Bucket privado **`company-certificates`** com policies por `company_id`.
 
-Estender `BudgetRow` em `src/lib/types.ts` (campos opcionais para não quebrar modelo antigo):
+### 2. Server functions (substituem as edge functions)
 
-```
-modelo?: "modelo_antigo" | "modelo_orcamento_sintetico"
-nomeAba?: string
-valorUnitMO?: number
-valorUnitMaterial?: number
-totalMO?: number
-totalMaterial?: number
-precoVendaTotal?: number     // = total atual quando sintético
-impostosNota?: number        // calculado
-lucroPlanejado?: number      // calculado
-custoMeta?: number           // calculado
-itemPai?: string
-nivelHierarquico?: number
-tipoLinha?: "etapa" | "composicao"
-```
+Em `src/lib/compliance/`:
+- `infosimples-adapter.server.ts` — wrapper isolado, lê `INFOSIMPLES_TOKEN` de `process.env` dentro do handler, retorno normalizado, suporta sandbox com payloads simulados realistas
+- `compliance.functions.ts` expõe:
+  - `updateCertificate` — atualiza uma certidão
+  - `updateAllCertificates` — atualiza todas as automáticas
+  - `uploadManualCertificate` — recebe PDF, valida MIME/tamanho, calcula hash, evita duplicata
+  - `getSignedCertificateUrl` — URL assinada temporária
+  - `runComplianceHealthCheck` — verifica config sem revelar token
+  - `clearSandboxData` — limpa dados simulados (só com sandbox=true)
+  - `requestProductionActivation` — registra solicitação, NÃO ativa
+- Rota pública `src/routes/api.public.compliance-scheduled.ts` para o cron diário 06:00 BRT (registrado via `pg_cron`, mas só executando em modo sandbox até produção ser liberada manualmente)
 
-Persistência: o workspace já guarda `rows` em JSONB (`company_workspaces.workspace`), então não precisa migration — os novos campos viajam junto. Adicionar `modelo` e `nomeAba` em `ProjectData`.
+### 3. Frontend (qualidade Figma sênior)
 
-## 4. Cálculos (impostos, lucro, custo meta)
+Item de menu novo no `AppSidebar` agrupado como **Governança e Compliance** com submenu (Visão Geral, Central de Certidões, Histórico, Alertas, Logs, Configurações).
 
-Em `src/lib/calc.ts`, nova função `computeMetaCalc(row, params)`:
+Rotas em `src/routes/_app.compliance.*.tsx`:
+- `_app.compliance.tsx` — layout pai com badge sandbox fixo
+- `_app.compliance.index.tsx` — **Visão Geral**: KPIs, barra de saúde documental, próximos vencimentos, atividade recente
+- `_app.compliance.certidoes.tsx` — **Central**: tabela premium + toggle cards, filtros, drawer lateral de detalhes com timeline
+- `_app.compliance.historico.tsx` — versões com hash e comparação
+- `_app.compliance.alertas.tsx` — agrupado por gravidade
+- `_app.compliance.logs.tsx` — checks e auditoria
+- `_app.compliance.configuracoes.tsx` — admin: integração, frequência, alertas, catálogo
 
-```
-tributos% = ISS + PIS + COFINS + IRPJ + CSLL  (já em parametros_financeiros)
-impostosNota   = precoVendaTotal * tributos%
-lucroPlanejado = precoVendaTotal * lucroPretendido%
-custoMeta      = precoVendaTotal - impostosNota - lucroPlanejado
-```
+Componentes reutilizáveis em `src/components/compliance/`: `StatusBadge`, `CertificateRow`, `CertificateDrawer`, `ManualUploadDialog`, `SandboxBanner`, `HealthBar`.
 
-Aplicado no momento da importação (snapshot) **e** recalculado em runtime quando os parâmetros mudarem (mesmo padrão usado hoje em `_app.realizado.tsx`).
+Tokens de cor seguem o sistema atual (`primary`, `success`, `warning`, `destructive`, `measure`, `muted`) — mesmo padrão da página de Atividades que já normalizamos. Tipografia, espaçamento 8px, cartões discretos, sem gradientes artificiais.
 
-## 5. UI — importação e conferência
+### 4. Segurança
 
-Em `_app.index.tsx` / fluxo de upload (`ObraApp`):
+- RLS em todas as tabelas com `has_role` (security definer, padrão Lovable)
+- Bucket privado, downloads só via URL assinada
+- Validação de permissão também dentro de cada server function
+- `INFOSIMPLES_TOKEN` só nos Secrets; só leio dentro do `.handler()`
+- Sandbox como default; ativação de produção exige confirmação dupla + role admin
+- Auditoria em uploads, downloads, atualizações, mudança de config, ativação
 
-- Após o `parseExcel`, mostrar diálogo de conferência com:
-  - Nome do arquivo, **modelo detectado**, aba importada,
-  - # etapas, # composições, valor total importado (somatório das composições),
-  - # linhas ignoradas (lista expansível já existente).
+### 5. Modo sandbox
 
-## 6. Comparativo por composição
+- Banner discreto no topo do módulo
+- Adapter retorna payloads simulados realistas (Solv: CND válida, FGTS vencendo, Municipal manual, etc)
+- Botão "Limpar dados simulados" visível só em sandbox
+- Cron não chama API externa enquanto sandbox=true
 
-Em `_app.realizado.tsx` (ou aba dedicada), para obras com `modelo_orcamento_sintetico`:
+### 6. O que NÃO vou fazer
 
-- Adicionar colunas: Preço Venda, Impostos Nota, Lucro Planejado, Custo Meta, MO Prevista, Material Previsto, Previsto Técnico, MO Realizada, Material Consumido, Equipamento Apropriado, Realizado Total, **Saldo Meta**, Lucro Atual, Margem Atual %, Status.
-- Status:
-  - `Saldo Meta > 20% custoMeta` → verde "Dentro da Meta"
-  - `0 < Saldo Meta ≤ 20% custoMeta` → amarelo "Atenção"
-  - `Saldo Meta ≤ 0` → vermelho "Acima do Custo Meta"
-- Botão **"Ver memória de cálculo"** abre dialog com: Preço Venda Total, % e R$ de tributos, % e R$ de lucro, Custo Meta, Realizado Total, Saldo Meta, Lucro Atual, Margem Atual.
+- Não alterar/quebrar nada existente (assinaturas ZapSign, obras, NF-e, etc)
+- Não criar mock dizendo "API conectada" sem token
+- Não colocar token no frontend nem em `VITE_*`
+- Não ativar produção automaticamente
+- Não usar URLs reais da InfoSimples (deixo `provider_service_key` configurável + comentário onde mapear)
 
-Para obras com `modelo_antigo`, manter a tela como está hoje.
+### Entrega
 
-## 7. Compatibilidade
+Ao final apresento: tabelas criadas, server functions criadas, onde cadastrar `INFOSIMPLES_TOKEN`, confirmação de sandbox ativo, e checklist de validações executadas.
 
-- `parseExcel` continua aceitando o modelo antigo sem mudança no chamador.
-- `BudgetRow.modelo` ausente ⇒ tratar como `modelo_antigo`.
-- Telas existentes que leem `row.total` seguem funcionando (no sintético, `total = precoVendaTotal`).
+---
 
-## 8. Ordem de execução
-
-1. `excel-sintetico.ts` + detecção em `parseExcel` (retorna `modelo`/`nomeAba`).
-2. Extensão de `BudgetRow` e `ProjectData`.
-3. `computeMetaCalc` em `calc.ts`.
-4. Diálogo de conferência pós-upload com modelo detectado.
-5. Comparativo por composição + memória de cálculo (apenas modelo sintético).
-
-## 9. Fora de escopo desta entrega
-
-- Vínculo automático etapa↔centro de custo (continua manual via `CentroCustoSelect`).
-- DRE da obra / dashboard de margem por centro (próxima fase, depois que o comparativo estiver validado).
-- Base MRP (depende de quantidades de insumo por composição, que o sintético não traz).
-- Migração retroativa de obras antigas para o novo schema de colunas.
+**Escopo é grande (≈ 15-20 arquivos novos + 1 migration robusta).** Posso começar pela migration + estrutura básica e ir construindo as telas em sequência. Confirma para eu seguir?
