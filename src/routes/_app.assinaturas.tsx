@@ -174,13 +174,13 @@ function AssinaturasPage() {
         </Card>
         <Card className="p-4">
           <div className="text-xs text-muted-foreground">Em andamento</div>
-          <div className="text-2xl font-semibold mt-1 text-blue-600 dark:text-blue-400">
+          <div className="text-2xl font-semibold mt-1 text-primary">
             {counters.pending}
           </div>
         </Card>
         <Card className="p-4">
           <div className="text-xs text-muted-foreground">Assinados</div>
-          <div className="text-2xl font-semibold mt-1 text-emerald-600 dark:text-emerald-400">
+          <div className="text-2xl font-semibold mt-1 text-success">
             {counters.signed}
           </div>
         </Card>
