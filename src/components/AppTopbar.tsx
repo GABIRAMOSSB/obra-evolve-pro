@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { BarChart3, FileText, Package, HardHat, Wrench, Users, Database, LogOut } from "lucide-react";
+import { BarChart3, FileText, Package, HardHat, Wrench, Users, Database, LogOut, PenTool, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useCompany } from "@/hooks/use-company";
@@ -9,13 +9,16 @@ const NAV_ITEMS: { to: string; icon: typeof HardHat; label: string; exact?: bool
   { to: "/realizado", icon: BarChart3, label: "Realizado" },
   { to: "/notas-fiscais", icon: FileText, label: "Notas" },
   { to: "/estoque", icon: Package, label: "Estoque" },
+  { to: "/assinaturas", icon: PenTool, label: "Assinaturas" },
   { to: "/mao-de-obra", icon: HardHat, label: "Mão obra" },
   { to: "/equipamentos", icon: Wrench, label: "Equip." },
   { to: "/insumos", icon: Package, label: "Insumos" },
   { to: "/composicoes", icon: Package, label: "Comp." },
   { to: "/equipe", icon: Users, label: "Equipe" },
   { to: "/backup", icon: Database, label: "Backup" },
+  { to: "/configuracoes/zapsign", icon: Settings, label: "ZapSign" },
 ];
+
 
 
 export function AppTopbar() {
