@@ -299,7 +299,7 @@ function RequestRow({
           {row.signed_at ? (
             <>
               <span>·</span>
-              <span className="text-emerald-600 dark:text-emerald-400">
+              <span className="text-success">
                 Concluído {new Date(row.signed_at).toLocaleDateString("pt-BR")}
               </span>
             </>
