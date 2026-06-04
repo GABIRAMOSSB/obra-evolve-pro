@@ -34,10 +34,12 @@ export interface ComplianceHealth {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnySupabase = any;
 
-async function resolveCompanyId(supabase: AnySupabase): Promise<string> {
+async function resolveCompanyId(supabase: AnySupabase, userId: string): Promise<string> {
   const { data, error } = await supabase
     .from("company_members")
     .select("company_id, role")
+    .eq("user_id", userId)
+    .limit(1)
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data?.company_id) throw new Error("Usuário não vinculado a uma empresa.");
@@ -46,10 +48,13 @@ async function resolveCompanyId(supabase: AnySupabase): Promise<string> {
 
 async function requireAdminEditor(
   supabase: AnySupabase,
+  userId: string,
 ): Promise<{ companyId: string; role: string }> {
   const { data, error } = await supabase
     .from("company_members")
     .select("company_id, role")
+    .eq("user_id", userId)
+    .limit(1)
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data?.company_id) throw new Error("Usuário não vinculado a uma empresa.");
