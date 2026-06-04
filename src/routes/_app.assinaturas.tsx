@@ -495,30 +495,16 @@ function RequestDetailDialog({
 
             <div>
               <h3 className="text-sm font-semibold mb-2">Linha do tempo</h3>
-              <Card className="p-3 max-h-60 overflow-y-auto">
-                {data.events.length === 0 ? (
-                  <div className="text-sm text-muted-foreground">
-                    Sem eventos registrados ainda.
-                  </div>
-                ) : (
-                  <ol className="space-y-2">
-                    {data.events.map((ev) => (
-                      <li key={ev.id} className="text-xs flex gap-2">
-                        <span className="text-muted-foreground whitespace-nowrap">
-                          {new Date(ev.created_at).toLocaleString("pt-BR")}
-                        </span>
-                        <span className="flex-1">
-                          <span className="font-medium">{ev.event_type}</span>
-                          {ev.event_description ? (
-                            <> — {ev.event_description}</>
-                          ) : null}
-                        </span>
-                      </li>
-                    ))}
-                  </ol>
-                )}
+              <Card className="p-4 max-h-72 overflow-y-auto">
+                <SignatureTimeline
+                  events={data.events}
+                  signers={data.signers}
+                  createdAt={data.created_at}
+                  status={data.status}
+                />
               </Card>
             </div>
+
 
             <div className="flex items-center justify-end gap-2 pt-2">
               {data.signed_file_path ? (
