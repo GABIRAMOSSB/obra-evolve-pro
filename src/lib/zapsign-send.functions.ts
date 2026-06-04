@@ -188,12 +188,13 @@ async function processSignatureSend(
         folder_path: data.documentFolder ?? "/",
         created_by: "",
         date_limit_to_sign: expirationDate,
-        signature_order_active: false,
+        signature_order_active: Boolean(data.signingOrderActive),
         observers: [],
         signers: data.signers.map((s, i) => ({
           name: s.name,
           email: s.email || undefined,
           auth_mode: s.auth_mode || defaultAuth,
+          order_group: data.signingOrderActive ? i + 1 : undefined,
           send_automatic_email: s.send_automatic_email ?? Boolean(s.email),
           send_automatic_whatsapp:
             s.send_automatic_whatsapp ?? Boolean(s.phone_number),
