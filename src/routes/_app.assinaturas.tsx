@@ -8,6 +8,7 @@ import {
   getSignedDocumentUrl,
   type SignatureRequestListItem,
 } from "@/lib/zapsign-dashboard.functions";
+import { resendSignerLink } from "@/lib/zapsign-reminders.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
