@@ -594,8 +594,8 @@ function CertDetailsDrawer({
 }: {
   certId: string | null;
   onClose: () => void;
-  getDetails: ReturnType<typeof useServerFn<typeof getCertificateDetails>>;
-  getSigned: ReturnType<typeof useServerFn<typeof getSignedCertificateUrl>>;
+  getDetails: (opts: { data: { company_certificate_id: string } }) => Promise<any>;
+  getSigned: (opts: { data: { version_id: string } }) => Promise<any>;
 }) {
   const detailsQ = useQuery({
     queryKey: ["compliance", "details", certId],
