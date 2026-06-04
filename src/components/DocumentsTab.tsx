@@ -46,6 +46,8 @@ export default function DocumentsTab({ obraId }: Props) {
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [signItem, setSignItem] = useState<DocumentItem | null>(null);
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [batchOpen, setBatchOpen] = useState(false);
 
 
   useEffect(() => {
