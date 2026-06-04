@@ -17,6 +17,7 @@ import {
   resolveAlert,
   requestProductionActivation,
   clearSandboxData,
+  getCertificateDetails,
 } from "@/lib/compliance.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   ShieldCheck,
   RefreshCw,
@@ -41,6 +44,7 @@ import {
   Settings,
   Activity,
   ScrollText,
+  Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -117,6 +121,8 @@ function ComplianceModule() {
   const resolveAl = useServerFn(resolveAlert);
   const reqProd = useServerFn(requestProductionActivation);
   const clearSb = useServerFn(clearSandboxData);
+  const getDetails = useServerFn(getCertificateDetails);
+  const [detailsId, setDetailsId] = useState<string | null>(null);
 
   const certsQ = useQuery({ queryKey: ["compliance", "certs"], queryFn: () => listCerts() });
   const healthQ = useQuery({ queryKey: ["compliance", "health"], queryFn: () => getHealth() });
@@ -244,6 +250,7 @@ function ComplianceModule() {
             uploadFn={uploadFn}
             getSigned={getSigned}
             onChanged={invalidateAll}
+            onOpenDetails={(id) => setDetailsId(id)}
           />
         </TabsContent>
 
@@ -401,6 +408,13 @@ function ComplianceModule() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <CertDetailsDrawer
+        certId={detailsId}
+        onClose={() => setDetailsId(null)}
+        getDetails={getDetails}
+        getSigned={getSigned}
+      />
     </div>
   );
 }
@@ -424,7 +438,7 @@ function InfoCell({ label, value }: { label: string; value: string | undefined |
 }
 
 function CertList({
-  certs, loading, onUpdate, updating, uploadFn, getSigned, onChanged,
+  certs, loading, onUpdate, updating, uploadFn, getSigned, onChanged, onOpenDetails,
 }: {
   certs: CertRow[];
   loading: boolean;
@@ -433,6 +447,7 @@ function CertList({
   uploadFn: ReturnType<typeof useServerFn<typeof uploadManualCertificate>>;
   getSigned: ReturnType<typeof useServerFn<typeof getSignedCertificateUrl>>;
   onChanged: () => void;
+  onOpenDetails: (id: string) => void;
 }) {
   const [uploadFor, setUploadFor] = useState<CertRow | null>(null);
 
@@ -465,6 +480,9 @@ function CertList({
                 <td className="px-4 py-3 text-xs text-muted-foreground">{fmtDateTime(c.last_checked_at)}</td>
                 <td className="px-4 py-3 text-right">
                   <div className="inline-flex gap-1.5">
+                    <Button size="sm" variant="ghost" onClick={() => onOpenDetails(c.id)} title="Ver detalhes">
+                      <Eye className="w-3.5 h-3.5" />
+                    </Button>
                     {c.certificate_types.automatic_enabled ? (
                       <Button size="sm" variant="outline" disabled={updating === c.id} onClick={() => onUpdate(c.id)}>
                         {updating === c.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
@@ -568,5 +586,180 @@ function UploadDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function CertDetailsDrawer({
+  certId, onClose, getDetails, getSigned,
+}: {
+  certId: string | null;
+  onClose: () => void;
+  getDetails: ReturnType<typeof useServerFn<typeof getCertificateDetails>>;
+  getSigned: ReturnType<typeof useServerFn<typeof getSignedCertificateUrl>>;
+}) {
+  const detailsQ = useQuery({
+    queryKey: ["compliance", "details", certId],
+    queryFn: () => getDetails({ data: { company_certificate_id: certId! } }),
+    enabled: !!certId,
+  });
+
+  const data = detailsQ.data as
+    | { cert: any; versions: any[]; checks: any[] }
+    | undefined;
+  const cert = data?.cert;
+  const t = cert?.certificate_types;
+
+  return (
+    <Sheet open={!!certId} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent className="w-full sm:max-w-xl overflow-hidden flex flex-col">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
+            <FileText className="w-4 h-4 text-primary-glow" />
+            {t?.name ?? "Detalhes da certidão"}
+          </SheetTitle>
+          <SheetDescription>
+            {t?.issuing_authority ?? ""} {t?.code ? `· ${t.code}` : ""}
+          </SheetDescription>
+        </SheetHeader>
+
+        {detailsQ.isLoading && (
+          <div className="flex-1 flex items-center justify-center">
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          </div>
+        )}
+
+        {detailsQ.error && (
+          <div className="text-sm text-red-400 p-3">
+            {(detailsQ.error as Error).message}
+          </div>
+        )}
+
+        {cert && (
+          <ScrollArea className="flex-1 -mx-6 px-6">
+            <div className="space-y-5 py-2">
+              {/* Status */}
+              <div className="flex items-center justify-between">
+                <StatusBadge status={cert.status} />
+                <span className="text-xs text-muted-foreground">
+                  Última verificação: {fmtDateTime(cert.last_checked_at)}
+                </span>
+              </div>
+
+              {/* Main data */}
+              <div className="grid grid-cols-2 gap-3">
+                <InfoCell label="Emissão" value={fmtDate(cert.issue_date)} />
+                <InfoCell label="Validade" value={fmtDate(cert.expiration_date)} />
+                <InfoCell label="Nº da certidão" value={cert.certificate_number} />
+                <InfoCell label="Cód. autenticação" value={cert.authentication_code} />
+                <InfoCell label="Fonte" value={cert.source_type} />
+                <InfoCell label="Próxima verificação" value={fmtDateTime(cert.next_check_at)} />
+              </div>
+
+              {cert.status_message && (
+                <div className="text-xs text-muted-foreground bg-muted/20 border border-border rounded-md p-3">
+                  {cert.status_message}
+                </div>
+              )}
+
+              {cert.last_error_message && (
+                <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/30 rounded-md p-3">
+                  <strong>Último erro:</strong> {cert.last_error_message}
+                </div>
+              )}
+
+              {/* Versions */}
+              <div>
+                <h4 className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-2">
+                  Histórico de versões ({data?.versions.length ?? 0})
+                </h4>
+                <div className="space-y-2">
+                  {(data?.versions ?? []).map((v) => (
+                    <div
+                      key={v.id}
+                      className="border border-border/60 rounded-md p-3 bg-card/40"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-sm font-medium">
+                          v{v.version_number}
+                          {v.id === cert.current_version_id && (
+                            <Badge variant="outline" className="ml-2 text-[10px]">
+                              atual
+                            </Badge>
+                          )}
+                        </div>
+                        <StatusBadge status={v.status} />
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1 grid grid-cols-2 gap-x-3 gap-y-0.5">
+                        <span>Emissão: {fmtDate(v.issue_date)}</span>
+                        <span>Validade: {fmtDate(v.expiration_date)}</span>
+                        <span>Fonte: {v.source_type}</span>
+                        <span>Criada: {fmtDateTime(v.created_at)}</span>
+                      </div>
+                      {v.storage_path && (
+                        <div className="mt-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={async () => {
+                              try {
+                                const r = await getSigned({ data: { version_id: v.id } });
+                                window.open(r.url, "_blank");
+                              } catch (e) {
+                                toast.error((e as Error).message);
+                              }
+                            }}
+                          >
+                            <Download className="w-3.5 h-3.5 mr-1" />
+                            Baixar PDF
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {(data?.versions ?? []).length === 0 && (
+                    <div className="text-xs text-muted-foreground text-center py-3">
+                      Nenhuma versão registrada.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Checks */}
+              <div>
+                <h4 className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-2">
+                  Verificações recentes
+                </h4>
+                <div className="space-y-1.5">
+                  {(data?.checks ?? []).map((c) => (
+                    <div
+                      key={c.id}
+                      className="flex items-center justify-between text-xs py-1.5 border-b border-border/30 last:border-0"
+                    >
+                      <div className="min-w-0">
+                        <div className="font-medium">
+                          {c.trigger_type} · {c.execution_mode}
+                        </div>
+                        <div className="text-muted-foreground">
+                          {fmtDateTime(c.started_at)}
+                          {c.duration_ms ? ` · ${c.duration_ms}ms` : ""}
+                        </div>
+                      </div>
+                      <Badge variant={c.status === "success" ? "default" : "destructive"}>
+                        {c.status}
+                      </Badge>
+                    </div>
+                  ))}
+                  {(data?.checks ?? []).length === 0 && (
+                    <div className="text-xs text-muted-foreground text-center py-3">
+                      Nenhuma verificação executada.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </ScrollArea>
+        )}
+      </SheetContent>
+    </Sheet>
   );
 }
