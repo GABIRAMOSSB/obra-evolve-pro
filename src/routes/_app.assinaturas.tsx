@@ -320,6 +320,17 @@ function RequestDetailDialog({
     },
   });
 
+  const resendMut = useMutation({
+    mutationFn: (vars: { signerId: string; channel: "whatsapp" | "email" }) =>
+      resendSignerLink({ data: vars }),
+    onSuccess: (r) => {
+      toast.success(`Lembrete enviado via ${r.channel}`);
+      onChanged();
+    },
+    onError: (e) =>
+      toast.error("Falha ao reenviar", { description: (e as Error).message }),
+  });
+
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
