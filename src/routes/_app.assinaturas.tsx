@@ -62,11 +62,11 @@ export const Route = createFileRoute("/_app/assinaturas")({
 const STATUS_LABELS: Record<string, { label: string; tone: string; Icon: typeof Clock }> = {
   draft: { label: "Rascunho", tone: "bg-muted text-muted-foreground", Icon: Clock },
   preparing: { label: "Preparando", tone: "bg-muted text-muted-foreground", Icon: Loader2 },
-  awaiting_placement: { label: "Aguardando posicionamento", tone: "bg-amber-500/15 text-amber-700 dark:text-amber-400", Icon: Clock },
-  placement_done: { label: "Posicionamento concluído", tone: "bg-amber-500/15 text-amber-700 dark:text-amber-400", Icon: Clock },
-  awaiting_signature: { label: "Aguardando assinatura", tone: "bg-blue-500/15 text-blue-700 dark:text-blue-400", Icon: Clock },
-  partially_signed: { label: "Parcialmente assinado", tone: "bg-indigo-500/15 text-indigo-700 dark:text-indigo-400", Icon: Clock },
-  signed: { label: "Assinado", tone: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400", Icon: CheckCircle2 },
+  awaiting_placement: { label: "Aguardando posicionamento", tone: "bg-warning/20 text-warning-foreground", Icon: Clock },
+  placement_done: { label: "Posicionamento concluído", tone: "bg-warning/20 text-warning-foreground", Icon: Clock },
+  awaiting_signature: { label: "Aguardando assinatura", tone: "bg-primary/15 text-primary", Icon: Clock },
+  partially_signed: { label: "Parcialmente assinado", tone: "bg-measure/15 text-measure", Icon: Clock },
+  signed: { label: "Assinado", tone: "bg-success/15 text-success", Icon: CheckCircle2 },
   refused: { label: "Recusado", tone: "bg-destructive/15 text-destructive", Icon: Ban },
   expired: { label: "Expirado", tone: "bg-destructive/15 text-destructive", Icon: AlertCircle },
   canceled: { label: "Cancelado", tone: "bg-muted text-muted-foreground", Icon: XCircle },
@@ -174,13 +174,13 @@ function AssinaturasPage() {
         </Card>
         <Card className="p-4">
           <div className="text-xs text-muted-foreground">Em andamento</div>
-          <div className="text-2xl font-semibold mt-1 text-blue-600 dark:text-blue-400">
+          <div className="text-2xl font-semibold mt-1 text-primary">
             {counters.pending}
           </div>
         </Card>
         <Card className="p-4">
           <div className="text-xs text-muted-foreground">Assinados</div>
-          <div className="text-2xl font-semibold mt-1 text-emerald-600 dark:text-emerald-400">
+          <div className="text-2xl font-semibold mt-1 text-success">
             {counters.signed}
           </div>
         </Card>
@@ -299,7 +299,7 @@ function RequestRow({
           {row.signed_at ? (
             <>
               <span>·</span>
-              <span className="text-emerald-600 dark:text-emerald-400">
+              <span className="text-success">
                 Concluído {new Date(row.signed_at).toLocaleDateString("pt-BR")}
               </span>
             </>
@@ -597,16 +597,16 @@ const KIND_META: Record<
   TimelineKind,
   { label: string; icon: typeof CheckCircle2; color: string; ring: string }
 > = {
-  created: { label: "Pedido criado", icon: FileSignature, color: "text-blue-600", ring: "bg-blue-100 dark:bg-blue-950" },
-  sent: { label: "Enviado ao signatário", icon: Send, color: "text-sky-600", ring: "bg-sky-100 dark:bg-sky-950" },
-  viewed: { label: "Documento visualizado", icon: Eye, color: "text-indigo-600", ring: "bg-indigo-100 dark:bg-indigo-950" },
-  signed: { label: "Assinado", icon: CheckCircle2, color: "text-emerald-600", ring: "bg-emerald-100 dark:bg-emerald-950" },
-  refused: { label: "Recusado", icon: Ban, color: "text-destructive", ring: "bg-red-100 dark:bg-red-950" },
-  expired: { label: "Expirado", icon: Clock, color: "text-amber-600", ring: "bg-amber-100 dark:bg-amber-950" },
+  created: { label: "Pedido criado", icon: FileSignature, color: "text-primary", ring: "bg-primary/10" },
+  sent: { label: "Enviado ao signatário", icon: Send, color: "text-primary", ring: "bg-primary/10" },
+  viewed: { label: "Documento visualizado", icon: Eye, color: "text-measure", ring: "bg-measure/10" },
+  signed: { label: "Assinado", icon: CheckCircle2, color: "text-success", ring: "bg-success/10" },
+  refused: { label: "Recusado", icon: Ban, color: "text-destructive", ring: "bg-destructive/10" },
+  expired: { label: "Expirado", icon: Clock, color: "text-warning-foreground", ring: "bg-warning/20" },
   canceled: { label: "Cancelado", icon: XCircle, color: "text-muted-foreground", ring: "bg-muted" },
-  reminder: { label: "Lembrete enviado", icon: Send, color: "text-purple-600", ring: "bg-purple-100 dark:bg-purple-950" },
-  completed: { label: "Documento concluído", icon: CheckCircle2, color: "text-emerald-700", ring: "bg-emerald-100 dark:bg-emerald-950" },
-  error: { label: "Erro", icon: AlertCircle, color: "text-destructive", ring: "bg-red-100 dark:bg-red-950" },
+  reminder: { label: "Lembrete enviado", icon: Send, color: "text-measure", ring: "bg-measure/10" },
+  completed: { label: "Documento concluído", icon: CheckCircle2, color: "text-success", ring: "bg-success/10" },
+  error: { label: "Erro", icon: AlertCircle, color: "text-destructive", ring: "bg-destructive/10" },
   other: { label: "Evento", icon: Clock, color: "text-muted-foreground", ring: "bg-muted" },
 };
 
