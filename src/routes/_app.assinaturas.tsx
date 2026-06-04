@@ -333,6 +333,9 @@ function RequestDetailDialog({
     queryFn: () => getSignatureRequest({ data: { id } }),
   });
 
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+
   const cancelMut = useMutation({
     mutationFn: () => cancelSignatureRequest({ data: { id } }),
     onSuccess: () => {
