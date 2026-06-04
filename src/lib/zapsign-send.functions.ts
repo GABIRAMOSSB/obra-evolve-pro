@@ -294,17 +294,20 @@ async function processSignatureSend(
 }
 
 async function getCompanyContext(supabase: any) {
-  const { data: membership, error: memberErr } = await supabase
+  const { data: memberships, error: memberErr } = await supabase
     .from("company_members")
     .select("company_id, role")
-    .maybeSingle();
+    .order("joined_at", { ascending: true })
+    .limit(1);
   if (memberErr) throw new Error(memberErr.message);
+  const membership = memberships?.[0];
   if (!membership?.company_id) throw new Error("Sem empresa vinculada.");
   if (!["admin", "editor"].includes(membership.role)) {
     throw new Error("Sem permissão para enviar documentos para assinatura.");
   }
   return { companyId: membership.company_id as string };
 }
+
 
 export const sendDocumentForSignature = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
