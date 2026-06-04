@@ -408,6 +408,22 @@ function RequestDetailDialog({
                         ) : null}
                       </div>
                       <StatusBadge status={s.status} />
+                      {s.status !== "signed" && s.status !== "refused" ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="Reenviar lembrete"
+                          disabled={resendMut.isPending}
+                          onClick={() =>
+                            resendMut.mutate({
+                              signerId: s.id,
+                              channel: s.phone_number ? "whatsapp" : "email",
+                            })
+                          }
+                        >
+                          <Send className="h-3.5 w-3.5" />
+                        </Button>
+                      ) : null}
                       {s.zapsign_sign_url ? (
                         <Button
                           variant="ghost"
