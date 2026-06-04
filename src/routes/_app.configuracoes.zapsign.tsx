@@ -13,7 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { AlertTriangle, CheckCircle2, KeyRound, Loader2, PlugZap, Shield, Webhook } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { AlertTriangle, Bell, CheckCircle2, KeyRound, Loader2, PlugZap, Shield, Webhook } from "lucide-react";
 
 export const Route = createFileRoute("/_app/configuracoes/zapsign")({
   head: () => ({
