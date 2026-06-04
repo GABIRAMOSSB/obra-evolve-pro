@@ -121,6 +121,8 @@ function ComplianceModule() {
   const resolveAl = useServerFn(resolveAlert);
   const reqProd = useServerFn(requestProductionActivation);
   const clearSb = useServerFn(clearSandboxData);
+  const getDetails = useServerFn(getCertificateDetails);
+  const [detailsId, setDetailsId] = useState<string | null>(null);
 
   const certsQ = useQuery({ queryKey: ["compliance", "certs"], queryFn: () => listCerts() });
   const healthQ = useQuery({ queryKey: ["compliance", "health"], queryFn: () => getHealth() });
