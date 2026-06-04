@@ -129,11 +129,20 @@ async function processSignatureSend(
     throw new Error(`Falha ao baixar documento: ${dlErr?.message || "vazio"}`);
   }
   if (file.size > 20 * 1024 * 1024) {
-    throw new Error("PDF maior que 20MB não suportado pelo envio via base64.");
+    throw new Error("PDF maior que 20MB não suportado.");
   }
 
-  const base64 = await blobToBase64(file);
   const originalHash = await sha256Hex(file);
+
+  // ZapSign renderiza melhor quando baixa o PDF de uma URL pública temporária
+  // do que via base64 (que costuma travar no "Aguarde, carregando seu documento").
+  const { data: signed, error: signErr } = await supabase.storage
+    .from(BUCKET)
+    .createSignedUrl(data.documentPath, 60 * 60 * 24); // 24h
+  if (signErr || !signed?.signedUrl) {
+    throw new Error(`Falha ao gerar URL do PDF: ${signErr?.message || "vazio"}`);
+  }
+  const pdfUrl = signed.signedUrl;
 
   const { data: requestRow, error: reqErr } = await supabase
     .from("signature_requests")
@@ -169,7 +178,7 @@ async function processSignatureSend(
       body: {
         sandbox,
         name: data.documentName.replace(/\.pdf$/i, ""),
-        base64_pdf: base64,
+        url_pdf: pdfUrl,
         lang: data.lang ?? "pt-br",
         disable_signer_emails: false,
         brand_logo: "",
