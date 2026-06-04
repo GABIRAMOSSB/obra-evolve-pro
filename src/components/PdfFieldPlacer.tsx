@@ -183,6 +183,17 @@ export default function PdfFieldPlacer({
           </Select>
         </div>
         <div className="ml-auto flex items-center gap-2">
+          <Button type="button" size="sm" variant="outline" onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))} disabled={zoom <= 0.5} title="Diminuir zoom">
+            <ZoomOut className="h-4 w-4" />
+          </Button>
+          <span className="text-xs text-muted-foreground tabular-nums w-10 text-center">{Math.round(zoom * 100)}%</span>
+          <Button type="button" size="sm" variant="outline" onClick={() => setZoom((z) => Math.min(3, z + 0.25))} disabled={zoom >= 3} title="Aumentar zoom">
+            <ZoomIn className="h-4 w-4" />
+          </Button>
+          <Button type="button" size="sm" variant="outline" onClick={() => setZoom(1)} title="Ajustar à largura">
+            <Maximize2 className="h-4 w-4" />
+          </Button>
+          <div className="w-px h-6 bg-border mx-1" />
           <Button
             type="button"
             size="sm"
