@@ -11,6 +11,7 @@ export const Route = createFileRoute("/_app")({
 function AppLayout() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  useSignatureNotifications();
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/login" });
