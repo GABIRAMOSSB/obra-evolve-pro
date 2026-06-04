@@ -19,7 +19,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { Loader2, Plus, Trash2, PenTool, ExternalLink, ArrowLeft, ArrowRight } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Loader2, Plus, Trash2, PenTool, ExternalLink, ArrowLeft, ArrowRight, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import { sendDocumentForSignature, createDocumentPreviewUrl } from "@/lib/zapsign-send.functions";
 import PdfFieldPlacer, { type Placement } from "@/components/PdfFieldPlacer";
