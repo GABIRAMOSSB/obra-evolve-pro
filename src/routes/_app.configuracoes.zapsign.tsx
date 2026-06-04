@@ -31,6 +31,10 @@ type UpdatePatch = {
   automatic_email?: boolean;
   automatic_whatsapp?: boolean;
   manual_whatsapp_enabled?: boolean;
+  reminder_enabled?: boolean;
+  reminder_interval_days?: number;
+  reminder_max_count?: number;
+  reminder_channel?: "whatsapp" | "email" | "sms";
 };
 
 function ZapSignSettingsPage() {
