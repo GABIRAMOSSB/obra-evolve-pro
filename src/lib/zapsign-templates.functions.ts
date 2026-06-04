@@ -38,6 +38,7 @@ async function getCompanyId(supabase: any) {
   const { data, error } = await supabase
     .from("company_members")
     .select("company_id, role")
+    .limit(1)
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data?.company_id) throw new Error("Sem empresa vinculada.");
