@@ -250,6 +250,7 @@ function ComplianceModule() {
             uploadFn={uploadFn}
             getSigned={getSigned}
             onChanged={invalidateAll}
+            onOpenDetails={(id) => setDetailsId(id)}
           />
         </TabsContent>
 
