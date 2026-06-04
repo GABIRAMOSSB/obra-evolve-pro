@@ -51,6 +51,10 @@ import {
   Activity,
   ScrollText,
   Eye,
+  Plus,
+  Pencil,
+  Trash2,
+  BellRing,
 } from "lucide-react";
 import { toast } from "sonner";
 
