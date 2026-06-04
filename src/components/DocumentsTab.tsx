@@ -82,6 +82,7 @@ export default function DocumentsTab({ obraId }: Props) {
   const openFolder = async (folder: DocFolder) => {
     if (!companyId) return;
     setActive(folder);
+    setSelected({});
     setLoading(true);
     try {
       setItems(await listDocuments(companyId, obraId, folder));
@@ -91,6 +92,10 @@ export default function DocumentsTab({ obraId }: Props) {
       setLoading(false);
     }
   };
+
+  const selectedDocs: BatchDocument[] = items
+    .filter((it) => selected[it.path] && it.name.toLowerCase().endsWith(".pdf"))
+    .map((it) => ({ path: it.path, name: it.name, folder: active ?? "" }));
 
   const onUpload = async (files: FileList | null) => {
     if (!files || !companyId || !active) return;
