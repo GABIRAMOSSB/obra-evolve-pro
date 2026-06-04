@@ -473,6 +473,9 @@ function CertList({
                 <td className="px-4 py-3 text-xs text-muted-foreground">{fmtDateTime(c.last_checked_at)}</td>
                 <td className="px-4 py-3 text-right">
                   <div className="inline-flex gap-1.5">
+                    <Button size="sm" variant="ghost" onClick={() => onOpenDetails(c.id)} title="Ver detalhes">
+                      <Eye className="w-3.5 h-3.5" />
+                    </Button>
                     {c.certificate_types.automatic_enabled ? (
                       <Button size="sm" variant="outline" disabled={updating === c.id} onClick={() => onUpdate(c.id)}>
                         {updating === c.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
