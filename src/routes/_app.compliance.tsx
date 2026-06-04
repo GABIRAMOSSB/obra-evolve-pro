@@ -17,6 +17,7 @@ import {
   resolveAlert,
   requestProductionActivation,
   clearSandboxData,
+  getCertificateDetails,
 } from "@/lib/compliance.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
