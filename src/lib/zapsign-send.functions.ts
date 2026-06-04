@@ -64,6 +64,7 @@ const batchSchema = z.object({
   expirationDays: z.number().int().min(1).max(365).optional(),
   customMessage: z.string().max(2000).optional(),
   placements: z.array(placementSchema).max(200).optional(),
+  signingOrderActive: z.boolean().optional(),
 });
 
 const BUCKET = "obra-documentos";
