@@ -597,16 +597,16 @@ const KIND_META: Record<
   TimelineKind,
   { label: string; icon: typeof CheckCircle2; color: string; ring: string }
 > = {
-  created: { label: "Pedido criado", icon: FileSignature, color: "text-blue-600", ring: "bg-blue-100 dark:bg-blue-950" },
-  sent: { label: "Enviado ao signatário", icon: Send, color: "text-sky-600", ring: "bg-sky-100 dark:bg-sky-950" },
-  viewed: { label: "Documento visualizado", icon: Eye, color: "text-indigo-600", ring: "bg-indigo-100 dark:bg-indigo-950" },
-  signed: { label: "Assinado", icon: CheckCircle2, color: "text-emerald-600", ring: "bg-emerald-100 dark:bg-emerald-950" },
-  refused: { label: "Recusado", icon: Ban, color: "text-destructive", ring: "bg-red-100 dark:bg-red-950" },
-  expired: { label: "Expirado", icon: Clock, color: "text-amber-600", ring: "bg-amber-100 dark:bg-amber-950" },
+  created: { label: "Pedido criado", icon: FileSignature, color: "text-primary", ring: "bg-primary/10" },
+  sent: { label: "Enviado ao signatário", icon: Send, color: "text-primary", ring: "bg-primary/10" },
+  viewed: { label: "Documento visualizado", icon: Eye, color: "text-measure", ring: "bg-measure/10" },
+  signed: { label: "Assinado", icon: CheckCircle2, color: "text-success", ring: "bg-success/10" },
+  refused: { label: "Recusado", icon: Ban, color: "text-destructive", ring: "bg-destructive/10" },
+  expired: { label: "Expirado", icon: Clock, color: "text-warning-foreground", ring: "bg-warning/20" },
   canceled: { label: "Cancelado", icon: XCircle, color: "text-muted-foreground", ring: "bg-muted" },
-  reminder: { label: "Lembrete enviado", icon: Send, color: "text-purple-600", ring: "bg-purple-100 dark:bg-purple-950" },
-  completed: { label: "Documento concluído", icon: CheckCircle2, color: "text-emerald-700", ring: "bg-emerald-100 dark:bg-emerald-950" },
-  error: { label: "Erro", icon: AlertCircle, color: "text-destructive", ring: "bg-red-100 dark:bg-red-950" },
+  reminder: { label: "Lembrete enviado", icon: Send, color: "text-measure", ring: "bg-measure/10" },
+  completed: { label: "Documento concluído", icon: CheckCircle2, color: "text-success", ring: "bg-success/10" },
+  error: { label: "Erro", icon: AlertCircle, color: "text-destructive", ring: "bg-destructive/10" },
   other: { label: "Evento", icon: Clock, color: "text-muted-foreground", ring: "bg-muted" },
 };
 
