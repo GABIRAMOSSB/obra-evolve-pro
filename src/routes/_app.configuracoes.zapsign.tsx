@@ -317,6 +317,8 @@ function ZapSignSettingsPage() {
           </div>
         )}
       </Card>
+
+      <SignatureTemplateManager />
     </div>
   );
 }
