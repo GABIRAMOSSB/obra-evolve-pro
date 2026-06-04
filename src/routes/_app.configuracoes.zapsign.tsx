@@ -15,6 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { AlertTriangle, Bell, CheckCircle2, KeyRound, Loader2, PlugZap, Shield, Webhook } from "lucide-react";
+import SignatureTemplateManager from "@/components/SignatureTemplateManager";
 
 export const Route = createFileRoute("/_app/configuracoes/zapsign")({
   head: () => ({
@@ -316,6 +317,8 @@ function ZapSignSettingsPage() {
           </div>
         )}
       </Card>
+
+      <SignatureTemplateManager />
     </div>
   );
 }

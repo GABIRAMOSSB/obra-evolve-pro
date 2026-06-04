@@ -24,8 +24,14 @@ import {
   Loader2,
   ArrowLeft,
   PenTool,
+  Layers,
+  X,
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import SendForSignatureDialog from "@/components/SendForSignatureDialog";
+import BatchSendForSignatureDialog, {
+  type BatchDocument,
+} from "@/components/BatchSendForSignatureDialog";
 
 interface Props {
   obraId: string;
@@ -40,6 +46,8 @@ export default function DocumentsTab({ obraId }: Props) {
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [signItem, setSignItem] = useState<DocumentItem | null>(null);
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [batchOpen, setBatchOpen] = useState(false);
 
 
   useEffect(() => {
@@ -74,6 +82,7 @@ export default function DocumentsTab({ obraId }: Props) {
   const openFolder = async (folder: DocFolder) => {
     if (!companyId) return;
     setActive(folder);
+    setSelected({});
     setLoading(true);
     try {
       setItems(await listDocuments(companyId, obraId, folder));
@@ -83,6 +92,10 @@ export default function DocumentsTab({ obraId }: Props) {
       setLoading(false);
     }
   };
+
+  const selectedDocs: BatchDocument[] = items
+    .filter((it) => selected[it.path] && it.name.toLowerCase().endsWith(".pdf"))
+    .map((it) => ({ path: it.path, name: it.name, folder: active ?? "" }));
 
   const onUpload = async (files: FileList | null) => {
     if (!files || !companyId || !active) return;
@@ -172,7 +185,19 @@ export default function DocumentsTab({ obraId }: Props) {
           <FolderOpen className="h-5 w-5 text-primary" />
           <h3 className="font-semibold">{active}</h3>
         </div>
-        <div>
+        <div className="flex items-center gap-2">
+          {selectedDocs.length > 0 ? (
+            <>
+              <Button size="sm" variant="outline" onClick={() => setSelected({})}>
+                <X className="h-4 w-4 mr-1" />
+                Limpar ({selectedDocs.length})
+              </Button>
+              <Button size="sm" onClick={() => setBatchOpen(true)}>
+                <Layers className="h-4 w-4 mr-1" />
+                Enviar {selectedDocs.length} em lote
+              </Button>
+            </>
+          ) : null}
           <input
             ref={fileRef}
             type="file"
@@ -193,7 +218,7 @@ export default function DocumentsTab({ obraId }: Props) {
       </div>
 
       <div className="text-xs text-muted-foreground">
-        Formatos aceitos: {ALLOWED_EXTENSIONS.join(", ").toUpperCase()} · máx. 25 MB por arquivo
+        Formatos aceitos: {ALLOWED_EXTENSIONS.join(", ").toUpperCase()} · máx. 25 MB por arquivo · marque os PDFs para envio em lote
       </div>
 
       {loading ? (
@@ -206,39 +231,52 @@ export default function DocumentsTab({ obraId }: Props) {
         </Card>
       ) : (
         <Card className="divide-y">
-          {items.map((item) => (
-            <div key={item.path} className="p-3 flex items-center gap-3">
-              <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <div className="truncate text-sm font-medium">{item.name}</div>
-                <div className="text-xs text-muted-foreground">
-                  {formatBytes(item.size)}
-                  {item.updatedAt && ` · ${new Date(item.updatedAt).toLocaleString("pt-BR")}`}
+          {items.map((item) => {
+            const isPdf = item.name.toLowerCase().endsWith(".pdf");
+            return (
+              <div key={item.path} className="p-3 flex items-center gap-3">
+                {isPdf ? (
+                  <Checkbox
+                    checked={!!selected[item.path]}
+                    onCheckedChange={(v) =>
+                      setSelected((p) => ({ ...p, [item.path]: !!v }))
+                    }
+                  />
+                ) : (
+                  <div className="w-4" />
+                )}
+                <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="truncate text-sm font-medium">{item.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {formatBytes(item.size)}
+                    {item.updatedAt && ` · ${new Date(item.updatedAt).toLocaleString("pt-BR")}`}
+                  </div>
                 </div>
-              </div>
-              {item.name.toLowerCase().endsWith(".pdf") ? (
+                {isPdf ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    title="Enviar para assinatura"
+                    onClick={() => setSignItem(item)}
+                  >
+                    <PenTool className="h-4 w-4" />
+                  </Button>
+                ) : null}
+                <Button variant="ghost" size="sm" onClick={() => onDownload(item)}>
+                  <Download className="h-4 w-4" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
-                  title="Enviar para assinatura"
-                  onClick={() => setSignItem(item)}
+                  onClick={() => onDelete(item)}
+                  className="text-destructive hover:text-destructive"
                 >
-                  <PenTool className="h-4 w-4" />
+                  <Trash2 className="h-4 w-4" />
                 </Button>
-              ) : null}
-              <Button variant="ghost" size="sm" onClick={() => onDownload(item)}>
-                <Download className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onDelete(item)}
-                className="text-destructive hover:text-destructive"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </Card>
       )}
 
@@ -250,6 +288,18 @@ export default function DocumentsTab({ obraId }: Props) {
           documentPath={signItem.path}
           documentName={signItem.name}
           documentFolder={active}
+        />
+      ) : null}
+
+      {batchOpen && selectedDocs.length > 0 ? (
+        <BatchSendForSignatureDialog
+          open={batchOpen}
+          onOpenChange={(o) => {
+            setBatchOpen(o);
+            if (!o) setSelected({});
+          }}
+          obraId={obraId}
+          documents={selectedDocs}
         />
       ) : null}
     </div>

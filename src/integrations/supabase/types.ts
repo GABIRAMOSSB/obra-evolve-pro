@@ -1612,6 +1612,54 @@ export type Database = {
           },
         ]
       }
+      signature_templates: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          custom_message: string | null
+          default_auth_mode: string | null
+          description: string | null
+          document_folder: string | null
+          expiration_days: number | null
+          id: string
+          name: string
+          placements: Json
+          signers: Json
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          custom_message?: string | null
+          default_auth_mode?: string | null
+          description?: string | null
+          document_folder?: string | null
+          expiration_days?: number | null
+          id?: string
+          name: string
+          placements?: Json
+          signers?: Json
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          custom_message?: string | null
+          default_auth_mode?: string | null
+          description?: string | null
+          document_folder?: string | null
+          expiration_days?: number | null
+          id?: string
+          name?: string
+          placements?: Json
+          signers?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       unidades_medida: {
         Row: {
           company_id: string
