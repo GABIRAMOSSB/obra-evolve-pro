@@ -83,6 +83,7 @@ export default function SendForSignatureDialog({
     setSigners([emptySigner()]);
     setExpirationDays("30");
     setCustomMessage("");
+    setSigningOrderActive(false);
     setResult(null);
     setStep("signers");
     setPlacements([]);
