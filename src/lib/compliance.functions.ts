@@ -34,10 +34,12 @@ export interface ComplianceHealth {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnySupabase = any;
 
-async function resolveCompanyId(supabase: AnySupabase): Promise<string> {
+async function resolveCompanyId(supabase: AnySupabase, userId: string): Promise<string> {
   const { data, error } = await supabase
     .from("company_members")
     .select("company_id, role")
+    .eq("user_id", userId)
+    .limit(1)
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data?.company_id) throw new Error("Usuário não vinculado a uma empresa.");
@@ -46,10 +48,13 @@ async function resolveCompanyId(supabase: AnySupabase): Promise<string> {
 
 async function requireAdminEditor(
   supabase: AnySupabase,
+  userId: string,
 ): Promise<{ companyId: string; role: string }> {
   const { data, error } = await supabase
     .from("company_members")
     .select("company_id, role")
+    .eq("user_id", userId)
+    .limit(1)
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data?.company_id) throw new Error("Usuário não vinculado a uma empresa.");
@@ -66,7 +71,7 @@ export const runComplianceHealthCheck = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<ComplianceHealth> => {
     const { supabase } = context;
-    await resolveCompanyId(supabase);
+    await resolveCompanyId(supabase, context.userId);
 
     const tokenConfigured = Boolean(process.env.INFOSIMPLES_TOKEN);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -112,7 +117,7 @@ export const getComplianceHealth = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<ComplianceHealth> => {
     const { supabase } = context;
-    await resolveCompanyId(supabase);
+    await resolveCompanyId(supabase, context.userId);
     const { data } = await supabase
       .from("integration_settings")
       .select("*")
@@ -145,7 +150,7 @@ export const updateCertificate = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     const { supabase } = context;
-    const { companyId } = await requireAdminEditor(supabase);
+    const { companyId } = await requireAdminEditor(supabase, context.userId);
 
     const { callInfosimples, classifyExpiration } = await import("@/lib/compliance.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -290,7 +295,7 @@ export const updateAllCertificates = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase } = context;
-    const { companyId } = await requireAdminEditor(supabase);
+    const { companyId } = await requireAdminEditor(supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { callInfosimples, classifyExpiration } = await import("@/lib/compliance.server");
 
@@ -486,7 +491,7 @@ export const uploadManualCertificate = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     const { supabase } = context;
-    const { companyId } = await requireAdminEditor(supabase);
+    const { companyId } = await requireAdminEditor(supabase, context.userId);
 
     if (data.mime_type !== "application/pdf") {
       throw new Error("Apenas arquivos PDF são aceitos.");
@@ -608,7 +613,7 @@ export const getSignedCertificateUrl = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     const { supabase } = context;
-    const companyId = await resolveCompanyId(supabase);
+    const companyId = await resolveCompanyId(supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: version } = await supabaseAdmin
@@ -651,7 +656,7 @@ export const requestProductionActivation = createServerFn({ method: "POST" })
   )
   .handler(async ({ context }) => {
     const { supabase } = context;
-    const { companyId, role } = await requireAdminEditor(supabase);
+    const { companyId, role } = await requireAdminEditor(supabase, context.userId);
     if (role !== "admin") throw new Error("Apenas administradores podem solicitar ativação de produção.");
 
     const tokenConfigured = Boolean(process.env.INFOSIMPLES_TOKEN);
@@ -688,7 +693,7 @@ export const clearSandboxData = createServerFn({ method: "POST" })
   )
   .handler(async ({ context }) => {
     const { supabase } = context;
-    const { companyId, role } = await requireAdminEditor(supabase);
+    const { companyId, role } = await requireAdminEditor(supabase, context.userId);
     if (role !== "admin") throw new Error("Apenas administradores podem limpar dados de teste.");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -753,7 +758,7 @@ export const listCertificates = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase } = context;
-    const companyId = await resolveCompanyId(supabase);
+    const companyId = await resolveCompanyId(supabase, context.userId);
     const { data } = await supabase
       .from("company_certificates")
       .select("*, certificate_types(*)")
@@ -771,7 +776,7 @@ export const listVersions = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase } = context;
-    const companyId = await resolveCompanyId(supabase);
+    const companyId = await resolveCompanyId(supabase, context.userId);
     const { data: certs } = await supabase
       .from("company_certificates")
       .select("id")
@@ -791,7 +796,7 @@ export const listAlerts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase } = context;
-    const companyId = await resolveCompanyId(supabase);
+    const companyId = await resolveCompanyId(supabase, context.userId);
     const { data } = await supabase
       .from("compliance_alerts")
       .select("*, certificate_types(short_name, name)")
@@ -806,7 +811,7 @@ export const resolveAlert = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ alert_id: z.string().uuid() }).parse(input))
   .handler(async ({ context, data }) => {
     const { supabase } = context;
-    await requireAdminEditor(supabase);
+    await requireAdminEditor(supabase, context.userId);
     const { error } = await supabase
       .from("compliance_alerts")
       .update({ resolved: true, resolved_at: new Date().toISOString(), read: true })
@@ -819,7 +824,7 @@ export const listChecks = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase } = context;
-    const companyId = await resolveCompanyId(supabase);
+    const companyId = await resolveCompanyId(supabase, context.userId);
     const { data } = await supabase
       .from("certificate_checks")
       .select("*, certificate_types(short_name, name)")
@@ -833,7 +838,7 @@ export const listAuditLogs = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase } = context;
-    const companyId = await resolveCompanyId(supabase);
+    const companyId = await resolveCompanyId(supabase, context.userId);
     const { data } = await supabase
       .from("compliance_audit_logs")
       .select("*")
