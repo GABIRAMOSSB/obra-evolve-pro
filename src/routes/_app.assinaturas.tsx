@@ -358,6 +358,18 @@ function RequestDetailDialog({
     },
   });
 
+  const previewMut = useMutation({
+    mutationFn: () => getSignedDocumentUrl({ data: { id } }),
+    onSuccess: ({ url }) => {
+      if (!url) {
+        toast.error("PDF assinado ainda não disponível");
+        return;
+      }
+      setPreviewUrl(url);
+    },
+  });
+
+
   const resendMut = useMutation({
     mutationFn: (vars: { signerId: string; channel: "whatsapp" | "email" }) =>
       resendSignerLink({ data: vars }),
