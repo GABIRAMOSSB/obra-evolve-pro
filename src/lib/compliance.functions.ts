@@ -198,7 +198,7 @@ export const updateCertificate = createServerFn({ method: "POST" })
       result_summary: result.status_message,
       error_code: result.error_code,
       error_message: result.error_message,
-      raw_response_json: result.raw,
+      raw_response_json: result.raw as never,
     });
 
     if (!result.ok) {
@@ -242,8 +242,8 @@ export const updateCertificate = createServerFn({ method: "POST" })
         source_type: result.execution_mode,
         api_provider: "infosimples",
         provider_service_key: t.provider_service_key,
-        raw_payload_json: result.raw,
-        normalized_payload_json: result as unknown as Record<string, unknown>,
+        raw_payload_json: result.raw as never,
+        normalized_payload_json: result as never,
       })
       .select()
       .single();
@@ -349,7 +349,7 @@ export const updateAllCertificates = createServerFn({ method: "POST" })
           result_summary: result.status_message,
           error_code: result.error_code,
           error_message: result.error_message,
-          raw_response_json: result.raw,
+          raw_response_json: result.raw as never,
         });
 
         if (!result.ok) {
@@ -408,8 +408,8 @@ export const updateAllCertificates = createServerFn({ method: "POST" })
               source_type: result.execution_mode,
               api_provider: "infosimples",
               provider_service_key: c.certificate_types.provider_service_key,
-              raw_payload_json: result.raw,
-              normalized_payload_json: result as unknown as Record<string, unknown>,
+              raw_payload_json: result.raw as never,
+              normalized_payload_json: result as never,
             })
             .select()
             .single();
