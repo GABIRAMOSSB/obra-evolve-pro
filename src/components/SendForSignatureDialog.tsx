@@ -267,41 +267,77 @@ export default function SendForSignatureDialog({
             </div>
 
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
                 <Label>Signatários</Label>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    setSigners((p) => [...p, emptySigner()])
-                  }
-                  disabled={signers.length >= 10}
-                >
-                  <Plus className="h-3.5 w-3.5 mr-1" />
-                  Adicionar
-                </Button>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="signing-order"
+                      checked={signingOrderActive}
+                      onCheckedChange={setSigningOrderActive}
+                    />
+                    <Label htmlFor="signing-order" className="text-xs cursor-pointer">
+                      Exigir ordem de assinatura
+                    </Label>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setSigners((p) => [...p, emptySigner()])
+                    }
+                    disabled={signers.length >= 10}
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1" />
+                    Adicionar
+                  </Button>
+                </div>
               </div>
 
               {signers.map((s, i) => (
                 <Card key={i} className="p-3 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-muted-foreground">
-                      Signatário {i + 1}
+                      {signingOrderActive ? `${i + 1}º · ` : ""}Signatário {i + 1}
                     </span>
-                    {signers.length > 1 ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() =>
-                          setSigners((p) =>
-                            p.filter((_, idx) => idx !== i),
-                          )
-                        }
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    ) : null}
+                    <div className="flex items-center gap-1">
+                      {signingOrderActive ? (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={i === 0}
+                            onClick={() => move(i, -1)}
+                            title="Mover para cima"
+                          >
+                            <ArrowUp className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={i === signers.length - 1}
+                            onClick={() => move(i, 1)}
+                            title="Mover para baixo"
+                          >
+                            <ArrowDown className="h-3.5 w-3.5" />
+                          </Button>
+                        </>
+                      ) : null}
+                      {signers.length > 1 ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() =>
+                            setSigners((p) =>
+                              p.filter((_, idx) => idx !== i),
+                            )
+                          }
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      ) : null}
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="col-span-2">
