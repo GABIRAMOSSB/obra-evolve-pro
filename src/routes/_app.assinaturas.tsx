@@ -41,6 +41,7 @@ import {
   AlertCircle,
   Ban,
   FileSignature,
+  Send,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_app/assinaturas")({
