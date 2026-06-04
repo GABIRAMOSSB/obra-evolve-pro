@@ -31,9 +31,10 @@ export interface ComplianceHealth {
   last_health_check_status: string | null;
 }
 
-async function resolveCompanyId(
-  supabase: Awaited<ReturnType<typeof import("@supabase/supabase-js").createClient>>,
-): Promise<string> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnySupabase = any;
+
+async function resolveCompanyId(supabase: AnySupabase): Promise<string> {
   const { data, error } = await supabase
     .from("company_members")
     .select("company_id, role")
@@ -44,7 +45,7 @@ async function resolveCompanyId(
 }
 
 async function requireAdminEditor(
-  supabase: Awaited<ReturnType<typeof import("@supabase/supabase-js").createClient>>,
+  supabase: AnySupabase,
 ): Promise<{ companyId: string; role: string }> {
   const { data, error } = await supabase
     .from("company_members")
@@ -57,6 +58,7 @@ async function requireAdminEditor(
   }
   return { companyId: data.company_id as string, role: data.role as string };
 }
+
 
 /* ----------------------------- HEALTH CHECK ----------------------------- */
 
