@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Trash2, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Trash2, ChevronLeft, ChevronRight, Loader2, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -90,13 +90,15 @@ export default function PdfFieldPlacer({
   const [page, setPage] = useState(1);
   const [activeSigner, setActiveSigner] = useState(0);
   const [activeType, setActiveType] = useState<FieldType>("signature");
-  const [width, setWidth] = useState(720);
+  const [baseWidth, setBaseWidth] = useState(720);
+  const [zoom, setZoom] = useState(1);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const width = Math.round(baseWidth * zoom);
 
   useEffect(() => {
     const handle = () => {
       if (wrapRef.current) {
-        setWidth(Math.min(wrapRef.current.clientWidth - 16, 900));
+        setBaseWidth(Math.max(400, wrapRef.current.clientWidth - 16));
       }
     };
     handle();
@@ -181,6 +183,17 @@ export default function PdfFieldPlacer({
           </Select>
         </div>
         <div className="ml-auto flex items-center gap-2">
+          <Button type="button" size="sm" variant="outline" onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))} disabled={zoom <= 0.5} title="Diminuir zoom">
+            <ZoomOut className="h-4 w-4" />
+          </Button>
+          <span className="text-xs text-muted-foreground tabular-nums w-10 text-center">{Math.round(zoom * 100)}%</span>
+          <Button type="button" size="sm" variant="outline" onClick={() => setZoom((z) => Math.min(3, z + 0.25))} disabled={zoom >= 3} title="Aumentar zoom">
+            <ZoomIn className="h-4 w-4" />
+          </Button>
+          <Button type="button" size="sm" variant="outline" onClick={() => setZoom(1)} title="Ajustar à largura">
+            <Maximize2 className="h-4 w-4" />
+          </Button>
+          <div className="w-px h-6 bg-border mx-1" />
           <Button
             type="button"
             size="sm"
