@@ -431,7 +431,7 @@ function InfoCell({ label, value }: { label: string; value: string | undefined |
 }
 
 function CertList({
-  certs, loading, onUpdate, updating, uploadFn, getSigned, onChanged,
+  certs, loading, onUpdate, updating, uploadFn, getSigned, onChanged, onOpenDetails,
 }: {
   certs: CertRow[];
   loading: boolean;
@@ -440,6 +440,7 @@ function CertList({
   uploadFn: ReturnType<typeof useServerFn<typeof uploadManualCertificate>>;
   getSigned: ReturnType<typeof useServerFn<typeof getSignedCertificateUrl>>;
   onChanged: () => void;
+  onOpenDetails: (id: string) => void;
 }) {
   const [uploadFor, setUploadFor] = useState<CertRow | null>(null);
 
