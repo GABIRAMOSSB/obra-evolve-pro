@@ -28,6 +28,7 @@ import { Route as AppCentrosCustoRouteImport } from './routes/_app.centros-custo
 import { Route as AppBackupRouteImport } from './routes/_app.backup'
 import { Route as AppAssinaturasRouteImport } from './routes/_app.assinaturas'
 import { Route as ApiPublicZapsignWebhookRouteImport } from './routes/api.public.zapsign-webhook'
+import { Route as ApiPublicZapsignRemindersRouteImport } from './routes/api.public.zapsign-reminders'
 import { Route as AppInsumosImportarRouteImport } from './routes/_app.insumos.importar'
 import { Route as AppConfiguracoesZapsignRouteImport } from './routes/_app.configuracoes.zapsign'
 
@@ -127,6 +128,12 @@ const ApiPublicZapsignWebhookRoute = ApiPublicZapsignWebhookRouteImport.update({
   path: '/api/public/zapsign-webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicZapsignRemindersRoute =
+  ApiPublicZapsignRemindersRouteImport.update({
+    id: '/api/public/zapsign-reminders',
+    path: '/api/public/zapsign-reminders',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AppInsumosImportarRoute = AppInsumosImportarRouteImport.update({
   id: '/importar',
   path: '/importar',
@@ -158,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/invite/$token': typeof InviteTokenRoute
   '/configuracoes/zapsign': typeof AppConfiguracoesZapsignRoute
   '/insumos/importar': typeof AppInsumosImportarRoute
+  '/api/public/zapsign-reminders': typeof ApiPublicZapsignRemindersRoute
   '/api/public/zapsign-webhook': typeof ApiPublicZapsignWebhookRoute
 }
 export interface FileRoutesByTo {
@@ -180,6 +188,7 @@ export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
   '/configuracoes/zapsign': typeof AppConfiguracoesZapsignRoute
   '/insumos/importar': typeof AppInsumosImportarRoute
+  '/api/public/zapsign-reminders': typeof ApiPublicZapsignRemindersRoute
   '/api/public/zapsign-webhook': typeof ApiPublicZapsignWebhookRoute
 }
 export interface FileRoutesById {
@@ -204,6 +213,7 @@ export interface FileRoutesById {
   '/_app/': typeof AppIndexRoute
   '/_app/configuracoes/zapsign': typeof AppConfiguracoesZapsignRoute
   '/_app/insumos/importar': typeof AppInsumosImportarRoute
+  '/api/public/zapsign-reminders': typeof ApiPublicZapsignRemindersRoute
   '/api/public/zapsign-webhook': typeof ApiPublicZapsignWebhookRoute
 }
 export interface FileRouteTypes {
@@ -228,6 +238,7 @@ export interface FileRouteTypes {
     | '/invite/$token'
     | '/configuracoes/zapsign'
     | '/insumos/importar'
+    | '/api/public/zapsign-reminders'
     | '/api/public/zapsign-webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -250,6 +261,7 @@ export interface FileRouteTypes {
     | '/'
     | '/configuracoes/zapsign'
     | '/insumos/importar'
+    | '/api/public/zapsign-reminders'
     | '/api/public/zapsign-webhook'
   id:
     | '__root__'
@@ -273,6 +285,7 @@ export interface FileRouteTypes {
     | '/_app/'
     | '/_app/configuracoes/zapsign'
     | '/_app/insumos/importar'
+    | '/api/public/zapsign-reminders'
     | '/api/public/zapsign-webhook'
   fileRoutesById: FileRoutesById
 }
@@ -281,6 +294,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   InviteTokenRoute: typeof InviteTokenRoute
+  ApiPublicZapsignRemindersRoute: typeof ApiPublicZapsignRemindersRoute
   ApiPublicZapsignWebhookRoute: typeof ApiPublicZapsignWebhookRoute
 }
 
@@ -419,6 +433,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicZapsignWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/zapsign-reminders': {
+      id: '/api/public/zapsign-reminders'
+      path: '/api/public/zapsign-reminders'
+      fullPath: '/api/public/zapsign-reminders'
+      preLoaderRoute: typeof ApiPublicZapsignRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/insumos/importar': {
       id: '/_app/insumos/importar'
       path: '/importar'
@@ -491,18 +512,9 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   InviteTokenRoute: InviteTokenRoute,
+  ApiPublicZapsignRemindersRoute: ApiPublicZapsignRemindersRoute,
   ApiPublicZapsignWebhookRoute: ApiPublicZapsignWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

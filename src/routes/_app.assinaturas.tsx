@@ -8,6 +8,7 @@ import {
   getSignedDocumentUrl,
   type SignatureRequestListItem,
 } from "@/lib/zapsign-dashboard.functions";
+import { resendSignerLink } from "@/lib/zapsign-reminders.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +41,7 @@ import {
   AlertCircle,
   Ban,
   FileSignature,
+  Send,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_app/assinaturas")({
@@ -318,6 +320,17 @@ function RequestDetailDialog({
     },
   });
 
+  const resendMut = useMutation({
+    mutationFn: (vars: { signerId: string; channel: "whatsapp" | "email" }) =>
+      resendSignerLink({ data: vars }),
+    onSuccess: (r) => {
+      toast.success(`Lembrete enviado via ${r.channel}`);
+      onChanged();
+    },
+    onError: (e) =>
+      toast.error("Falha ao reenviar", { description: (e as Error).message }),
+  });
+
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -395,6 +408,22 @@ function RequestDetailDialog({
                         ) : null}
                       </div>
                       <StatusBadge status={s.status} />
+                      {s.status !== "signed" && s.status !== "refused" ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="Reenviar lembrete"
+                          disabled={resendMut.isPending}
+                          onClick={() =>
+                            resendMut.mutate({
+                              signerId: s.id,
+                              channel: s.phone_number ? "whatsapp" : "email",
+                            })
+                          }
+                        >
+                          <Send className="h-3.5 w-3.5" />
+                        </Button>
+                      ) : null}
                       {s.zapsign_sign_url ? (
                         <Button
                           variant="ghost"

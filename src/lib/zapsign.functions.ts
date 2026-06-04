@@ -14,6 +14,10 @@ export interface ZapSignSettings {
   last_connection_test_at: string | null;
   last_connection_test_status: string | null;
   last_webhook_received_at: string | null;
+  reminder_enabled: boolean;
+  reminder_interval_days: number;
+  reminder_max_count: number;
+  reminder_channel: "whatsapp" | "email" | "sms";
 }
 
 export interface ZapSignStatus {
@@ -113,6 +117,10 @@ const updateSchema = z.object({
   automatic_email: z.boolean().optional(),
   automatic_whatsapp: z.boolean().optional(),
   manual_whatsapp_enabled: z.boolean().optional(),
+  reminder_enabled: z.boolean().optional(),
+  reminder_interval_days: z.number().int().min(1).max(30).optional(),
+  reminder_max_count: z.number().int().min(1).max(10).optional(),
+  reminder_channel: z.enum(["whatsapp", "email", "sms"]).optional(),
 });
 
 export const updateZapSignSettings = createServerFn({ method: "POST" })
