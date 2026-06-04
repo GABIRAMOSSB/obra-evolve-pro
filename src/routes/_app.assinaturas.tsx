@@ -495,30 +495,16 @@ function RequestDetailDialog({
 
             <div>
               <h3 className="text-sm font-semibold mb-2">Linha do tempo</h3>
-              <Card className="p-3 max-h-60 overflow-y-auto">
-                {data.events.length === 0 ? (
-                  <div className="text-sm text-muted-foreground">
-                    Sem eventos registrados ainda.
-                  </div>
-                ) : (
-                  <ol className="space-y-2">
-                    {data.events.map((ev) => (
-                      <li key={ev.id} className="text-xs flex gap-2">
-                        <span className="text-muted-foreground whitespace-nowrap">
-                          {new Date(ev.created_at).toLocaleString("pt-BR")}
-                        </span>
-                        <span className="flex-1">
-                          <span className="font-medium">{ev.event_type}</span>
-                          {ev.event_description ? (
-                            <> — {ev.event_description}</>
-                          ) : null}
-                        </span>
-                      </li>
-                    ))}
-                  </ol>
-                )}
+              <Card className="p-4 max-h-72 overflow-y-auto">
+                <SignatureTimeline
+                  events={data.events}
+                  signers={data.signers}
+                  createdAt={data.created_at}
+                  status={data.status}
+                />
               </Card>
             </div>
+
 
             <div className="flex items-center justify-end gap-2 pt-2">
               {data.signed_file_path ? (
@@ -583,3 +569,197 @@ function RequestDetailDialog({
     </Dialog>
   );
 }
+
+// ---------- Timeline ----------
+
+type TimelineKind =
+  | "created"
+  | "sent"
+  | "viewed"
+  | "signed"
+  | "refused"
+  | "expired"
+  | "canceled"
+  | "reminder"
+  | "completed"
+  | "error"
+  | "other";
+
+interface TimelineItem {
+  id: string;
+  kind: TimelineKind;
+  title: string;
+  description?: string | null;
+  at: string;
+}
+
+const KIND_META: Record<
+  TimelineKind,
+  { label: string; icon: typeof CheckCircle2; color: string; ring: string }
+> = {
+  created: { label: "Pedido criado", icon: FileSignature, color: "text-blue-600", ring: "bg-blue-100 dark:bg-blue-950" },
+  sent: { label: "Enviado ao signatário", icon: Send, color: "text-sky-600", ring: "bg-sky-100 dark:bg-sky-950" },
+  viewed: { label: "Documento visualizado", icon: Eye, color: "text-indigo-600", ring: "bg-indigo-100 dark:bg-indigo-950" },
+  signed: { label: "Assinado", icon: CheckCircle2, color: "text-emerald-600", ring: "bg-emerald-100 dark:bg-emerald-950" },
+  refused: { label: "Recusado", icon: Ban, color: "text-destructive", ring: "bg-red-100 dark:bg-red-950" },
+  expired: { label: "Expirado", icon: Clock, color: "text-amber-600", ring: "bg-amber-100 dark:bg-amber-950" },
+  canceled: { label: "Cancelado", icon: XCircle, color: "text-muted-foreground", ring: "bg-muted" },
+  reminder: { label: "Lembrete enviado", icon: Send, color: "text-purple-600", ring: "bg-purple-100 dark:bg-purple-950" },
+  completed: { label: "Documento concluído", icon: CheckCircle2, color: "text-emerald-700", ring: "bg-emerald-100 dark:bg-emerald-950" },
+  error: { label: "Erro", icon: AlertCircle, color: "text-destructive", ring: "bg-red-100 dark:bg-red-950" },
+  other: { label: "Evento", icon: Clock, color: "text-muted-foreground", ring: "bg-muted" },
+};
+
+function classifyEvent(type: string): TimelineKind {
+  const t = type.toLowerCase();
+  if (t.includes("created") || t === "request_created") return "created";
+  if (t.includes("sent") || t.includes("delivered")) return "sent";
+  if (t.includes("view") || t.includes("opened")) return "viewed";
+  if (t.includes("refus") || t.includes("reject")) return "refused";
+  if (t.includes("expir")) return "expired";
+  if (t.includes("cancel")) return "canceled";
+  if (t.includes("reminder") || t.includes("resent")) return "reminder";
+  if (t.includes("complet") || t === "doc_signed") return "completed";
+  if (t.includes("sign")) return "signed";
+  if (t.includes("fail") || t.includes("error")) return "error";
+  return "other";
+}
+
+function humanizeType(t: string) {
+  return t.replace(/_/g, " ");
+}
+
+function sameMinute(a: string, b: string) {
+  return Math.abs(new Date(a).getTime() - new Date(b).getTime()) < 60_000;
+}
+
+function SignatureTimeline({
+  events,
+  signers,
+  createdAt,
+  status,
+}: {
+  events: Array<{ id: string; event_type: string; event_description: string | null; created_at: string }>;
+  signers: Array<{ id: string; name: string; status: string; signed_at: string | null; refused_at: string | null; refusal_reason: string | null }>;
+  createdAt: string;
+  status: string;
+}) {
+  const items: TimelineItem[] = [];
+
+  const hasCreated = events.some((e) => classifyEvent(e.event_type) === "created");
+  if (!hasCreated) {
+    items.push({
+      id: "synthetic-created",
+      kind: "created",
+      title: KIND_META.created.label,
+      at: createdAt,
+    });
+  }
+
+  for (const ev of events) {
+    const kind = classifyEvent(ev.event_type);
+    items.push({
+      id: ev.id,
+      kind,
+      title: KIND_META[kind].label,
+      description: ev.event_description ?? humanizeType(ev.event_type),
+      at: ev.created_at,
+    });
+  }
+
+  for (const s of signers) {
+    if (
+      s.signed_at &&
+      !events.some(
+        (e) => classifyEvent(e.event_type) === "signed" && sameMinute(e.created_at, s.signed_at!),
+      )
+    ) {
+      items.push({
+        id: `signer-${s.id}-signed`,
+        kind: "signed",
+        title: `Assinado por ${s.name}`,
+        at: s.signed_at,
+      });
+    }
+    if (
+      s.refused_at &&
+      !events.some(
+        (e) => classifyEvent(e.event_type) === "refused" && sameMinute(e.created_at, s.refused_at!),
+      )
+    ) {
+      items.push({
+        id: `signer-${s.id}-refused`,
+        kind: "refused",
+        title: `Recusado por ${s.name}`,
+        description: s.refusal_reason,
+        at: s.refused_at,
+      });
+    }
+  }
+
+  if (status === "expired" && !items.some((i) => i.kind === "expired")) {
+    items.push({
+      id: "synthetic-expired",
+      kind: "expired",
+      title: KIND_META.expired.label,
+      at: new Date().toISOString(),
+    });
+  }
+  if (status === "canceled" && !items.some((i) => i.kind === "canceled")) {
+    items.push({
+      id: "synthetic-canceled",
+      kind: "canceled",
+      title: KIND_META.canceled.label,
+      at: new Date().toISOString(),
+    });
+  }
+  if (status === "signed" && !items.some((i) => i.kind === "completed")) {
+    items.push({
+      id: "synthetic-completed",
+      kind: "completed",
+      title: KIND_META.completed.label,
+      at: new Date().toISOString(),
+    });
+  }
+
+  items.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+
+  if (items.length === 0) {
+    return <div className="text-sm text-muted-foreground">Sem eventos registrados ainda.</div>;
+  }
+
+  return (
+    <ol className="relative space-y-4 pl-2">
+      <div className="absolute left-[14px] top-1 bottom-1 w-px bg-border" aria-hidden />
+      {items.map((it) => {
+        const meta = KIND_META[it.kind];
+        const Icon = meta.icon;
+        return (
+          <li key={it.id} className="relative pl-8">
+            <span
+              className={`absolute left-0 top-0 flex h-7 w-7 items-center justify-center rounded-full ring-4 ring-background ${meta.ring}`}
+            >
+              <Icon className={`h-3.5 w-3.5 ${meta.color}`} />
+            </span>
+            <div className="flex flex-wrap items-baseline gap-x-2">
+              <span className="text-sm font-medium">{it.title}</span>
+              <span className="text-xs text-muted-foreground">
+                {new Date(it.at).toLocaleString("pt-BR", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
+            </div>
+            {it.description ? (
+              <div className="text-xs text-muted-foreground mt-0.5">{it.description}</div>
+            ) : null}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
