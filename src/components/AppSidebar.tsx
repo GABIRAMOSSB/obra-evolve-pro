@@ -42,6 +42,9 @@ export function AppSidebar() {
         <SidebarLink to="/insumos" icon={Package} label="Insumos" />
         <SidebarLink to="/composicoes" icon={Package} label="Composições" />
         <SidebarLink to="/centros-custo" icon={FolderTree} label="Centros de Custo" />
+        <div className="px-3 pt-5 pb-1 text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/40">Governança e Compliance</div>
+        <SidebarLink to="/compliance" icon={ShieldCheck} label="Central de Certidões" />
+
 
         <div className="px-3 pt-5 pb-1 text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/40">Administração</div>
         <SidebarLink to="/equipe" icon={Users} label="Equipe" />
