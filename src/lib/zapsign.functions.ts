@@ -14,6 +14,10 @@ export interface ZapSignSettings {
   last_connection_test_at: string | null;
   last_connection_test_status: string | null;
   last_webhook_received_at: string | null;
+  reminder_enabled: boolean;
+  reminder_interval_days: number;
+  reminder_max_count: number;
+  reminder_channel: "whatsapp" | "email" | "sms";
 }
 
 export interface ZapSignStatus {
