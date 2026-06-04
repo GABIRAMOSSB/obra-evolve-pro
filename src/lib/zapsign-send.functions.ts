@@ -360,6 +360,7 @@ export const sendBatchDocumentsForSignature = createServerFn({ method: "POST" })
             expirationDays: data.expirationDays,
             customMessage: data.customMessage,
             placements: data.placements,
+            signingOrderActive: data.signingOrderActive,
           },
           supabase,
           userId,
