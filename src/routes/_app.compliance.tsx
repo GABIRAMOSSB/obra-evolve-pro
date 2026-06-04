@@ -44,6 +44,7 @@ import {
   Settings,
   Activity,
   ScrollText,
+  Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 
