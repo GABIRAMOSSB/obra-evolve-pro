@@ -408,6 +408,13 @@ function ComplianceModule() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <CertDetailsDrawer
+        certId={detailsId}
+        onClose={() => setDetailsId(null)}
+        getDetails={getDetails}
+        getSigned={getSigned}
+      />
     </div>
   );
 }
