@@ -847,3 +847,39 @@ export const listAuditLogs = createServerFn({ method: "GET" })
       .limit(200);
     return data ?? [];
   });
+
+/* ----------------------- CERTIFICATE DETAILS DRAWER ---------------------- */
+
+export const getCertificateDetails = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ company_certificate_id: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    const { supabase } = context;
+    const companyId = await resolveCompanyId(supabase, context.userId);
+
+    const { data: cert, error: certErr } = await supabase
+      .from("company_certificates")
+      .select("*, certificate_types(*)")
+      .eq("id", data.company_certificate_id)
+      .eq("company_id", companyId)
+      .maybeSingle();
+    if (certErr) throw new Error(certErr.message);
+    if (!cert) throw new Error("Certidão não encontrada.");
+
+    const { data: versions } = await supabase
+      .from("certificate_versions")
+      .select("*")
+      .eq("company_certificate_id", data.company_certificate_id)
+      .order("version_number", { ascending: false });
+
+    const { data: checks } = await supabase
+      .from("certificate_checks")
+      .select("*")
+      .eq("company_certificate_id", data.company_certificate_id)
+      .order("started_at", { ascending: false })
+      .limit(30);
+
+    return { cert, versions: versions ?? [], checks: checks ?? [] };
+  });
