@@ -69,6 +69,7 @@ export default function SendForSignatureDialog({
   const [signers, setSigners] = useState<SignerDraft[]>([emptySigner()]);
   const [expirationDays, setExpirationDays] = useState<string>("30");
   const [customMessage, setCustomMessage] = useState("");
+  const [signingOrderActive, setSigningOrderActive] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [step, setStep] = useState<"signers" | "placements">("signers");
   const [placements, setPlacements] = useState<Placement[]>([]);
