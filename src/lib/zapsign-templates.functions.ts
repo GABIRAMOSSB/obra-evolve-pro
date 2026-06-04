@@ -34,11 +34,11 @@ const upsertSchema = z.object({
   placements: z.array(placementSchema).max(200).default([]),
 });
 
-async function getCompanyId(supabase: any) {
+async function getCompanyId(supabase: any, userId: string) {
   const { data, error } = await supabase
     .from("company_members")
     .select("company_id, role")
-    .limit(1)
+    .eq("user_id", userId)
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data?.company_id) throw new Error("Sem empresa vinculada.");
@@ -48,8 +48,8 @@ async function getCompanyId(supabase: any) {
 export const listSignatureTemplates = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase } = context;
-    const { companyId } = await getCompanyId(supabase);
+    const { supabase, userId } = context;
+    const { companyId } = await getCompanyId(supabase, userId);
     const { data, error } = await supabase
       .from("signature_templates")
       .select("*")
@@ -64,7 +64,7 @@ export const upsertSignatureTemplate = createServerFn({ method: "POST" })
   .inputValidator((input) => upsertSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { companyId, role } = await getCompanyId(supabase);
+    const { companyId, role } = await getCompanyId(supabase, userId);
     if (!["admin", "editor"].includes(role)) {
       throw new Error("Sem permissão para gerenciar templates.");
     }
@@ -107,8 +107,8 @@ export const deleteSignatureTemplate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
-    const { companyId, role } = await getCompanyId(supabase);
+    const { supabase, userId } = context;
+    const { companyId, role } = await getCompanyId(supabase, userId);
     if (!["admin", "editor"].includes(role)) {
       throw new Error("Sem permissão para remover templates.");
     }
