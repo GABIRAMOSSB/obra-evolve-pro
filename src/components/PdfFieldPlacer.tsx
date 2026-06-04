@@ -90,13 +90,15 @@ export default function PdfFieldPlacer({
   const [page, setPage] = useState(1);
   const [activeSigner, setActiveSigner] = useState(0);
   const [activeType, setActiveType] = useState<FieldType>("signature");
-  const [width, setWidth] = useState(720);
+  const [baseWidth, setBaseWidth] = useState(720);
+  const [zoom, setZoom] = useState(1);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const width = Math.round(baseWidth * zoom);
 
   useEffect(() => {
     const handle = () => {
       if (wrapRef.current) {
-        setWidth(Math.min(wrapRef.current.clientWidth - 16, 900));
+        setBaseWidth(Math.max(400, wrapRef.current.clientWidth - 16));
       }
     };
     handle();
