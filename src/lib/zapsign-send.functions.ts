@@ -178,7 +178,7 @@ async function processSignatureSend(
       body: {
         sandbox,
         name: data.documentName.replace(/\.pdf$/i, ""),
-        base64_pdf: base64,
+        url_pdf: pdfUrl,
         lang: data.lang ?? "pt-br",
         disable_signer_emails: false,
         brand_logo: "",
