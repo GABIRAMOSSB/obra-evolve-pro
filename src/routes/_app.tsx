@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { AppTopbar } from "@/components/AppTopbar";
 import { useAuth } from "@/hooks/use-auth";
+import { useSignatureNotifications } from "@/hooks/use-signature-notifications";
 
 export const Route = createFileRoute("/_app")({
   component: AppLayout,
