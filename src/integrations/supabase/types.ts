@@ -1462,6 +1462,10 @@ export type Database = {
           last_connection_test_status: string | null
           last_webhook_received_at: string | null
           manual_whatsapp_enabled: boolean
+          reminder_channel: string
+          reminder_enabled: boolean
+          reminder_interval_days: number
+          reminder_max_count: number
           updated_at: string
           webhook_configured: boolean
         }
@@ -1477,6 +1481,10 @@ export type Database = {
           last_connection_test_status?: string | null
           last_webhook_received_at?: string | null
           manual_whatsapp_enabled?: boolean
+          reminder_channel?: string
+          reminder_enabled?: boolean
+          reminder_interval_days?: number
+          reminder_max_count?: number
           updated_at?: string
           webhook_configured?: boolean
         }
@@ -1492,6 +1500,10 @@ export type Database = {
           last_connection_test_status?: string | null
           last_webhook_received_at?: string | null
           manual_whatsapp_enabled?: boolean
+          reminder_channel?: string
+          reminder_enabled?: boolean
+          reminder_interval_days?: number
+          reminder_max_count?: number
           updated_at?: string
           webhook_configured?: boolean
         }
@@ -1514,6 +1526,7 @@ export type Database = {
           custom_message: string | null
           email: string | null
           id: string
+          last_reminder_at: string | null
           last_shared_at: string | null
           mandatory: boolean
           name: string
@@ -1521,6 +1534,7 @@ export type Database = {
           phone_number: string | null
           refusal_reason: string | null
           refused_at: string | null
+          reminder_count: number
           role: string | null
           send_automatic_email: boolean
           send_automatic_whatsapp: boolean
@@ -1540,6 +1554,7 @@ export type Database = {
           custom_message?: string | null
           email?: string | null
           id?: string
+          last_reminder_at?: string | null
           last_shared_at?: string | null
           mandatory?: boolean
           name: string
@@ -1547,6 +1562,7 @@ export type Database = {
           phone_number?: string | null
           refusal_reason?: string | null
           refused_at?: string | null
+          reminder_count?: number
           role?: string | null
           send_automatic_email?: boolean
           send_automatic_whatsapp?: boolean
@@ -1566,6 +1582,7 @@ export type Database = {
           custom_message?: string | null
           email?: string | null
           id?: string
+          last_reminder_at?: string | null
           last_shared_at?: string | null
           mandatory?: boolean
           name?: string
@@ -1573,6 +1590,7 @@ export type Database = {
           phone_number?: string | null
           refusal_reason?: string | null
           refused_at?: string | null
+          reminder_count?: number
           role?: string | null
           send_automatic_email?: boolean
           send_automatic_whatsapp?: boolean
