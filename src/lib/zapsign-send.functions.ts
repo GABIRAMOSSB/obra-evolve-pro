@@ -46,6 +46,25 @@ const sendSchema = z.object({
   placements: z.array(placementSchema).max(200).optional(),
 });
 
+const batchSchema = z.object({
+  obraId: z.string().min(1).max(64),
+  documents: z
+    .array(
+      z.object({
+        documentPath: z.string().min(1),
+        documentName: z.string().min(1).max(255),
+        documentFolder: z.string().max(120).optional(),
+      }),
+    )
+    .min(1)
+    .max(20),
+  signers: z.array(signerSchema).min(1).max(20),
+  lang: z.enum(["pt-br", "en", "es"]).optional(),
+  expirationDays: z.number().int().min(1).max(365).optional(),
+  customMessage: z.string().max(2000).optional(),
+  placements: z.array(placementSchema).max(200).optional(),
+});
+
 const BUCKET = "obra-documentos";
 
 interface ZapSignCreateResponse {
