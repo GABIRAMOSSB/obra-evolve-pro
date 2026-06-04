@@ -150,6 +150,7 @@ export default function SendForSignatureDialog({
             auth_mode: s.auth_mode,
           })),
           placements: placements.length > 0 ? placements : undefined,
+          signingOrderActive,
         },
       });
       toast.success("Documento enviado para assinatura");
