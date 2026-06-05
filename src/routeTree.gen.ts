@@ -33,6 +33,7 @@ import { Route as ApiPublicZapsignRemindersRouteImport } from './routes/api.publ
 import { Route as AppInsumosImportarRouteImport } from './routes/_app.insumos.importar'
 import { Route as AppConfiguracoesZapsignRouteImport } from './routes/_app.configuracoes.zapsign'
 import { Route as AppAssinaturasRelatorioRouteImport } from './routes/_app.assinaturas.relatorio'
+import { Route as AppConfiguracoesZapsignTestesRouteImport } from './routes/_app.configuracoes.zapsign.testes'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -156,6 +157,12 @@ const AppAssinaturasRelatorioRoute = AppAssinaturasRelatorioRouteImport.update({
   path: '/relatorio',
   getParentRoute: () => AppAssinaturasRoute,
 } as any)
+const AppConfiguracoesZapsignTestesRoute =
+  AppConfiguracoesZapsignTestesRouteImport.update({
+    id: '/testes',
+    path: '/testes',
+    getParentRoute: () => AppConfiguracoesZapsignRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -177,10 +184,11 @@ export interface FileRoutesByFullPath {
   '/realizado': typeof AppRealizadoRoute
   '/invite/$token': typeof InviteTokenRoute
   '/assinaturas/relatorio': typeof AppAssinaturasRelatorioRoute
-  '/configuracoes/zapsign': typeof AppConfiguracoesZapsignRoute
+  '/configuracoes/zapsign': typeof AppConfiguracoesZapsignRouteWithChildren
   '/insumos/importar': typeof AppInsumosImportarRoute
   '/api/public/zapsign-reminders': typeof ApiPublicZapsignRemindersRoute
   '/api/public/zapsign-webhook': typeof ApiPublicZapsignWebhookRoute
+  '/configuracoes/zapsign/testes': typeof AppConfiguracoesZapsignTestesRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -202,10 +210,11 @@ export interface FileRoutesByTo {
   '/invite/$token': typeof InviteTokenRoute
   '/': typeof AppIndexRoute
   '/assinaturas/relatorio': typeof AppAssinaturasRelatorioRoute
-  '/configuracoes/zapsign': typeof AppConfiguracoesZapsignRoute
+  '/configuracoes/zapsign': typeof AppConfiguracoesZapsignRouteWithChildren
   '/insumos/importar': typeof AppInsumosImportarRoute
   '/api/public/zapsign-reminders': typeof ApiPublicZapsignRemindersRoute
   '/api/public/zapsign-webhook': typeof ApiPublicZapsignWebhookRoute
+  '/configuracoes/zapsign/testes': typeof AppConfiguracoesZapsignTestesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -229,10 +238,11 @@ export interface FileRoutesById {
   '/invite/$token': typeof InviteTokenRoute
   '/_app/': typeof AppIndexRoute
   '/_app/assinaturas/relatorio': typeof AppAssinaturasRelatorioRoute
-  '/_app/configuracoes/zapsign': typeof AppConfiguracoesZapsignRoute
+  '/_app/configuracoes/zapsign': typeof AppConfiguracoesZapsignRouteWithChildren
   '/_app/insumos/importar': typeof AppInsumosImportarRoute
   '/api/public/zapsign-reminders': typeof ApiPublicZapsignRemindersRoute
   '/api/public/zapsign-webhook': typeof ApiPublicZapsignWebhookRoute
+  '/_app/configuracoes/zapsign/testes': typeof AppConfiguracoesZapsignTestesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -260,6 +270,7 @@ export interface FileRouteTypes {
     | '/insumos/importar'
     | '/api/public/zapsign-reminders'
     | '/api/public/zapsign-webhook'
+    | '/configuracoes/zapsign/testes'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -285,6 +296,7 @@ export interface FileRouteTypes {
     | '/insumos/importar'
     | '/api/public/zapsign-reminders'
     | '/api/public/zapsign-webhook'
+    | '/configuracoes/zapsign/testes'
   id:
     | '__root__'
     | '/_app'
@@ -311,6 +323,7 @@ export interface FileRouteTypes {
     | '/_app/insumos/importar'
     | '/api/public/zapsign-reminders'
     | '/api/public/zapsign-webhook'
+    | '/_app/configuracoes/zapsign/testes'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -492,6 +505,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAssinaturasRelatorioRouteImport
       parentRoute: typeof AppAssinaturasRoute
     }
+    '/_app/configuracoes/zapsign/testes': {
+      id: '/_app/configuracoes/zapsign/testes'
+      path: '/testes'
+      fullPath: '/configuracoes/zapsign/testes'
+      preLoaderRoute: typeof AppConfiguracoesZapsignTestesRouteImport
+      parentRoute: typeof AppConfiguracoesZapsignRoute
+    }
   }
 }
 
@@ -519,6 +539,20 @@ const AppInsumosRouteWithChildren = AppInsumosRoute._addFileChildren(
   AppInsumosRouteChildren,
 )
 
+interface AppConfiguracoesZapsignRouteChildren {
+  AppConfiguracoesZapsignTestesRoute: typeof AppConfiguracoesZapsignTestesRoute
+}
+
+const AppConfiguracoesZapsignRouteChildren: AppConfiguracoesZapsignRouteChildren =
+  {
+    AppConfiguracoesZapsignTestesRoute: AppConfiguracoesZapsignTestesRoute,
+  }
+
+const AppConfiguracoesZapsignRouteWithChildren =
+  AppConfiguracoesZapsignRoute._addFileChildren(
+    AppConfiguracoesZapsignRouteChildren,
+  )
+
 interface AppRouteChildren {
   AppAssinaturasRoute: typeof AppAssinaturasRouteWithChildren
   AppBackupRoute: typeof AppBackupRoute
@@ -535,7 +569,7 @@ interface AppRouteChildren {
   AppParametrosFinanceirosRoute: typeof AppParametrosFinanceirosRoute
   AppRealizadoRoute: typeof AppRealizadoRoute
   AppIndexRoute: typeof AppIndexRoute
-  AppConfiguracoesZapsignRoute: typeof AppConfiguracoesZapsignRoute
+  AppConfiguracoesZapsignRoute: typeof AppConfiguracoesZapsignRouteWithChildren
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -554,7 +588,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppParametrosFinanceirosRoute: AppParametrosFinanceirosRoute,
   AppRealizadoRoute: AppRealizadoRoute,
   AppIndexRoute: AppIndexRoute,
-  AppConfiguracoesZapsignRoute: AppConfiguracoesZapsignRoute,
+  AppConfiguracoesZapsignRoute: AppConfiguracoesZapsignRouteWithChildren,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
@@ -570,13 +604,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
