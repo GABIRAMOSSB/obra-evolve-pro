@@ -7,7 +7,7 @@ export interface DiagnosticResult {
   id: string;
   status: TestStatus;
   message: string;
-  details?: Record<string, unknown>;
+  details?: Record<string, string | number | boolean | null>;
 }
 
 async function getCompany(supabase: any): Promise<string | null> {
