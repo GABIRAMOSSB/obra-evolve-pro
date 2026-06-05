@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
  getZapSignStatus,
@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
-import { AlertTriangle, Bell, CheckCircle2, KeyRound, Loader2, PlugZap, Shield, Webhook } from "lucide-react";
+import { AlertTriangle, Bell, CheckCircle2, ClipboardCheck, KeyRound, Loader2, PlugZap, Shield, Webhook } from "lucide-react";
 import SignatureTemplateManager from "@/components/SignatureTemplateManager";
 
 export const Route = createFileRoute("/_app/configuracoes/zapsign")({
@@ -70,13 +70,21 @@ function ZapSignSettingsPage() {
 
  return (
  <div className="container max-w-4xl py-8 space-y-6">
- <header className="space-y-1">
- <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Configurações</div>
- <h1 className="font-display text-2xl font-bold tracking-tight">Integração ZapSign</h1>
- <p className="text-sm text-muted-foreground">
- Configuração do serviço de assinatura eletrônica. Token e segredos ficam armazenados de forma segura no backend.
- </p>
- </header>
+      <header className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="space-y-1">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Configurações</div>
+          <h1 className="font-display text-2xl font-bold tracking-tight">Integração ZapSign</h1>
+          <p className="text-sm text-muted-foreground">
+            Configuração do serviço de assinatura eletrônica. Token e segredos ficam armazenados de forma segura no backend.
+          </p>
+        </div>
+        <Button asChild variant="outline" size="sm">
+          <Link to="/configuracoes/zapsign/testes">
+            <ClipboardCheck className="h-4 w-4 mr-2" />
+            Roteiro de testes sandbox
+          </Link>
+        </Button>
+      </header>
 
  {isSandbox && (
  <div className="flex items-start gap-3 rounded-lg border border-warning/40 bg-warning/5 px-4 py-3 text-sm">
