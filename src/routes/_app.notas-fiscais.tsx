@@ -887,6 +887,13 @@ function NotasFiscaisPage() {
           onSaved={() => detailNota && openDetail(detailNota)}
         />
       )}
+
+      <NfeManifestacaoDialog
+        open={!!manifestNota}
+        onOpenChange={(o) => !o && setManifestNota(null)}
+        nota={manifestNota}
+        onSaved={() => { void refresh(); }}
+      />
     </div>
   );
 }
