@@ -154,6 +154,7 @@ const calcSchema = z.object({
   periodo_fim: z.string().min(7),
   status: z.enum(["rascunho", "aplicado"]).default("rascunho"),
   observacoes: z.string().max(2000).optional().nullable(),
+  base_modo: z.enum(["contrato", "medicoes"]).optional().default("contrato"),
 });
 
 export const calcularReajuste = createServerFn({ method: "POST" })
