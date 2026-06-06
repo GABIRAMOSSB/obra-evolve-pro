@@ -758,6 +758,64 @@ async function embedBatch(apiKey: string, inputs: string[]): Promise<number[][]>
 
 const indexarSchema = z.object({ edital_id: z.string().uuid() });
 
+async function indexarEditalChunks(
+  supabase: AnySupabase,
+  companyId: string,
+  editalId: string,
+  apiKey: string,
+): Promise<{ chunks: number; documentos: number }> {
+  const { data: docs, error } = await supabase
+    .from("edital_documentos")
+    .select("id, nome_arquivo, texto_por_pagina")
+    .eq("edital_id", editalId)
+    .eq("company_id", companyId);
+  if (error) throw new Error(error.message);
+
+  const docsList = (docs ?? []) as Array<{
+    id: string;
+    nome_arquivo: string;
+    texto_por_pagina: Array<{ pagina: number; texto: string }> | null;
+  }>;
+  if (!docsList.length) throw new Error("Nenhum documento. Anexe um PDF antes.");
+  const comTexto = docsList.filter((d) => (d.texto_por_pagina ?? []).length > 0);
+  if (!comTexto.length) throw new Error('Extraia o texto do PDF antes (botão "extrair texto").');
+
+  // limpa chunks anteriores deste edital
+  await supabase.from("edital_chunks").delete().eq("edital_id", editalId);
+
+  let totalChunks = 0;
+  for (const doc of comTexto) {
+    const pages = doc.texto_por_pagina ?? [];
+    const chunks: Array<{ pagina: number; conteudo: string }> = [];
+    for (const p of pages) {
+      for (const piece of chunkText(p.texto ?? "", 1200, 200)) {
+        if (piece.trim().length > 50) chunks.push({ pagina: p.pagina, conteudo: piece });
+      }
+    }
+    if (!chunks.length) continue;
+
+    const BATCH = 64;
+    for (let i = 0; i < chunks.length; i += BATCH) {
+      const slice = chunks.slice(i, i + BATCH);
+      const embeddings = await embedBatch(apiKey, slice.map((c) => c.conteudo));
+      const rows = slice.map((c, j) => ({
+        edital_id: editalId,
+        documento_id: doc.id,
+        company_id: companyId,
+        pagina: c.pagina,
+        chunk_index: totalChunks + i + j,
+        conteudo: c.conteudo,
+        embedding: JSON.stringify(embeddings[j]),
+      }));
+      const { error: insErr } = await supabase.from("edital_chunks").insert(rows);
+      if (insErr) throw new Error(`Falha ao inserir chunks: ${insErr.message}`);
+    }
+    totalChunks += chunks.length;
+  }
+
+  return { chunks: totalChunks, documentos: comTexto.length };
+}
+
 export const indexarEditalRAG = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => indexarSchema.parse(input))
@@ -766,59 +824,10 @@ export const indexarEditalRAG = createServerFn({ method: "POST" })
     const companyId = await requireEditor(supabase, context.userId);
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) throw new Error("LOVABLE_API_KEY não configurada.");
-
-    const { data: docs, error } = await supabase
-      .from("edital_documentos")
-      .select("id, nome_arquivo, texto_por_pagina")
-      .eq("edital_id", data.edital_id)
-      .eq("company_id", companyId);
-    if (error) throw new Error(error.message);
-
-    const docsList = (docs ?? []) as Array<{
-      id: string;
-      nome_arquivo: string;
-      texto_por_pagina: Array<{ pagina: number; texto: string }> | null;
-    }>;
-    if (!docsList.length) throw new Error("Nenhum documento. Anexe um PDF antes.");
-    const comTexto = docsList.filter((d) => (d.texto_por_pagina ?? []).length > 0);
-    if (!comTexto.length) throw new Error('Extraia o texto do PDF antes (botão "extrair texto").');
-
-    // limpa chunks anteriores deste edital
-    await supabase.from("edital_chunks").delete().eq("edital_id", data.edital_id);
-
-    let totalChunks = 0;
-    for (const doc of comTexto) {
-      const pages = doc.texto_por_pagina ?? [];
-      const chunks: Array<{ pagina: number; conteudo: string }> = [];
-      for (const p of pages) {
-        for (const piece of chunkText(p.texto ?? "", 1200, 200)) {
-          if (piece.trim().length > 50) chunks.push({ pagina: p.pagina, conteudo: piece });
-        }
-      }
-      if (!chunks.length) continue;
-
-      const BATCH = 64;
-      for (let i = 0; i < chunks.length; i += BATCH) {
-        const slice = chunks.slice(i, i + BATCH);
-        const embeddings = await embedBatch(apiKey, slice.map((c) => c.conteudo));
-        const rows = slice.map((c, j) => ({
-          edital_id: data.edital_id,
-          documento_id: doc.id,
-          company_id: companyId,
-          pagina: c.pagina,
-          chunk_index: totalChunks + i + j,
-          conteudo: c.conteudo,
-          // pgvector aceita o array serializado como string "[..]"
-          embedding: JSON.stringify(embeddings[j]),
-        }));
-        const { error: insErr } = await supabase.from("edital_chunks").insert(rows);
-        if (insErr) throw new Error(`Falha ao inserir chunks: ${insErr.message}`);
-      }
-      totalChunks += chunks.length;
-    }
-
-    return { ok: true, chunks: totalChunks, documentos: comTexto.length };
+    const result = await indexarEditalChunks(supabase, companyId, data.edital_id, apiKey);
+    return { ok: true, ...result };
   });
+
 
 const perguntarSchema = z.object({
   edital_id: z.string().uuid(),
