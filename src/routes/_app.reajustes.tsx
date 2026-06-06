@@ -75,6 +75,7 @@ function ReajustesPage() {
     periodo_fim: "",
     status: "rascunho" as "rascunho" | "aplicado",
     observacoes: "",
+    base_modo: "contrato" as "contrato" | "medicoes",
   });
 
   const upsertMut = useMutation({
