@@ -176,6 +176,29 @@ function ReajustesPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // --- F12.x: ofício de reajuste ---
+  const oficioFn = useServerFn(gerarOficioReajuste);
+  const [oficio, setOficio] = useState<OficioReajuste | null>(null);
+  const [oficioTexto, setOficioTexto] = useState("");
+  const oficioMut = useMutation({
+    mutationFn: (reajuste_id: string) => oficioFn({ data: { reajuste_id } }),
+    onSuccess: (r) => { setOficio(r); setOficioTexto(r.texto); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const imprimirOficio = () => {
+    if (!oficio) return;
+    const w = window.open("", "_blank", "width=800,height=900");
+    if (!w) { toast.error("Pop-up bloqueado pelo navegador."); return; }
+    const titulo = `Oficio_Reajuste_${oficio.numero_reajuste}_${oficio.contrato_numero}`;
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${titulo}</title>
+      <style>body{font-family:Georgia,serif;padding:48px;max-width:780px;margin:0 auto;line-height:1.6;color:#111;white-space:pre-wrap;font-size:13pt}</style>
+      </head><body>${oficioTexto.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c] ?? c))}</body></html>`);
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 250);
+  };
+
+
 
   const indices = data?.indices ?? [];
   const reajustes = data?.reajustes ?? [];
