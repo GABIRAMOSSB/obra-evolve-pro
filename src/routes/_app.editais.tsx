@@ -534,6 +534,20 @@ function EditalDetail({ id, onBack }: { id: string; onBack: () => void }) {
             )}
             {edital.status === "analisado" ? "Reanalisar com IA" : "Analisar com IA"}
           </Button>
+          <Button
+            variant="outline"
+            onClick={() => sug.mutate()}
+            disabled={sug.isPending || (checklist?.length ?? 0) === 0}
+            title="Sugere vínculos da biblioteca para o checklist"
+          >
+            {sug.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+            ) : (
+              <Wand2 className="w-4 h-4 mr-2" />
+            )}
+            Vincular biblioteca (IA)
+          </Button>
+
         </div>
       </div>
 
