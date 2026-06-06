@@ -29,6 +29,7 @@ import { Route as AppComposicoesRouteImport } from './routes/_app.composicoes'
 import { Route as AppComplianceRouteImport } from './routes/_app.compliance'
 import { Route as AppComparativoComposicaoRouteImport } from './routes/_app.comparativo-composicao'
 import { Route as AppCentrosCustoRouteImport } from './routes/_app.centros-custo'
+import { Route as AppBibliotecaRouteImport } from './routes/_app.biblioteca'
 import { Route as AppBackupRouteImport } from './routes/_app.backup'
 import { Route as AppAssinaturasRouteImport } from './routes/_app.assinaturas'
 import { Route as ApiPublicZapsignWebhookRouteImport } from './routes/api.public.zapsign-webhook'
@@ -139,6 +140,11 @@ const AppCentrosCustoRoute = AppCentrosCustoRouteImport.update({
   path: '/centros-custo',
   getParentRoute: () => AppRoute,
 } as any)
+const AppBibliotecaRoute = AppBibliotecaRouteImport.update({
+  id: '/biblioteca',
+  path: '/biblioteca',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppBackupRoute = AppBackupRouteImport.update({
   id: '/backup',
   path: '/backup',
@@ -188,6 +194,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/assinaturas': typeof AppAssinaturasRouteWithChildren
   '/backup': typeof AppBackupRoute
+  '/biblioteca': typeof AppBibliotecaRoute
   '/centros-custo': typeof AppCentrosCustoRoute
   '/comparativo-composicao': typeof AppComparativoComposicaoRoute
   '/compliance': typeof AppComplianceRoute
@@ -216,6 +223,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/assinaturas': typeof AppAssinaturasRouteWithChildren
   '/backup': typeof AppBackupRoute
+  '/biblioteca': typeof AppBibliotecaRoute
   '/centros-custo': typeof AppCentrosCustoRoute
   '/comparativo-composicao': typeof AppComparativoComposicaoRoute
   '/compliance': typeof AppComplianceRoute
@@ -247,6 +255,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/_app/assinaturas': typeof AppAssinaturasRouteWithChildren
   '/_app/backup': typeof AppBackupRoute
+  '/_app/biblioteca': typeof AppBibliotecaRoute
   '/_app/centros-custo': typeof AppCentrosCustoRoute
   '/_app/comparativo-composicao': typeof AppComparativoComposicaoRoute
   '/_app/compliance': typeof AppComplianceRoute
@@ -279,6 +288,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/assinaturas'
     | '/backup'
+    | '/biblioteca'
     | '/centros-custo'
     | '/comparativo-composicao'
     | '/compliance'
@@ -307,6 +317,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/assinaturas'
     | '/backup'
+    | '/biblioteca'
     | '/centros-custo'
     | '/comparativo-composicao'
     | '/compliance'
@@ -337,6 +348,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/_app/assinaturas'
     | '/_app/backup'
+    | '/_app/biblioteca'
     | '/_app/centros-custo'
     | '/_app/comparativo-composicao'
     | '/_app/compliance'
@@ -513,6 +525,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCentrosCustoRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/biblioteca': {
+      id: '/_app/biblioteca'
+      path: '/biblioteca'
+      fullPath: '/biblioteca'
+      preLoaderRoute: typeof AppBibliotecaRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/backup': {
       id: '/_app/backup'
       path: '/backup'
@@ -613,6 +632,7 @@ const AppConfiguracoesZapsignRouteWithChildren =
 interface AppRouteChildren {
   AppAssinaturasRoute: typeof AppAssinaturasRouteWithChildren
   AppBackupRoute: typeof AppBackupRoute
+  AppBibliotecaRoute: typeof AppBibliotecaRoute
   AppCentrosCustoRoute: typeof AppCentrosCustoRoute
   AppComparativoComposicaoRoute: typeof AppComparativoComposicaoRoute
   AppComplianceRoute: typeof AppComplianceRoute
@@ -635,6 +655,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppAssinaturasRoute: AppAssinaturasRouteWithChildren,
   AppBackupRoute: AppBackupRoute,
+  AppBibliotecaRoute: AppBibliotecaRoute,
   AppCentrosCustoRoute: AppCentrosCustoRoute,
   AppComparativoComposicaoRoute: AppComparativoComposicaoRoute,
   AppComplianceRoute: AppComplianceRoute,

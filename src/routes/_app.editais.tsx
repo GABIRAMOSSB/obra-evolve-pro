@@ -43,8 +43,21 @@ import {
   Upload,
   ExternalLink,
   ChevronLeft,
+  Wand2,
+  Paperclip,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  listBiblioteca,
+  listVinculosChecklistEdital,
+  vincularDocumento,
+  desvincularDocumento,
+  sugerirVinculosChecklist,
+  type DocumentoRow,
+  type VinculoRow,
+} from "@/lib/biblioteca.functions";
+
 
 export const Route = createFileRoute("/_app/editais")({
   component: EditaisPage,
@@ -355,6 +368,11 @@ function EditalDetail({ id, onBack }: { id: string; onBack: () => void }) {
   const upload = useServerFn(uploadEditalDocumento);
   const listCk = useServerFn(listChecklist);
   const updateCk = useServerFn(updateChecklistItem);
+  const listBib = useServerFn(listBiblioteca);
+  const listVinc = useServerFn(listVinculosChecklistEdital);
+  const vinc = useServerFn(vincularDocumento);
+  const desvinc = useServerFn(desvincularDocumento);
+  const sugerir = useServerFn(sugerirVinculosChecklist);
 
   const qc = useQueryClient();
   const { data: editais } = useQuery({ queryKey: ["editais"], queryFn: () => list() });
@@ -363,6 +381,14 @@ function EditalDetail({ id, onBack }: { id: string; onBack: () => void }) {
   const { data: checklist } = useQuery({
     queryKey: ["edital-checklist", id],
     queryFn: () => listCk({ data: { edital_id: id } }),
+  });
+  const { data: vinculos } = useQuery({
+    queryKey: ["edital-vinculos", id],
+    queryFn: () => listVinc({ data: { edital_id: id } }),
+  });
+  const { data: biblioteca } = useQuery({
+    queryKey: ["biblioteca"],
+    queryFn: () => listBib({ data: {} }),
   });
 
   const ana = useMutation({
@@ -374,6 +400,28 @@ function EditalDetail({ id, onBack }: { id: string; onBack: () => void }) {
     },
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : String(e)),
   });
+
+  const sug = useMutation({
+    mutationFn: () => sugerir({ data: { edital_id: id, confianca_minima: 0.6, aplicar: true } }),
+    onSuccess: (r) => {
+      toast.success(`${r.aplicadas} vínculo(s) aplicado(s) com base na biblioteca.`);
+      qc.invalidateQueries({ queryKey: ["edital-vinculos", id] });
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : String(e)),
+  });
+
+  const linkMut = useMutation({
+    mutationFn: (vars: { checklist_item_id: string; documento_id: string }) =>
+      vinc({ data: vars }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["edital-vinculos", id] }),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : String(e)),
+  });
+  const unlinkMut = useMutation({
+    mutationFn: (vid: string) => desvinc({ data: { id: vid } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["edital-vinculos", id] }),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : String(e)),
+  });
+
 
   const up = useMutation({
     mutationFn: async (file: File) => {
@@ -486,6 +534,20 @@ function EditalDetail({ id, onBack }: { id: string; onBack: () => void }) {
             )}
             {edital.status === "analisado" ? "Reanalisar com IA" : "Analisar com IA"}
           </Button>
+          <Button
+            variant="outline"
+            onClick={() => sug.mutate()}
+            disabled={sug.isPending || (checklist?.length ?? 0) === 0}
+            title="Sugere vínculos da biblioteca para o checklist"
+          >
+            {sug.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+            ) : (
+              <Wand2 className="w-4 h-4 mr-2" />
+            )}
+            Vincular biblioteca (IA)
+          </Button>
+
         </div>
       </div>
 
@@ -538,6 +600,19 @@ function EditalDetail({ id, onBack }: { id: string; onBack: () => void }) {
                           upCk.mutate({ id: it.id, observacoes: v || null });
                       }}
                     />
+                    <ChecklistDocs
+                      itemId={it.id}
+                      itemCategoria={it.categoria}
+                      vinculos={(vinculos ?? []).filter(
+                        (v: VinculoRow) => v.checklist_item_id === it.id,
+                      )}
+                      biblioteca={biblioteca ?? []}
+                      onAttach={(docId) =>
+                        linkMut.mutate({ checklist_item_id: it.id, documento_id: docId })
+                      }
+                      onDetach={(vid) => unlinkMut.mutate(vid)}
+                    />
+
                   </div>
                   <Select
                     value={it.status}
@@ -564,3 +639,69 @@ function EditalDetail({ id, onBack }: { id: string; onBack: () => void }) {
     </div>
   );
 }
+
+/* =================== CHECKLIST DOCS =================== */
+
+function ChecklistDocs({
+  itemId,
+  itemCategoria,
+  vinculos,
+  biblioteca,
+  onAttach,
+  onDetach,
+}: {
+  itemId: string;
+  itemCategoria: string;
+  vinculos: VinculoRow[];
+  biblioteca: DocumentoRow[];
+  onAttach: (docId: string) => void;
+  onDetach: (vid: string) => void;
+}) {
+  const linkedIds = new Set(vinculos.map((v) => v.documento_id));
+  const candidatos = biblioteca.filter(
+    (d) => !linkedIds.has(d.id) && (d.categoria === itemCategoria || true),
+  );
+  return (
+    <div className="mt-2 flex flex-wrap gap-1 items-center">
+      {vinculos.map((v) => (
+        <Badge
+          key={v.id}
+          variant="outline"
+          className="text-[10px] py-0 pl-2 pr-1 gap-1 inline-flex items-center"
+        >
+          <Paperclip className="w-3 h-3" />
+          {v.documento_nome}
+          <button
+            type="button"
+            onClick={() => onDetach(v.id)}
+            className="ml-1 hover:text-destructive"
+            aria-label="Desvincular"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </Badge>
+      ))}
+      <Select
+        key={`sel-${itemId}-${vinculos.length}`}
+        onValueChange={(v) => v && onAttach(v)}
+      >
+        <SelectTrigger className="h-7 w-[180px] text-xs">
+          <SelectValue placeholder="+ Vincular documento" />
+        </SelectTrigger>
+        <SelectContent>
+          {candidatos.length === 0 && (
+            <div className="px-2 py-1 text-xs text-muted-foreground">
+              Nenhum documento disponível
+            </div>
+          )}
+          {candidatos.map((d) => (
+            <SelectItem key={d.id} value={d.id}>
+              {d.nome}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
