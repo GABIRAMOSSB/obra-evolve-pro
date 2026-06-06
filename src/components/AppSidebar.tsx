@@ -22,7 +22,7 @@ export function AppSidebar() {
           <HardHat className="w-5 h-5 text-primary-foreground" />
         </div>
         <div className="min-w-0">
-          <div className="font-display font-bold text-[15px] leading-tight tracking-tight">Obralytics</div>
+          <div className="font-display font-bold text-[15px] leading-tight tracking-tight">SOLV Gestão</div>
           <div className="text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/50 truncate">{companyName}</div>
         </div>
       </div>
