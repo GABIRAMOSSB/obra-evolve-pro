@@ -82,13 +82,15 @@ function MedicoesPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const contratos = data?.contratos ?? [];
-  const medicoes = data?.medicoes ?? [];
+  type Contrato = { id: string; numero: string; objeto: string | null };
+  type Medicao = { id: string; contrato_id: string; numero: number; periodo_inicio: string; periodo_fim: string; valor_executado: number | string; valor_acumulado: number | string; percentual_fisico: number | string; status: string };
+  const contratos = (data?.contratos ?? []) as Contrato[];
+  const medicoes = (data?.medicoes ?? []) as Medicao[];
 
   const totais = useMemo(() => {
-    const totalExec = medicoes.reduce((s, m) => s + Number(m.valor_executado || 0), 0);
-    const aprovadas = medicoes.filter((m) => m.status === "aprovada" || m.status === "paga");
-    const totalAprov = aprovadas.reduce((s, m) => s + Number(m.valor_executado || 0), 0);
+    const totalExec = medicoes.reduce((s: number, m: Medicao) => s + Number(m.valor_executado || 0), 0);
+    const aprovadas = medicoes.filter((m: Medicao) => m.status === "aprovada" || m.status === "paga");
+    const totalAprov = aprovadas.reduce((s: number, m: Medicao) => s + Number(m.valor_executado || 0), 0);
     return { totalExec, totalAprov, qtde: medicoes.length };
   }, [medicoes]);
 
