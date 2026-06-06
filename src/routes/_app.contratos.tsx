@@ -49,6 +49,11 @@ import {
   FileSignature,
   Loader2,
   AlertTriangle,
+  PenTool,
+  ExternalLink,
+  Link2,
+  Link2Off,
+  CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 
