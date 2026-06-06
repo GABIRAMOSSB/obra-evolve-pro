@@ -31,6 +31,7 @@ import { Route as AppEstoqueRouteImport } from './routes/_app.estoque'
 import { Route as AppEquipeRouteImport } from './routes/_app.equipe'
 import { Route as AppEquipamentosRouteImport } from './routes/_app.equipamentos'
 import { Route as AppEditaisRouteImport } from './routes/_app.editais'
+import { Route as AppCronogramasRouteImport } from './routes/_app.cronogramas'
 import { Route as AppContratosRouteImport } from './routes/_app.contratos'
 import { Route as AppComposicoesRouteImport } from './routes/_app.composicoes'
 import { Route as AppComplianceRouteImport } from './routes/_app.compliance'
@@ -158,6 +159,11 @@ const AppEditaisRoute = AppEditaisRouteImport.update({
   path: '/editais',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCronogramasRoute = AppCronogramasRouteImport.update({
+  id: '/cronogramas',
+  path: '/cronogramas',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppContratosRoute = AppContratosRouteImport.update({
   id: '/contratos',
   path: '/contratos',
@@ -255,6 +261,7 @@ export interface FileRoutesByFullPath {
   '/compliance': typeof AppComplianceRoute
   '/composicoes': typeof AppComposicoesRoute
   '/contratos': typeof AppContratosRoute
+  '/cronogramas': typeof AppCronogramasRoute
   '/editais': typeof AppEditaisRoute
   '/equipamentos': typeof AppEquipamentosRoute
   '/equipe': typeof AppEquipeRoute
@@ -293,6 +300,7 @@ export interface FileRoutesByTo {
   '/compliance': typeof AppComplianceRoute
   '/composicoes': typeof AppComposicoesRoute
   '/contratos': typeof AppContratosRoute
+  '/cronogramas': typeof AppCronogramasRoute
   '/editais': typeof AppEditaisRoute
   '/equipamentos': typeof AppEquipamentosRoute
   '/equipe': typeof AppEquipeRoute
@@ -334,6 +342,7 @@ export interface FileRoutesById {
   '/_app/compliance': typeof AppComplianceRoute
   '/_app/composicoes': typeof AppComposicoesRoute
   '/_app/contratos': typeof AppContratosRoute
+  '/_app/cronogramas': typeof AppCronogramasRoute
   '/_app/editais': typeof AppEditaisRoute
   '/_app/equipamentos': typeof AppEquipamentosRoute
   '/_app/equipe': typeof AppEquipeRoute
@@ -376,6 +385,7 @@ export interface FileRouteTypes {
     | '/compliance'
     | '/composicoes'
     | '/contratos'
+    | '/cronogramas'
     | '/editais'
     | '/equipamentos'
     | '/equipe'
@@ -414,6 +424,7 @@ export interface FileRouteTypes {
     | '/compliance'
     | '/composicoes'
     | '/contratos'
+    | '/cronogramas'
     | '/editais'
     | '/equipamentos'
     | '/equipe'
@@ -454,6 +465,7 @@ export interface FileRouteTypes {
     | '/_app/compliance'
     | '/_app/composicoes'
     | '/_app/contratos'
+    | '/_app/cronogramas'
     | '/_app/editais'
     | '/_app/equipamentos'
     | '/_app/equipe'
@@ -647,6 +659,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppEditaisRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/cronogramas': {
+      id: '/_app/cronogramas'
+      path: '/cronogramas'
+      fullPath: '/cronogramas'
+      preLoaderRoute: typeof AppCronogramasRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/contratos': {
       id: '/_app/contratos'
       path: '/contratos'
@@ -822,6 +841,7 @@ interface AppRouteChildren {
   AppComplianceRoute: typeof AppComplianceRoute
   AppComposicoesRoute: typeof AppComposicoesRoute
   AppContratosRoute: typeof AppContratosRoute
+  AppCronogramasRoute: typeof AppCronogramasRoute
   AppEditaisRoute: typeof AppEditaisRoute
   AppEquipamentosRoute: typeof AppEquipamentosRoute
   AppEquipeRoute: typeof AppEquipeRoute
@@ -853,6 +873,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppComplianceRoute: AppComplianceRoute,
   AppComposicoesRoute: AppComposicoesRoute,
   AppContratosRoute: AppContratosRoute,
+  AppCronogramasRoute: AppCronogramasRoute,
   AppEditaisRoute: AppEditaisRoute,
   AppEquipamentosRoute: AppEquipamentosRoute,
   AppEquipeRoute: AppEquipeRoute,

@@ -41,6 +41,7 @@ export function AppSidebar() {
         <SidebarLink to="/obras" icon={Building2} label="Obras" />
         <SidebarLink to="/medicoes" icon={ClipboardList} label="Medições (BM)" />
         <SidebarLink to="/rdo" icon={NotebookPen} label="RDO" />
+        <SidebarLink to="/cronogramas" icon={Calendar} label="Cronograma / Curva S" />
         <SidebarLink to="/realizado" icon={TrendingUp} label="Previsto × Realizado" />
         <SidebarLink to="/comparativo-composicao" icon={Calculator} label="Comparativo Composição" />
 
