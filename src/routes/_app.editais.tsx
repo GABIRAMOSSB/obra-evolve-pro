@@ -1,357 +1,260 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { toast } from "sonner";
 import {
-  listEditais,
-  createEdital,
-  analyzeEdital,
-  listChecklist,
-  updateChecklistItem,
-  deleteEdital,
-  uploadEditalDocumento,
-  type EditalRow,
-  type ChecklistRow,
-} from "@/lib/editais.functions";
-import { Card } from "@/components/ui/card";
+  Sparkles, Plus, FileText, Upload, Trash2, RefreshCw, ExternalLink,
+  CheckCircle2, XCircle, MinusCircle, Clock,
+} from "lucide-react";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import {
-  FileText,
-  Sparkles,
-  Loader2,
-  Plus,
-  Trash2,
-  Upload,
-  ExternalLink,
-  ChevronLeft,
-  Wand2,
-  Paperclip,
-  X,
-} from "lucide-react";
-import { toast } from "sonner";
-import {
-  listBiblioteca,
-  listVinculosChecklistEdital,
-  vincularDocumento,
-  desvincularDocumento,
-  sugerirVinculosChecklist,
-  type DocumentoRow,
-  type VinculoRow,
-} from "@/lib/biblioteca.functions";
 
+import {
+  listEditais,
+  createEdital,
+  deleteEdital,
+  analyzeEdital,
+  listChecklist,
+  updateChecklistItem,
+  uploadEditalDocumento,
+  listEditalDocumentos,
+  getEditalDocumentoUrl,
+  type ChecklistRow,
+} from "@/lib/editais.functions";
 
 export const Route = createFileRoute("/_app/editais")({
   component: EditaisPage,
-  head: () => ({ meta: [{ title: "Editais (IA) — SOLV Gestão" }] }),
 });
-
-function fmtDate(v: string | null): string {
-  if (!v) return "—";
-  try {
-    return new Date(v).toLocaleDateString("pt-BR");
-  } catch {
-    return v;
-  }
-}
-function fmtCurrency(v: number | null): string {
-  if (v == null) return "—";
-  return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
-
-const STATUS_TONE: Record<string, string> = {
-  novo: "bg-muted/40 text-foreground border-border",
-  processando: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  analisado: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  erro: "bg-red-500/15 text-red-400 border-red-500/30",
-  arquivado: "bg-muted/30 text-muted-foreground border-border",
-};
 
 const CATEGORIA_LABEL: Record<string, string> = {
   habilitacao_juridica: "Habilitação Jurídica",
-  regularidade_fiscal: "Regularidade Fiscal e Trabalhista",
+  regularidade_fiscal: "Regularidade Fiscal",
   qualificacao_tecnica: "Qualificação Técnica",
   qualificacao_economica: "Qualificação Econômico-Financeira",
   documentos_proposta: "Documentos da Proposta",
   outros: "Outros",
 };
 
-const STATUS_CHECKLIST_TONE: Record<string, string> = {
-  pendente: "bg-muted/30 text-muted-foreground border-border",
-  ok: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  faltante: "bg-red-500/15 text-red-400 border-red-500/30",
-  nao_aplicavel: "bg-muted/40 text-foreground border-border",
+const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
+  novo: { label: "Novo", cls: "bg-muted text-muted-foreground" },
+  processando: { label: "Processando IA", cls: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30" },
+  analisado: { label: "Analisado", cls: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30" },
+  erro: { label: "Erro", cls: "bg-destructive/15 text-destructive border-destructive/30" },
+};
+
+const brl = (n: number | null | undefined) =>
+  n == null ? "—" : Number(n).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+const fmtDate = (s: string | null) => {
+  if (!s) return "—";
+  try { return new Date(s).toLocaleDateString("pt-BR"); } catch { return s; }
 };
 
 function EditaisPage() {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  if (selectedId) {
-    return <EditalDetail id={selectedId} onBack={() => setSelectedId(null)} />;
-  }
-  return <EditalList onOpen={setSelectedId} />;
-}
-
-/* =================== LIST =================== */
-
-function EditalList({ onOpen }: { onOpen: (id: string) => void }) {
-  const list = useServerFn(listEditais);
-  const remove = useServerFn(deleteEdital);
+  const listFn = useServerFn(listEditais);
+  const createFn = useServerFn(createEdital);
+  const deleteFn = useServerFn(deleteEdital);
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery({
+
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+
+  const { data: editais, isLoading } = useQuery({
     queryKey: ["editais"],
-    queryFn: () => list(),
+    queryFn: () => listFn({ data: undefined as never }),
   });
-  const del = useMutation({
-    mutationFn: (id: string) => remove({ data: { id } }),
+
+  const delMut = useMutation({
+    mutationFn: async (id: string) => deleteFn({ data: { id } }),
     onSuccess: () => {
-      toast.success("Edital removido");
+      toast.success("Edital removido.");
       qc.invalidateQueries({ queryKey: ["editais"] });
+      if (selectedId) setSelectedId(null);
     },
-    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : String(e)),
+    onError: (e: Error) => toast.error(e.message),
   });
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+    <div className="space-y-6 p-6 max-w-7xl mx-auto">
+      <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-display font-bold flex items-center gap-2">
-            <FileText className="w-6 h-6 text-primary" />
-            Editais (IA)
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Sparkles className="w-6 h-6 text-primary" />
+            Editais IA
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Cadastre editais e gere automaticamente um resumo executivo e checklist de habilitação via IA.
+            Análise automática de editais com IA: resumo executivo + checklist de habilitação.
           </p>
         </div>
-        <NewEditalDialog onCreated={() => qc.invalidateQueries({ queryKey: ["editais"] })} />
+        <CreateEditalDialog
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          onSubmit={async (payload) => {
+            try {
+              await createFn({ data: payload });
+              toast.success("Edital criado.");
+              qc.invalidateQueries({ queryKey: ["editais"] });
+              setCreateOpen(false);
+            } catch (e) { toast.error((e as Error).message); }
+          }}
+        />
       </div>
 
-      <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/30 border-b border-border">
-              <tr className="text-left">
-                <th className="px-4 py-3 font-medium">Edital</th>
-                <th className="px-4 py-3 font-medium">Órgão</th>
-                <th className="px-4 py-3 font-medium">Modalidade</th>
-                <th className="px-4 py-3 font-medium">Valor</th>
-                <th className="px-4 py-3 font-medium">Abertura</th>
-                <th className="px-4 py-3 font-medium">Checklist</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading && (
-                <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
-                    <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
-                    Carregando…
-                  </td>
-                </tr>
-              )}
-              {!isLoading && (data?.length ?? 0) === 0 && (
-                <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
-                    Nenhum edital cadastrado. Clique em "Novo edital" para começar.
-                  </td>
-                </tr>
-              )}
-              {(data ?? []).map((ed: EditalRow) => (
-                <tr key={ed.id} className="border-b border-border/40 hover:bg-muted/20">
-                  <td className="px-4 py-3">
-                    <button
-                      className="text-left font-medium hover:text-primary"
-                      onClick={() => onOpen(ed.id)}
-                    >
-                      {ed.titulo}
-                    </button>
-                    {ed.numero_edital && (
-                      <div className="text-xs text-muted-foreground">{ed.numero_edital}</div>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">{ed.orgao ?? "—"}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{ed.modalidade ?? "—"}</td>
-                  <td className="px-4 py-3 tabular-nums">{fmtCurrency(ed.valor_estimado)}</td>
-                  <td className="px-4 py-3 tabular-nums">{fmtDate(ed.data_abertura)}</td>
-                  <td className="px-4 py-3 tabular-nums">{ed.checklist_count}</td>
-                  <td className="px-4 py-3">
-                    <Badge variant="outline" className={STATUS_TONE[ed.status] ?? ""}>
-                      {ed.status}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        if (confirm(`Remover "${ed.titulo}"?`)) del.mutate(ed.id);
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div className="grid lg:grid-cols-[1fr,1.4fr] gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Editais ({editais?.length ?? 0})</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {isLoading ? (
+              <div className="text-sm text-muted-foreground py-8 text-center">Carregando…</div>
+            ) : (editais ?? []).length === 0 ? (
+              <div className="text-sm text-muted-foreground py-8 text-center">
+                Nenhum edital. Crie um manualmente ou importe do Radar PNCP.
+              </div>
+            ) : (
+              (editais ?? []).map((e) => {
+                const st = STATUS_LABEL[e.status] ?? STATUS_LABEL.novo;
+                return (
+                  <button
+                    key={e.id}
+                    onClick={() => setSelectedId(e.id)}
+                    className={`w-full text-left p-3 rounded border transition-colors ${
+                      selectedId === e.id ? "bg-primary/5 border-primary/40" : "hover:bg-muted/40"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-sm truncate">{e.titulo}</div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {e.orgao ?? "Órgão N/I"} · {e.modalidade ?? "—"}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Abertura: {fmtDate(e.data_abertura)} · {brl(e.valor_estimado)} · {e.checklist_count} item(ns)
+                        </div>
+                      </div>
+                      <Badge variant="outline" className={`shrink-0 text-[10px] ${st.cls}`}>
+                        {st.label}
+                      </Badge>
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </CardContent>
+        </Card>
+
+        <div>
+          {selectedId ? (
+            <EditalDetail
+              id={selectedId}
+              onDeleted={() => delMut.mutate(selectedId)}
+            />
+          ) : (
+            <Card>
+              <CardContent className="py-16 text-center text-muted-foreground">
+                Selecione um edital para ver os detalhes e a análise de IA.
+              </CardContent>
+            </Card>
+          )}
         </div>
-      </Card>
+      </div>
     </div>
   );
 }
 
-/* =================== NEW DIALOG =================== */
+/* ----------------------- Create dialog ----------------------- */
 
-function NewEditalDialog({ onCreated }: { onCreated: () => void }) {
-  const create = useServerFn(createEdital);
-  const [open, setOpen] = useState(false);
-  const [titulo, setTitulo] = useState("");
-  const [orgao, setOrgao] = useState("");
-  const [numero, setNumero] = useState("");
-  const [modalidade, setModalidade] = useState("");
-  const [objeto, setObjeto] = useState("");
-  const [valor, setValor] = useState("");
-  const [dataAbertura, setDataAbertura] = useState("");
-  const [url, setUrl] = useState("");
-
-  const mut = useMutation({
-    mutationFn: () =>
-      create({
-        data: {
-          titulo,
-          orgao: orgao || null,
-          numero_edital: numero || null,
-          modalidade: modalidade || null,
-          objeto: objeto || null,
-          valor_estimado: valor ? Number(valor) : null,
-          data_abertura: dataAbertura || null,
-          url_origem: url || null,
-          origem: "manual",
-        },
-      }),
-    onSuccess: () => {
-      toast.success("Edital criado");
-      setOpen(false);
-      setTitulo("");
-      setOrgao("");
-      setNumero("");
-      setModalidade("");
-      setObjeto("");
-      setValor("");
-      setDataAbertura("");
-      setUrl("");
-      onCreated();
-    },
-    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : String(e)),
+function CreateEditalDialog({
+  open, onOpenChange, onSubmit,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onSubmit: (p: {
+    titulo: string; orgao?: string | null; numero_edital?: string | null;
+    modalidade?: string | null; objeto?: string | null;
+    valor_estimado?: number | null; data_abertura?: string | null;
+    url_origem?: string | null; origem: "manual" | "pncp" | "upload";
+  }) => void;
+}) {
+  const [form, setForm] = useState({
+    titulo: "", orgao: "", numero_edital: "", modalidade: "",
+    objeto: "", valor_estimado: "", data_abertura: "", url_origem: "",
   });
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          Novo edital
-        </Button>
+        <Button><Plus className="w-4 h-4 mr-2" /> Novo edital</Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Novo edital</DialogTitle>
-        </DialogHeader>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="col-span-2">
+        <DialogHeader><DialogTitle>Novo edital</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <div>
             <Label>Título *</Label>
-            <Input value={titulo} onChange={(e) => setTitulo(e.target.value)} />
+            <Input value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Órgão</Label>
+              <Input value={form.orgao} onChange={(e) => setForm({ ...form, orgao: e.target.value })} />
+            </div>
+            <div>
+              <Label>Nº do edital</Label>
+              <Input value={form.numero_edital} onChange={(e) => setForm({ ...form, numero_edital: e.target.value })} />
+            </div>
+            <div>
+              <Label>Modalidade</Label>
+              <Input placeholder="Pregão Eletrônico, Concorrência..." value={form.modalidade} onChange={(e) => setForm({ ...form, modalidade: e.target.value })} />
+            </div>
+            <div>
+              <Label>Data de abertura</Label>
+              <Input type="datetime-local" value={form.data_abertura} onChange={(e) => setForm({ ...form, data_abertura: e.target.value })} />
+            </div>
+            <div>
+              <Label>Valor estimado (R$)</Label>
+              <Input type="number" step="0.01" value={form.valor_estimado} onChange={(e) => setForm({ ...form, valor_estimado: e.target.value })} />
+            </div>
+            <div>
+              <Label>URL de origem</Label>
+              <Input placeholder="https://..." value={form.url_origem} onChange={(e) => setForm({ ...form, url_origem: e.target.value })} />
+            </div>
           </div>
           <div>
-            <Label>Órgão</Label>
-            <Input value={orgao} onChange={(e) => setOrgao(e.target.value)} />
-          </div>
-          <div>
-            <Label>Número do edital</Label>
-            <Input value={numero} onChange={(e) => setNumero(e.target.value)} />
-          </div>
-          <div>
-            <Label>Modalidade</Label>
-            <Select value={modalidade} onValueChange={setModalidade}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                {[
-                  "Pregão eletrônico",
-                  "Pregão presencial",
-                  "Concorrência",
-                  "Tomada de preços",
-                  "Convite",
-                  "Concurso",
-                  "Leilão",
-                  "Dispensa",
-                  "Inexigibilidade",
-                  "RDC",
-                ].map((m) => (
-                  <SelectItem key={m} value={m}>
-                    {m}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Valor estimado (R$)</Label>
-            <Input
-              type="number"
-              step="0.01"
-              value={valor}
-              onChange={(e) => setValor(e.target.value)}
-            />
-          </div>
-          <div>
-            <Label>Data de abertura</Label>
-            <Input
-              type="date"
-              value={dataAbertura}
-              onChange={(e) => setDataAbertura(e.target.value)}
-            />
-          </div>
-          <div className="col-span-2">
-            <Label>URL de origem</Label>
-            <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" />
-          </div>
-          <div className="col-span-2">
             <Label>Objeto</Label>
-            <Textarea
-              rows={3}
-              value={objeto}
-              onChange={(e) => setObjeto(e.target.value)}
-              placeholder="Descrição do objeto da licitação"
-            />
+            <Textarea rows={4} value={form.objeto} onChange={(e) => setForm({ ...form, objeto: e.target.value })} />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancelar
-          </Button>
-          <Button onClick={() => mut.mutate()} disabled={!titulo || mut.isPending}>
-            {mut.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button
+            onClick={() => {
+              if (!form.titulo.trim()) { toast.error("Informe o título."); return; }
+              onSubmit({
+                titulo: form.titulo.trim(),
+                orgao: form.orgao.trim() || null,
+                numero_edital: form.numero_edital.trim() || null,
+                modalidade: form.modalidade.trim() || null,
+                objeto: form.objeto.trim() || null,
+                valor_estimado: form.valor_estimado ? Number(form.valor_estimado) : null,
+                data_abertura: form.data_abertura ? new Date(form.data_abertura).toISOString() : null,
+                url_origem: form.url_origem.trim() || null,
+                origem: "manual",
+              });
+            }}
+          >
             Criar
           </Button>
         </DialogFooter>
@@ -360,350 +263,311 @@ function NewEditalDialog({ onCreated }: { onCreated: () => void }) {
   );
 }
 
-/* =================== DETAIL =================== */
+/* ----------------------- Detail panel ----------------------- */
 
-function EditalDetail({ id, onBack }: { id: string; onBack: () => void }) {
-  const list = useServerFn(listEditais);
-  const analyze = useServerFn(analyzeEdital);
-  const upload = useServerFn(uploadEditalDocumento);
-  const listCk = useServerFn(listChecklist);
-  const updateCk = useServerFn(updateChecklistItem);
-  const listBib = useServerFn(listBiblioteca);
-  const listVinc = useServerFn(listVinculosChecklistEdital);
-  const vinc = useServerFn(vincularDocumento);
-  const desvinc = useServerFn(desvincularDocumento);
-  const sugerir = useServerFn(sugerirVinculosChecklist);
-
+function EditalDetail({ id, onDeleted }: { id: string; onDeleted: () => void }) {
+  const listFn = useServerFn(listEditais);
+  const analyzeFn = useServerFn(analyzeEdital);
+  const listChecklistFn = useServerFn(listChecklist);
+  const updateItemFn = useServerFn(updateChecklistItem);
+  const listDocsFn = useServerFn(listEditalDocumentos);
+  const uploadDocFn = useServerFn(uploadEditalDocumento);
+  const getUrlFn = useServerFn(getEditalDocumentoUrl);
   const qc = useQueryClient();
-  const { data: editais } = useQuery({ queryKey: ["editais"], queryFn: () => list() });
-  const edital = editais?.find((e: EditalRow) => e.id === id);
+
+  const { data: editais } = useQuery({
+    queryKey: ["editais"],
+    queryFn: () => listFn({ data: undefined as never }),
+  });
+  const edital = editais?.find((e) => e.id === id);
 
   const { data: checklist } = useQuery({
     queryKey: ["edital-checklist", id],
-    queryFn: () => listCk({ data: { edital_id: id } }),
+    queryFn: () => listChecklistFn({ data: { edital_id: id } }),
   });
-  const { data: vinculos } = useQuery({
-    queryKey: ["edital-vinculos", id],
-    queryFn: () => listVinc({ data: { edital_id: id } }),
-  });
-  const { data: biblioteca } = useQuery({
-    queryKey: ["biblioteca"],
-    queryFn: () => listBib({ data: {} }),
+  const { data: docs } = useQuery({
+    queryKey: ["edital-docs", id],
+    queryFn: () => listDocsFn({ data: { edital_id: id } }),
   });
 
-  const ana = useMutation({
-    mutationFn: () => analyze({ data: { edital_id: id } }),
+  const analyzeMut = useMutation({
+    mutationFn: async () => analyzeFn({ data: { edital_id: id } }),
     onSuccess: (r) => {
-      toast.success(`Análise concluída — ${r.itens} item(s) no checklist.`);
+      toast.success(`IA gerou ${r.itens} item(ns) de checklist.`);
       qc.invalidateQueries({ queryKey: ["editais"] });
       qc.invalidateQueries({ queryKey: ["edital-checklist", id] });
     },
-    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : String(e)),
+    onError: (e: Error) => toast.error(`Falha na IA: ${e.message}`),
   });
 
-  const sug = useMutation({
-    mutationFn: () => sugerir({ data: { edital_id: id, confianca_minima: 0.6, aplicar: true } }),
-    onSuccess: (r) => {
-      toast.success(`${r.aplicadas} vínculo(s) aplicado(s) com base na biblioteca.`);
-      qc.invalidateQueries({ queryKey: ["edital-vinculos", id] });
-    },
-    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : String(e)),
+  const updateItemMut = useMutation({
+    mutationFn: async (p: { id: string; status?: ChecklistRow["status"]; observacoes?: string | null }) =>
+      updateItemFn({ data: p }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["edital-checklist", id] }),
+    onError: (e: Error) => toast.error(e.message),
   });
 
-  const linkMut = useMutation({
-    mutationFn: (vars: { checklist_item_id: string; documento_id: string }) =>
-      vinc({ data: vars }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["edital-vinculos", id] }),
-    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : String(e)),
-  });
-  const unlinkMut = useMutation({
-    mutationFn: (vid: string) => desvinc({ data: { id: vid } }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["edital-vinculos", id] }),
-    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : String(e)),
-  });
-
-
-  const up = useMutation({
+  const uploadMut = useMutation({
     mutationFn: async (file: File) => {
       const buf = await file.arrayBuffer();
       const bytes = new Uint8Array(buf);
-      let bin = "";
-      bytes.forEach((b) => {
-        bin += String.fromCharCode(b);
-      });
-      const b64 = btoa(bin);
-      return upload({
+      let binary = "";
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+      }
+      const base64 = btoa(binary);
+      return uploadDocFn({
         data: {
           edital_id: id,
           nome_arquivo: file.name,
-          mime_type: file.type || "application/pdf",
+          mime_type: file.type || "application/octet-stream",
+          base64,
           tipo: "edital",
-          base64: b64,
         },
       });
     },
     onSuccess: () => {
-      toast.success("PDF anexado");
-      qc.invalidateQueries({ queryKey: ["editais"] });
+      toast.success("PDF anexado.");
+      qc.invalidateQueries({ queryKey: ["edital-docs", id] });
     },
-    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : String(e)),
+    onError: (e: Error) => toast.error(e.message),
   });
 
-  const upCk = useMutation({
-    mutationFn: (vars: { id: string; status?: string; observacoes?: string | null }) =>
-      updateCk({ data: vars }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["edital-checklist", id] }),
-    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : String(e)),
+  if (!edital) return null;
+
+  // agrupar checklist por categoria
+  const byCat = new Map<string, ChecklistRow[]>();
+  (checklist ?? []).forEach((it) => {
+    const arr = byCat.get(it.categoria) ?? [];
+    arr.push(it);
+    byCat.set(it.categoria, arr);
   });
 
-  if (!edital) {
-    return (
-      <div className="p-6">
-        <Button variant="ghost" onClick={onBack}>
-          <ChevronLeft className="w-4 h-4 mr-1" />
-          Voltar
-        </Button>
-        <div className="text-muted-foreground mt-6">Carregando…</div>
-      </div>
-    );
-  }
-
-  const grouped = (checklist ?? []).reduce<Record<string, ChecklistRow[]>>((acc, it) => {
-    (acc[it.categoria] ??= []).push(it);
-    return acc;
-  }, {});
+  const totals = (checklist ?? []).reduce(
+    (a, it) => {
+      a[it.status] = (a[it.status] ?? 0) + 1;
+      a.total += 1;
+      return a;
+    },
+    { total: 0 } as Record<string, number>,
+  );
 
   return (
-    <div className="p-6 space-y-6">
-      <Button variant="ghost" onClick={onBack}>
-        <ChevronLeft className="w-4 h-4 mr-1" />
-        Voltar
-      </Button>
-
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="flex-1 min-w-0">
-          <h1 className="text-xl font-display font-bold">{edital.titulo}</h1>
-          <div className="text-sm text-muted-foreground mt-1 flex flex-wrap gap-x-4 gap-y-1">
-            {edital.orgao && <span>{edital.orgao}</span>}
-            {edital.modalidade && <span>· {edital.modalidade}</span>}
-            {edital.numero_edital && <span>· nº {edital.numero_edital}</span>}
-            <span>· Abertura {fmtDate(edital.data_abertura)}</span>
-            <span>· {fmtCurrency(edital.valor_estimado)}</span>
-            {edital.url_origem && (
-              <a
-                href={edital.url_origem}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline inline-flex items-center gap-1"
-              >
-                Origem <ExternalLink className="w-3 h-3" />
-              </a>
-            )}
-          </div>
-          <Badge variant="outline" className={`mt-2 ${STATUS_TONE[edital.status] ?? ""}`}>
-            {edital.status}
-            {edital.ia_modelo ? ` · ${edital.ia_modelo}` : ""}
-          </Badge>
-        </div>
-        <div className="flex gap-2">
-          <label>
-            <input
-              type="file"
-              accept="application/pdf"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) up.mutate(f);
-                e.target.value = "";
-              }}
-            />
-            <Button variant="outline" asChild disabled={up.isPending}>
-              <span className="cursor-pointer">
-                {up.isPending ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : (
-                  <Upload className="w-4 h-4 mr-2" />
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div className="min-w-0">
+              <CardTitle className="text-lg">{edital.titulo}</CardTitle>
+              <div className="text-sm text-muted-foreground mt-1">
+                {edital.orgao ?? "—"} · {edital.modalidade ?? "—"} · {brl(edital.valor_estimado)}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Abertura: {fmtDate(edital.data_abertura)} · {edital.numero_edital ?? "s/nº"}
+                {edital.url_origem && (
+                  <a href={edital.url_origem} target="_blank" rel="noreferrer" className="ml-2 inline-flex items-center gap-1 text-primary">
+                    <ExternalLink className="w-3 h-3" /> origem
+                  </a>
                 )}
-                Anexar PDF
-              </span>
-            </Button>
-          </label>
-          <Button onClick={() => ana.mutate()} disabled={ana.isPending}>
-            {ana.isPending ? (
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-            ) : (
-              <Sparkles className="w-4 h-4 mr-2" />
-            )}
-            {edital.status === "analisado" ? "Reanalisar com IA" : "Analisar com IA"}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => sug.mutate()}
-            disabled={sug.isPending || (checklist?.length ?? 0) === 0}
-            title="Sugere vínculos da biblioteca para o checklist"
-          >
-            {sug.isPending ? (
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-            ) : (
-              <Wand2 className="w-4 h-4 mr-2" />
-            )}
-            Vincular biblioteca (IA)
-          </Button>
-
-        </div>
-      </div>
-
-      {edital.resumo_ia && (
-        <Card className="p-4">
-          <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-            Resumo executivo (IA)
+              </div>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <Button
+                size="sm"
+                onClick={() => analyzeMut.mutate()}
+                disabled={analyzeMut.isPending}
+              >
+                {analyzeMut.isPending ? (
+                  <><Clock className="w-4 h-4 mr-1 animate-spin" /> Analisando…</>
+                ) : (
+                  <><Sparkles className="w-4 h-4 mr-1" /> Analisar com IA</>
+                )}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => { if (confirm("Excluir este edital?")) onDeleted(); }}
+              >
+                <Trash2 className="w-4 h-4 text-destructive" />
+              </Button>
+            </div>
           </div>
-          <div className="text-sm whitespace-pre-wrap">{edital.resumo_ia}</div>
-        </Card>
-      )}
-
-      {Object.keys(grouped).length === 0 ? (
-        <Card className="p-8 text-center text-muted-foreground">
-          Nenhum item no checklist ainda. Clique em "Analisar com IA" para gerar.
-        </Card>
-      ) : (
-        Object.entries(grouped).map(([cat, items]) => (
-          <Card key={cat} className="overflow-hidden">
-            <div className="px-4 py-3 bg-muted/30 border-b border-border font-medium">
-              {CATEGORIA_LABEL[cat] ?? cat}
-              <span className="text-muted-foreground ml-2 text-xs">({items.length})</span>
-            </div>
-            <div className="divide-y divide-border/40">
-              {items.map((it) => (
-                <div key={it.id} className="px-4 py-3 flex items-start gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm">
-                      {it.requisito}
-                      {it.obrigatorio && (
-                        <Badge variant="outline" className="ml-2 text-[10px] py-0">
-                          obrigatório
-                        </Badge>
-                      )}
-                    </div>
-                    {it.trecho_edital && (
-                      <div className="text-xs text-muted-foreground mt-1 italic border-l-2 border-border pl-2">
-                        "{it.trecho_edital}"
-                        {it.pagina_referencia ? ` (p. ${it.pagina_referencia})` : ""}
-                      </div>
-                    )}
-                    <Textarea
-                      rows={1}
-                      defaultValue={it.observacoes ?? ""}
-                      placeholder="Observações…"
-                      className="mt-2 text-xs"
-                      onBlur={(e) => {
-                        const v = e.target.value;
-                        if (v !== (it.observacoes ?? ""))
-                          upCk.mutate({ id: it.id, observacoes: v || null });
-                      }}
-                    />
-                    <ChecklistDocs
-                      itemId={it.id}
-                      itemCategoria={it.categoria}
-                      vinculos={(vinculos ?? []).filter(
-                        (v: VinculoRow) => v.checklist_item_id === it.id,
-                      )}
-                      biblioteca={biblioteca ?? []}
-                      onAttach={(docId) =>
-                        linkMut.mutate({ checklist_item_id: it.id, documento_id: docId })
-                      }
-                      onDetach={(vid) => unlinkMut.mutate(vid)}
-                    />
-
-                  </div>
-                  <Select
-                    value={it.status}
-                    onValueChange={(v) => upCk.mutate({ id: it.id, status: v })}
-                  >
-                    <SelectTrigger
-                      className={`w-[150px] ${STATUS_CHECKLIST_TONE[it.status] ?? ""}`}
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pendente">Pendente</SelectItem>
-                      <SelectItem value="ok">OK</SelectItem>
-                      <SelectItem value="faltante">Faltante</SelectItem>
-                      <SelectItem value="nao_aplicavel">N/A</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              ))}
-            </div>
-          </Card>
-        ))
-      )}
-    </div>
-  );
-}
-
-/* =================== CHECKLIST DOCS =================== */
-
-function ChecklistDocs({
-  itemId,
-  itemCategoria,
-  vinculos,
-  biblioteca,
-  onAttach,
-  onDetach,
-}: {
-  itemId: string;
-  itemCategoria: string;
-  vinculos: VinculoRow[];
-  biblioteca: DocumentoRow[];
-  onAttach: (docId: string) => void;
-  onDetach: (vid: string) => void;
-}) {
-  const linkedIds = new Set(vinculos.map((v) => v.documento_id));
-  const candidatos = biblioteca.filter(
-    (d) => !linkedIds.has(d.id) && (d.categoria === itemCategoria || true),
-  );
-  return (
-    <div className="mt-2 flex flex-wrap gap-1 items-center">
-      {vinculos.map((v) => (
-        <Badge
-          key={v.id}
-          variant="outline"
-          className="text-[10px] py-0 pl-2 pr-1 gap-1 inline-flex items-center"
-        >
-          <Paperclip className="w-3 h-3" />
-          {v.documento_nome}
-          <button
-            type="button"
-            onClick={() => onDetach(v.id)}
-            className="ml-1 hover:text-destructive"
-            aria-label="Desvincular"
-          >
-            <X className="w-3 h-3" />
-          </button>
-        </Badge>
-      ))}
-      <Select
-        key={`sel-${itemId}-${vinculos.length}`}
-        onValueChange={(v) => v && onAttach(v)}
-      >
-        <SelectTrigger className="h-7 w-[180px] text-xs">
-          <SelectValue placeholder="+ Vincular documento" />
-        </SelectTrigger>
-        <SelectContent>
-          {candidatos.length === 0 && (
-            <div className="px-2 py-1 text-xs text-muted-foreground">
-              Nenhum documento disponível
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {edital.objeto && (
+            <div>
+              <div className="text-xs uppercase text-muted-foreground mb-1">Objeto</div>
+              <div className="text-sm">{edital.objeto}</div>
             </div>
           )}
-          {candidatos.map((d) => (
-            <SelectItem key={d.id} value={d.id}>
-              {d.nome}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+          {edital.resumo_ia && (
+            <div className="bg-primary/5 border border-primary/20 rounded p-3">
+              <div className="text-xs uppercase text-primary mb-1 flex items-center gap-1">
+                <Sparkles className="w-3 h-3" /> Resumo executivo (IA)
+              </div>
+              <div className="text-sm whitespace-pre-wrap">{edital.resumo_ia}</div>
+              {edital.ia_modelo && (
+                <div className="text-[10px] text-muted-foreground mt-2">
+                  Modelo: {edital.ia_modelo} · {fmtDate(edital.ia_processado_em)}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Upload de PDF */}
+          <div>
+            <div className="text-xs uppercase text-muted-foreground mb-2">Documentos anexados</div>
+            <label className="inline-flex items-center gap-2 px-3 py-1.5 text-sm border rounded cursor-pointer hover:bg-muted/40">
+              <Upload className="w-4 h-4" />
+              {uploadMut.isPending ? "Enviando…" : "Anexar PDF do edital"}
+              <input
+                type="file"
+                className="hidden"
+                accept=".pdf,application/pdf"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) {
+                    if (f.size > 25 * 1024 * 1024) { toast.error("Máx. 25MB."); return; }
+                    uploadMut.mutate(f);
+                  }
+                  e.target.value = "";
+                }}
+              />
+            </label>
+            {(docs ?? []).length > 0 && (
+              <div className="mt-2 space-y-1">
+                {(docs ?? []).map((d) => (
+                  <div key={d.id} className="flex items-center justify-between text-xs p-2 border rounded">
+                    <span className="flex items-center gap-2 truncate">
+                      <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                      <span className="truncate">{d.nome_arquivo}</span>
+                    </span>
+                    <Button
+                      size="sm" variant="ghost" className="h-6"
+                      onClick={async () => {
+                        try {
+                          const { url } = await getUrlFn({ data: { documento_id: d.id } });
+                          window.open(url, "_blank");
+                        } catch (e) { toast.error((e as Error).message); }
+                      }}
+                    >abrir</Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Checklist */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <CardTitle className="text-base">Checklist de habilitação</CardTitle>
+            <div className="flex gap-1 text-xs">
+              <Badge variant="outline">{totals.total ?? 0} itens</Badge>
+              <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30">{totals.ok ?? 0} ok</Badge>
+              <Badge className="bg-destructive/15 text-destructive border-destructive/30">{totals.faltante ?? 0} faltantes</Badge>
+              <Badge variant="secondary">{totals.pendente ?? 0} pendentes</Badge>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {(checklist ?? []).length === 0 ? (
+            <div className="text-sm text-muted-foreground py-6 text-center">
+              {edital.status === "processando"
+                ? "IA processando…"
+                : 'Sem itens. Clique em "Analisar com IA" para gerar o checklist.'}
+            </div>
+          ) : (
+            Array.from(byCat.entries()).map(([cat, items]) => (
+              <div key={cat}>
+                <div className="text-xs uppercase font-semibold text-muted-foreground mb-2">
+                  {CATEGORIA_LABEL[cat] ?? cat} ({items.length})
+                </div>
+                <div className="space-y-1">
+                  {items.map((it) => (
+                    <ChecklistItemRow
+                      key={it.id}
+                      item={it}
+                      onStatusChange={(status) =>
+                        updateItemMut.mutate({ id: it.id, status: status as ChecklistRow["status"] })
+                      }
+                      onObsBlur={(observacoes) =>
+                        updateItemMut.mutate({ id: it.id, observacoes })
+                      }
+                    />
+                  ))}
+                </div>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
 
+function ChecklistItemRow({
+  item, onStatusChange, onObsBlur,
+}: {
+  item: ChecklistRow;
+  onStatusChange: (s: string) => void;
+  onObsBlur: (obs: string | null) => void;
+}) {
+  const [obs, setObs] = useState(item.observacoes ?? "");
+
+  const Icon = item.status === "ok" ? CheckCircle2
+    : item.status === "faltante" ? XCircle
+    : item.status === "nao_aplicavel" ? MinusCircle
+    : Clock;
+
+  const iconCls = item.status === "ok" ? "text-emerald-600"
+    : item.status === "faltante" ? "text-destructive"
+    : item.status === "nao_aplicavel" ? "text-muted-foreground"
+    : "text-amber-600";
+
+  return (
+    <div className="border rounded p-2 space-y-2">
+      <div className="flex items-start gap-2">
+        <Icon className={`w-4 h-4 mt-0.5 shrink-0 ${iconCls}`} />
+        <div className="flex-1 min-w-0">
+          <div className="text-sm">
+            {item.requisito}
+            {item.obrigatorio && (
+              <Badge variant="outline" className="ml-2 text-[10px]">obrigatório</Badge>
+            )}
+          </div>
+          {item.trecho_edital && (
+            <div className="text-xs text-muted-foreground italic mt-1 border-l-2 border-muted-foreground/30 pl-2">
+              "{item.trecho_edital}"
+              {item.pagina_referencia != null && <span className="not-italic"> — p.{item.pagina_referencia}</span>}
+            </div>
+          )}
+        </div>
+        <Select value={item.status} onValueChange={onStatusChange}>
+          <SelectTrigger className="w-36 h-8 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="pendente">Pendente</SelectItem>
+            <SelectItem value="ok">OK</SelectItem>
+            <SelectItem value="faltante">Faltante</SelectItem>
+            <SelectItem value="nao_aplicavel">N/A</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <Textarea
+        value={obs}
+        onChange={(e) => setObs(e.target.value)}
+        onBlur={() => {
+          if ((item.observacoes ?? "") !== obs) onObsBlur(obs || null);
+        }}
+        placeholder="Observações…"
+        className="text-xs min-h-[40px]"
+        rows={1}
+      />
+    </div>
+  );
+}
