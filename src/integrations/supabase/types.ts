@@ -139,6 +139,77 @@ export type Database = {
           },
         ]
       }
+      audit_logs_v2: {
+        Row: {
+          acao: string
+          company_id: string
+          created_at: string
+          entidade: string | null
+          entidade_id: string | null
+          erro: string | null
+          id: string
+          ip: string | null
+          justificativa: string | null
+          modulo: string
+          payload_antes: Json | null
+          payload_depois: Json | null
+          payload_hash: string | null
+          resultado: string
+          user_agent: string | null
+          user_email: string | null
+          user_id: string | null
+          versao: string | null
+        }
+        Insert: {
+          acao: string
+          company_id: string
+          created_at?: string
+          entidade?: string | null
+          entidade_id?: string | null
+          erro?: string | null
+          id?: string
+          ip?: string | null
+          justificativa?: string | null
+          modulo: string
+          payload_antes?: Json | null
+          payload_depois?: Json | null
+          payload_hash?: string | null
+          resultado?: string
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          versao?: string | null
+        }
+        Update: {
+          acao?: string
+          company_id?: string
+          created_at?: string
+          entidade?: string | null
+          entidade_id?: string | null
+          erro?: string | null
+          id?: string
+          ip?: string | null
+          justificativa?: string | null
+          modulo?: string
+          payload_antes?: Json | null
+          payload_depois?: Json | null
+          payload_hash?: string | null
+          resultado?: string
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          versao?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_v2_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       centros_custo: {
         Row: {
           ativo: boolean
@@ -892,6 +963,177 @@ export type Database = {
             columns: ["composicao_id"]
             isOneToOne: false
             referencedRelation: "composicoes_proprias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contrato_eventos: {
+        Row: {
+          company_id: string
+          contrato_id: string
+          created_at: string
+          created_by: string | null
+          data_evento: string
+          data_fim: string | null
+          descricao: string
+          documento_hash: string | null
+          documento_url: string | null
+          id: string
+          impacto_prazo_dias: number | null
+          impacto_valor: number | null
+          metadata: Json
+          responsabilidade: string | null
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          contrato_id: string
+          created_at?: string
+          created_by?: string | null
+          data_evento: string
+          data_fim?: string | null
+          descricao: string
+          documento_hash?: string | null
+          documento_url?: string | null
+          id?: string
+          impacto_prazo_dias?: number | null
+          impacto_valor?: number | null
+          metadata?: Json
+          responsabilidade?: string | null
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          contrato_id?: string
+          created_at?: string
+          created_by?: string | null
+          data_evento?: string
+          data_fim?: string | null
+          descricao?: string
+          documento_hash?: string | null
+          documento_url?: string | null
+          id?: string
+          impacto_prazo_dias?: number | null
+          impacto_valor?: number | null
+          metadata?: Json
+          responsabilidade?: string | null
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contrato_eventos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contrato_eventos_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contratos: {
+        Row: {
+          cnpj_orgao: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          data_assinatura: string | null
+          data_base: string | null
+          data_fim_vigencia: string | null
+          data_inicio_vigencia: string | null
+          formula_reajuste: string | null
+          id: string
+          indice_principal: string | null
+          metadata: Json
+          modalidade: string | null
+          numero: string
+          objeto: string | null
+          obra_id: string | null
+          orgao_contratante: string | null
+          origem: string
+          periodicidade_reajuste: string | null
+          processo_administrativo: string | null
+          regime_execucao: string | null
+          status: string
+          updated_at: string
+          valor_atualizado: number | null
+          valor_original: number | null
+        }
+        Insert: {
+          cnpj_orgao?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          data_assinatura?: string | null
+          data_base?: string | null
+          data_fim_vigencia?: string | null
+          data_inicio_vigencia?: string | null
+          formula_reajuste?: string | null
+          id?: string
+          indice_principal?: string | null
+          metadata?: Json
+          modalidade?: string | null
+          numero: string
+          objeto?: string | null
+          obra_id?: string | null
+          orgao_contratante?: string | null
+          origem?: string
+          periodicidade_reajuste?: string | null
+          processo_administrativo?: string | null
+          regime_execucao?: string | null
+          status?: string
+          updated_at?: string
+          valor_atualizado?: number | null
+          valor_original?: number | null
+        }
+        Update: {
+          cnpj_orgao?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          data_assinatura?: string | null
+          data_base?: string | null
+          data_fim_vigencia?: string | null
+          data_inicio_vigencia?: string | null
+          formula_reajuste?: string | null
+          id?: string
+          indice_principal?: string | null
+          metadata?: Json
+          modalidade?: string | null
+          numero?: string
+          objeto?: string | null
+          obra_id?: string | null
+          orgao_contratante?: string | null
+          origem?: string
+          periodicidade_reajuste?: string | null
+          processo_administrativo?: string | null
+          regime_execucao?: string | null
+          status?: string
+          updated_at?: string
+          valor_atualizado?: number | null
+          valor_original?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contratos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
             referencedColumns: ["id"]
           },
         ]
@@ -1781,6 +2023,80 @@ export type Database = {
           },
         ]
       }
+      obras: {
+        Row: {
+          cidade: string | null
+          cliente: string | null
+          cnpj_cliente: string | null
+          codigo: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          data_fim_prevista: string | null
+          data_inicio: string | null
+          endereco: string | null
+          id: string
+          legacy_obra_id: string | null
+          metadata: Json
+          nome: string
+          origem: string
+          status: string
+          uf: string | null
+          updated_at: string
+          valor_contratado: number | null
+        }
+        Insert: {
+          cidade?: string | null
+          cliente?: string | null
+          cnpj_cliente?: string | null
+          codigo?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          data_fim_prevista?: string | null
+          data_inicio?: string | null
+          endereco?: string | null
+          id?: string
+          legacy_obra_id?: string | null
+          metadata?: Json
+          nome: string
+          origem?: string
+          status?: string
+          uf?: string | null
+          updated_at?: string
+          valor_contratado?: number | null
+        }
+        Update: {
+          cidade?: string | null
+          cliente?: string | null
+          cnpj_cliente?: string | null
+          codigo?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          data_fim_prevista?: string | null
+          data_inicio?: string | null
+          endereco?: string | null
+          id?: string
+          legacy_obra_id?: string | null
+          metadata?: Json
+          nome?: string
+          origem?: string
+          status?: string
+          uf?: string | null
+          updated_at?: string
+          valor_contratado?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obras_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parametros_financeiros: {
         Row: {
           cofins_percent: number
@@ -2308,6 +2624,7 @@ export type Database = {
         }[]
       }
       categorizar_descricao: { Args: { _desc: string }; Returns: string }
+      current_company_id: { Args: never; Returns: string }
       current_user_company: { Args: never; Returns: string }
       get_company_member_emails: {
         Args: { _company: string }
@@ -2344,6 +2661,21 @@ export type Database = {
       is_company_member:
         | { Args: { _company_id: string }; Returns: boolean }
         | { Args: { _company: string; _user: string }; Returns: boolean }
+      log_audit_event: {
+        Args: {
+          _acao: string
+          _company_id: string
+          _entidade?: string
+          _entidade_id?: string
+          _erro?: string
+          _justificativa?: string
+          _modulo: string
+          _payload_antes?: Json
+          _payload_depois?: Json
+          _resultado?: string
+        }
+        Returns: string
+      }
       registrar_entrada_nfe: {
         Args: { _nota_id: string; _obra_id?: string }
         Returns: number
