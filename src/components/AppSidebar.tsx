@@ -1,9 +1,87 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { BarChart3, FileText, Package, HardHat, Wrench, Users, Database, LogOut, Calculator, FolderTree, PenTool, ShieldCheck, Building2, Radar, Library, FileSignature, FileEdit, Wallet, ClipboardList, NotebookPen, FilePlus2, TrendingUp, LineChart, Calendar, KeyRound, FolderKanban, Globe2 } from "lucide-react";
+import {
+  BarChart3, FileText, Package, HardHat, Wrench, Users, Database, LogOut,
+  Calculator, FolderTree, PenTool, ShieldCheck, Building2, Radar, Library,
+  FileSignature, FileEdit, Wallet, ClipboardList, NotebookPen, FilePlus2,
+  TrendingUp, LineChart, Calendar, KeyRound, FolderKanban, Globe2,
+  ChevronDown, Gavel, Hammer, Briefcase, Landmark, Boxes, ShieldAlert, Settings2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useCompany } from "@/hooks/use-company";
+
+type NavItem = { to: string; icon: typeof HardHat; label: string };
+type NavSection = { id: string; label: string; icon: typeof HardHat; items: NavItem[] };
+
+const SECTIONS: NavSection[] = [
+  {
+    id: "licitacoes", label: "Licitações", icon: Gavel,
+    items: [
+      { to: "/oportunidades", icon: Radar, label: "Radar PNCP" },
+      { to: "/editais", icon: FileText, label: "Editais (IA)" },
+      { to: "/propostas", icon: FileEdit, label: "Propostas (IA)" },
+      { to: "/portais", icon: Globe2, label: "Portais de Licitação" },
+      { to: "/biblioteca", icon: Library, label: "Biblioteca Técnica" },
+    ],
+  },
+  {
+    id: "obra", label: "Execução de Obra", icon: Hammer,
+    items: [
+      { to: "/obras", icon: Building2, label: "Obras" },
+      { to: "/medicoes", icon: ClipboardList, label: "Medições (BM)" },
+      { to: "/rdo", icon: NotebookPen, label: "RDO" },
+      { to: "/cronogramas", icon: Calendar, label: "Cronograma / Curva S" },
+      { to: "/realizado", icon: TrendingUp, label: "Previsto × Realizado" },
+      { to: "/comparativo-composicao", icon: Calculator, label: "Comparativo Composição" },
+    ],
+  },
+  {
+    id: "contratos", label: "Contratos", icon: Briefcase,
+    items: [
+      { to: "/contratos", icon: FileSignature, label: "Contratos" },
+      { to: "/aditivos", icon: FilePlus2, label: "Aditivos" },
+      { to: "/reajustes", icon: TrendingUp, label: "Reajustes" },
+      { to: "/indices", icon: LineChart, label: "Índices Econômicos" },
+      { to: "/assinaturas", icon: PenTool, label: "Assinaturas" },
+    ],
+  },
+  {
+    id: "financeiro", label: "Financeiro", icon: Landmark,
+    items: [
+      { to: "/financeiro", icon: Wallet, label: "Financeiro de Obra" },
+      { to: "/notas-fiscais", icon: FileText, label: "Notas Fiscais" },
+      { to: "/estoque", icon: Package, label: "Estoque" },
+    ],
+  },
+  {
+    id: "recursos", label: "Recursos", icon: Boxes,
+    items: [
+      { to: "/mao-de-obra", icon: HardHat, label: "Mão de obra" },
+      { to: "/equipamentos", icon: Wrench, label: "Equipamentos" },
+      { to: "/insumos", icon: Package, label: "Insumos" },
+      { to: "/composicoes", icon: Package, label: "Composições" },
+      { to: "/centros-custo", icon: FolderTree, label: "Centros de Custo" },
+    ],
+  },
+  {
+    id: "governanca", label: "Governança", icon: ShieldAlert,
+    items: [
+      { to: "/compliance", icon: ShieldCheck, label: "Central de Certidões" },
+      { to: "/poderes", icon: KeyRound, label: "Matriz de Poderes" },
+      { to: "/dossies", icon: FolderKanban, label: "Dossiês e Templates" },
+    ],
+  },
+  {
+    id: "admin", label: "Administração", icon: Settings2,
+    items: [
+      { to: "/equipe", icon: Users, label: "Equipe" },
+      { to: "/parametros-financeiros", icon: Calculator, label: "Parâmetros Financeiros" },
+      { to: "/backup", icon: Database, label: "Backup" },
+      { to: "/configuracoes/zapsign", icon: PenTool, label: "Config. ZapSign" },
+    ],
+  },
+];
 
 export function AppSidebar() {
   const { user, signOut } = useAuth();
@@ -11,6 +89,13 @@ export function AppSidebar() {
   const userEmail = user?.email ?? "";
   const companyName = company?.name ?? "";
   const isAdmin = company?.role === "admin" || company?.role === "editor";
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  const activeSection = SECTIONS.find((s) =>
+    s.items.some((i) => pathname === i.to || pathname.startsWith(`${i.to}/`))
+  )?.id;
+
+  const [openId, setOpenId] = useState<string | null>(activeSection ?? "licitacoes");
 
   return (
     <aside className="hidden lg:flex flex-col w-[240px] shrink-0 bg-gradient-sidebar text-sidebar-foreground sticky top-0 h-screen border-r border-sidebar-border/40 relative overflow-hidden">
@@ -28,54 +113,43 @@ export function AppSidebar() {
         </div>
       </div>
 
-      <div className="relative px-3 mt-2 flex-1 overflow-y-auto">
-        <SidebarLink to="/" icon={BarChart3} label="Visão geral" exact />
+      <div className="relative px-3 mt-2 flex-1 overflow-y-auto pb-4">
+        <SidebarLink to="/" icon={BarChart3} label="Visão geral" exact pathname={pathname} />
 
-        <SectionLabel>Licitações</SectionLabel>
-        <SidebarLink to="/oportunidades" icon={Radar} label="Radar PNCP" />
-        <SidebarLink to="/editais" icon={FileText} label="Editais (IA)" />
-        <SidebarLink to="/propostas" icon={FileEdit} label="Propostas (IA)" />
-        <SidebarLink to="/portais" icon={Globe2} label="Portais de Licitação" />
-        <SidebarLink to="/biblioteca" icon={Library} label="Biblioteca Técnica" />
-
-        <SectionLabel>Execução de Obra</SectionLabel>
-        <SidebarLink to="/obras" icon={Building2} label="Obras" />
-        <SidebarLink to="/medicoes" icon={ClipboardList} label="Medições (BM)" />
-        <SidebarLink to="/rdo" icon={NotebookPen} label="RDO" />
-        <SidebarLink to="/cronogramas" icon={Calendar} label="Cronograma / Curva S" />
-        <SidebarLink to="/realizado" icon={TrendingUp} label="Previsto × Realizado" />
-        <SidebarLink to="/comparativo-composicao" icon={Calculator} label="Comparativo Composição" />
-
-        <SectionLabel>Contratos</SectionLabel>
-        <SidebarLink to="/contratos" icon={FileSignature} label="Contratos" />
-        <SidebarLink to="/aditivos" icon={FilePlus2} label="Aditivos" />
-        <SidebarLink to="/reajustes" icon={TrendingUp} label="Reajustes" />
-        <SidebarLink to="/indices" icon={LineChart} label="Índices Econômicos" />
-        <SidebarLink to="/assinaturas" icon={PenTool} label="Assinaturas" />
-
-        <SectionLabel>Financeiro</SectionLabel>
-        <SidebarLink to="/financeiro" icon={Wallet} label="Financeiro de Obra" />
-        <SidebarLink to="/notas-fiscais" icon={FileText} label="Notas Fiscais" />
-        <SidebarLink to="/estoque" icon={Package} label="Estoque" />
-
-        <SectionLabel>Recursos</SectionLabel>
-        <SidebarLink to="/mao-de-obra" icon={HardHat} label="Mão de obra" />
-        <SidebarLink to="/equipamentos" icon={Wrench} label="Equipamentos" />
-        <SidebarLink to="/insumos" icon={Package} label="Insumos" />
-        <SidebarLink to="/composicoes" icon={Package} label="Composições" />
-        <SidebarLink to="/centros-custo" icon={FolderTree} label="Centros de Custo" />
-
-        <SectionLabel>Governança</SectionLabel>
-        <SidebarLink to="/compliance" icon={ShieldCheck} label="Central de Certidões" />
-        <SidebarLink to="/poderes" icon={KeyRound} label="Matriz de Poderes" />
-        <SidebarLink to="/dossies" icon={FolderKanban} label="Dossiês e Templates" />
-
-
-        <SectionLabel>Administração</SectionLabel>
-        <SidebarLink to="/equipe" icon={Users} label="Equipe" />
-        <SidebarLink to="/parametros-financeiros" icon={Calculator} label="Parâmetros Financeiros" />
-        <SidebarLink to="/backup" icon={Database} label="Backup" />
-        <SidebarLink to="/configuracoes/zapsign" icon={PenTool} label="Config. ZapSign" />
+        <div className="mt-3 space-y-0.5">
+          {SECTIONS.map((section) => {
+            const isOpen = openId === section.id;
+            const hasActive = section.items.some(
+              (i) => pathname === i.to || pathname.startsWith(`${i.to}/`)
+            );
+            return (
+              <div key={section.id}>
+                <button
+                  type="button"
+                  onClick={() => setOpenId(isOpen ? null : section.id)}
+                  className={`w-full group flex items-center gap-3 px-3 py-2 rounded-lg text-[11px] font-semibold uppercase tracking-[0.14em] transition-all ${
+                    hasActive
+                      ? "text-sidebar-foreground"
+                      : "text-sidebar-foreground/55 hover:text-sidebar-foreground/85"
+                  }`}
+                >
+                  <section.icon className={`w-3.5 h-3.5 shrink-0 ${hasActive ? "text-primary-glow" : "text-sidebar-foreground/45"}`} />
+                  <span className="flex-1 text-left truncate">{section.label}</span>
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 shrink-0 transition-transform ${isOpen ? "rotate-0" : "-rotate-90"}`}
+                  />
+                </button>
+                {isOpen && (
+                  <div className="pl-2 pb-1 space-y-0.5">
+                    {section.items.map((item) => (
+                      <SidebarLink key={item.to} {...item} pathname={pathname} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <div className="relative px-3 py-3 border-t border-sidebar-border/40 bg-sidebar/40">
@@ -107,13 +181,14 @@ function SidebarLink({
   icon: Icon,
   label,
   exact,
+  pathname,
 }: {
   to: string;
   icon: typeof HardHat;
   label: string;
   exact?: boolean;
+  pathname: string;
 }) {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const active = exact ? pathname === to : pathname === to || pathname.startsWith(`${to}/`);
   return (
     <Link
@@ -135,8 +210,4 @@ function SidebarLink({
       <span className="truncate">{label}</span>
     </Link>
   );
-}
-
-function SectionLabel({ children }: { children: ReactNode }) {
-  return <div className="px-3 pt-5 pb-1 text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/40">{children}</div>;
 }
