@@ -114,7 +114,7 @@ export interface PncpSearchResult {
   total: number;
   pagina: number;
   totalPaginas: number;
-  items: Array<PncpItem & { raw: Record<string, unknown> }>;
+  items: Array<PncpItem & { raw: Record<string, any> }>;
 }
 
 export const searchPncp = createServerFn({ method: "POST" })
@@ -142,7 +142,7 @@ export const searchPncp = createServerFn({ method: "POST" })
       throw new Error(`PNCP ${resp.status}: ${await resp.text().catch(() => resp.statusText)}`);
     }
     const json = (await resp.json()) as {
-      data?: Array<Record<string, unknown>>;
+      data?: Array<Record<string, any>>;
       totalRegistros?: number;
       totalPaginas?: number;
       numeroPagina?: number;
@@ -389,7 +389,7 @@ export const updateOportunidade = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as AnySupabase;
     const companyId = await requireEditor(supabase, context.userId);
-    const patch: Record<string, unknown> = {};
+    const patch: Record<string, any> = {};
     if (data.prioridade !== undefined) patch.prioridade = data.prioridade;
     if (data.escore_aderencia !== undefined) patch.escore_aderencia = data.escore_aderencia;
     if (data.anotacoes !== undefined) patch.anotacoes = data.anotacoes;
