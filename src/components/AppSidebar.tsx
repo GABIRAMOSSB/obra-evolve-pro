@@ -66,6 +66,8 @@ export function AppSidebar() {
 
         <SectionLabel>Governança</SectionLabel>
         <SidebarLink to="/compliance" icon={ShieldCheck} label="Central de Certidões" />
+        <SidebarLink to="/poderes" icon={KeyRound} label="Matriz de Poderes" />
+
 
         <SectionLabel>Administração</SectionLabel>
         <SidebarLink to="/equipe" icon={Users} label="Equipe" />
