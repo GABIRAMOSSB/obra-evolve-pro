@@ -1,5 +1,6 @@
+import type { ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { BarChart3, FileText, Package, HardHat, Wrench, Users, Database, LogOut, Calculator, FolderTree, PenTool, ShieldCheck, Building2, Radar, Library, FileSignature, FileEdit, Wallet } from "lucide-react";
+import { BarChart3, FileText, Package, HardHat, Wrench, Users, Database, LogOut, Calculator, FolderTree, PenTool, ShieldCheck, Building2, Radar, Library, FileSignature, FileEdit, Wallet, ClipboardList, NotebookPen, FilePlus2, TrendingUp, LineChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useCompany } from "@/hooks/use-company";
@@ -28,34 +29,44 @@ export function AppSidebar() {
       </div>
 
       <div className="relative px-3 mt-2 flex-1 overflow-y-auto">
-        <div className="px-3 pb-1 text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/40">Obra</div>
         <SidebarLink to="/" icon={BarChart3} label="Visão geral" exact />
-        <SidebarLink to="/obras" icon={Building2} label="Obras" />
+
+        <SectionLabel>Licitações</SectionLabel>
         <SidebarLink to="/oportunidades" icon={Radar} label="Radar PNCP" />
         <SidebarLink to="/editais" icon={FileText} label="Editais (IA)" />
         <SidebarLink to="/propostas" icon={FileEdit} label="Propostas (IA)" />
-        <SidebarLink to="/biblioteca" icon={Library} label="Biblioteca Docs" />
-        <SidebarLink to="/contratos" icon={FileSignature} label="Contratos" />
+        <SidebarLink to="/biblioteca" icon={Library} label="Biblioteca Técnica" />
 
-
-        <SidebarLink to="/financeiro" icon={Wallet} label="Financeiro de Obra" />
-        <SidebarLink to="/realizado" icon={BarChart3} label="Previsto × Realizado" />
+        <SectionLabel>Execução de Obra</SectionLabel>
+        <SidebarLink to="/obras" icon={Building2} label="Obras" />
+        <SidebarLink to="/medicoes" icon={ClipboardList} label="Medições (BM)" />
+        <SidebarLink to="/rdo" icon={NotebookPen} label="RDO" />
+        <SidebarLink to="/realizado" icon={TrendingUp} label="Previsto × Realizado" />
         <SidebarLink to="/comparativo-composicao" icon={Calculator} label="Comparativo Composição" />
-        <SidebarLink to="/notas-fiscais" icon={FileText} label="Notas Fiscais" />
-        <SidebarLink to="/estoque" icon={Package} label="Estoque" />
+
+        <SectionLabel>Contratos</SectionLabel>
+        <SidebarLink to="/contratos" icon={FileSignature} label="Contratos" />
+        <SidebarLink to="/aditivos" icon={FilePlus2} label="Aditivos" />
+        <SidebarLink to="/reajustes" icon={TrendingUp} label="Reajustes" />
+        <SidebarLink to="/indices" icon={LineChart} label="Índices Econômicos" />
         <SidebarLink to="/assinaturas" icon={PenTool} label="Assinaturas" />
 
-        <div className="px-3 pt-5 pb-1 text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/40">Recursos</div>
+        <SectionLabel>Financeiro</SectionLabel>
+        <SidebarLink to="/financeiro" icon={Wallet} label="Financeiro de Obra" />
+        <SidebarLink to="/notas-fiscais" icon={FileText} label="Notas Fiscais" />
+        <SidebarLink to="/estoque" icon={Package} label="Estoque" />
+
+        <SectionLabel>Recursos</SectionLabel>
         <SidebarLink to="/mao-de-obra" icon={HardHat} label="Mão de obra" />
         <SidebarLink to="/equipamentos" icon={Wrench} label="Equipamentos" />
         <SidebarLink to="/insumos" icon={Package} label="Insumos" />
         <SidebarLink to="/composicoes" icon={Package} label="Composições" />
         <SidebarLink to="/centros-custo" icon={FolderTree} label="Centros de Custo" />
-        <div className="px-3 pt-5 pb-1 text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/40">Governança e Compliance</div>
+
+        <SectionLabel>Governança</SectionLabel>
         <SidebarLink to="/compliance" icon={ShieldCheck} label="Central de Certidões" />
 
-
-        <div className="px-3 pt-5 pb-1 text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/40">Administração</div>
+        <SectionLabel>Administração</SectionLabel>
         <SidebarLink to="/equipe" icon={Users} label="Equipe" />
         <SidebarLink to="/parametros-financeiros" icon={Calculator} label="Parâmetros Financeiros" />
         <SidebarLink to="/backup" icon={Database} label="Backup" />
@@ -119,4 +130,8 @@ function SidebarLink({
       <span className="truncate">{label}</span>
     </Link>
   );
+}
+
+function SectionLabel({ children }: { children: ReactNode }) {
+  return <div className="px-3 pt-5 pb-1 text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/40">{children}</div>;
 }
