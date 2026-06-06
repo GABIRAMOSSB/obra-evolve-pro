@@ -1908,6 +1908,50 @@ export type Database = {
         }
         Relationships: []
       }
+      indices_economicos: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          fonte: string | null
+          id: string
+          indice: string
+          mes_referencia: string
+          updated_at: string
+          valor_percentual: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          fonte?: string | null
+          id?: string
+          indice: string
+          mes_referencia: string
+          updated_at?: string
+          valor_percentual: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          fonte?: string | null
+          id?: string
+          indice?: string
+          mes_referencia?: string
+          updated_at?: string
+          valor_percentual?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "indices_economicos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       insumo_aliases: {
         Row: {
           cnpj_fornecedor: string | null
@@ -2913,6 +2957,84 @@ export type Database = {
             columns: ["edital_id"]
             isOneToOne: false
             referencedRelation: "editais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reajustes_contratuais: {
+        Row: {
+          aplicado_em: string | null
+          company_id: string
+          contrato_id: string
+          created_at: string
+          created_by: string | null
+          data_aplicacao: string | null
+          id: string
+          indice: string
+          metadata: Json
+          numero: number
+          observacoes: string | null
+          percentual_acumulado: number
+          periodo_fim: string
+          periodo_inicio: string
+          status: string
+          updated_at: string
+          valor_base: number
+          valor_reajuste: number
+        }
+        Insert: {
+          aplicado_em?: string | null
+          company_id: string
+          contrato_id: string
+          created_at?: string
+          created_by?: string | null
+          data_aplicacao?: string | null
+          id?: string
+          indice: string
+          metadata?: Json
+          numero: number
+          observacoes?: string | null
+          percentual_acumulado: number
+          periodo_fim: string
+          periodo_inicio: string
+          status?: string
+          updated_at?: string
+          valor_base: number
+          valor_reajuste: number
+        }
+        Update: {
+          aplicado_em?: string | null
+          company_id?: string
+          contrato_id?: string
+          created_at?: string
+          created_by?: string | null
+          data_aplicacao?: string | null
+          id?: string
+          indice?: string
+          metadata?: Json
+          numero?: number
+          observacoes?: string | null
+          percentual_acumulado?: number
+          periodo_fim?: string
+          periodo_inicio?: string
+          status?: string
+          updated_at?: string
+          valor_base?: number
+          valor_reajuste?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reajustes_contratuais_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reajustes_contratuais_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
             referencedColumns: ["id"]
           },
         ]
