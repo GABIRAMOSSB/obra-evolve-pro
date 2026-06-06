@@ -147,7 +147,7 @@ export const simularEnvioProposta = createServerFn({ method: "POST" })
     const [{ data: portal, error: e1 }, { data: prop, error: e2 }, { data: itens, error: e3 }] =
       await Promise.all([
         supabase.from("portal_perfis").select("*").eq("id", data.portal_id).eq("company_id", companyId).maybeSingle(),
-        supabase.from("propostas").select("id, nome, valor_total").eq("id", data.proposta_id).eq("company_id", companyId).maybeSingle(),
+        supabase.from("propostas").select("id, titulo, valor_total").eq("id", data.proposta_id).eq("company_id", companyId).maybeSingle(),
         supabase.from("proposta_itens")
           .select("ordem, codigo, descricao, unidade, quantidade, preco_unitario, valor_total")
           .eq("proposta_id", data.proposta_id)
