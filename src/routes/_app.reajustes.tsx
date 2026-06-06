@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, CheckCircle2, XCircle, Calculator, TrendingUp, Sparkles } from "lucide-react";
+import { Plus, Trash2, CheckCircle2, XCircle, Calculator, TrendingUp, Sparkles, FileText, Printer } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,9 @@ import {
   atualizarStatusReajuste,
   excluirReajuste,
   extrairClausulaReajusteIA,
+  gerarOficioReajuste,
   type ClausulaReajusteExtraida,
+  type OficioReajuste,
 } from "@/lib/reajustes.functions";
 
 
@@ -73,6 +75,7 @@ function ReajustesPage() {
     periodo_fim: "",
     status: "rascunho" as "rascunho" | "aplicado",
     observacoes: "",
+    base_modo: "contrato" as "contrato" | "medicoes",
   });
 
   const upsertMut = useMutation({
@@ -106,13 +109,14 @@ function ReajustesPage() {
           periodo_fim: cForm.periodo_fim,
           status: cForm.status,
           observacoes: cForm.observacoes || null,
+          base_modo: cForm.base_modo,
         },
       });
     },
     onSuccess: (res) => {
       toast.success(`Reajuste #${res.numero}: ${pct(res.percentual_acumulado)} = ${brl(res.valor_reajuste)}`);
       setOpenCalc(false);
-      setCForm({ contrato_id: "", indice: "IPCA", periodo_inicio: "", periodo_fim: "", status: "rascunho", observacoes: "" });
+      setCForm({ contrato_id: "", indice: "IPCA", periodo_inicio: "", periodo_fim: "", status: "rascunho", observacoes: "", base_modo: "contrato" });
       qc.invalidateQueries({ queryKey: ["reajustes"] });
       qc.invalidateQueries({ queryKey: ["contratos"] });
     },
@@ -171,6 +175,29 @@ function ReajustesPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  // --- F12.x: ofício de reajuste ---
+  const oficioFn = useServerFn(gerarOficioReajuste);
+  const [oficio, setOficio] = useState<OficioReajuste | null>(null);
+  const [oficioTexto, setOficioTexto] = useState("");
+  const oficioMut = useMutation({
+    mutationFn: (reajuste_id: string) => oficioFn({ data: { reajuste_id } }),
+    onSuccess: (r) => { setOficio(r); setOficioTexto(r.texto); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const imprimirOficio = () => {
+    if (!oficio) return;
+    const w = window.open("", "_blank", "width=800,height=900");
+    if (!w) { toast.error("Pop-up bloqueado pelo navegador."); return; }
+    const titulo = `Oficio_Reajuste_${oficio.numero_reajuste}_${oficio.contrato_numero}`;
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${titulo}</title>
+      <style>body{font-family:Georgia,serif;padding:48px;max-width:780px;margin:0 auto;line-height:1.6;color:#111;white-space:pre-wrap;font-size:13pt}</style>
+      </head><body>${oficioTexto.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c] ?? c))}</body></html>`);
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 250);
+  };
+
 
 
   const indices = data?.indices ?? [];
@@ -322,15 +349,32 @@ function ReajustesPage() {
                         onChange={(e) => setCForm((f) => ({ ...f, periodo_fim: e.target.value }))} />
                     </div>
                   </div>
-                  <div>
-                    <Label>Status</Label>
-                    <Select value={cForm.status} onValueChange={(v) => setCForm((f) => ({ ...f, status: v as typeof cForm.status }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="rascunho">Rascunho</SelectItem>
-                        <SelectItem value="aplicado">Aplicar imediatamente</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>Base do cálculo</Label>
+                      <Select value={cForm.base_modo} onValueChange={(v) => setCForm((f) => ({ ...f, base_modo: v as typeof cForm.base_modo }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="contrato">Valor atualizado do contrato</SelectItem>
+                          <SelectItem value="medicoes">Soma das medições aprovadas/pagas no período</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {cForm.base_modo === "medicoes"
+                          ? "Considera apenas BMs com status aprovada ou paga dentro do período informado."
+                          : "Usa o valor_atualizado do contrato (ou original, se nulo)."}
+                      </p>
+                    </div>
+                    <div>
+                      <Label>Status</Label>
+                      <Select value={cForm.status} onValueChange={(v) => setCForm((f) => ({ ...f, status: v as typeof cForm.status }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="rascunho">Rascunho</SelectItem>
+                          <SelectItem value="aplicado">Aplicar imediatamente</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   <div>
                     <Label>Observações</Label>
@@ -389,6 +433,10 @@ function ReajustesPage() {
                             <td className="py-2 px-2">{statusBadge(r.status)}</td>
                             <td className="py-2 px-2">
                               <div className="flex items-center justify-end gap-1">
+                                <Button size="icon" variant="ghost" title="Gerar ofício"
+                                  onClick={() => oficioMut.mutate(r.id)} disabled={oficioMut.isPending}>
+                                  <FileText className="w-4 h-4 text-blue-600" />
+                                </Button>
                                 {r.status !== "aplicado" && (
                                   <Button size="icon" variant="ghost" title="Aplicar"
                                     onClick={() => statusMut.mutate({ id: r.id, status: "aplicado" })}>
@@ -503,6 +551,39 @@ function ReajustesPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={!!oficio} onOpenChange={(o) => { if (!o) { setOficio(null); setOficioTexto(""); } }}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Ofício de Reajuste {oficio ? `#${oficio.numero_reajuste} — Contrato ${oficio.contrato_numero}` : ""}
+            </DialogTitle>
+          </DialogHeader>
+          {oficio && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="rounded border p-2"><div className="text-muted-foreground">Índice</div><div className="font-semibold">{oficio.indice}</div></div>
+                <div className="rounded border p-2"><div className="text-muted-foreground">% Acumulado</div><div className="font-semibold">{Number(oficio.percentual_acumulado).toFixed(4)}%</div></div>
+                <div className="rounded border p-2"><div className="text-muted-foreground">Reajuste</div><div className="font-semibold">{brl(oficio.valor_reajuste)}</div></div>
+              </div>
+              <Textarea rows={22} value={oficioTexto} onChange={(e) => setOficioTexto(e.target.value)}
+                className="font-mono text-sm leading-relaxed" />
+              <p className="text-xs text-muted-foreground">
+                Edite livremente o texto antes de imprimir. Base usada: <strong>{oficio.base_modo === "medicoes" ? "soma das medições do período" : "valor atualizado do contrato"}</strong>.
+              </p>
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => { setOficio(null); setOficioTexto(""); }}>Fechar</Button>
+            <Button variant="secondary" onClick={() => { navigator.clipboard.writeText(oficioTexto); toast.success("Ofício copiado."); }}>
+              Copiar texto
+            </Button>
+            <Button onClick={imprimirOficio}>
+              <Printer className="w-4 h-4 mr-2" /> Imprimir / PDF
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

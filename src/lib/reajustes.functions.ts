@@ -154,6 +154,7 @@ const calcSchema = z.object({
   periodo_fim: z.string().min(7),
   status: z.enum(["rascunho", "aplicado"]).default("rascunho"),
   observacoes: z.string().max(2000).optional().nullable(),
+  base_modo: z.enum(["contrato", "medicoes"]).optional().default("contrato"),
 });
 
 export const calcularReajuste = createServerFn({ method: "POST" })
@@ -252,7 +253,28 @@ export const calcularReajuste = createServerFn({ method: "POST" })
       1,
     );
     const percentual = Number(((fator - 1) * 100).toFixed(6));
-    const valorBase = Number(contrato.valor_atualizado || contrato.valor_original || 0);
+
+    let valorBase = Number(contrato.valor_atualizado || contrato.valor_original || 0);
+    let baseDetalhe: { modo: string; medicoes?: number; periodo?: [string, string] } = { modo: "contrato" };
+
+    if (data.base_modo === "medicoes") {
+      const { data: bms, error: bmErr } = await supabase
+        .from("medicoes")
+        .select("numero, valor_executado, status, periodo_inicio, periodo_fim")
+        .eq("company_id", companyId)
+        .eq("contrato_id", data.contrato_id)
+        .in("status", ["aprovada", "paga"])
+        .gte("periodo_inicio", ini)
+        .lte("periodo_fim", fim);
+      if (bmErr) throw new Error(bmErr.message);
+      const soma = (bms ?? []).reduce((s: number, m: { valor_executado: number | string }) => s + Number(m.valor_executado || 0), 0);
+      if (soma <= 0) {
+        throw new Error("Sem medições aprovadas/pagas no período para usar como base elegível.");
+      }
+      valorBase = Number(soma.toFixed(2));
+      baseDetalhe = { modo: "medicoes", medicoes: (bms ?? []).length, periodo: [ini, fim] };
+    }
+
     const valorReajuste = Number((valorBase * (fator - 1)).toFixed(2));
 
     const { data: anteriores } = await supabase
@@ -277,7 +299,7 @@ export const calcularReajuste = createServerFn({ method: "POST" })
         valor_reajuste: valorReajuste,
         status: data.status,
         observacoes: data.observacoes ?? null,
-        metadata: { meses: indices.length },
+        metadata: { meses: indices.length, base: baseDetalhe },
         created_by: context.userId,
       })
       .select("id")
@@ -500,4 +522,108 @@ export const extrairClausulaReajusteIA = createServerFn({ method: "POST" })
 
     return { extraido: parsed, aplicado };
   });
+
+/* ============================ F12.x — Ofício de reajuste ============================ */
+
+export type OficioReajuste = {
+  numero_reajuste: number;
+  contrato_numero: string;
+  contrato_objeto: string | null;
+  indice: string;
+  periodo_inicio: string;
+  periodo_fim: string;
+  percentual_acumulado: number;
+  valor_base: number;
+  valor_reajuste: number;
+  base_modo: string;
+  data_emissao: string;
+  empresa_nome: string;
+  texto: string;
+};
+
+const brlFmt = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const pctFmt = (n: number) => `${n.toFixed(4).replace(".", ",")}%`;
+const dateBR = (iso: string) => {
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+};
+const mesAnoBR = (iso: string) => {
+  const [y, m] = iso.split("-");
+  const meses = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+  return `${meses[Number(m) - 1]}/${y}`;
+};
+
+export const gerarOficioReajuste = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ reajuste_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }): Promise<OficioReajuste> => {
+    const supabase = context.supabase as AnySupabase;
+    const companyId = await resolveCompany(supabase, context.userId);
+
+    const { data: r, error: rErr } = await supabase
+      .from("reajustes_contratuais")
+      .select("id, contrato_id, numero, indice, periodo_inicio, periodo_fim, percentual_acumulado, valor_base, valor_reajuste, metadata")
+      .eq("id", data.reajuste_id)
+      .eq("company_id", companyId)
+      .maybeSingle();
+    if (rErr) throw new Error(rErr.message);
+    if (!r) throw new Error("Reajuste não encontrado.");
+
+    const [{ data: contrato }, { data: empresa }] = await Promise.all([
+      supabase.from("contratos").select("numero, objeto").eq("id", r.contrato_id).maybeSingle(),
+      supabase.from("companies").select("name").eq("id", companyId).maybeSingle(),
+    ]);
+
+    const percentual = Number(r.percentual_acumulado);
+    const valorBase = Number(r.valor_base);
+    const valorReajuste = Number(r.valor_reajuste);
+    const baseModo = (r.metadata as { base?: { modo?: string } } | null)?.base?.modo ?? "contrato";
+    const hoje = new Date().toISOString().slice(0, 10);
+
+    const baseTexto = baseModo === "medicoes"
+      ? `tendo por base o somatório das medições aprovadas no período (${baseModo})`
+      : `tendo por base o valor atualizado do contrato`;
+
+    const texto =
+`Ao Sr(a). Gestor(a) do Contrato
+
+Assunto: Solicitação de reajuste contratual nº ${r.numero} — Contrato ${contrato?.numero ?? "—"}
+
+Prezado(a) Sr.(a),
+
+A empresa ${empresa?.name ?? "—"}, signatária do Contrato nº ${contrato?.numero ?? "—"}, cujo objeto é "${contrato?.objeto ?? "—"}", vem respeitosamente requerer a aplicação do reajuste contratual previsto em cláusula específica, observando-se o seguinte:
+
+1. Índice utilizado: ${r.indice}
+2. Período de referência: ${mesAnoBR(r.periodo_inicio)} a ${mesAnoBR(r.periodo_fim)}
+3. Percentual acumulado apurado: ${pctFmt(percentual)}
+4. Valor-base de cálculo: ${brlFmt(valorBase)} (${baseTexto})
+5. Valor do reajuste pleiteado: ${brlFmt(valorReajuste)}
+
+O cálculo segue a metodologia de capitalização composta dos índices mensais publicados pelo órgão competente, conforme cláusula de reajuste contratual e arts. 25 e 92, V, da Lei nº 14.133/2021.
+
+Solicitamos a apreciação do pleito e o consequente apostilamento contratual.
+
+${dateBR(hoje)}
+
+_________________________________________
+${empresa?.name ?? ""}
+Representante legal`;
+
+    return {
+      numero_reajuste: r.numero,
+      contrato_numero: contrato?.numero ?? "—",
+      contrato_objeto: contrato?.objeto ?? null,
+      indice: r.indice,
+      periodo_inicio: r.periodo_inicio,
+      periodo_fim: r.periodo_fim,
+      percentual_acumulado: percentual,
+      valor_base: valorBase,
+      valor_reajuste: valorReajuste,
+      base_modo: baseModo,
+      data_emissao: hoje,
+      empresa_nome: empresa?.name ?? "—",
+      texto,
+    };
+  });
+
 
