@@ -33,6 +33,8 @@ export function AppSidebar() {
         <SidebarLink to="/obras" icon={Building2} label="Obras" />
         <SidebarLink to="/oportunidades" icon={Radar} label="Radar PNCP" />
         <SidebarLink to="/editais" icon={FileText} label="Editais (IA)" />
+        <SidebarLink to="/biblioteca" icon={Library} label="Biblioteca Docs" />
+
 
         <SidebarLink to="/realizado" icon={BarChart3} label="Previsto × Realizado" />
         <SidebarLink to="/comparativo-composicao" icon={Calculator} label="Comparativo Composição" />
