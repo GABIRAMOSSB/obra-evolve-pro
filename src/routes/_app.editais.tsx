@@ -351,6 +351,26 @@ function EditalDetail({ id, onDeleted }: { id: string; onDeleted: () => void }) 
     onError: (e: Error) => toast.error(`Extração falhou: ${e.message}`),
   });
 
+  const { data: rag } = useQuery({
+    queryKey: ["edital-rag", id],
+    queryFn: () => ragStatusFn({ data: { edital_id: id } }),
+  });
+  const indexMut = useMutation({
+    mutationFn: async () => indexFn({ data: { edital_id: id } }),
+    onSuccess: (r) => {
+      toast.success(`Indexado: ${r.chunks} trechos de ${r.documentos} documento(s).`);
+      qc.invalidateQueries({ queryKey: ["edital-rag", id] });
+    },
+    onError: (e: Error) => toast.error(`Indexação falhou: ${e.message}`),
+  });
+  const [pergunta, setPergunta] = useState("");
+  const [resposta, setResposta] = useState<{ resposta: string; trechos: Array<{ documento_id: string; pagina: number | null; conteudo: string; similarity: number }> } | null>(null);
+  const askMut = useMutation({
+    mutationFn: async (q: string) => askFn({ data: { edital_id: id, pergunta: q } }),
+    onSuccess: (r) => setResposta(r),
+    onError: (e: Error) => toast.error(`Pergunta falhou: ${e.message}`),
+  });
+
   if (!edital) return null;
 
   // agrupar checklist por categoria
