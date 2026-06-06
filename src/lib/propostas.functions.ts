@@ -17,7 +17,7 @@ const AI_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const DEFAULT_MODEL = "google/gemini-2.5-flash";
 
 const STATUS = ["rascunho", "em_revisao", "aprovada", "enviada", "perdida", "ganha"] as const;
-type Status = (typeof STATUS)[number];
+export type PropostaStatus = (typeof STATUS)[number];
 
 async function resolveCompanyId(supabase: AnySupabase, userId: string): Promise<string> {
   const { data, error } = await supabase
