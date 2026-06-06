@@ -32,6 +32,9 @@ import {
   listEditalDocumentos,
   getEditalDocumentoUrl,
   extractDocumentoTexto,
+  indexarEditalRAG,
+  perguntarEdital,
+  ragStatus,
   type ChecklistRow,
 } from "@/lib/editais.functions";
 
