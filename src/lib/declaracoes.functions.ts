@@ -213,9 +213,9 @@ export const previewDeclaracao = createServerFn({ method: "POST" })
     const companyId = await resolveCompany(supabase, context.userId);
 
     const { data: comp } = await supabase
-      .from("companies").select("razao_social, cnpj").eq("id", companyId).maybeSingle();
+      .from("companies").select("legal_name, name, cnpj").eq("id", companyId).maybeSingle();
     const empresa = {
-      nome: (comp?.razao_social as string) || "[Razão Social]",
+      nome: (comp?.legal_name as string) || (comp?.name as string) || "[Razão Social]",
       cnpj: (comp?.cnpj as string) || "[CNPJ]",
     };
 
