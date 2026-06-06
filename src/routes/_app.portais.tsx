@@ -274,7 +274,7 @@ function SimuladorTab() {
   const simFn = useServerFn(simularEnvioProposta);
 
   const { data: portais } = useQuery({ queryKey: ["portais"], queryFn: () => listPortFn({ data: {} }) });
-  const { data: propostas } = useQuery({ queryKey: ["propostas-min"], queryFn: () => listPropFn({ data: {} }) });
+  const { data: propostas } = useQuery({ queryKey: ["propostas-min"], queryFn: () => listPropFn() });
 
   const [portalId, setPortalId] = useState<string>("");
   const [propostaId, setPropostaId] = useState<string>("");
@@ -285,7 +285,7 @@ function SimuladorTab() {
   });
 
   const portRows = (portais?.rows ?? []) as Portal[];
-  const propRows = ((propostas?.rows ?? propostas ?? []) as Array<{ id: string; nome: string }>);
+  const propRows = ((propostas ?? []) as Array<{ id: string; nome: string }>);
 
   return (
     <div className="space-y-4">
@@ -410,7 +410,7 @@ function ProtocolosTab() {
 
   const { data, isLoading } = useQuery({ queryKey: ["protocolos"], queryFn: () => listFn({ data: {} }) });
   const { data: portais } = useQuery({ queryKey: ["portais"], queryFn: () => listPortFn({ data: {} }) });
-  const { data: propostas } = useQuery({ queryKey: ["propostas-min"], queryFn: () => listPropFn({ data: {} }) });
+  const { data: propostas } = useQuery({ queryKey: ["propostas-min"], queryFn: () => listPropFn() });
 
   const upMut = useMutation({
     mutationFn: async (p: Parameters<typeof upFn>[0]) => upFn(p),
@@ -424,7 +424,7 @@ function ProtocolosTab() {
   });
 
   const portRows = (portais?.rows ?? []) as Portal[];
-  const propRows = ((propostas?.rows ?? propostas ?? []) as Array<{ id: string; nome: string }>);
+  const propRows = ((propostas ?? []) as Array<{ id: string; nome: string }>);
   const rows = (data?.rows ?? []) as Protocolo[];
 
   return (
