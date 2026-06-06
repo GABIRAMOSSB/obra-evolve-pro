@@ -148,6 +148,31 @@ function ReajustesPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // --- F12.x: extração de cláusula por IA ---
+  const extrairFn = useServerFn(extrairClausulaReajusteIA);
+  const [openIA, setOpenIA] = useState(false);
+  const [iaForm, setIaForm] = useState({ contrato_id: "", texto: "" });
+  const [iaResult, setIaResult] = useState<ClausulaReajusteExtraida | null>(null);
+  const extrairMut = useMutation({
+    mutationFn: (aplicar: boolean) => {
+      if (!iaForm.contrato_id) throw new Error("Selecione o contrato.");
+      if (iaForm.texto.trim().length < 50) throw new Error("Cole pelo menos 50 caracteres da cláusula.");
+      return extrairFn({ data: { contrato_id: iaForm.contrato_id, texto: iaForm.texto, aplicar } });
+    },
+    onSuccess: (r) => {
+      setIaResult(r.extraido);
+      if (r.aplicado) {
+        toast.success("Cláusula extraída e aplicada ao contrato.");
+        qc.invalidateQueries({ queryKey: ["reajustes"] });
+        qc.invalidateQueries({ queryKey: ["contratos"] });
+      } else {
+        toast.success(`Cláusula extraída (confiança ${Math.round((r.extraido.confianca ?? 0) * 100)}%).`);
+      }
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+
   const indices = data?.indices ?? [];
   const reajustes = data?.reajustes ?? [];
   const contratos = data?.contratos ?? [];
