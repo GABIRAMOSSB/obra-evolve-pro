@@ -424,3 +424,7 @@ export const listEditaisLite = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return (data ?? []) as Array<{ id: string; titulo: string; orgao: string | null; valor_estimado: number | null }>;
   });
+
+// Aliases para compatibilidade com a UI existente.
+export const listEditaisParaSelect = listEditaisLite;
+export const gerarRascunho = generatePropostaIA;
