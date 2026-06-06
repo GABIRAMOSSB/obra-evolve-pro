@@ -2961,6 +2961,219 @@ export type Database = {
           },
         ]
       }
+      rdo_equipamentos: {
+        Row: {
+          company_id: string
+          created_at: string
+          equipamento: string
+          horas_operadas: number
+          horas_paradas: number
+          id: string
+          observacao: string | null
+          rdo_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          equipamento: string
+          horas_operadas?: number
+          horas_paradas?: number
+          id?: string
+          observacao?: string | null
+          rdo_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          equipamento?: string
+          horas_operadas?: number
+          horas_paradas?: number
+          id?: string
+          observacao?: string | null
+          rdo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rdo_equipamentos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rdo_equipamentos_rdo_id_fkey"
+            columns: ["rdo_id"]
+            isOneToOne: false
+            referencedRelation: "rdos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rdo_equipes: {
+        Row: {
+          company_id: string
+          created_at: string
+          funcao: string
+          horas_trabalhadas: number
+          id: string
+          observacao: string | null
+          quantidade: number
+          rdo_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          funcao: string
+          horas_trabalhadas?: number
+          id?: string
+          observacao?: string | null
+          quantidade?: number
+          rdo_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          funcao?: string
+          horas_trabalhadas?: number
+          id?: string
+          observacao?: string | null
+          quantidade?: number
+          rdo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rdo_equipes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rdo_equipes_rdo_id_fkey"
+            columns: ["rdo_id"]
+            isOneToOne: false
+            referencedRelation: "rdos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rdo_ocorrencias: {
+        Row: {
+          company_id: string
+          created_at: string
+          descricao: string
+          id: string
+          rdo_id: string
+          severidade: string | null
+          tipo: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          descricao: string
+          id?: string
+          rdo_id: string
+          severidade?: string | null
+          tipo: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          descricao?: string
+          id?: string
+          rdo_id?: string
+          severidade?: string | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rdo_ocorrencias_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rdo_ocorrencias_rdo_id_fkey"
+            columns: ["rdo_id"]
+            isOneToOne: false
+            referencedRelation: "rdos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rdos: {
+        Row: {
+          atividades_executadas: string | null
+          clima_manha: string | null
+          clima_noite: string | null
+          clima_tarde: string | null
+          company_id: string
+          condicao_trabalho: string | null
+          created_at: string
+          created_by: string | null
+          data: string
+          efetivo_total: number
+          id: string
+          metadata: Json
+          obra_id: string
+          observacoes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          atividades_executadas?: string | null
+          clima_manha?: string | null
+          clima_noite?: string | null
+          clima_tarde?: string | null
+          company_id: string
+          condicao_trabalho?: string | null
+          created_at?: string
+          created_by?: string | null
+          data: string
+          efetivo_total?: number
+          id?: string
+          metadata?: Json
+          obra_id: string
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          atividades_executadas?: string | null
+          clima_manha?: string | null
+          clima_noite?: string | null
+          clima_tarde?: string | null
+          company_id?: string
+          condicao_trabalho?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          efetivo_total?: number
+          id?: string
+          metadata?: Json
+          obra_id?: string
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rdos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rdos_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reajustes_contratuais: {
         Row: {
           aplicado_em: string | null
