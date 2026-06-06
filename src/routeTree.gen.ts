@@ -42,6 +42,7 @@ import { Route as AppAssinaturasRouteImport } from './routes/_app.assinaturas'
 import { Route as AppAditivosRouteImport } from './routes/_app.aditivos'
 import { Route as ApiPublicZapsignWebhookRouteImport } from './routes/api.public.zapsign-webhook'
 import { Route as ApiPublicZapsignRemindersRouteImport } from './routes/api.public.zapsign-reminders'
+import { Route as AppPropostasIdRouteImport } from './routes/_app.propostas.$id'
 import { Route as AppInsumosImportarRouteImport } from './routes/_app.insumos.importar'
 import { Route as AppConfiguracoesZapsignRouteImport } from './routes/_app.configuracoes.zapsign'
 import { Route as AppAssinaturasRelatorioRouteImport } from './routes/_app.assinaturas.relatorio'
@@ -214,6 +215,11 @@ const ApiPublicZapsignRemindersRoute =
     path: '/api/public/zapsign-reminders',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AppPropostasIdRoute = AppPropostasIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppPropostasRoute,
+} as any)
 const AppInsumosImportarRoute = AppInsumosImportarRouteImport.update({
   id: '/importar',
   path: '/importar',
@@ -262,7 +268,7 @@ export interface FileRoutesByFullPath {
   '/obras': typeof AppObrasRoute
   '/oportunidades': typeof AppOportunidadesRoute
   '/parametros-financeiros': typeof AppParametrosFinanceirosRoute
-  '/propostas': typeof AppPropostasRoute
+  '/propostas': typeof AppPropostasRouteWithChildren
   '/rdo': typeof AppRdoRoute
   '/reajustes': typeof AppReajustesRoute
   '/realizado': typeof AppRealizadoRoute
@@ -270,6 +276,7 @@ export interface FileRoutesByFullPath {
   '/assinaturas/relatorio': typeof AppAssinaturasRelatorioRoute
   '/configuracoes/zapsign': typeof AppConfiguracoesZapsignRouteWithChildren
   '/insumos/importar': typeof AppInsumosImportarRoute
+  '/propostas/$id': typeof AppPropostasIdRoute
   '/api/public/zapsign-reminders': typeof ApiPublicZapsignRemindersRoute
   '/api/public/zapsign-webhook': typeof ApiPublicZapsignWebhookRoute
   '/configuracoes/zapsign/testes': typeof AppConfiguracoesZapsignTestesRoute
@@ -299,7 +306,7 @@ export interface FileRoutesByTo {
   '/obras': typeof AppObrasRoute
   '/oportunidades': typeof AppOportunidadesRoute
   '/parametros-financeiros': typeof AppParametrosFinanceirosRoute
-  '/propostas': typeof AppPropostasRoute
+  '/propostas': typeof AppPropostasRouteWithChildren
   '/rdo': typeof AppRdoRoute
   '/reajustes': typeof AppReajustesRoute
   '/realizado': typeof AppRealizadoRoute
@@ -308,6 +315,7 @@ export interface FileRoutesByTo {
   '/assinaturas/relatorio': typeof AppAssinaturasRelatorioRoute
   '/configuracoes/zapsign': typeof AppConfiguracoesZapsignRouteWithChildren
   '/insumos/importar': typeof AppInsumosImportarRoute
+  '/propostas/$id': typeof AppPropostasIdRoute
   '/api/public/zapsign-reminders': typeof ApiPublicZapsignRemindersRoute
   '/api/public/zapsign-webhook': typeof ApiPublicZapsignWebhookRoute
   '/configuracoes/zapsign/testes': typeof AppConfiguracoesZapsignTestesRoute
@@ -339,7 +347,7 @@ export interface FileRoutesById {
   '/_app/obras': typeof AppObrasRoute
   '/_app/oportunidades': typeof AppOportunidadesRoute
   '/_app/parametros-financeiros': typeof AppParametrosFinanceirosRoute
-  '/_app/propostas': typeof AppPropostasRoute
+  '/_app/propostas': typeof AppPropostasRouteWithChildren
   '/_app/rdo': typeof AppRdoRoute
   '/_app/reajustes': typeof AppReajustesRoute
   '/_app/realizado': typeof AppRealizadoRoute
@@ -348,6 +356,7 @@ export interface FileRoutesById {
   '/_app/assinaturas/relatorio': typeof AppAssinaturasRelatorioRoute
   '/_app/configuracoes/zapsign': typeof AppConfiguracoesZapsignRouteWithChildren
   '/_app/insumos/importar': typeof AppInsumosImportarRoute
+  '/_app/propostas/$id': typeof AppPropostasIdRoute
   '/api/public/zapsign-reminders': typeof ApiPublicZapsignRemindersRoute
   '/api/public/zapsign-webhook': typeof ApiPublicZapsignWebhookRoute
   '/_app/configuracoes/zapsign/testes': typeof AppConfiguracoesZapsignTestesRoute
@@ -388,6 +397,7 @@ export interface FileRouteTypes {
     | '/assinaturas/relatorio'
     | '/configuracoes/zapsign'
     | '/insumos/importar'
+    | '/propostas/$id'
     | '/api/public/zapsign-reminders'
     | '/api/public/zapsign-webhook'
     | '/configuracoes/zapsign/testes'
@@ -426,6 +436,7 @@ export interface FileRouteTypes {
     | '/assinaturas/relatorio'
     | '/configuracoes/zapsign'
     | '/insumos/importar'
+    | '/propostas/$id'
     | '/api/public/zapsign-reminders'
     | '/api/public/zapsign-webhook'
     | '/configuracoes/zapsign/testes'
@@ -465,6 +476,7 @@ export interface FileRouteTypes {
     | '/_app/assinaturas/relatorio'
     | '/_app/configuracoes/zapsign'
     | '/_app/insumos/importar'
+    | '/_app/propostas/$id'
     | '/api/public/zapsign-reminders'
     | '/api/public/zapsign-webhook'
     | '/_app/configuracoes/zapsign/testes'
@@ -712,6 +724,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicZapsignRemindersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/propostas/$id': {
+      id: '/_app/propostas/$id'
+      path: '/$id'
+      fullPath: '/propostas/$id'
+      preLoaderRoute: typeof AppPropostasIdRouteImport
+      parentRoute: typeof AppPropostasRoute
+    }
     '/_app/insumos/importar': {
       id: '/_app/insumos/importar'
       path: '/importar'
@@ -767,6 +786,18 @@ const AppInsumosRouteWithChildren = AppInsumosRoute._addFileChildren(
   AppInsumosRouteChildren,
 )
 
+interface AppPropostasRouteChildren {
+  AppPropostasIdRoute: typeof AppPropostasIdRoute
+}
+
+const AppPropostasRouteChildren: AppPropostasRouteChildren = {
+  AppPropostasIdRoute: AppPropostasIdRoute,
+}
+
+const AppPropostasRouteWithChildren = AppPropostasRoute._addFileChildren(
+  AppPropostasRouteChildren,
+)
+
 interface AppConfiguracoesZapsignRouteChildren {
   AppConfiguracoesZapsignTestesRoute: typeof AppConfiguracoesZapsignTestesRoute
 }
@@ -804,7 +835,7 @@ interface AppRouteChildren {
   AppObrasRoute: typeof AppObrasRoute
   AppOportunidadesRoute: typeof AppOportunidadesRoute
   AppParametrosFinanceirosRoute: typeof AppParametrosFinanceirosRoute
-  AppPropostasRoute: typeof AppPropostasRoute
+  AppPropostasRoute: typeof AppPropostasRouteWithChildren
   AppRdoRoute: typeof AppRdoRoute
   AppReajustesRoute: typeof AppReajustesRoute
   AppRealizadoRoute: typeof AppRealizadoRoute
@@ -835,7 +866,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppObrasRoute: AppObrasRoute,
   AppOportunidadesRoute: AppOportunidadesRoute,
   AppParametrosFinanceirosRoute: AppParametrosFinanceirosRoute,
-  AppPropostasRoute: AppPropostasRoute,
+  AppPropostasRoute: AppPropostasRouteWithChildren,
   AppRdoRoute: AppRdoRoute,
   AppReajustesRoute: AppReajustesRoute,
   AppRealizadoRoute: AppRealizadoRoute,

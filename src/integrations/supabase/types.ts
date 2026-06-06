@@ -350,6 +350,82 @@ export type Database = {
           },
         ]
       }
+      cartas_proposta: {
+        Row: {
+          company_id: string
+          condicoes_pagamento: string | null
+          conteudo_html: string | null
+          conteudo_md: string
+          created_at: string
+          created_by: string | null
+          hash_sha256: string | null
+          id: string
+          prazo_execucao_dias: number | null
+          proposta_id: string
+          signature_request_id: string | null
+          storage_path: string | null
+          updated_at: string
+          validade_dias: number | null
+          versao: number
+        }
+        Insert: {
+          company_id: string
+          condicoes_pagamento?: string | null
+          conteudo_html?: string | null
+          conteudo_md: string
+          created_at?: string
+          created_by?: string | null
+          hash_sha256?: string | null
+          id?: string
+          prazo_execucao_dias?: number | null
+          proposta_id: string
+          signature_request_id?: string | null
+          storage_path?: string | null
+          updated_at?: string
+          validade_dias?: number | null
+          versao?: number
+        }
+        Update: {
+          company_id?: string
+          condicoes_pagamento?: string | null
+          conteudo_html?: string | null
+          conteudo_md?: string
+          created_at?: string
+          created_by?: string | null
+          hash_sha256?: string | null
+          id?: string
+          prazo_execucao_dias?: number | null
+          proposta_id?: string
+          signature_request_id?: string | null
+          storage_path?: string | null
+          updated_at?: string
+          validade_dias?: number | null
+          versao?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cartas_proposta_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cartas_proposta_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cartas_proposta_signature_request_id_fkey"
+            columns: ["signature_request_id"]
+            isOneToOne: false
+            referencedRelation: "signature_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       centros_custo: {
         Row: {
           ativo: boolean
@@ -2947,63 +3023,270 @@ export type Database = {
         }
         Relationships: []
       }
+      proposta_itens: {
+        Row: {
+          codigo: string | null
+          company_id: string
+          composicao_id: string | null
+          created_at: string
+          descricao: string
+          id: string
+          insumo_id: string | null
+          item_pai_id: string | null
+          observacao: string | null
+          ordem: number
+          preco_total: number | null
+          preco_unitario: number
+          proposta_id: string
+          quantidade: number
+          unidade: string | null
+          updated_at: string
+        }
+        Insert: {
+          codigo?: string | null
+          company_id: string
+          composicao_id?: string | null
+          created_at?: string
+          descricao: string
+          id?: string
+          insumo_id?: string | null
+          item_pai_id?: string | null
+          observacao?: string | null
+          ordem?: number
+          preco_total?: number | null
+          preco_unitario?: number
+          proposta_id: string
+          quantidade?: number
+          unidade?: string | null
+          updated_at?: string
+        }
+        Update: {
+          codigo?: string | null
+          company_id?: string
+          composicao_id?: string | null
+          created_at?: string
+          descricao?: string
+          id?: string
+          insumo_id?: string | null
+          item_pai_id?: string | null
+          observacao?: string | null
+          ordem?: number
+          preco_total?: number | null
+          preco_unitario?: number
+          proposta_id?: string
+          quantidade?: number
+          unidade?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposta_itens_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposta_itens_composicao_id_fkey"
+            columns: ["composicao_id"]
+            isOneToOne: false
+            referencedRelation: "composicoes_proprias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposta_itens_insumo_id_fkey"
+            columns: ["insumo_id"]
+            isOneToOne: false
+            referencedRelation: "insumos_mestre"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposta_itens_item_pai_id_fkey"
+            columns: ["item_pai_id"]
+            isOneToOne: false
+            referencedRelation: "proposta_itens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposta_itens_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proposta_readequacao_residuos: {
+        Row: {
+          codigo: string | null
+          company_id: string
+          created_at: string
+          delta_valor: number | null
+          descricao: string
+          id: string
+          item_origem_id: string | null
+          item_readequado_id: string | null
+          justificativa: string | null
+          preco_origem: number
+          preco_readequado: number
+          proposta_origem_id: string
+          proposta_readequada_id: string
+          qtd_origem: number
+          qtd_readequada: number
+          unidade: string | null
+        }
+        Insert: {
+          codigo?: string | null
+          company_id: string
+          created_at?: string
+          delta_valor?: number | null
+          descricao: string
+          id?: string
+          item_origem_id?: string | null
+          item_readequado_id?: string | null
+          justificativa?: string | null
+          preco_origem?: number
+          preco_readequado?: number
+          proposta_origem_id: string
+          proposta_readequada_id: string
+          qtd_origem?: number
+          qtd_readequada?: number
+          unidade?: string | null
+        }
+        Update: {
+          codigo?: string | null
+          company_id?: string
+          created_at?: string
+          delta_valor?: number | null
+          descricao?: string
+          id?: string
+          item_origem_id?: string | null
+          item_readequado_id?: string | null
+          justificativa?: string | null
+          preco_origem?: number
+          preco_readequado?: number
+          proposta_origem_id?: string
+          proposta_readequada_id?: string
+          qtd_origem?: number
+          qtd_readequada?: number
+          unidade?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposta_readequacao_residuos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposta_readequacao_residuos_item_origem_id_fkey"
+            columns: ["item_origem_id"]
+            isOneToOne: false
+            referencedRelation: "proposta_itens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposta_readequacao_residuos_item_readequado_id_fkey"
+            columns: ["item_readequado_id"]
+            isOneToOne: false
+            referencedRelation: "proposta_itens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposta_readequacao_residuos_proposta_origem_id_fkey"
+            columns: ["proposta_origem_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposta_readequacao_residuos_proposta_readequada_id_fkey"
+            columns: ["proposta_readequada_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       propostas: {
         Row: {
           ai_meta: Json
+          bdi_percent: number | null
           company_id: string
           created_at: string
           created_by: string | null
           cronograma: string | null
+          data_referencia: string | null
           diferenciais: string | null
           edital_id: string | null
+          encargos_percent: number | null
           equipe_tecnica: string | null
           id: string
           metodologia: string | null
           observacoes: string | null
           prazo_execucao_dias: number | null
+          proposta_origem_id: string | null
           resumo_executivo: string | null
           status: string
+          tipo: string
           titulo: string
           updated_at: string
+          valor_itens: number | null
           valor_proposto: number | null
+          valor_total: number | null
         }
         Insert: {
           ai_meta?: Json
+          bdi_percent?: number | null
           company_id: string
           created_at?: string
           created_by?: string | null
           cronograma?: string | null
+          data_referencia?: string | null
           diferenciais?: string | null
           edital_id?: string | null
+          encargos_percent?: number | null
           equipe_tecnica?: string | null
           id?: string
           metodologia?: string | null
           observacoes?: string | null
           prazo_execucao_dias?: number | null
+          proposta_origem_id?: string | null
           resumo_executivo?: string | null
           status?: string
+          tipo?: string
           titulo: string
           updated_at?: string
+          valor_itens?: number | null
           valor_proposto?: number | null
+          valor_total?: number | null
         }
         Update: {
           ai_meta?: Json
+          bdi_percent?: number | null
           company_id?: string
           created_at?: string
           created_by?: string | null
           cronograma?: string | null
+          data_referencia?: string | null
           diferenciais?: string | null
           edital_id?: string | null
+          encargos_percent?: number | null
           equipe_tecnica?: string | null
           id?: string
           metodologia?: string | null
           observacoes?: string | null
           prazo_execucao_dias?: number | null
+          proposta_origem_id?: string | null
           resumo_executivo?: string | null
           status?: string
+          tipo?: string
           titulo?: string
           updated_at?: string
+          valor_itens?: number | null
           valor_proposto?: number | null
+          valor_total?: number | null
         }
         Relationships: [
           {
@@ -3018,6 +3301,13 @@ export type Database = {
             columns: ["edital_id"]
             isOneToOne: false
             referencedRelation: "editais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "propostas_proposta_origem_id_fkey"
+            columns: ["proposta_origem_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
             referencedColumns: ["id"]
           },
         ]
@@ -3931,6 +4221,10 @@ export type Database = {
           pagina: number
           similarity: number
         }[]
+      }
+      recalc_proposta_totals: {
+        Args: { p_proposta_id: string }
+        Returns: undefined
       }
       registrar_entrada_nfe: {
         Args: { _nota_id: string; _obra_id?: string }

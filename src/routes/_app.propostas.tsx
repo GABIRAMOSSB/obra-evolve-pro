@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -42,6 +42,7 @@ import {
   Sparkles,
   Save,
   Copy,
+  Settings2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -159,16 +160,27 @@ function PropostaList({ onOpen }: { onOpen: (id: string) => void }) {
                     <Badge variant={STATUS_VARIANT[p.status]}>{STATUS_LABEL[p.status]}</Badge>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (confirm(`Remover "${p.titulo}"?`)) del.mutate(p.id);
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <div className="flex justify-end gap-1">
+                      <Link
+                        to="/propostas/$id"
+                        params={{ id: p.id }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Button variant="ghost" size="icon" title="Itens, readequação e carta">
+                          <Settings2 className="w-4 h-4" />
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm(`Remover "${p.titulo}"?`)) del.mutate(p.id);
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
