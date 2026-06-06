@@ -22,6 +22,7 @@ import { Route as AppObrasRouteImport } from './routes/_app.obras'
 import { Route as AppNotasFiscaisRouteImport } from './routes/_app.notas-fiscais'
 import { Route as AppMaoDeObraRouteImport } from './routes/_app.mao-de-obra'
 import { Route as AppInsumosRouteImport } from './routes/_app.insumos'
+import { Route as AppFinanceiroRouteImport } from './routes/_app.financeiro'
 import { Route as AppEstoqueRouteImport } from './routes/_app.estoque'
 import { Route as AppEquipeRouteImport } from './routes/_app.equipe'
 import { Route as AppEquipamentosRouteImport } from './routes/_app.equipamentos'
@@ -104,6 +105,11 @@ const AppMaoDeObraRoute = AppMaoDeObraRouteImport.update({
 const AppInsumosRoute = AppInsumosRouteImport.update({
   id: '/insumos',
   path: '/insumos',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppFinanceiroRoute = AppFinanceiroRouteImport.update({
+  id: '/financeiro',
+  path: '/financeiro',
   getParentRoute: () => AppRoute,
 } as any)
 const AppEstoqueRoute = AppEstoqueRouteImport.update({
@@ -216,6 +222,7 @@ export interface FileRoutesByFullPath {
   '/equipamentos': typeof AppEquipamentosRoute
   '/equipe': typeof AppEquipeRoute
   '/estoque': typeof AppEstoqueRoute
+  '/financeiro': typeof AppFinanceiroRoute
   '/insumos': typeof AppInsumosRouteWithChildren
   '/mao-de-obra': typeof AppMaoDeObraRoute
   '/notas-fiscais': typeof AppNotasFiscaisRoute
@@ -247,6 +254,7 @@ export interface FileRoutesByTo {
   '/equipamentos': typeof AppEquipamentosRoute
   '/equipe': typeof AppEquipeRoute
   '/estoque': typeof AppEstoqueRoute
+  '/financeiro': typeof AppFinanceiroRoute
   '/insumos': typeof AppInsumosRouteWithChildren
   '/mao-de-obra': typeof AppMaoDeObraRoute
   '/notas-fiscais': typeof AppNotasFiscaisRoute
@@ -281,6 +289,7 @@ export interface FileRoutesById {
   '/_app/equipamentos': typeof AppEquipamentosRoute
   '/_app/equipe': typeof AppEquipeRoute
   '/_app/estoque': typeof AppEstoqueRoute
+  '/_app/financeiro': typeof AppFinanceiroRoute
   '/_app/insumos': typeof AppInsumosRouteWithChildren
   '/_app/mao-de-obra': typeof AppMaoDeObraRoute
   '/_app/notas-fiscais': typeof AppNotasFiscaisRoute
@@ -316,6 +325,7 @@ export interface FileRouteTypes {
     | '/equipamentos'
     | '/equipe'
     | '/estoque'
+    | '/financeiro'
     | '/insumos'
     | '/mao-de-obra'
     | '/notas-fiscais'
@@ -347,6 +357,7 @@ export interface FileRouteTypes {
     | '/equipamentos'
     | '/equipe'
     | '/estoque'
+    | '/financeiro'
     | '/insumos'
     | '/mao-de-obra'
     | '/notas-fiscais'
@@ -380,6 +391,7 @@ export interface FileRouteTypes {
     | '/_app/equipamentos'
     | '/_app/equipe'
     | '/_app/estoque'
+    | '/_app/financeiro'
     | '/_app/insumos'
     | '/_app/mao-de-obra'
     | '/_app/notas-fiscais'
@@ -498,6 +510,13 @@ declare module '@tanstack/react-router' {
       path: '/insumos'
       fullPath: '/insumos'
       preLoaderRoute: typeof AppInsumosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/financeiro': {
+      id: '/_app/financeiro'
+      path: '/financeiro'
+      fullPath: '/financeiro'
+      preLoaderRoute: typeof AppFinanceiroRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/estoque': {
@@ -680,6 +699,7 @@ interface AppRouteChildren {
   AppEquipamentosRoute: typeof AppEquipamentosRoute
   AppEquipeRoute: typeof AppEquipeRoute
   AppEstoqueRoute: typeof AppEstoqueRoute
+  AppFinanceiroRoute: typeof AppFinanceiroRoute
   AppInsumosRoute: typeof AppInsumosRouteWithChildren
   AppMaoDeObraRoute: typeof AppMaoDeObraRoute
   AppNotasFiscaisRoute: typeof AppNotasFiscaisRoute
@@ -705,6 +725,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppEquipamentosRoute: AppEquipamentosRoute,
   AppEquipeRoute: AppEquipeRoute,
   AppEstoqueRoute: AppEstoqueRoute,
+  AppFinanceiroRoute: AppFinanceiroRoute,
   AppInsumosRoute: AppInsumosRouteWithChildren,
   AppMaoDeObraRoute: AppMaoDeObraRoute,
   AppNotasFiscaisRoute: AppNotasFiscaisRoute,
