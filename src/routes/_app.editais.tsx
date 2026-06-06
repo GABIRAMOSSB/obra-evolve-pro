@@ -554,11 +554,12 @@ function EditalDetail({ id, onDeleted }: { id: string; onDeleted: () => void }) 
 }
 
 function ChecklistItemRow({
-  item, onStatusChange, onObsBlur,
+  item, onStatusChange, onObsBlur, onOpenPage,
 }: {
   item: ChecklistRow;
   onStatusChange: (s: string) => void;
   onObsBlur: (obs: string | null) => void;
+  onOpenPage?: (pagina: number) => void;
 }) {
   const [obs, setObs] = useState(item.observacoes ?? "");
 
