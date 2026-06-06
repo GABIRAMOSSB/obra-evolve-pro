@@ -142,7 +142,7 @@ function NotasFiscaisPage() {
     const { data, error } = await supabase
       .from("notas_fiscais")
       .select(
-        "id,chave_acesso,numero,serie,data_emissao,emitente_cnpj,emitente_nome,emitente_uf,valor_total,status,created_at",
+        "id,chave_acesso,numero,serie,data_emissao,emitente_cnpj,emitente_nome,emitente_uf,valor_total,status,created_at,manifestacao_tipo,manifestacao_data,manifestacao_justificativa",
       )
       .eq("company_id", companyId)
       .order("data_emissao", { ascending: false, nullsFirst: false })
