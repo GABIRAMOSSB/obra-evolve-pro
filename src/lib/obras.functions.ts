@@ -125,7 +125,9 @@ function pickNumber(v: unknown): number | null {
 export const syncObrasFromWorkspace = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<SyncResult> => {
-    const { supabase } = context;
+    const { supabase: supabaseTyped } = context;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabase = supabaseTyped as any;
     const companyId = await requireEditor(supabase, context.userId);
 
     const { data: ws, error: wsErr } = await supabase
@@ -171,8 +173,9 @@ export const syncObrasFromWorkspace = createServerFn({ method: "POST" })
         origem: "workspace_sync" as const,
         status: "ativa" as const,
         created_by: context.userId,
-        metadata: { info } as unknown as Record<string, never>,
-      } as Parameters<typeof supabase.from extends never ? never : any>[0];
+        metadata: { info },
+      };
+
 
 
       const { data: existing } = await supabase
@@ -283,7 +286,9 @@ export const updateObra = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => updateObraSchema.parse(data))
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    const { supabase: supabaseTyped } = context;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabase = supabaseTyped as any;
     const companyId = await requireEditor(supabase, context.userId);
     const patch: Record<string, unknown> = {};
     if (data.status) patch.status = data.status;
