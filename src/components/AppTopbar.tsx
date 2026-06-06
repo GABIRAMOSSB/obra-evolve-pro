@@ -12,6 +12,7 @@ const NAV_ITEMS: { to: string; icon: typeof HardHat; label: string; exact?: bool
   { to: "/propostas", icon: Sparkles, label: "Propostas IA" },
   { to: "/biblioteca", icon: BookOpen, label: "Biblioteca" },
   { to: "/contratos", icon: FileSignature, label: "Contratos" },
+  { to: "/medicoes", icon: ClipboardList, label: "Medições" },
   { to: "/financeiro", icon: Wallet, label: "Financeiro" },
   { to: "/realizado", icon: BarChart3, label: "Realizado" },
   { to: "/notas-fiscais", icon: FileText, label: "Notas" },
