@@ -109,13 +109,14 @@ function ReajustesPage() {
           periodo_fim: cForm.periodo_fim,
           status: cForm.status,
           observacoes: cForm.observacoes || null,
+          base_modo: cForm.base_modo,
         },
       });
     },
     onSuccess: (res) => {
       toast.success(`Reajuste #${res.numero}: ${pct(res.percentual_acumulado)} = ${brl(res.valor_reajuste)}`);
       setOpenCalc(false);
-      setCForm({ contrato_id: "", indice: "IPCA", periodo_inicio: "", periodo_fim: "", status: "rascunho", observacoes: "" });
+      setCForm({ contrato_id: "", indice: "IPCA", periodo_inicio: "", periodo_fim: "", status: "rascunho", observacoes: "", base_modo: "contrato" });
       qc.invalidateQueries({ queryKey: ["reajustes"] });
       qc.invalidateQueries({ queryKey: ["contratos"] });
     },
