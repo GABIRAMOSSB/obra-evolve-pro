@@ -1506,6 +1506,7 @@ export type Database = {
           storage_path: string
           tamanho_bytes: number | null
           texto_extraido: string | null
+          texto_por_pagina: Json | null
           tipo: string
         }
         Insert: {
@@ -1519,6 +1520,7 @@ export type Database = {
           storage_path: string
           tamanho_bytes?: number | null
           texto_extraido?: string | null
+          texto_por_pagina?: Json | null
           tipo?: string
         }
         Update: {
@@ -1532,6 +1534,7 @@ export type Database = {
           storage_path?: string
           tamanho_bytes?: number | null
           texto_extraido?: string | null
+          texto_por_pagina?: Json | null
           tipo?: string
         }
         Relationships: [

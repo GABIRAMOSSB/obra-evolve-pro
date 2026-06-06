@@ -1,0 +1,1 @@
+ALTER TABLE public.edital_documentos ADD COLUMN IF NOT EXISTS texto_por_pagina jsonb;
