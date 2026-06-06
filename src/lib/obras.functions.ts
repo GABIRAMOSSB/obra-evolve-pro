@@ -171,8 +171,9 @@ export const syncObrasFromWorkspace = createServerFn({ method: "POST" })
         origem: "workspace_sync" as const,
         status: "ativa" as const,
         created_by: context.userId,
-        metadata: { info },
-      };
+        metadata: { info } as unknown as Record<string, never>,
+      } as Parameters<typeof supabase.from extends never ? never : any>[0];
+
 
       const { data: existing } = await supabase
         .from("obras")
