@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { BarChart3, FileText, Package, HardHat, Wrench, Users, Database, LogOut, Calculator, FolderTree, PenTool, ShieldCheck, Building2, Radar, Library, FileSignature, FileEdit, Wallet, ClipboardList, NotebookPen, FilePlus2, TrendingUp, LineChart, Calendar } from "lucide-react";
+import { BarChart3, FileText, Package, HardHat, Wrench, Users, Database, LogOut, Calculator, FolderTree, PenTool, ShieldCheck, Building2, Radar, Library, FileSignature, FileEdit, Wallet, ClipboardList, NotebookPen, FilePlus2, TrendingUp, LineChart, Calendar, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useCompany } from "@/hooks/use-company";
@@ -66,6 +66,8 @@ export function AppSidebar() {
 
         <SectionLabel>Governança</SectionLabel>
         <SidebarLink to="/compliance" icon={ShieldCheck} label="Central de Certidões" />
+        <SidebarLink to="/poderes" icon={KeyRound} label="Matriz de Poderes" />
+
 
         <SectionLabel>Administração</SectionLabel>
         <SidebarLink to="/equipe" icon={Users} label="Equipe" />

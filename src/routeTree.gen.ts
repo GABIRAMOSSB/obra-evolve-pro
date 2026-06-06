@@ -18,6 +18,7 @@ import { Route as AppRealizadoRouteImport } from './routes/_app.realizado'
 import { Route as AppReajustesRouteImport } from './routes/_app.reajustes'
 import { Route as AppRdoRouteImport } from './routes/_app.rdo'
 import { Route as AppPropostasRouteImport } from './routes/_app.propostas'
+import { Route as AppPoderesRouteImport } from './routes/_app.poderes'
 import { Route as AppParametrosFinanceirosRouteImport } from './routes/_app.parametros-financeiros'
 import { Route as AppOportunidadesRouteImport } from './routes/_app.oportunidades'
 import { Route as AppObrasRouteImport } from './routes/_app.obras'
@@ -91,6 +92,11 @@ const AppRdoRoute = AppRdoRouteImport.update({
 const AppPropostasRoute = AppPropostasRouteImport.update({
   id: '/propostas',
   path: '/propostas',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPoderesRoute = AppPoderesRouteImport.update({
+  id: '/poderes',
+  path: '/poderes',
   getParentRoute: () => AppRoute,
 } as any)
 const AppParametrosFinanceirosRoute =
@@ -275,6 +281,7 @@ export interface FileRoutesByFullPath {
   '/obras': typeof AppObrasRoute
   '/oportunidades': typeof AppOportunidadesRoute
   '/parametros-financeiros': typeof AppParametrosFinanceirosRoute
+  '/poderes': typeof AppPoderesRoute
   '/propostas': typeof AppPropostasRouteWithChildren
   '/rdo': typeof AppRdoRoute
   '/reajustes': typeof AppReajustesRoute
@@ -314,6 +321,7 @@ export interface FileRoutesByTo {
   '/obras': typeof AppObrasRoute
   '/oportunidades': typeof AppOportunidadesRoute
   '/parametros-financeiros': typeof AppParametrosFinanceirosRoute
+  '/poderes': typeof AppPoderesRoute
   '/propostas': typeof AppPropostasRouteWithChildren
   '/rdo': typeof AppRdoRoute
   '/reajustes': typeof AppReajustesRoute
@@ -356,6 +364,7 @@ export interface FileRoutesById {
   '/_app/obras': typeof AppObrasRoute
   '/_app/oportunidades': typeof AppOportunidadesRoute
   '/_app/parametros-financeiros': typeof AppParametrosFinanceirosRoute
+  '/_app/poderes': typeof AppPoderesRoute
   '/_app/propostas': typeof AppPropostasRouteWithChildren
   '/_app/rdo': typeof AppRdoRoute
   '/_app/reajustes': typeof AppReajustesRoute
@@ -399,6 +408,7 @@ export interface FileRouteTypes {
     | '/obras'
     | '/oportunidades'
     | '/parametros-financeiros'
+    | '/poderes'
     | '/propostas'
     | '/rdo'
     | '/reajustes'
@@ -438,6 +448,7 @@ export interface FileRouteTypes {
     | '/obras'
     | '/oportunidades'
     | '/parametros-financeiros'
+    | '/poderes'
     | '/propostas'
     | '/rdo'
     | '/reajustes'
@@ -479,6 +490,7 @@ export interface FileRouteTypes {
     | '/_app/obras'
     | '/_app/oportunidades'
     | '/_app/parametros-financeiros'
+    | '/_app/poderes'
     | '/_app/propostas'
     | '/_app/rdo'
     | '/_app/reajustes'
@@ -566,6 +578,13 @@ declare module '@tanstack/react-router' {
       path: '/propostas'
       fullPath: '/propostas'
       preLoaderRoute: typeof AppPropostasRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/poderes': {
+      id: '/_app/poderes'
+      path: '/poderes'
+      fullPath: '/poderes'
+      preLoaderRoute: typeof AppPoderesRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/parametros-financeiros': {
@@ -855,6 +874,7 @@ interface AppRouteChildren {
   AppObrasRoute: typeof AppObrasRoute
   AppOportunidadesRoute: typeof AppOportunidadesRoute
   AppParametrosFinanceirosRoute: typeof AppParametrosFinanceirosRoute
+  AppPoderesRoute: typeof AppPoderesRoute
   AppPropostasRoute: typeof AppPropostasRouteWithChildren
   AppRdoRoute: typeof AppRdoRoute
   AppReajustesRoute: typeof AppReajustesRoute
@@ -887,6 +907,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppObrasRoute: AppObrasRoute,
   AppOportunidadesRoute: AppOportunidadesRoute,
   AppParametrosFinanceirosRoute: AppParametrosFinanceirosRoute,
+  AppPoderesRoute: AppPoderesRoute,
   AppPropostasRoute: AppPropostasRouteWithChildren,
   AppRdoRoute: AppRdoRoute,
   AppReajustesRoute: AppReajustesRoute,
