@@ -83,9 +83,29 @@ export const listPropostas = createServerFn({ method: "GET" })
       .eq("company_id", companyId)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return ((data ?? []) as Array<PropostaRow & { edital?: { titulo: string } | null }>).map(
-      (r) => ({ ...r, edital_titulo: r.edital?.titulo ?? null }),
-    );
+    type RawRow = Omit<PropostaRow, "ai_meta_gerado_em" | "ai_meta_modelo" | "edital_titulo"> & {
+      ai_meta: { gerado_em?: string | null; modelo?: string | null } | null;
+      edital?: { titulo: string } | null;
+    };
+    return ((data ?? []) as RawRow[]).map((r) => ({
+      id: r.id,
+      edital_id: r.edital_id,
+      titulo: r.titulo,
+      status: r.status,
+      valor_proposto: r.valor_proposto,
+      prazo_execucao_dias: r.prazo_execucao_dias,
+      resumo_executivo: r.resumo_executivo,
+      metodologia: r.metodologia,
+      equipe_tecnica: r.equipe_tecnica,
+      cronograma: r.cronograma,
+      diferenciais: r.diferenciais,
+      observacoes: r.observacoes,
+      ai_meta_gerado_em: r.ai_meta?.gerado_em ?? null,
+      ai_meta_modelo: r.ai_meta?.modelo ?? null,
+      created_at: r.created_at,
+      updated_at: r.updated_at,
+      edital_titulo: r.edital?.titulo ?? null,
+    }));
   });
 
 /* ============================ CREATE ============================ */
