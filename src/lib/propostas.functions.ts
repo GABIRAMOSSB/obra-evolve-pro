@@ -95,7 +95,10 @@ export const listPropostas = createServerFn({ method: "GET" })
         cronograma: (r.cronograma as string) ?? null,
         diferenciais: (r.diferenciais as string) ?? null,
         observacoes: (r.observacoes as string) ?? null,
-        ai_meta: (r.ai_meta as Record<string, unknown>) ?? {},
+        ai_meta_gerado_em:
+          (r.ai_meta as { gerado_em?: string } | null)?.gerado_em ?? null,
+        ai_meta_modelo:
+          (r.ai_meta as { modelo?: string } | null)?.modelo ?? null,
         created_at: r.created_at as string,
         updated_at: r.updated_at as string,
       })
