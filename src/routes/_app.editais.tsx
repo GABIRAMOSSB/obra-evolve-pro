@@ -31,6 +31,7 @@ import {
   uploadEditalDocumento,
   listEditalDocumentos,
   getEditalDocumentoUrl,
+  extractDocumentoTexto,
   type ChecklistRow,
 } from "@/lib/editais.functions";
 
