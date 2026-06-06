@@ -130,3 +130,7 @@ function SidebarLink({
     </Link>
   );
 }
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return <div className="px-3 pt-5 pb-1 text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/40">{children}</div>;
+}
