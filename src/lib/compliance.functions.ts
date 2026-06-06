@@ -118,11 +118,13 @@ export const getComplianceHealth = createServerFn({ method: "GET" })
   .handler(async ({ context }): Promise<ComplianceHealth> => {
     const { supabase } = context;
     await resolveCompanyId(supabase, context.userId);
-    const { data } = await supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin
       .from("integration_settings")
       .select("*")
       .eq("provider", "infosimples")
       .maybeSingle();
+
     return {
       provider: "infosimples",
       sandbox_mode: data?.sandbox_mode ?? true,
