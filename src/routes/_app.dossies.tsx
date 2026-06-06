@@ -20,8 +20,14 @@ import {
 import {
   listDossies, getDossie, criarDossie, atualizarDossie, excluirDossie,
   adicionarItemDossie, removerItemDossie, reordenarItensDossie,
-  listTemplates, upsertTemplate, excluirTemplate, renderTemplate,
+  listTemplates, getTemplate, upsertTemplate, excluirTemplate, renderTemplate,
 } from "@/lib/dossies.functions";
+
+type DossieRow = { id: string; nome: string; descricao: string | null; escopo: string; status: string };
+type DossieItem = { id: string; tipo: string; titulo: string; descricao: string | null };
+type TemplateRow = { id: string; nome: string; categoria: string; descricao: string | null; variaveis: unknown; ativo: boolean };
+type DossieUpdate = { id: string; nome?: string; descricao?: string | null; escopo?: string; status?: "rascunho" | "finalizado" | "arquivado"; observacoes?: string | null };
+type ItemAdd = { dossie_id: string; tipo: string; titulo: string; descricao?: string; ref_id?: string; ref_table?: string; storage_path?: string; ordem?: number };
 
 export const Route = createFileRoute("/_app/dossies")({ component: DossiesPage });
 
