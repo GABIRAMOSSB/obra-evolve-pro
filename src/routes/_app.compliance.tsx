@@ -479,6 +479,7 @@ function CertList({
               <th className="px-4 py-2.5">Emissor</th>
               <th className="px-4 py-2.5">Validade</th>
               <th className="px-4 py-2.5">Status</th>
+              <th className="px-4 py-2.5">Vínculo</th>
               <th className="px-4 py-2.5">Última verificação</th>
               <th className="px-4 py-2.5 text-right">Ações</th>
             </tr>
@@ -493,6 +494,14 @@ function CertList({
                 <td className="px-4 py-3 text-muted-foreground">{c.certificate_types.issuing_authority ?? "—"}</td>
                 <td className="px-4 py-3">{fmtDate(c.expiration_date)}</td>
                 <td className="px-4 py-3"><StatusBadge status={c.status} /></td>
+                <td className="px-4 py-3">
+                  <CertificateScopeCell
+                    certId={c.id}
+                    obraId={(c as { obra_id: string | null }).obra_id ?? null}
+                    contratoId={(c as { contrato_id: string | null }).contrato_id ?? null}
+                    onChanged={invalidateAll}
+                  />
+                </td>
                 <td className="px-4 py-3 text-xs text-muted-foreground">{fmtDateTime(c.last_checked_at)}</td>
                 <td className="px-4 py-3 text-right">
                   <div className="inline-flex gap-1.5">
