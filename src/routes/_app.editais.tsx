@@ -575,6 +575,102 @@ function EditalDetail({ id, onDeleted }: { id: string; onDeleted: () => void }) 
           )}
         </CardContent>
       </Card>
+
+      {/* Perguntar ao Edital (RAG) */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Search className="w-4 h-4" /> Perguntar ao edital
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-xs">
+                <Database className="w-3 h-3 mr-1" />
+                {rag?.chunks ?? 0} trechos indexados
+              </Badge>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => indexMut.mutate()}
+                disabled={indexMut.isPending}
+              >
+                {indexMut.isPending ? (
+                  <><RefreshCw className="w-3 h-3 mr-1 animate-spin" /> Indexando…</>
+                ) : (
+                  <><RefreshCw className="w-3 h-3 mr-1" /> {(rag?.chunks ?? 0) > 0 ? "Reindexar" : "Indexar para perguntas"}</>
+                )}
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="text-xs text-muted-foreground">
+            Faça perguntas em linguagem natural sobre este edital. A IA busca os trechos mais relevantes e responde com citações de página.
+          </div>
+          <div className="flex gap-2">
+            <Input
+              value={pergunta}
+              onChange={(e) => setPergunta(e.target.value)}
+              placeholder='Ex.: "Qual o prazo de execução?" ou "Quais atestados são exigidos?"'
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && pergunta.trim().length >= 3 && !askMut.isPending) {
+                  askMut.mutate(pergunta.trim());
+                }
+              }}
+            />
+            <Button
+              onClick={() => askMut.mutate(pergunta.trim())}
+              disabled={askMut.isPending || pergunta.trim().length < 3 || (rag?.chunks ?? 0) === 0}
+            >
+              {askMut.isPending ? <Clock className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+            </Button>
+          </div>
+          {(rag?.chunks ?? 0) === 0 && (
+            <div className="text-xs text-amber-600">
+              Extraia o texto de pelo menos um PDF e clique em "Indexar para perguntas" antes de perguntar.
+            </div>
+          )}
+          {resposta && (
+            <div className="space-y-3">
+              <div className="bg-primary/5 border border-primary/20 rounded p-3">
+                <div className="text-xs uppercase text-primary mb-1 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" /> Resposta
+                </div>
+                <div className="text-sm whitespace-pre-wrap">{resposta.resposta}</div>
+              </div>
+              {resposta.trechos.length > 0 && (
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground mb-1">Trechos consultados</div>
+                  <div className="space-y-1">
+                    {resposta.trechos.map((t, i) => (
+                      <div key={i} className="text-xs border rounded p-2 bg-muted/30">
+                        <div className="flex items-center justify-between mb-1">
+                          <button
+                            type="button"
+                            className="text-primary hover:underline"
+                            onClick={async () => {
+                              try {
+                                const { url } = await getUrlFn({ data: { documento_id: t.documento_id } });
+                                window.open(t.pagina ? `${url}#page=${t.pagina}` : url, "_blank");
+                              } catch (e) { toast.error((e as Error).message); }
+                            }}
+                          >
+                            #{i + 1} · p.{t.pagina ?? "?"}
+                          </button>
+                          <span className="text-[10px] text-muted-foreground">
+                            sim. {(t.similarity * 100).toFixed(0)}%
+                          </span>
+                        </div>
+                        <div className="italic text-muted-foreground">"{t.conteudo}"</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
