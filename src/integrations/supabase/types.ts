@@ -210,6 +210,77 @@ export type Database = {
           },
         ]
       }
+      biblioteca_documentos: {
+        Row: {
+          ativo: boolean
+          categoria: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          data_emissao: string | null
+          data_validade: string | null
+          descricao: string | null
+          emissor: string | null
+          id: string
+          mime_type: string | null
+          nome: string
+          nome_arquivo: string
+          numero_documento: string | null
+          storage_path: string
+          tags: string[]
+          tamanho_bytes: number | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          categoria: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          data_emissao?: string | null
+          data_validade?: string | null
+          descricao?: string | null
+          emissor?: string | null
+          id?: string
+          mime_type?: string | null
+          nome: string
+          nome_arquivo: string
+          numero_documento?: string | null
+          storage_path: string
+          tags?: string[]
+          tamanho_bytes?: number | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          categoria?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          data_emissao?: string | null
+          data_validade?: string | null
+          descricao?: string | null
+          emissor?: string | null
+          id?: string
+          mime_type?: string | null
+          nome?: string
+          nome_arquivo?: string
+          numero_documento?: string | null
+          storage_path?: string
+          tags?: string[]
+          tamanho_bytes?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "biblioteca_documentos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       centros_custo: {
         Row: {
           ativo: boolean
@@ -1301,6 +1372,55 @@ export type Database = {
             columns: ["edital_id"]
             isOneToOne: false
             referencedRelation: "editais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      edital_checklist_vinculos: {
+        Row: {
+          checklist_item_id: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          documento_id: string
+          id: string
+        }
+        Insert: {
+          checklist_item_id: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          documento_id: string
+          id?: string
+        }
+        Update: {
+          checklist_item_id?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          documento_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "edital_checklist_vinculos_checklist_item_id_fkey"
+            columns: ["checklist_item_id"]
+            isOneToOne: false
+            referencedRelation: "edital_checklist"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "edital_checklist_vinculos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "edital_checklist_vinculos_documento_id_fkey"
+            columns: ["documento_id"]
+            isOneToOne: false
+            referencedRelation: "biblioteca_documentos"
             referencedColumns: ["id"]
           },
         ]
