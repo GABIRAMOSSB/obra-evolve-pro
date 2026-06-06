@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -11,9 +11,13 @@ import {
   createEvento,
   deleteEvento,
   listObrasParaSelect,
+  listSignaturesByContrato,
+  listSignaturesDisponiveis,
+  linkSignatureToContrato,
   type ContratoRow,
   type EventoRow,
   type EventoTipo,
+  type ContratoSignatureRow,
 } from "@/lib/contratos.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
