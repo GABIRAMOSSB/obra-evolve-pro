@@ -15,6 +15,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as AppRealizadoRouteImport } from './routes/_app.realizado'
+import { Route as AppPropostasRouteImport } from './routes/_app.propostas'
 import { Route as AppParametrosFinanceirosRouteImport } from './routes/_app.parametros-financeiros'
 import { Route as AppOportunidadesRouteImport } from './routes/_app.oportunidades'
 import { Route as AppObrasRouteImport } from './routes/_app.obras'
@@ -67,6 +68,11 @@ const InviteTokenRoute = InviteTokenRouteImport.update({
 const AppRealizadoRoute = AppRealizadoRouteImport.update({
   id: '/realizado',
   path: '/realizado',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPropostasRoute = AppPropostasRouteImport.update({
+  id: '/propostas',
+  path: '/propostas',
   getParentRoute: () => AppRoute,
 } as any)
 const AppParametrosFinanceirosRoute =
@@ -216,6 +222,7 @@ export interface FileRoutesByFullPath {
   '/obras': typeof AppObrasRoute
   '/oportunidades': typeof AppOportunidadesRoute
   '/parametros-financeiros': typeof AppParametrosFinanceirosRoute
+  '/propostas': typeof AppPropostasRoute
   '/realizado': typeof AppRealizadoRoute
   '/invite/$token': typeof InviteTokenRoute
   '/assinaturas/relatorio': typeof AppAssinaturasRelatorioRoute
@@ -246,6 +253,7 @@ export interface FileRoutesByTo {
   '/obras': typeof AppObrasRoute
   '/oportunidades': typeof AppOportunidadesRoute
   '/parametros-financeiros': typeof AppParametrosFinanceirosRoute
+  '/propostas': typeof AppPropostasRoute
   '/realizado': typeof AppRealizadoRoute
   '/invite/$token': typeof InviteTokenRoute
   '/': typeof AppIndexRoute
@@ -279,6 +287,7 @@ export interface FileRoutesById {
   '/_app/obras': typeof AppObrasRoute
   '/_app/oportunidades': typeof AppOportunidadesRoute
   '/_app/parametros-financeiros': typeof AppParametrosFinanceirosRoute
+  '/_app/propostas': typeof AppPropostasRoute
   '/_app/realizado': typeof AppRealizadoRoute
   '/invite/$token': typeof InviteTokenRoute
   '/_app/': typeof AppIndexRoute
@@ -313,6 +322,7 @@ export interface FileRouteTypes {
     | '/obras'
     | '/oportunidades'
     | '/parametros-financeiros'
+    | '/propostas'
     | '/realizado'
     | '/invite/$token'
     | '/assinaturas/relatorio'
@@ -343,6 +353,7 @@ export interface FileRouteTypes {
     | '/obras'
     | '/oportunidades'
     | '/parametros-financeiros'
+    | '/propostas'
     | '/realizado'
     | '/invite/$token'
     | '/'
@@ -375,6 +386,7 @@ export interface FileRouteTypes {
     | '/_app/obras'
     | '/_app/oportunidades'
     | '/_app/parametros-financeiros'
+    | '/_app/propostas'
     | '/_app/realizado'
     | '/invite/$token'
     | '/_app/'
@@ -437,6 +449,13 @@ declare module '@tanstack/react-router' {
       path: '/realizado'
       fullPath: '/realizado'
       preLoaderRoute: typeof AppRealizadoRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/propostas': {
+      id: '/_app/propostas'
+      path: '/propostas'
+      fullPath: '/propostas'
+      preLoaderRoute: typeof AppPropostasRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/parametros-financeiros': {
@@ -667,6 +686,7 @@ interface AppRouteChildren {
   AppObrasRoute: typeof AppObrasRoute
   AppOportunidadesRoute: typeof AppOportunidadesRoute
   AppParametrosFinanceirosRoute: typeof AppParametrosFinanceirosRoute
+  AppPropostasRoute: typeof AppPropostasRoute
   AppRealizadoRoute: typeof AppRealizadoRoute
   AppIndexRoute: typeof AppIndexRoute
   AppConfiguracoesZapsignRoute: typeof AppConfiguracoesZapsignRouteWithChildren
@@ -691,6 +711,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppObrasRoute: AppObrasRoute,
   AppOportunidadesRoute: AppOportunidadesRoute,
   AppParametrosFinanceirosRoute: AppParametrosFinanceirosRoute,
+  AppPropostasRoute: AppPropostasRoute,
   AppRealizadoRoute: AppRealizadoRoute,
   AppIndexRoute: AppIndexRoute,
   AppConfiguracoesZapsignRoute: AppConfiguracoesZapsignRouteWithChildren,

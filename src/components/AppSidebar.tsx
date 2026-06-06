@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { BarChart3, FileText, Package, HardHat, Wrench, Users, Database, LogOut, Calculator, FolderTree, PenTool, ShieldCheck, Building2, Radar, Library, FileSignature } from "lucide-react";
+import { BarChart3, FileText, Package, HardHat, Wrench, Users, Database, LogOut, Calculator, FolderTree, PenTool, ShieldCheck, Building2, Radar, Library, FileSignature, FileEdit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useCompany } from "@/hooks/use-company";
@@ -33,6 +33,7 @@ export function AppSidebar() {
         <SidebarLink to="/obras" icon={Building2} label="Obras" />
         <SidebarLink to="/oportunidades" icon={Radar} label="Radar PNCP" />
         <SidebarLink to="/editais" icon={FileText} label="Editais (IA)" />
+        <SidebarLink to="/propostas" icon={FileEdit} label="Propostas (IA)" />
         <SidebarLink to="/biblioteca" icon={Library} label="Biblioteca Docs" />
         <SidebarLink to="/contratos" icon={FileSignature} label="Contratos" />
 

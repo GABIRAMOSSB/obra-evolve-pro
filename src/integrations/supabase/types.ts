@@ -2694,6 +2694,81 @@ export type Database = {
         }
         Relationships: []
       }
+      propostas: {
+        Row: {
+          ai_meta: Json
+          company_id: string
+          created_at: string
+          created_by: string | null
+          cronograma: string | null
+          diferenciais: string | null
+          edital_id: string | null
+          equipe_tecnica: string | null
+          id: string
+          metodologia: string | null
+          observacoes: string | null
+          prazo_execucao_dias: number | null
+          resumo_executivo: string | null
+          status: string
+          titulo: string
+          updated_at: string
+          valor_proposto: number | null
+        }
+        Insert: {
+          ai_meta?: Json
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          cronograma?: string | null
+          diferenciais?: string | null
+          edital_id?: string | null
+          equipe_tecnica?: string | null
+          id?: string
+          metodologia?: string | null
+          observacoes?: string | null
+          prazo_execucao_dias?: number | null
+          resumo_executivo?: string | null
+          status?: string
+          titulo: string
+          updated_at?: string
+          valor_proposto?: number | null
+        }
+        Update: {
+          ai_meta?: Json
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          cronograma?: string | null
+          diferenciais?: string | null
+          edital_id?: string | null
+          equipe_tecnica?: string | null
+          id?: string
+          metodologia?: string | null
+          observacoes?: string | null
+          prazo_execucao_dias?: number | null
+          resumo_executivo?: string | null
+          status?: string
+          titulo?: string
+          updated_at?: string
+          valor_proposto?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propostas_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "propostas_edital_id_fkey"
+            columns: ["edital_id"]
+            isOneToOne: false
+            referencedRelation: "editais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       signature_events: {
         Row: {
           created_at: string
