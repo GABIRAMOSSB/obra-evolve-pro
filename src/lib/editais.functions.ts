@@ -493,9 +493,16 @@ export const analyzeEdital = createServerFn({ method: "POST" })
       .update({ status: "processando", ia_erro: null })
       .eq("id", data.edital_id);
 
-    // (futuro) — buscar trecho extraído dos documentos. Por ora, baseia-se nos
-    // metadados do edital. O extrator de PDF chega em um passo separado.
-    const trecho: string | null = null;
+    // Agrega texto extraído dos documentos (Fase 4.1).
+    const { data: docs } = await supabase
+      .from("edital_documentos")
+      .select("texto_extraido, nome_arquivo")
+      .eq("edital_id", data.edital_id)
+      .eq("company_id", companyId);
+    const partes = ((docs ?? []) as Array<{ texto_extraido: string | null; nome_arquivo: string }>)
+      .filter((d) => d.texto_extraido && d.texto_extraido.trim().length > 0)
+      .map((d) => `# ${d.nome_arquivo}\n${d.texto_extraido}`);
+    const trecho: string | null = partes.length ? partes.join("\n\n").slice(0, 60000) : null;
 
     try {
       const result = await callAIGateway({
@@ -625,4 +632,53 @@ export const deleteEdital = createServerFn({ method: "POST" })
       .eq("company_id", companyId);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+/* ============================ PDF TEXT EXTRACTION (Fase 4.1) ============================ */
+
+const extractSchema = z.object({ documento_id: z.string().uuid() });
+
+export const extractDocumentoTexto = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => extractSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as AnySupabase;
+    const companyId = await requireEditor(supabase, context.userId);
+
+    const { data: doc, error } = await supabase
+      .from("edital_documentos")
+      .select("id, storage_path, mime_type, nome_arquivo")
+      .eq("id", data.documento_id)
+      .eq("company_id", companyId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!doc) throw new Error("Documento não encontrado.");
+    if (doc.mime_type && !doc.mime_type.includes("pdf")) {
+      throw new Error("Extração de texto disponível apenas para PDFs.");
+    }
+
+    const { data: file, error: dlErr } = await supabase.storage
+      .from("editais")
+      .download(doc.storage_path);
+    if (dlErr) throw new Error(`Download falhou: ${dlErr.message}`);
+
+    const buf = new Uint8Array(await file.arrayBuffer());
+
+    // unpdf é compatível com workers/edge (build sem deps nativas).
+    const { extractText, getDocumentProxy } = await import("unpdf");
+    const pdf = await getDocumentProxy(buf);
+    const { totalPages, text } = await extractText(pdf, { mergePages: true });
+    const texto = (Array.isArray(text) ? text.join("\n") : text).trim();
+
+    const { error: upErr } = await supabase
+      .from("edital_documentos")
+      .update({
+        texto_extraido: texto.slice(0, 500000),
+        paginas: totalPages,
+      })
+      .eq("id", doc.id)
+      .eq("company_id", companyId);
+    if (upErr) throw new Error(upErr.message);
+
+    return { ok: true, paginas: totalPages, caracteres: texto.length };
   });
