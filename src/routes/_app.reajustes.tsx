@@ -433,6 +433,10 @@ function ReajustesPage() {
                             <td className="py-2 px-2">{statusBadge(r.status)}</td>
                             <td className="py-2 px-2">
                               <div className="flex items-center justify-end gap-1">
+                                <Button size="icon" variant="ghost" title="Gerar ofício"
+                                  onClick={() => oficioMut.mutate(r.id)} disabled={oficioMut.isPending}>
+                                  <FileText className="w-4 h-4 text-blue-600" />
+                                </Button>
                                 {r.status !== "aplicado" && (
                                   <Button size="icon" variant="ghost" title="Aplicar"
                                     onClick={() => statusMut.mutate({ id: r.id, status: "aplicado" })}>
