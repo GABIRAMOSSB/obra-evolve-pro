@@ -422,13 +422,6 @@ function EditalDetail({ id, onBack }: { id: string; onBack: () => void }) {
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : String(e)),
   });
 
-    onSuccess: (r) => {
-      toast.success(`Análise concluída — ${r.itens} item(s) no checklist.`);
-      qc.invalidateQueries({ queryKey: ["editais"] });
-      qc.invalidateQueries({ queryKey: ["edital-checklist", id] });
-    },
-    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : String(e)),
-  });
 
   const up = useMutation({
     mutationFn: async (file: File) => {
