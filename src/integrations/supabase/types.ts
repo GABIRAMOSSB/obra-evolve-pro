@@ -1374,6 +1374,229 @@ export type Database = {
           },
         ]
       }
+      cronograma_etapas: {
+        Row: {
+          codigo: string | null
+          company_id: string
+          created_at: string
+          cronograma_id: string
+          descricao: string
+          id: string
+          ordem: number
+          peso_percent: number
+          updated_at: string
+          valor_etapa: number
+        }
+        Insert: {
+          codigo?: string | null
+          company_id: string
+          created_at?: string
+          cronograma_id: string
+          descricao: string
+          id?: string
+          ordem?: number
+          peso_percent?: number
+          updated_at?: string
+          valor_etapa?: number
+        }
+        Update: {
+          codigo?: string | null
+          company_id?: string
+          created_at?: string
+          cronograma_id?: string
+          descricao?: string
+          id?: string
+          ordem?: number
+          peso_percent?: number
+          updated_at?: string
+          valor_etapa?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cronograma_etapas_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cronograma_etapas_cronograma_id_fkey"
+            columns: ["cronograma_id"]
+            isOneToOne: false
+            referencedRelation: "cronogramas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cronograma_periodos: {
+        Row: {
+          company_id: string
+          created_at: string
+          cronograma_id: string
+          etapa_id: string
+          id: string
+          percent_fisico: number
+          percent_realizado: number | null
+          periodo_idx: number
+          updated_at: string
+          valor_financeiro: number
+          valor_realizado: number | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          cronograma_id: string
+          etapa_id: string
+          id?: string
+          percent_fisico?: number
+          percent_realizado?: number | null
+          periodo_idx: number
+          updated_at?: string
+          valor_financeiro?: number
+          valor_realizado?: number | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          cronograma_id?: string
+          etapa_id?: string
+          id?: string
+          percent_fisico?: number
+          percent_realizado?: number | null
+          periodo_idx?: number
+          updated_at?: string
+          valor_financeiro?: number
+          valor_realizado?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cronograma_periodos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cronograma_periodos_cronograma_id_fkey"
+            columns: ["cronograma_id"]
+            isOneToOne: false
+            referencedRelation: "cronogramas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cronograma_periodos_etapa_id_fkey"
+            columns: ["etapa_id"]
+            isOneToOne: false
+            referencedRelation: "cronograma_etapas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cronogramas: {
+        Row: {
+          company_id: string
+          contrato_id: string | null
+          created_at: string
+          created_by: string | null
+          data_inicio: string | null
+          descricao: string | null
+          id: string
+          is_baseline: boolean
+          nome: string
+          numero_periodos: number
+          obra_id: string | null
+          observacoes: string | null
+          parent_id: string | null
+          prazo_dias: number | null
+          proposta_id: string | null
+          status: string
+          unidade_periodo: string
+          updated_at: string
+          valor_total: number
+          versao: number
+        }
+        Insert: {
+          company_id: string
+          contrato_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_inicio?: string | null
+          descricao?: string | null
+          id?: string
+          is_baseline?: boolean
+          nome: string
+          numero_periodos?: number
+          obra_id?: string | null
+          observacoes?: string | null
+          parent_id?: string | null
+          prazo_dias?: number | null
+          proposta_id?: string | null
+          status?: string
+          unidade_periodo?: string
+          updated_at?: string
+          valor_total?: number
+          versao?: number
+        }
+        Update: {
+          company_id?: string
+          contrato_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_inicio?: string | null
+          descricao?: string | null
+          id?: string
+          is_baseline?: boolean
+          nome?: string
+          numero_periodos?: number
+          obra_id?: string | null
+          observacoes?: string | null
+          parent_id?: string | null
+          prazo_dias?: number | null
+          proposta_id?: string | null
+          status?: string
+          unidade_periodo?: string
+          updated_at?: string
+          valor_total?: number
+          versao?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cronogramas_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cronogramas_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cronogramas_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cronogramas_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "cronogramas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cronogramas_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       editais: {
         Row: {
           company_id: string
@@ -4221,6 +4444,10 @@ export type Database = {
           pagina: number
           similarity: number
         }[]
+      }
+      recalc_cronograma_totals: {
+        Args: { p_cronograma_id: string }
+        Returns: undefined
       }
       recalc_proposta_totals: {
         Args: { p_proposta_id: string }
