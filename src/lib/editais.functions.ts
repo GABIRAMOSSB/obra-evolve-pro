@@ -664,21 +664,34 @@ export const extractDocumentoTexto = createServerFn({ method: "POST" })
 
     const buf = new Uint8Array(await file.arrayBuffer());
 
-    // unpdf é compatível com workers/edge (build sem deps nativas).
+    // unpdf é compatível com workers/edge. Extrai página a página para
+    // permitir citações com referência precisa de página (Fase 4.2).
     const { extractText, getDocumentProxy } = await import("unpdf");
     const pdf = await getDocumentProxy(buf);
-    const { totalPages, text } = await extractText(pdf, { mergePages: true });
-    const texto = (Array.isArray(text) ? text.join("\n") : text).trim();
+    const { totalPages, text } = await extractText(pdf, { mergePages: false });
+    const pages: string[] = Array.isArray(text) ? text : [String(text ?? "")];
+
+    // texto agregado com marcadores "[PÁGINA N]" — usados pela IA para citar.
+    const agregado = pages
+      .map((t, i) => `[PÁGINA ${i + 1}]\n${(t ?? "").trim()}`)
+      .join("\n\n")
+      .slice(0, 500000);
+
+    const porPagina = pages.map((t, i) => ({
+      pagina: i + 1,
+      texto: (t ?? "").trim().slice(0, 20000),
+    }));
 
     const { error: upErr } = await supabase
       .from("edital_documentos")
       .update({
-        texto_extraido: texto.slice(0, 500000),
+        texto_extraido: agregado,
+        texto_por_pagina: porPagina,
         paginas: totalPages,
       })
       .eq("id", doc.id)
       .eq("company_id", companyId);
     if (upErr) throw new Error(upErr.message);
 
-    return { ok: true, paginas: totalPages, caracteres: texto.length };
+    return { ok: true, paginas: totalPages, caracteres: agregado.length };
   });
