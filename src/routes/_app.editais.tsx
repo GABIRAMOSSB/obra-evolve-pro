@@ -573,7 +573,19 @@ function ChecklistItemRow({
           {item.trecho_edital && (
             <div className="text-xs text-muted-foreground italic mt-1 border-l-2 border-muted-foreground/30 pl-2">
               "{item.trecho_edital}"
-              {item.pagina_referencia != null && <span className="not-italic"> — p.{item.pagina_referencia}</span>}
+              {item.pagina_referencia != null && (
+                onOpenPage ? (
+                  <button
+                    type="button"
+                    onClick={() => onOpenPage(item.pagina_referencia as number)}
+                    className="not-italic ml-1 text-primary hover:underline"
+                  >
+                    — p.{item.pagina_referencia}
+                  </button>
+                ) : (
+                  <span className="not-italic"> — p.{item.pagina_referencia}</span>
+                )
+              )}
             </div>
           )}
         </div>
