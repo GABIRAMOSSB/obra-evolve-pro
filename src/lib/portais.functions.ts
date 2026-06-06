@@ -236,7 +236,7 @@ export const simularEnvioProposta = createServerFn({ method: "POST" })
           max_chars_descricao: maxChars,
         },
       },
-      proposta: { id: prop.id, nome: prop.nome, valor_total: prop.valor_total },
+      proposta: { id: prop.id, nome: prop.titulo, valor_total: prop.valor_total },
       linhas_total: linhas.length,
       total_geral: formatNumero(totalGeralNum, casasPreco, sepDec, sepMil),
       alertas: alerts,
