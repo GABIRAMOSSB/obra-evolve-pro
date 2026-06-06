@@ -1888,6 +1888,93 @@ export type Database = {
           },
         ]
       }
+      declaracoes_licitacao: {
+        Row: {
+          company_id: string
+          conteudo: string
+          created_at: string
+          created_by: string | null
+          data_emissao: string
+          edital_id: string | null
+          id: string
+          observacoes: string | null
+          oportunidade_id: string | null
+          procuracao_id: string | null
+          signatario_id: string | null
+          tipo: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          conteudo: string
+          created_at?: string
+          created_by?: string | null
+          data_emissao?: string
+          edital_id?: string | null
+          id?: string
+          observacoes?: string | null
+          oportunidade_id?: string | null
+          procuracao_id?: string | null
+          signatario_id?: string | null
+          tipo: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          conteudo?: string
+          created_at?: string
+          created_by?: string | null
+          data_emissao?: string
+          edital_id?: string | null
+          id?: string
+          observacoes?: string | null
+          oportunidade_id?: string | null
+          procuracao_id?: string | null
+          signatario_id?: string | null
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "declaracoes_licitacao_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "declaracoes_licitacao_edital_id_fkey"
+            columns: ["edital_id"]
+            isOneToOne: false
+            referencedRelation: "editais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "declaracoes_licitacao_oportunidade_id_fkey"
+            columns: ["oportunidade_id"]
+            isOneToOne: false
+            referencedRelation: "oportunidades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "declaracoes_licitacao_procuracao_id_fkey"
+            columns: ["procuracao_id"]
+            isOneToOne: false
+            referencedRelation: "procuracoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "declaracoes_licitacao_signatario_id_fkey"
+            columns: ["signatario_id"]
+            isOneToOne: false
+            referencedRelation: "company_signatarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_templates: {
         Row: {
           ativo: boolean
