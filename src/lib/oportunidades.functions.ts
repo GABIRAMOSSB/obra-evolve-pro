@@ -228,7 +228,8 @@ const importSchema = z.object({
   dataAberturaPropostas: z.string().nullable().optional(),
   dataEncerramentoPropostas: z.string().nullable().optional(),
   linkSistemaOrigem: z.string().nullable().optional(),
-  raw: z.record(z.string(), z.unknown()).optional(),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  raw: z.record(z.string(), z.any()).optional(),
 });
 
 export const importOportunidade = createServerFn({ method: "POST" })
