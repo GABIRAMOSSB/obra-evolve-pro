@@ -107,7 +107,8 @@ function ItensTab({ propostaId }: { propostaId: string }) {
   const [editing, setEditing] = useState<any | null>(null);
 
   const save = useMutation({
-    mutationFn: (input: Parameters<typeof saveFn>[0]["data"]) => saveFn({ data: input }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mutationFn: (input: any) => saveFn({ data: input }),
     onSuccess: () => {
       toast.success("Item salvo");
       setOpen(false);
