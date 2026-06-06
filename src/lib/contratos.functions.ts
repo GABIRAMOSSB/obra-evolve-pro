@@ -427,3 +427,127 @@ export const listObrasParaSelect = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return (data ?? []) as ObraOpcao[];
   });
+
+// ============================================================
+// Fase 8 — Assinaturas eletrônicas vinculadas a contratos
+// ============================================================
+
+export interface ContratoSignatureRow {
+  id: string;
+  document_name: string;
+  document_folder: string;
+  status: string;
+  signed_at: string | null;
+  zapsign_document_token: string | null;
+  sandbox: boolean;
+  obra_id: string;
+  created_at: string;
+  signers_total: number;
+  signers_signed: number;
+}
+
+export const listSignaturesByContrato = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({ contrato_id: z.string().uuid() }).parse(data)
+  )
+  .handler(async ({ data, context }): Promise<ContratoSignatureRow[]> => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabase = context.supabase as any;
+    const companyId = await resolveCompanyId(supabase, context.userId);
+
+    const { data: reqs, error } = await supabase
+      .from("signature_requests")
+      .select(
+        "id, document_name, document_folder, status, signed_at, zapsign_document_token, sandbox, obra_id, created_at"
+      )
+      .eq("company_id", companyId)
+      .eq("contrato_id", data.contrato_id)
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+
+    const rows = (reqs ?? []) as Array<Record<string, unknown>>;
+    const ids = rows.map((r) => r.id as string);
+    const totals = new Map<string, { total: number; signed: number }>();
+    if (ids.length > 0) {
+      const { data: signers } = await supabase
+        .from("signature_signers")
+        .select("signature_request_id, status")
+        .in("signature_request_id", ids);
+      for (const s of (signers ?? []) as Array<{ signature_request_id: string; status: string }>) {
+        const cur = totals.get(s.signature_request_id) ?? { total: 0, signed: 0 };
+        cur.total++;
+        if (s.status === "signed") cur.signed++;
+        totals.set(s.signature_request_id, cur);
+      }
+    }
+
+    return rows.map((r) => {
+      const t = totals.get(r.id as string) ?? { total: 0, signed: 0 };
+      return {
+        id: r.id as string,
+        document_name: r.document_name as string,
+        document_folder: r.document_folder as string,
+        status: r.status as string,
+        signed_at: (r.signed_at as string) ?? null,
+        zapsign_document_token: (r.zapsign_document_token as string) ?? null,
+        sandbox: Boolean(r.sandbox),
+        obra_id: r.obra_id as string,
+        created_at: r.created_at as string,
+        signers_total: t.total,
+        signers_signed: t.signed,
+      };
+    });
+  });
+
+export interface SignatureAvailable {
+  id: string;
+  document_name: string;
+  status: string;
+  created_at: string;
+}
+
+export const listSignaturesDisponiveis = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<SignatureAvailable[]> => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabase = context.supabase as any;
+    const companyId = await resolveCompanyId(supabase, context.userId);
+    const { data, error } = await supabase
+      .from("signature_requests")
+      .select("id, document_name, status, created_at, contrato_id")
+      .eq("company_id", companyId)
+      .is("contrato_id", null)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((r: Record<string, unknown>) => ({
+      id: r.id as string,
+      document_name: r.document_name as string,
+      status: r.status as string,
+      created_at: r.created_at as string,
+    }));
+  });
+
+export const linkSignatureToContrato = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        signature_request_id: z.string().uuid(),
+        contrato_id: z.string().uuid().nullable(),
+      })
+      .parse(data)
+  )
+  .handler(async ({ data, context }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabase = context.supabase as any;
+    const companyId = await requireEditor(supabase, context.userId);
+    const { error } = await supabase
+      .from("signature_requests")
+      .update({ contrato_id: data.contrato_id })
+      .eq("id", data.signature_request_id)
+      .eq("company_id", companyId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

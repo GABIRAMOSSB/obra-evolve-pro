@@ -1,0 +1,2 @@
+ALTER TABLE public.signature_requests ADD COLUMN IF NOT EXISTS contrato_id uuid REFERENCES public.contratos(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_sig_req_contrato ON public.signature_requests(contrato_id) WHERE contrato_id IS NOT NULL;

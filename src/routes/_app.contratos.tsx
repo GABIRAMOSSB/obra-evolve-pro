@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -11,9 +11,13 @@ import {
   createEvento,
   deleteEvento,
   listObrasParaSelect,
+  listSignaturesByContrato,
+  listSignaturesDisponiveis,
+  linkSignatureToContrato,
   type ContratoRow,
   type EventoRow,
   type EventoTipo,
+  type ContratoSignatureRow,
 } from "@/lib/contratos.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -45,6 +49,11 @@ import {
   FileSignature,
   Loader2,
   AlertTriangle,
+  PenTool,
+  ExternalLink,
+  Link2,
+  Link2Off,
+  CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -519,7 +528,215 @@ function ContratoDetail({ id, onBack }: { id: string; onBack: () => void }) {
           )}
         </Card>
       </div>
+
+      <AssinaturasContrato contratoId={id} />
     </div>
+  );
+}
+
+const SIG_STATUS_LABEL: Record<string, string> = {
+  draft: "Rascunho",
+  preparing: "Preparando",
+  pending: "Aguardando",
+  signed: "Assinada",
+  canceled: "Cancelada",
+  expired: "Expirada",
+  error: "Erro",
+};
+
+const SIG_STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+  draft: "outline",
+  preparing: "secondary",
+  pending: "secondary",
+  signed: "default",
+  canceled: "destructive",
+  expired: "destructive",
+  error: "destructive",
+};
+
+function AssinaturasContrato({ contratoId }: { contratoId: string }) {
+  const listSig = useServerFn(listSignaturesByContrato);
+  const { data: sigs } = useQuery({
+    queryKey: ["contrato-signatures", contratoId],
+    queryFn: () => listSig({ data: { contrato_id: contratoId } }),
+  });
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <PenTool className="w-4 h-4" /> Assinaturas eletrônicas
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            Solicitações de assinatura vinculadas a este contrato. Envie novos
+            documentos a partir do módulo Assinaturas ou vincule um já existente.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <VincularAssinaturaDialog contratoId={contratoId} />
+          <Button asChild size="sm" variant="outline">
+            <Link to="/assinaturas">
+              <Plus className="w-4 h-4 mr-1" /> Nova solicitação
+            </Link>
+          </Button>
+        </div>
+      </div>
+
+      <Card className="overflow-hidden">
+        {!sigs || sigs.length === 0 ? (
+          <div className="p-8 text-center text-muted-foreground text-sm">
+            Nenhuma assinatura vinculada a este contrato.
+          </div>
+        ) : (
+          <ul className="divide-y">
+            {sigs.map((s: ContratoSignatureRow) => (
+              <AssinaturaItem key={s.id} sig={s} contratoId={contratoId} />
+            ))}
+          </ul>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+function AssinaturaItem({
+  sig,
+  contratoId,
+}: {
+  sig: ContratoSignatureRow;
+  contratoId: string;
+}) {
+  const unlink = useServerFn(linkSignatureToContrato);
+  const qc = useQueryClient();
+  const mut = useMutation({
+    mutationFn: () =>
+      unlink({ data: { signature_request_id: sig.id, contrato_id: null } }),
+    onSuccess: () => {
+      toast.success("Vínculo removido");
+      qc.invalidateQueries({ queryKey: ["contrato-signatures", contratoId] });
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : String(e)),
+  });
+  const progresso =
+    sig.signers_total > 0
+      ? `${sig.signers_signed}/${sig.signers_total} assinantes`
+      : "—";
+  return (
+    <li className="p-4 flex items-start gap-3 hover:bg-muted/30">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-medium text-sm truncate">{sig.document_name}</span>
+          <Badge variant={SIG_STATUS_VARIANT[sig.status] ?? "outline"}>
+            {SIG_STATUS_LABEL[sig.status] ?? sig.status}
+          </Badge>
+          {sig.sandbox && (
+            <Badge variant="outline" className="text-[10px]">Sandbox</Badge>
+          )}
+          {sig.signed_at && (
+            <span className="text-xs text-emerald-600 flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3" /> {fmtDate(sig.signed_at.slice(0, 10))}
+            </span>
+          )}
+        </div>
+        <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
+          <span>{progresso}</span>
+          <span>· {sig.document_folder}</span>
+          <span>· criada em {fmtDate(sig.created_at.slice(0, 10))}</span>
+        </div>
+      </div>
+      <Button asChild variant="ghost" size="icon" title="Abrir no módulo de assinaturas">
+        <Link to="/assinaturas">
+          <ExternalLink className="w-4 h-4" />
+        </Link>
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        title="Remover vínculo com o contrato"
+        onClick={() => {
+          if (confirm("Remover o vínculo desta assinatura com o contrato?")) mut.mutate();
+        }}
+      >
+        <Link2Off className="w-4 h-4" />
+      </Button>
+    </li>
+  );
+}
+
+function VincularAssinaturaDialog({ contratoId }: { contratoId: string }) {
+  const listAvail = useServerFn(listSignaturesDisponiveis);
+  const link = useServerFn(linkSignatureToContrato);
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [selectedId, setSelectedId] = useState<string>("");
+
+  const { data: avail } = useQuery({
+    queryKey: ["signatures-disponiveis"],
+    queryFn: () => listAvail(),
+    enabled: open,
+  });
+
+  const mut = useMutation({
+    mutationFn: () =>
+      link({
+        data: { signature_request_id: selectedId, contrato_id: contratoId },
+      }),
+    onSuccess: () => {
+      toast.success("Assinatura vinculada");
+      qc.invalidateQueries({ queryKey: ["contrato-signatures", contratoId] });
+      qc.invalidateQueries({ queryKey: ["signatures-disponiveis"] });
+      setOpen(false);
+      setSelectedId("");
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : String(e)),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="secondary">
+          <Link2 className="w-4 h-4 mr-1" /> Vincular existente
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Vincular assinatura ao contrato</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Selecione uma solicitação de assinatura sem contrato vinculado.
+          </p>
+          {!avail || avail.length === 0 ? (
+            <div className="p-6 text-center text-sm text-muted-foreground border rounded-md">
+              Nenhuma assinatura disponível para vínculo.
+            </div>
+          ) : (
+            <Select value={selectedId} onValueChange={setSelectedId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Escolha uma solicitação…" />
+              </SelectTrigger>
+              <SelectContent>
+                {avail.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.document_name} — {SIG_STATUS_LABEL[s.status] ?? s.status}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setOpen(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={() => mut.mutate()} disabled={!selectedId || mut.isPending}>
+            {mut.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            Vincular
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

@@ -2883,6 +2883,7 @@ export type Database = {
           canceled_at: string | null
           cancellation_reason: string | null
           company_id: string
+          contrato_id: string | null
           created_at: string
           created_by: string | null
           document_folder: string
@@ -2908,6 +2909,7 @@ export type Database = {
           canceled_at?: string | null
           cancellation_reason?: string | null
           company_id: string
+          contrato_id?: string | null
           created_at?: string
           created_by?: string | null
           document_folder: string
@@ -2933,6 +2935,7 @@ export type Database = {
           canceled_at?: string | null
           cancellation_reason?: string | null
           company_id?: string
+          contrato_id?: string | null
           created_at?: string
           created_by?: string | null
           document_folder?: string
@@ -2959,6 +2962,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signature_requests_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
             referencedColumns: ["id"]
           },
         ]
