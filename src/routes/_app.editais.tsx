@@ -336,6 +336,15 @@ function EditalDetail({ id, onDeleted }: { id: string; onDeleted: () => void }) 
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const extractMut = useMutation({
+    mutationFn: async (documento_id: string) => extractFn({ data: { documento_id } }),
+    onSuccess: (r) => {
+      toast.success(`Texto extraído: ${r.paginas} página(s), ${r.caracteres} caracteres.`);
+      qc.invalidateQueries({ queryKey: ["edital-docs", id] });
+    },
+    onError: (e: Error) => toast.error(`Extração falhou: ${e.message}`),
+  });
+
   if (!edital) return null;
 
   // agrupar checklist por categoria
