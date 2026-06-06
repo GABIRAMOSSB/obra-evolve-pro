@@ -530,6 +530,25 @@ function NotasFiscaisPage() {
                           <TableCell>
                             <Badge variant="secondary">{n.status}</Badge>
                           </TableCell>
+                          <TableCell>
+                            {n.manifestacao_tipo ? (
+                              <Badge
+                                variant={
+                                  n.manifestacao_tipo === "confirmacao" ? "default"
+                                  : n.manifestacao_tipo === "ciencia" ? "secondary"
+                                  : "destructive"
+                                }
+                                className="text-[10px]"
+                              >
+                                {n.manifestacao_tipo === "ciencia" ? "Ciência"
+                                  : n.manifestacao_tipo === "confirmacao" ? "Confirmada"
+                                  : n.manifestacao_tipo === "desconhecimento" ? "Desconhecida"
+                                  : "Não realizada"}
+                              </Badge>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
                           <TableCell className="flex gap-1">
                             <Button
                               size="sm"
@@ -539,6 +558,16 @@ function NotasFiscaisPage() {
                             >
                               <Eye className="w-4 h-4" />
                             </Button>
+                            {canEdit && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setManifestNota(n)}
+                                title="Manifestação do destinatário"
+                              >
+                                <FileText className="w-4 h-4" />
+                              </Button>
+                            )}
                             {canDelete && (
                               <Button
                                 size="sm"
