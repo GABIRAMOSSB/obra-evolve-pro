@@ -208,6 +208,165 @@ export type Database = {
           },
         ]
       }
+      arts: {
+        Row: {
+          company_id: string
+          conselho: string | null
+          contratante: string | null
+          created_at: string
+          data_emissao: string | null
+          data_inicio: string | null
+          data_termino: string | null
+          id: string
+          nome_arquivo: string | null
+          numero_art: string
+          objeto: string | null
+          observacoes: string | null
+          responsavel_id: string | null
+          status: string | null
+          storage_path: string | null
+          tamanho_bytes: number | null
+          tipo: string | null
+          uf: string | null
+          updated_at: string
+          valor_contrato: number | null
+        }
+        Insert: {
+          company_id: string
+          conselho?: string | null
+          contratante?: string | null
+          created_at?: string
+          data_emissao?: string | null
+          data_inicio?: string | null
+          data_termino?: string | null
+          id?: string
+          nome_arquivo?: string | null
+          numero_art: string
+          objeto?: string | null
+          observacoes?: string | null
+          responsavel_id?: string | null
+          status?: string | null
+          storage_path?: string | null
+          tamanho_bytes?: number | null
+          tipo?: string | null
+          uf?: string | null
+          updated_at?: string
+          valor_contrato?: number | null
+        }
+        Update: {
+          company_id?: string
+          conselho?: string | null
+          contratante?: string | null
+          created_at?: string
+          data_emissao?: string | null
+          data_inicio?: string | null
+          data_termino?: string | null
+          id?: string
+          nome_arquivo?: string | null
+          numero_art?: string
+          objeto?: string | null
+          observacoes?: string | null
+          responsavel_id?: string | null
+          status?: string | null
+          storage_path?: string | null
+          tamanho_bytes?: number | null
+          tipo?: string | null
+          uf?: string | null
+          updated_at?: string
+          valor_contrato?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "arts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "arts_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "responsaveis_tecnicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      atestados: {
+        Row: {
+          company_id: string
+          contratante_cnpj: string | null
+          contratante_nome: string | null
+          created_at: string
+          data_emissao: string | null
+          id: string
+          nome_arquivo: string | null
+          objeto: string | null
+          observacoes: string | null
+          periodo_fim: string | null
+          periodo_inicio: string | null
+          responsavel_id: string | null
+          storage_path: string | null
+          tamanho_bytes: number | null
+          titulo: string
+          updated_at: string
+          valor: number | null
+        }
+        Insert: {
+          company_id: string
+          contratante_cnpj?: string | null
+          contratante_nome?: string | null
+          created_at?: string
+          data_emissao?: string | null
+          id?: string
+          nome_arquivo?: string | null
+          objeto?: string | null
+          observacoes?: string | null
+          periodo_fim?: string | null
+          periodo_inicio?: string | null
+          responsavel_id?: string | null
+          storage_path?: string | null
+          tamanho_bytes?: number | null
+          titulo: string
+          updated_at?: string
+          valor?: number | null
+        }
+        Update: {
+          company_id?: string
+          contratante_cnpj?: string | null
+          contratante_nome?: string | null
+          created_at?: string
+          data_emissao?: string | null
+          id?: string
+          nome_arquivo?: string | null
+          objeto?: string | null
+          observacoes?: string | null
+          periodo_fim?: string | null
+          periodo_inicio?: string | null
+          responsavel_id?: string | null
+          storage_path?: string | null
+          tamanho_bytes?: number | null
+          titulo?: string
+          updated_at?: string
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "atestados_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atestados_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "responsaveis_tecnicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs_v2: {
         Row: {
           acao: string
@@ -422,6 +581,82 @@ export type Database = {
             columns: ["signature_request_id"]
             isOneToOne: false
             referencedRelation: "signature_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cats: {
+        Row: {
+          atestado_id: string | null
+          atividades: string | null
+          company_id: string
+          conselho: string | null
+          created_at: string
+          data_emissao: string | null
+          id: string
+          nome_arquivo: string | null
+          numero_cat: string
+          observacoes: string | null
+          responsavel_id: string | null
+          storage_path: string | null
+          tamanho_bytes: number | null
+          uf: string | null
+          updated_at: string
+        }
+        Insert: {
+          atestado_id?: string | null
+          atividades?: string | null
+          company_id: string
+          conselho?: string | null
+          created_at?: string
+          data_emissao?: string | null
+          id?: string
+          nome_arquivo?: string | null
+          numero_cat: string
+          observacoes?: string | null
+          responsavel_id?: string | null
+          storage_path?: string | null
+          tamanho_bytes?: number | null
+          uf?: string | null
+          updated_at?: string
+        }
+        Update: {
+          atestado_id?: string | null
+          atividades?: string | null
+          company_id?: string
+          conselho?: string | null
+          created_at?: string
+          data_emissao?: string | null
+          id?: string
+          nome_arquivo?: string | null
+          numero_cat?: string
+          observacoes?: string | null
+          responsavel_id?: string | null
+          storage_path?: string | null
+          tamanho_bytes?: number | null
+          uf?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cats_atestado_id_fkey"
+            columns: ["atestado_id"]
+            isOneToOne: false
+            referencedRelation: "atestados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cats_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cats_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "responsaveis_tecnicos"
             referencedColumns: ["id"]
           },
         ]
@@ -4370,6 +4605,65 @@ export type Database = {
             columns: ["contrato_id"]
             isOneToOne: false
             referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      responsaveis_tecnicos: {
+        Row: {
+          ativo: boolean
+          company_id: string
+          conselho: string | null
+          cpf: string | null
+          created_at: string
+          email: string | null
+          formacao: string | null
+          id: string
+          nome: string
+          numero_registro: string | null
+          observacoes: string | null
+          telefone: string | null
+          uf_registro: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          company_id: string
+          conselho?: string | null
+          cpf?: string | null
+          created_at?: string
+          email?: string | null
+          formacao?: string | null
+          id?: string
+          nome: string
+          numero_registro?: string | null
+          observacoes?: string | null
+          telefone?: string | null
+          uf_registro?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          company_id?: string
+          conselho?: string | null
+          cpf?: string | null
+          created_at?: string
+          email?: string | null
+          formacao?: string | null
+          id?: string
+          nome?: string
+          numero_registro?: string | null
+          observacoes?: string | null
+          telefone?: string | null
+          uf_registro?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "responsaveis_tecnicos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
