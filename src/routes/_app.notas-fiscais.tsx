@@ -135,6 +135,7 @@ function NotasFiscaisPage() {
   const [bulkObra, setBulkObra] = useState<string>("");
   const [bulkComp, setBulkComp] = useState<string>("");
   const [rateioItem, setRateioItem] = useState<RateioItem | null>(null);
+  const [manifestNota, setManifestNota] = useState<NotaRow | null>(null);
 
 
   const refresh = async () => {
