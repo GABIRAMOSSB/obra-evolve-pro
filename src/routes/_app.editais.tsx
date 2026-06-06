@@ -528,6 +528,19 @@ function EditalDetail({ id, onDeleted }: { id: string; onDeleted: () => void }) 
                       onObsBlur={(observacoes) =>
                         updateItemMut.mutate({ id: it.id, observacoes })
                       }
+                      onOpenPage={async (pagina) => {
+                        const first = (docs as Array<{ id: string; paginas: number | null }> | undefined)?.find(
+                          (d) => (d.paginas ?? 0) > 0,
+                        );
+                        if (!first) {
+                          toast.error("Extraia o texto do PDF para navegar até a página.");
+                          return;
+                        }
+                        try {
+                          const { url } = await getUrlFn({ data: { documento_id: first.id } });
+                          window.open(`${url}#page=${pagina}`, "_blank");
+                        } catch (e) { toast.error((e as Error).message); }
+                      }}
                     />
                   ))}
                 </div>
