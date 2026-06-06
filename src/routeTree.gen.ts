@@ -24,6 +24,7 @@ import { Route as AppInsumosRouteImport } from './routes/_app.insumos'
 import { Route as AppEstoqueRouteImport } from './routes/_app.estoque'
 import { Route as AppEquipeRouteImport } from './routes/_app.equipe'
 import { Route as AppEquipamentosRouteImport } from './routes/_app.equipamentos'
+import { Route as AppEditaisRouteImport } from './routes/_app.editais'
 import { Route as AppComposicoesRouteImport } from './routes/_app.composicoes'
 import { Route as AppComplianceRouteImport } from './routes/_app.compliance'
 import { Route as AppComparativoComposicaoRouteImport } from './routes/_app.comparativo-composicao'
@@ -112,6 +113,11 @@ const AppEquipamentosRoute = AppEquipamentosRouteImport.update({
   path: '/equipamentos',
   getParentRoute: () => AppRoute,
 } as any)
+const AppEditaisRoute = AppEditaisRouteImport.update({
+  id: '/editais',
+  path: '/editais',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppComposicoesRoute = AppComposicoesRouteImport.update({
   id: '/composicoes',
   path: '/composicoes',
@@ -186,6 +192,7 @@ export interface FileRoutesByFullPath {
   '/comparativo-composicao': typeof AppComparativoComposicaoRoute
   '/compliance': typeof AppComplianceRoute
   '/composicoes': typeof AppComposicoesRoute
+  '/editais': typeof AppEditaisRoute
   '/equipamentos': typeof AppEquipamentosRoute
   '/equipe': typeof AppEquipeRoute
   '/estoque': typeof AppEstoqueRoute
@@ -213,6 +220,7 @@ export interface FileRoutesByTo {
   '/comparativo-composicao': typeof AppComparativoComposicaoRoute
   '/compliance': typeof AppComplianceRoute
   '/composicoes': typeof AppComposicoesRoute
+  '/editais': typeof AppEditaisRoute
   '/equipamentos': typeof AppEquipamentosRoute
   '/equipe': typeof AppEquipeRoute
   '/estoque': typeof AppEstoqueRoute
@@ -243,6 +251,7 @@ export interface FileRoutesById {
   '/_app/comparativo-composicao': typeof AppComparativoComposicaoRoute
   '/_app/compliance': typeof AppComplianceRoute
   '/_app/composicoes': typeof AppComposicoesRoute
+  '/_app/editais': typeof AppEditaisRoute
   '/_app/equipamentos': typeof AppEquipamentosRoute
   '/_app/equipe': typeof AppEquipeRoute
   '/_app/estoque': typeof AppEstoqueRoute
@@ -274,6 +283,7 @@ export interface FileRouteTypes {
     | '/comparativo-composicao'
     | '/compliance'
     | '/composicoes'
+    | '/editais'
     | '/equipamentos'
     | '/equipe'
     | '/estoque'
@@ -301,6 +311,7 @@ export interface FileRouteTypes {
     | '/comparativo-composicao'
     | '/compliance'
     | '/composicoes'
+    | '/editais'
     | '/equipamentos'
     | '/equipe'
     | '/estoque'
@@ -330,6 +341,7 @@ export interface FileRouteTypes {
     | '/_app/comparativo-composicao'
     | '/_app/compliance'
     | '/_app/composicoes'
+    | '/_app/editais'
     | '/_app/equipamentos'
     | '/_app/equipe'
     | '/_app/estoque'
@@ -466,6 +478,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppEquipamentosRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/editais': {
+      id: '/_app/editais'
+      path: '/editais'
+      fullPath: '/editais'
+      preLoaderRoute: typeof AppEditaisRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/composicoes': {
       id: '/_app/composicoes'
       path: '/composicoes'
@@ -598,6 +617,7 @@ interface AppRouteChildren {
   AppComparativoComposicaoRoute: typeof AppComparativoComposicaoRoute
   AppComplianceRoute: typeof AppComplianceRoute
   AppComposicoesRoute: typeof AppComposicoesRoute
+  AppEditaisRoute: typeof AppEditaisRoute
   AppEquipamentosRoute: typeof AppEquipamentosRoute
   AppEquipeRoute: typeof AppEquipeRoute
   AppEstoqueRoute: typeof AppEstoqueRoute
@@ -619,6 +639,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppComparativoComposicaoRoute: AppComparativoComposicaoRoute,
   AppComplianceRoute: AppComplianceRoute,
   AppComposicoesRoute: AppComposicoesRoute,
+  AppEditaisRoute: AppEditaisRoute,
   AppEquipamentosRoute: AppEquipamentosRoute,
   AppEquipeRoute: AppEquipeRoute,
   AppEstoqueRoute: AppEstoqueRoute,
@@ -646,3 +667,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
