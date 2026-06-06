@@ -25,7 +25,9 @@ import {
   atualizarStatusReajuste,
   excluirReajuste,
   extrairClausulaReajusteIA,
+  gerarOficioReajuste,
   type ClausulaReajusteExtraida,
+  type OficioReajuste,
 } from "@/lib/reajustes.functions";
 
 
