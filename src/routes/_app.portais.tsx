@@ -285,7 +285,7 @@ function SimuladorTab() {
   });
 
   const portRows = (portais?.rows ?? []) as Portal[];
-  const propRows = ((propostas ?? []) as Array<{ id: string; nome: string }>);
+  const propRows = ((propostas ?? []) as Array<{ id: string; titulo: string }>);
 
   return (
     <div className="space-y-4">
@@ -307,7 +307,7 @@ function SimuladorTab() {
               <Select value={propostaId} onValueChange={setPropostaId}>
                 <SelectTrigger><SelectValue placeholder="Selecione uma proposta" /></SelectTrigger>
                 <SelectContent>
-                  {propRows.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
+                  {propRows.map((p) => <SelectItem key={p.id} value={p.id}>{p.titulo}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -424,7 +424,7 @@ function ProtocolosTab() {
   });
 
   const portRows = (portais?.rows ?? []) as Portal[];
-  const propRows = ((propostas ?? []) as Array<{ id: string; nome: string }>);
+  const propRows = ((propostas ?? []) as Array<{ id: string; titulo: string }>);
   const rows = (data?.rows ?? []) as Protocolo[];
 
   return (
@@ -465,7 +465,7 @@ function ProtocolosTab() {
                 <tbody>
                   {rows.map((r) => {
                     const portalNome = portRows.find((p) => p.id === r.portal_id)?.nome ?? "—";
-                    const propNome = propRows.find((p) => p.id === r.proposta_id)?.nome ?? "—";
+                    const propNome = propRows.find((p) => p.id === r.proposta_id)?.titulo ?? "—";
                     return (
                       <tr key={r.id} className="border-t hover:bg-muted/20">
                         <td className="p-2 text-xs">{new Date(r.data_envio).toLocaleString("pt-BR")}</td>
@@ -496,7 +496,7 @@ function ProtocolosTab() {
 function NovoProtocoloDialog({
   portais, propostas, onSubmit, pending,
 }: {
-  portais: Portal[]; propostas: Array<{ id: string; nome: string }>;
+  portais: Portal[]; propostas: Array<{ id: string; titulo: string }>;
   onSubmit: (p: { portal_id?: string; proposta_id?: string; numero_protocolo?: string; status: "enviado"; observacoes?: string }) => void;
   pending: boolean;
 }) {
@@ -523,7 +523,7 @@ function NovoProtocoloDialog({
           <Select value={propostaId} onValueChange={setPropostaId}>
             <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
             <SelectContent>
-              {propostas.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
+              {propostas.map((p) => <SelectItem key={p.id} value={p.id}>{p.titulo}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
