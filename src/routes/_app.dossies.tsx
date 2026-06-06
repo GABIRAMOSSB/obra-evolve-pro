@@ -136,7 +136,7 @@ function DossiesTab() {
               Nenhum dossiê. Clique em <strong>Novo</strong>.
             </div>
           ) : (
-            rows.map((d) => (
+            (rows as DossieRow[]).map((d) => (
               <button
                 key={d.id}
                 onClick={() => setSelectedId(d.id)}
@@ -237,7 +237,7 @@ function DossieDetalhe({ id, onDelete }: { id: string; onDelete: () => void }) {
   });
 
   const updMut = useMutation({
-    mutationFn: async (p: Parameters<typeof updFn>[0]["data"]) => updFn({ data: p }),
+    mutationFn: async (p: DossieUpdate) => updFn({ data: p }),
     onSuccess: () => {
       toast.success("Atualizado.");
       qc.invalidateQueries({ queryKey: ["dossie", id] });
@@ -247,7 +247,7 @@ function DossieDetalhe({ id, onDelete }: { id: string; onDelete: () => void }) {
   });
 
   const addMut = useMutation({
-    mutationFn: async (p: Parameters<typeof addFn>[0]["data"]) => addFn({ data: p }),
+    mutationFn: async (p: ItemAdd) => addFn({ data: p }),
     onSuccess: () => {
       toast.success("Item adicionado.");
       qc.invalidateQueries({ queryKey: ["dossie", id] });
@@ -335,7 +335,7 @@ function DossieDetalhe({ id, onDelete }: { id: string; onDelete: () => void }) {
           </div>
         ) : (
           <div className="space-y-2">
-            {itens.map((it, idx) => (
+            {(itens as DossieItem[]).map((it, idx) => (
               <div key={it.id} className="flex items-center gap-2 p-2 rounded border bg-card">
                 <Badge variant="outline" className="text-[10px] uppercase">{it.tipo}</Badge>
                 <div className="flex-1 min-w-0">
@@ -449,7 +449,7 @@ function TemplatesTab() {
         </CardContent></Card>
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
-          {rows.map((t) => (
+          {(rows as TemplateRow[]).map((t) => (
             <Card key={t.id}>
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-2">
