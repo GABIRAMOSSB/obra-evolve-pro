@@ -111,9 +111,10 @@ export const listEditais = createServerFn({ method: "GET" })
       );
     }
     return (data ?? []).map((r: Record<string, unknown>) => ({
-      ...(r as EditalRow),
+      ...(r as unknown as EditalRow),
       checklist_count: counts[(r as { id: string }).id] ?? 0,
     }));
+
   });
 
 /* ============================ CREATE ============================ */
