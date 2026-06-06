@@ -23,6 +23,7 @@ import {
   upsertNotificationRule,
   deleteNotificationRule,
 } from "@/lib/compliance.functions";
+import { CertificateScopeCell } from "@/components/compliance/CertificateScopeCell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -77,6 +78,8 @@ type CertRow = {
   certificate_number: string | null;
   last_checked_at: string | null;
   current_version_id: string | null;
+  obra_id: string | null;
+  contrato_id: string | null;
   certificate_types: {
     code: string;
     name: string;
@@ -497,9 +500,9 @@ function CertList({
                 <td className="px-4 py-3">
                   <CertificateScopeCell
                     certId={c.id}
-                    obraId={(c as { obra_id: string | null }).obra_id ?? null}
-                    contratoId={(c as { contrato_id: string | null }).contrato_id ?? null}
-                    onChanged={invalidateAll}
+                    obraId={c.obra_id ?? null}
+                    contratoId={c.contrato_id ?? null}
+                    onChanged={onChanged}
                   />
                 </td>
                 <td className="px-4 py-3 text-xs text-muted-foreground">{fmtDateTime(c.last_checked_at)}</td>
