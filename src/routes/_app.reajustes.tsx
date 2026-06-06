@@ -551,6 +551,39 @@ function ReajustesPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={!!oficio} onOpenChange={(o) => { if (!o) { setOficio(null); setOficioTexto(""); } }}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Ofício de Reajuste {oficio ? `#${oficio.numero_reajuste} — Contrato ${oficio.contrato_numero}` : ""}
+            </DialogTitle>
+          </DialogHeader>
+          {oficio && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="rounded border p-2"><div className="text-muted-foreground">Índice</div><div className="font-semibold">{oficio.indice}</div></div>
+                <div className="rounded border p-2"><div className="text-muted-foreground">% Acumulado</div><div className="font-semibold">{Number(oficio.percentual_acumulado).toFixed(4)}%</div></div>
+                <div className="rounded border p-2"><div className="text-muted-foreground">Reajuste</div><div className="font-semibold">{brl(oficio.valor_reajuste)}</div></div>
+              </div>
+              <Textarea rows={22} value={oficioTexto} onChange={(e) => setOficioTexto(e.target.value)}
+                className="font-mono text-sm leading-relaxed" />
+              <p className="text-xs text-muted-foreground">
+                Edite livremente o texto antes de imprimir. Base usada: <strong>{oficio.base_modo === "medicoes" ? "soma das medições do período" : "valor atualizado do contrato"}</strong>.
+              </p>
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => { setOficio(null); setOficioTexto(""); }}>Fechar</Button>
+            <Button variant="secondary" onClick={() => { navigator.clipboard.writeText(oficioTexto); toast.success("Ofício copiado."); }}>
+              Copiar texto
+            </Button>
+            <Button onClick={imprimirOficio}>
+              <Printer className="w-4 h-4 mr-2" /> Imprimir / PDF
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
