@@ -43,8 +43,21 @@ import {
   Upload,
   ExternalLink,
   ChevronLeft,
+  Wand2,
+  Paperclip,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  listBiblioteca,
+  listVinculosChecklistEdital,
+  vincularDocumento,
+  desvincularDocumento,
+  sugerirVinculosChecklist,
+  type DocumentoRow,
+  type VinculoRow,
+} from "@/lib/biblioteca.functions";
+
 
 export const Route = createFileRoute("/_app/editais")({
   component: EditaisPage,
