@@ -34,6 +34,7 @@ import { Route as AppEquipeRouteImport } from './routes/_app.equipe'
 import { Route as AppEquipamentosRouteImport } from './routes/_app.equipamentos'
 import { Route as AppEditaisRouteImport } from './routes/_app.editais'
 import { Route as AppDossiesRouteImport } from './routes/_app.dossies'
+import { Route as AppDeclaracoesRouteImport } from './routes/_app.declaracoes'
 import { Route as AppCronogramasRouteImport } from './routes/_app.cronogramas'
 import { Route as AppContratosRouteImport } from './routes/_app.contratos'
 import { Route as AppComposicoesRouteImport } from './routes/_app.composicoes'
@@ -177,6 +178,11 @@ const AppDossiesRoute = AppDossiesRouteImport.update({
   path: '/dossies',
   getParentRoute: () => AppRoute,
 } as any)
+const AppDeclaracoesRoute = AppDeclaracoesRouteImport.update({
+  id: '/declaracoes',
+  path: '/declaracoes',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCronogramasRoute = AppCronogramasRouteImport.update({
   id: '/cronogramas',
   path: '/cronogramas',
@@ -280,6 +286,7 @@ export interface FileRoutesByFullPath {
   '/composicoes': typeof AppComposicoesRoute
   '/contratos': typeof AppContratosRoute
   '/cronogramas': typeof AppCronogramasRoute
+  '/declaracoes': typeof AppDeclaracoesRoute
   '/dossies': typeof AppDossiesRoute
   '/editais': typeof AppEditaisRoute
   '/equipamentos': typeof AppEquipamentosRoute
@@ -322,6 +329,7 @@ export interface FileRoutesByTo {
   '/composicoes': typeof AppComposicoesRoute
   '/contratos': typeof AppContratosRoute
   '/cronogramas': typeof AppCronogramasRoute
+  '/declaracoes': typeof AppDeclaracoesRoute
   '/dossies': typeof AppDossiesRoute
   '/editais': typeof AppEditaisRoute
   '/equipamentos': typeof AppEquipamentosRoute
@@ -367,6 +375,7 @@ export interface FileRoutesById {
   '/_app/composicoes': typeof AppComposicoesRoute
   '/_app/contratos': typeof AppContratosRoute
   '/_app/cronogramas': typeof AppCronogramasRoute
+  '/_app/declaracoes': typeof AppDeclaracoesRoute
   '/_app/dossies': typeof AppDossiesRoute
   '/_app/editais': typeof AppEditaisRoute
   '/_app/equipamentos': typeof AppEquipamentosRoute
@@ -413,6 +422,7 @@ export interface FileRouteTypes {
     | '/composicoes'
     | '/contratos'
     | '/cronogramas'
+    | '/declaracoes'
     | '/dossies'
     | '/editais'
     | '/equipamentos'
@@ -455,6 +465,7 @@ export interface FileRouteTypes {
     | '/composicoes'
     | '/contratos'
     | '/cronogramas'
+    | '/declaracoes'
     | '/dossies'
     | '/editais'
     | '/equipamentos'
@@ -499,6 +510,7 @@ export interface FileRouteTypes {
     | '/_app/composicoes'
     | '/_app/contratos'
     | '/_app/cronogramas'
+    | '/_app/declaracoes'
     | '/_app/dossies'
     | '/_app/editais'
     | '/_app/equipamentos'
@@ -716,6 +728,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDossiesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/declaracoes': {
+      id: '/_app/declaracoes'
+      path: '/declaracoes'
+      fullPath: '/declaracoes'
+      preLoaderRoute: typeof AppDeclaracoesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/cronogramas': {
       id: '/_app/cronogramas'
       path: '/cronogramas'
@@ -899,6 +918,7 @@ interface AppRouteChildren {
   AppComposicoesRoute: typeof AppComposicoesRoute
   AppContratosRoute: typeof AppContratosRoute
   AppCronogramasRoute: typeof AppCronogramasRoute
+  AppDeclaracoesRoute: typeof AppDeclaracoesRoute
   AppDossiesRoute: typeof AppDossiesRoute
   AppEditaisRoute: typeof AppEditaisRoute
   AppEquipamentosRoute: typeof AppEquipamentosRoute
@@ -934,6 +954,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppComposicoesRoute: AppComposicoesRoute,
   AppContratosRoute: AppContratosRoute,
   AppCronogramasRoute: AppCronogramasRoute,
+  AppDeclaracoesRoute: AppDeclaracoesRoute,
   AppDossiesRoute: AppDossiesRoute,
   AppEditaisRoute: AppEditaisRoute,
   AppEquipamentosRoute: AppEquipamentosRoute,
