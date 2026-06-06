@@ -177,6 +177,7 @@ async function processSignatureSend(
     zapDoc = await zapsignRequest<ZapSignCreateResponse>({
       method: "POST",
       path: "/docs/",
+      timeoutMs: 90000,
       body: {
         sandbox,
         name: data.documentName.replace(/\.pdf$/i, ""),
@@ -208,16 +209,20 @@ async function processSignatureSend(
       },
     });
   } catch (e) {
-    const msg =
+    const rawMsg =
       e instanceof ZapSignConfigError
         ? e.message
-        : (e as Error).message || "Erro ZapSign";
+        : (e as Error)?.name === "AbortError" ||
+            /aborted/i.test((e as Error)?.message ?? "")
+          ? "Tempo esgotado ao enviar o documento para o ZapSign (90s). O PDF pode estar muito grande ou o serviço está lento — tente novamente."
+          : (e as Error).message || "Erro ZapSign";
     await supabase
       .from("signature_requests")
-      .update({ status: "error", error_message: msg })
+      .update({ status: "error", error_message: rawMsg })
       .eq("id", requestRow.id);
-    throw new Error(msg);
+    throw new Error(rawMsg);
   }
+
 
   await supabase
     .from("signature_requests")
