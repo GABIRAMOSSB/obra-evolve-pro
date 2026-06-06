@@ -493,9 +493,16 @@ export const analyzeEdital = createServerFn({ method: "POST" })
       .update({ status: "processando", ia_erro: null })
       .eq("id", data.edital_id);
 
-    // (futuro) — buscar trecho extraído dos documentos. Por ora, baseia-se nos
-    // metadados do edital. O extrator de PDF chega em um passo separado.
-    const trecho: string | null = null;
+    // Agrega texto extraído dos documentos (Fase 4.1).
+    const { data: docs } = await supabase
+      .from("edital_documentos")
+      .select("texto_extraido, nome_arquivo")
+      .eq("edital_id", data.edital_id)
+      .eq("company_id", companyId);
+    const partes = ((docs ?? []) as Array<{ texto_extraido: string | null; nome_arquivo: string }>)
+      .filter((d) => d.texto_extraido && d.texto_extraido.trim().length > 0)
+      .map((d) => `# ${d.nome_arquivo}\n${d.texto_extraido}`);
+    const trecho: string | null = partes.length ? partes.join("\n\n").slice(0, 60000) : null;
 
     try {
       const result = await callAIGateway({
