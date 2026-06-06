@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { BarChart3, FileText, Package, HardHat, Wrench, Users, Database, LogOut, Calculator, FolderTree, PenTool, ShieldCheck } from "lucide-react";
+import { BarChart3, FileText, Package, HardHat, Wrench, Users, Database, LogOut, Calculator, FolderTree, PenTool, ShieldCheck, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useCompany } from "@/hooks/use-company";
@@ -30,6 +30,7 @@ export function AppSidebar() {
       <div className="relative px-3 mt-2 flex-1 overflow-y-auto">
         <div className="px-3 pb-1 text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/40">Obra</div>
         <SidebarLink to="/" icon={BarChart3} label="Visão geral" exact />
+        <SidebarLink to="/obras" icon={Building2} label="Obras" />
         <SidebarLink to="/realizado" icon={BarChart3} label="Previsto × Realizado" />
         <SidebarLink to="/comparativo-composicao" icon={Calculator} label="Comparativo Composição" />
         <SidebarLink to="/notas-fiscais" icon={FileText} label="Notas Fiscais" />

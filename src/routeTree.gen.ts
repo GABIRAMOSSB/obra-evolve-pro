@@ -16,6 +16,7 @@ import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as AppRealizadoRouteImport } from './routes/_app.realizado'
 import { Route as AppParametrosFinanceirosRouteImport } from './routes/_app.parametros-financeiros'
+import { Route as AppObrasRouteImport } from './routes/_app.obras'
 import { Route as AppNotasFiscaisRouteImport } from './routes/_app.notas-fiscais'
 import { Route as AppMaoDeObraRouteImport } from './routes/_app.mao-de-obra'
 import { Route as AppInsumosRouteImport } from './routes/_app.insumos'
@@ -70,6 +71,11 @@ const AppParametrosFinanceirosRoute =
     path: '/parametros-financeiros',
     getParentRoute: () => AppRoute,
   } as any)
+const AppObrasRoute = AppObrasRouteImport.update({
+  id: '/obras',
+  path: '/obras',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppNotasFiscaisRoute = AppNotasFiscaisRouteImport.update({
   id: '/notas-fiscais',
   path: '/notas-fiscais',
@@ -180,6 +186,7 @@ export interface FileRoutesByFullPath {
   '/insumos': typeof AppInsumosRouteWithChildren
   '/mao-de-obra': typeof AppMaoDeObraRoute
   '/notas-fiscais': typeof AppNotasFiscaisRoute
+  '/obras': typeof AppObrasRoute
   '/parametros-financeiros': typeof AppParametrosFinanceirosRoute
   '/realizado': typeof AppRealizadoRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -205,6 +212,7 @@ export interface FileRoutesByTo {
   '/insumos': typeof AppInsumosRouteWithChildren
   '/mao-de-obra': typeof AppMaoDeObraRoute
   '/notas-fiscais': typeof AppNotasFiscaisRoute
+  '/obras': typeof AppObrasRoute
   '/parametros-financeiros': typeof AppParametrosFinanceirosRoute
   '/realizado': typeof AppRealizadoRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -233,6 +241,7 @@ export interface FileRoutesById {
   '/_app/insumos': typeof AppInsumosRouteWithChildren
   '/_app/mao-de-obra': typeof AppMaoDeObraRoute
   '/_app/notas-fiscais': typeof AppNotasFiscaisRoute
+  '/_app/obras': typeof AppObrasRoute
   '/_app/parametros-financeiros': typeof AppParametrosFinanceirosRoute
   '/_app/realizado': typeof AppRealizadoRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -262,6 +271,7 @@ export interface FileRouteTypes {
     | '/insumos'
     | '/mao-de-obra'
     | '/notas-fiscais'
+    | '/obras'
     | '/parametros-financeiros'
     | '/realizado'
     | '/invite/$token'
@@ -287,6 +297,7 @@ export interface FileRouteTypes {
     | '/insumos'
     | '/mao-de-obra'
     | '/notas-fiscais'
+    | '/obras'
     | '/parametros-financeiros'
     | '/realizado'
     | '/invite/$token'
@@ -314,6 +325,7 @@ export interface FileRouteTypes {
     | '/_app/insumos'
     | '/_app/mao-de-obra'
     | '/_app/notas-fiscais'
+    | '/_app/obras'
     | '/_app/parametros-financeiros'
     | '/_app/realizado'
     | '/invite/$token'
@@ -384,6 +396,13 @@ declare module '@tanstack/react-router' {
       path: '/parametros-financeiros'
       fullPath: '/parametros-financeiros'
       preLoaderRoute: typeof AppParametrosFinanceirosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/obras': {
+      id: '/_app/obras'
+      path: '/obras'
+      fullPath: '/obras'
+      preLoaderRoute: typeof AppObrasRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/notas-fiscais': {
@@ -566,6 +585,7 @@ interface AppRouteChildren {
   AppInsumosRoute: typeof AppInsumosRouteWithChildren
   AppMaoDeObraRoute: typeof AppMaoDeObraRoute
   AppNotasFiscaisRoute: typeof AppNotasFiscaisRoute
+  AppObrasRoute: typeof AppObrasRoute
   AppParametrosFinanceirosRoute: typeof AppParametrosFinanceirosRoute
   AppRealizadoRoute: typeof AppRealizadoRoute
   AppIndexRoute: typeof AppIndexRoute
@@ -585,6 +605,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppInsumosRoute: AppInsumosRouteWithChildren,
   AppMaoDeObraRoute: AppMaoDeObraRoute,
   AppNotasFiscaisRoute: AppNotasFiscaisRoute,
+  AppObrasRoute: AppObrasRoute,
   AppParametrosFinanceirosRoute: AppParametrosFinanceirosRoute,
   AppRealizadoRoute: AppRealizadoRoute,
   AppIndexRoute: AppIndexRoute,
@@ -604,3 +625,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
