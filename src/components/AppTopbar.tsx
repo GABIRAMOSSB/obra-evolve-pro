@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { BarChart3, FileText, Package, HardHat, Wrench, Users, Database, LogOut, PenTool, Settings, Building2, Radar, Sparkles, BookOpen, FileSignature, Wallet, ShieldCheck, ClipboardList, FilePlus2 } from "lucide-react";
+import { BarChart3, FileText, Package, HardHat, Wrench, Users, Database, LogOut, PenTool, Settings, Building2, Radar, Sparkles, BookOpen, FileSignature, Wallet, ShieldCheck, ClipboardList, FilePlus2, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useCompany } from "@/hooks/use-company";
@@ -13,6 +13,7 @@ const NAV_ITEMS: { to: string; icon: typeof HardHat; label: string; exact?: bool
   { to: "/biblioteca", icon: BookOpen, label: "Biblioteca" },
   { to: "/contratos", icon: FileSignature, label: "Contratos" },
   { to: "/aditivos", icon: FilePlus2, label: "Aditivos" },
+  { to: "/reajustes", icon: TrendingUp, label: "Reajustes" },
   { to: "/medicoes", icon: ClipboardList, label: "Medições" },
   { to: "/financeiro", icon: Wallet, label: "Financeiro" },
   { to: "/realizado", icon: BarChart3, label: "Realizado" },
