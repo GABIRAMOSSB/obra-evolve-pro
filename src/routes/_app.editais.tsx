@@ -528,6 +528,19 @@ function EditalDetail({ id, onDeleted }: { id: string; onDeleted: () => void }) 
                       onObsBlur={(observacoes) =>
                         updateItemMut.mutate({ id: it.id, observacoes })
                       }
+                      onOpenPage={async (pagina) => {
+                        const first = (docs as Array<{ id: string; paginas: number | null }> | undefined)?.find(
+                          (d) => (d.paginas ?? 0) > 0,
+                        );
+                        if (!first) {
+                          toast.error("Extraia o texto do PDF para navegar até a página.");
+                          return;
+                        }
+                        try {
+                          const { url } = await getUrlFn({ data: { documento_id: first.id } });
+                          window.open(`${url}#page=${pagina}`, "_blank");
+                        } catch (e) { toast.error((e as Error).message); }
+                      }}
                     />
                   ))}
                 </div>
@@ -541,11 +554,12 @@ function EditalDetail({ id, onDeleted }: { id: string; onDeleted: () => void }) 
 }
 
 function ChecklistItemRow({
-  item, onStatusChange, onObsBlur,
+  item, onStatusChange, onObsBlur, onOpenPage,
 }: {
   item: ChecklistRow;
   onStatusChange: (s: string) => void;
   onObsBlur: (obs: string | null) => void;
+  onOpenPage?: (pagina: number) => void;
 }) {
   const [obs, setObs] = useState(item.observacoes ?? "");
 
@@ -573,7 +587,19 @@ function ChecklistItemRow({
           {item.trecho_edital && (
             <div className="text-xs text-muted-foreground italic mt-1 border-l-2 border-muted-foreground/30 pl-2">
               "{item.trecho_edital}"
-              {item.pagina_referencia != null && <span className="not-italic"> — p.{item.pagina_referencia}</span>}
+              {item.pagina_referencia != null && (
+                onOpenPage ? (
+                  <button
+                    type="button"
+                    onClick={() => onOpenPage(item.pagina_referencia as number)}
+                    className="not-italic ml-1 text-primary hover:underline"
+                  >
+                    — p.{item.pagina_referencia}
+                  </button>
+                ) : (
+                  <span className="not-italic"> — p.{item.pagina_referencia}</span>
+                )
+              )}
             </div>
           )}
         </div>

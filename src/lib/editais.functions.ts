@@ -359,8 +359,14 @@ A partir das informações abaixo sobre o edital, produza:
         - categoria
         - requisito (texto curto, imperativo: "Apresentar...", "Comprovar...")
         - obrigatorio (boolean — true se exigido pela Lei/edital, false se condicional)
-        - pagina_referencia (inteiro ou null)
-        - trecho_edital (citação literal curta do edital, ou null se inferido)
+        - pagina_referencia (inteiro — número da página do PDF onde o requisito aparece, ou null se não localizado / inferido)
+        - trecho_edital (citação LITERAL curta extraída do texto fornecido, ou null se inferido)
+
+REGRAS DE CITAÇÃO (importantes — Fase 4.2):
+  - O texto do edital abaixo está dividido por marcadores no formato "[PÁGINA N]".
+  - Quando citar um requisito, copie literalmente o trecho do edital (máx. ~280 caracteres) e indique a página correspondente ao marcador imediatamente anterior a esse trecho.
+  - NÃO invente número de página: se o requisito não estiver localizado no texto, defina pagina_referencia=null e trecho_edital=null.
+  - Prefira sempre citar (com página) a inferir, quando o texto estiver disponível.
 
 Inclua entre 8 e 25 itens, priorizando os realmente exigidos.
 
@@ -371,7 +377,7 @@ Dados do edital:
   Valor estimado: ${args.valor != null ? `R$ ${args.valor.toLocaleString("pt-BR")}` : "(não informado)"}
   Objeto: ${args.objeto ?? "(não informado)"}
 
-${args.trecho ? `Trecho do edital (extraído do PDF):\n"""\n${args.trecho.slice(0, 12000)}\n"""` : "Observação: o PDF do edital não foi processado; baseie-se na modalidade e no objeto para inferir o checklist padrão."}
+${args.trecho ? `Texto do edital (extraído do PDF, com marcadores de página):\n"""\n${args.trecho.slice(0, 40000)}\n"""` : "Observação: o PDF do edital não foi processado; baseie-se na modalidade e no objeto para inferir o checklist padrão e deixe pagina_referencia=null e trecho_edital=null."}
 
 Responda SOMENTE com JSON válido seguindo a tool schema fornecida.`;
 }
@@ -664,21 +670,34 @@ export const extractDocumentoTexto = createServerFn({ method: "POST" })
 
     const buf = new Uint8Array(await file.arrayBuffer());
 
-    // unpdf é compatível com workers/edge (build sem deps nativas).
+    // unpdf é compatível com workers/edge. Extrai página a página para
+    // permitir citações com referência precisa de página (Fase 4.2).
     const { extractText, getDocumentProxy } = await import("unpdf");
     const pdf = await getDocumentProxy(buf);
-    const { totalPages, text } = await extractText(pdf, { mergePages: true });
-    const texto = (Array.isArray(text) ? text.join("\n") : text).trim();
+    const { totalPages, text } = await extractText(pdf, { mergePages: false });
+    const pages: string[] = Array.isArray(text) ? text : [String(text ?? "")];
+
+    // texto agregado com marcadores "[PÁGINA N]" — usados pela IA para citar.
+    const agregado = pages
+      .map((t, i) => `[PÁGINA ${i + 1}]\n${(t ?? "").trim()}`)
+      .join("\n\n")
+      .slice(0, 500000);
+
+    const porPagina = pages.map((t, i) => ({
+      pagina: i + 1,
+      texto: (t ?? "").trim().slice(0, 20000),
+    }));
 
     const { error: upErr } = await supabase
       .from("edital_documentos")
       .update({
-        texto_extraido: texto.slice(0, 500000),
+        texto_extraido: agregado,
+        texto_por_pagina: porPagina,
         paginas: totalPages,
       })
       .eq("id", doc.id)
       .eq("company_id", companyId);
     if (upErr) throw new Error(upErr.message);
 
-    return { ok: true, paginas: totalPages, caracteres: texto.length };
+    return { ok: true, paginas: totalPages, caracteres: agregado.length };
   });
