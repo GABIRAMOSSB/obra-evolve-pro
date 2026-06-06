@@ -217,7 +217,70 @@ function ReajustesPage() {
         </TabsList>
 
         <TabsContent value="reajustes" className="space-y-4">
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <Dialog open={openIA} onOpenChange={(o) => { setOpenIA(o); if (!o) setIaResult(null); }}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Sparkles className="w-4 h-4 mr-2" /> Extrair cláusula com IA
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Extrair cláusula de reajuste com IA</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <div>
+                    <Label>Contrato</Label>
+                    <Select value={iaForm.contrato_id} onValueChange={(v) => setIaForm((f) => ({ ...f, contrato_id: v }))}>
+                      <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
+                      <SelectContent>
+                        {contratos.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.numero} — {c.objeto?.slice(0, 50) ?? ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Texto do contrato (cole a cláusula ou trecho relevante)</Label>
+                    <Textarea rows={10} value={iaForm.texto}
+                      placeholder="Cole aqui o trecho contendo a cláusula de reajuste / reequilíbrio econômico-financeiro…"
+                      onChange={(e) => setIaForm((f) => ({ ...f, texto: e.target.value }))} />
+                    <p className="text-xs text-muted-foreground mt-1">{iaForm.texto.length} caracteres</p>
+                  </div>
+                  {iaResult && (
+                    <div className="rounded-md border bg-muted/40 p-3 space-y-1 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold">Resultado da extração</span>
+                        <Badge variant="outline">confiança {Math.round((iaResult.confianca ?? 0) * 100)}%</Badge>
+                      </div>
+                      <div><span className="text-muted-foreground">Índice:</span> <span className="font-mono">{iaResult.indice ?? "—"}</span></div>
+                      <div><span className="text-muted-foreground">Periodicidade:</span> {iaResult.periodicidade ?? "—"}</div>
+                      <div><span className="text-muted-foreground">Data-base:</span> {iaResult.data_base ?? "—"}</div>
+                      {iaResult.formula && <div><span className="text-muted-foreground">Fórmula:</span> <span className="font-mono">{iaResult.formula}</span></div>}
+                      {iaResult.trecho_citado && (
+                        <div className="text-xs text-muted-foreground border-l-2 pl-2 mt-2 italic">
+                          “{iaResult.trecho_citado}”
+                        </div>
+                      )}
+                      {iaResult.observacoes && <div className="text-xs"><span className="text-muted-foreground">Notas:</span> {iaResult.observacoes}</div>}
+                    </div>
+                  )}
+                </div>
+                <DialogFooter className="gap-2">
+                  <Button variant="outline" onClick={() => setOpenIA(false)}>Fechar</Button>
+                  <Button variant="secondary" onClick={() => extrairMut.mutate(false)} disabled={extrairMut.isPending}>
+                    <Sparkles className="w-4 h-4 mr-2" /> Extrair (preview)
+                  </Button>
+                  <Button onClick={() => extrairMut.mutate(true)} disabled={extrairMut.isPending}>
+                    Extrair e aplicar
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+
             <Dialog open={openCalc} onOpenChange={setOpenCalc}>
               <DialogTrigger asChild>
                 <Button><Calculator className="w-4 h-4 mr-2" /> Calcular reajuste</Button>
