@@ -27,9 +27,34 @@ async function resolveCompany(supabase: AnySupabase, userId: string, requireEdit
   return data.company_id as string;
 }
 
+export type AditivoRow = {
+  id: string;
+  contrato_id: string;
+  numero: number;
+  tipo: "valor" | "prazo" | "escopo" | "misto";
+  valor_delta: number | string;
+  prazo_dias_delta: number;
+  data_assinatura: string | null;
+  justificativa: string | null;
+  status: "rascunho" | "vigente" | "cancelado";
+  aplicado_em: string | null;
+  created_at: string;
+};
+
+export type ContratoLite = {
+  id: string;
+  numero: string;
+  objeto: string | null;
+  orgao_contratante: string | null;
+  valor_original: number | string | null;
+  valor_atualizado: number | string | null;
+  data_fim_vigencia: string | null;
+  status: string | null;
+};
+
 export const listAditivos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .handler(async ({ context }): Promise<{ aditivos: AditivoRow[]; contratos: ContratoLite[] }> => {
     const supabase = context.supabase as AnySupabase;
     const companyId = await resolveCompany(supabase, context.userId);
 
@@ -47,7 +72,7 @@ export const listAditivos = createServerFn({ method: "GET" })
     ]);
     if (aditRes.error) throw new Error(aditRes.error.message);
     if (contratosRes.error) throw new Error(contratosRes.error.message);
-    return { aditivos: aditRes.data ?? [], contratos: contratosRes.data ?? [] };
+    return { aditivos: (aditRes.data ?? []) as AditivoRow[], contratos: (contratosRes.data ?? []) as ContratoLite[] };
   });
 
 const createSchema = z.object({

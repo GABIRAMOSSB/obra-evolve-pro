@@ -36,6 +36,7 @@ import { Route as AppCentrosCustoRouteImport } from './routes/_app.centros-custo
 import { Route as AppBibliotecaRouteImport } from './routes/_app.biblioteca'
 import { Route as AppBackupRouteImport } from './routes/_app.backup'
 import { Route as AppAssinaturasRouteImport } from './routes/_app.assinaturas'
+import { Route as AppAditivosRouteImport } from './routes/_app.aditivos'
 import { Route as ApiPublicZapsignWebhookRouteImport } from './routes/api.public.zapsign-webhook'
 import { Route as ApiPublicZapsignRemindersRouteImport } from './routes/api.public.zapsign-reminders'
 import { Route as AppInsumosImportarRouteImport } from './routes/_app.insumos.importar'
@@ -179,6 +180,11 @@ const AppAssinaturasRoute = AppAssinaturasRouteImport.update({
   path: '/assinaturas',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAditivosRoute = AppAditivosRouteImport.update({
+  id: '/aditivos',
+  path: '/aditivos',
+  getParentRoute: () => AppRoute,
+} as any)
 const ApiPublicZapsignWebhookRoute = ApiPublicZapsignWebhookRouteImport.update({
   id: '/api/public/zapsign-webhook',
   path: '/api/public/zapsign-webhook',
@@ -216,6 +222,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/aditivos': typeof AppAditivosRoute
   '/assinaturas': typeof AppAssinaturasRouteWithChildren
   '/backup': typeof AppBackupRoute
   '/biblioteca': typeof AppBibliotecaRoute
@@ -249,6 +256,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/aditivos': typeof AppAditivosRoute
   '/assinaturas': typeof AppAssinaturasRouteWithChildren
   '/backup': typeof AppBackupRoute
   '/biblioteca': typeof AppBibliotecaRoute
@@ -285,6 +293,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/_app/aditivos': typeof AppAditivosRoute
   '/_app/assinaturas': typeof AppAssinaturasRouteWithChildren
   '/_app/backup': typeof AppBackupRoute
   '/_app/biblioteca': typeof AppBibliotecaRoute
@@ -322,6 +331,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/reset-password'
+    | '/aditivos'
     | '/assinaturas'
     | '/backup'
     | '/biblioteca'
@@ -355,6 +365,7 @@ export interface FileRouteTypes {
   to:
     | '/login'
     | '/reset-password'
+    | '/aditivos'
     | '/assinaturas'
     | '/backup'
     | '/biblioteca'
@@ -390,6 +401,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/login'
     | '/reset-password'
+    | '/_app/aditivos'
     | '/_app/assinaturas'
     | '/_app/backup'
     | '/_app/biblioteca'
@@ -622,6 +634,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAssinaturasRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/aditivos': {
+      id: '/_app/aditivos'
+      path: '/aditivos'
+      fullPath: '/aditivos'
+      preLoaderRoute: typeof AppAditivosRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/api/public/zapsign-webhook': {
       id: '/api/public/zapsign-webhook'
       path: '/api/public/zapsign-webhook'
@@ -706,6 +725,7 @@ const AppConfiguracoesZapsignRouteWithChildren =
   )
 
 interface AppRouteChildren {
+  AppAditivosRoute: typeof AppAditivosRoute
   AppAssinaturasRoute: typeof AppAssinaturasRouteWithChildren
   AppBackupRoute: typeof AppBackupRoute
   AppBibliotecaRoute: typeof AppBibliotecaRoute
@@ -733,6 +753,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAditivosRoute: AppAditivosRoute,
   AppAssinaturasRoute: AppAssinaturasRouteWithChildren,
   AppBackupRoute: AppBackupRoute,
   AppBibliotecaRoute: AppBibliotecaRoute,
