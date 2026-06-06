@@ -1653,6 +1653,193 @@ export type Database = {
           },
         ]
       }
+      document_templates: {
+        Row: {
+          ativo: boolean
+          categoria: string
+          company_id: string
+          conteudo: string
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          id: string
+          nome: string
+          updated_at: string
+          variaveis: Json
+        }
+        Insert: {
+          ativo?: boolean
+          categoria?: string
+          company_id: string
+          conteudo?: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          nome: string
+          updated_at?: string
+          variaveis?: Json
+        }
+        Update: {
+          ativo?: boolean
+          categoria?: string
+          company_id?: string
+          conteudo?: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string
+          variaveis?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_templates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dossie_itens: {
+        Row: {
+          company_id: string
+          created_at: string
+          descricao: string | null
+          dossie_id: string
+          id: string
+          ordem: number
+          ref_id: string | null
+          ref_table: string | null
+          storage_path: string | null
+          tipo: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          descricao?: string | null
+          dossie_id: string
+          id?: string
+          ordem?: number
+          ref_id?: string | null
+          ref_table?: string | null
+          storage_path?: string | null
+          tipo: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          descricao?: string | null
+          dossie_id?: string
+          id?: string
+          ordem?: number
+          ref_id?: string | null
+          ref_table?: string | null
+          storage_path?: string | null
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dossie_itens_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dossie_itens_dossie_id_fkey"
+            columns: ["dossie_id"]
+            isOneToOne: false
+            referencedRelation: "dossies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dossies: {
+        Row: {
+          company_id: string
+          contrato_id: string | null
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          edital_id: string | null
+          escopo: string
+          id: string
+          nome: string
+          observacoes: string | null
+          oportunidade_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          contrato_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          edital_id?: string | null
+          escopo?: string
+          id?: string
+          nome: string
+          observacoes?: string | null
+          oportunidade_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          contrato_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          edital_id?: string | null
+          escopo?: string
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          oportunidade_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dossies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dossies_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dossies_edital_id_fkey"
+            columns: ["edital_id"]
+            isOneToOne: false
+            referencedRelation: "editais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dossies_oportunidade_id_fkey"
+            columns: ["oportunidade_id"]
+            isOneToOne: false
+            referencedRelation: "oportunidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       editais: {
         Row: {
           company_id: string
