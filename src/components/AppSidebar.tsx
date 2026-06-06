@@ -69,6 +69,7 @@ const SECTIONS: NavSection[] = [
     items: [
       { to: "/compliance", icon: ShieldCheck, label: "Central de Certidões" },
       { to: "/poderes", icon: KeyRound, label: "Matriz de Poderes" },
+      { to: "/declaracoes", icon: FileSignature, label: "Declarações" },
       { to: "/dossies", icon: FolderKanban, label: "Dossiês e Templates" },
     ],
   },
