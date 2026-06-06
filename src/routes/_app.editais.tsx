@@ -639,3 +639,69 @@ function EditalDetail({ id, onBack }: { id: string; onBack: () => void }) {
     </div>
   );
 }
+
+/* =================== CHECKLIST DOCS =================== */
+
+function ChecklistDocs({
+  itemId,
+  itemCategoria,
+  vinculos,
+  biblioteca,
+  onAttach,
+  onDetach,
+}: {
+  itemId: string;
+  itemCategoria: string;
+  vinculos: VinculoRow[];
+  biblioteca: DocumentoRow[];
+  onAttach: (docId: string) => void;
+  onDetach: (vid: string) => void;
+}) {
+  const linkedIds = new Set(vinculos.map((v) => v.documento_id));
+  const candidatos = biblioteca.filter(
+    (d) => !linkedIds.has(d.id) && (d.categoria === itemCategoria || true),
+  );
+  return (
+    <div className="mt-2 flex flex-wrap gap-1 items-center">
+      {vinculos.map((v) => (
+        <Badge
+          key={v.id}
+          variant="outline"
+          className="text-[10px] py-0 pl-2 pr-1 gap-1 inline-flex items-center"
+        >
+          <Paperclip className="w-3 h-3" />
+          {v.documento_nome}
+          <button
+            type="button"
+            onClick={() => onDetach(v.id)}
+            className="ml-1 hover:text-destructive"
+            aria-label="Desvincular"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </Badge>
+      ))}
+      <Select
+        key={`sel-${itemId}-${vinculos.length}`}
+        onValueChange={(v) => v && onAttach(v)}
+      >
+        <SelectTrigger className="h-7 w-[180px] text-xs">
+          <SelectValue placeholder="+ Vincular documento" />
+        </SelectTrigger>
+        <SelectContent>
+          {candidatos.length === 0 && (
+            <div className="px-2 py-1 text-xs text-muted-foreground">
+              Nenhum documento disponível
+            </div>
+          )}
+          {candidatos.map((d) => (
+            <SelectItem key={d.id} value={d.id}>
+              {d.nome}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
