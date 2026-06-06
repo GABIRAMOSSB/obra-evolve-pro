@@ -437,7 +437,7 @@ function EditalDetail({ id, onDeleted }: { id: string; onDeleted: () => void }) 
             </label>
             {(docs ?? []).length > 0 && (
               <div className="mt-2 space-y-1">
-                {(docs ?? []).map((d) => (
+                {(docs as Array<{ id: string; nome_arquivo: string }>).map((d) => (
                   <div key={d.id} className="flex items-center justify-between text-xs p-2 border rounded">
                     <span className="flex items-center gap-2 truncate">
                       <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
