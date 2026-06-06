@@ -24,11 +24,10 @@ import {
   calcularReajuste,
   atualizarStatusReajuste,
   excluirReajuste,
-  extrairClausulaReajuseIA_placeholder as _ph,
   extrairClausulaReajusteIA,
   type ClausulaReajusteExtraida,
 } from "@/lib/reajustes.functions";
-void _ph;
+
 
 
 export const Route = createFileRoute("/_app/reajustes")({
