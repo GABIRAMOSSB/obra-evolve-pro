@@ -175,18 +175,77 @@ export const calcularReajuste = createServerFn({ method: "POST" })
     if (cErr) throw new Error(cErr.message);
     if (!contrato) throw new Error("Contrato não encontrado.");
 
-    const { data: indices, error: iErr } = await supabase
-      .from("indices_economicos")
-      .select("mes_referencia, valor_percentual")
-      .eq("company_id", companyId)
-      .eq("indice", data.indice.toUpperCase())
-      .gte("mes_referencia", ini)
-      .lte("mes_referencia", fim)
-      .order("mes_referencia", { ascending: true });
+    // Quantos meses esperados no período (inclusivo)
+    const [iy, im] = ini.split("-").map(Number);
+    const [fy, fm] = fim.split("-").map(Number);
+    const mesesEsperados = (fy - iy) * 12 + (fm - im) + 1;
+
+    const fetchSerie = async () =>
+      supabase
+        .from("indices_economicos")
+        .select("mes_referencia, valor_percentual")
+        .eq("company_id", companyId)
+        .eq("indice", data.indice.toUpperCase())
+        .gte("mes_referencia", ini)
+        .lte("mes_referencia", fim)
+        .order("mes_referencia", { ascending: true });
+
+    let { data: indices, error: iErr } = await fetchSerie();
     if (iErr) throw new Error(iErr.message);
-    if (!indices || indices.length === 0) {
-      throw new Error("Sem índices cadastrados para o período informado.");
+
+    // Auto-sync no BCB se faltar dado e o índice for suportado pela SGS
+    if (!indices || indices.length < mesesEsperados) {
+      try {
+        const { CATALOGO_INDICES } = await import("@/lib/indices.functions");
+        const entry = CATALOGO_INDICES.find(
+          (c) => c.codigo === data.indice.toUpperCase(),
+        );
+        if (entry) {
+          const toBcb = (iso: string) => {
+            const [y, m, d] = iso.split("-");
+            return `${d}/${m}/${y}`;
+          };
+          const url = `https://api.bcb.gov.br/dados/serie/bcdata.sgs.${entry.sgs}/dados?formato=json&dataInicial=${toBcb(ini)}&dataFinal=${toBcb(fim)}`;
+          const res = await fetch(url, { headers: { Accept: "application/json" } });
+          if (res.ok) {
+            const serie = (await res.json()) as Array<{ data: string; valor: string }>;
+            if (Array.isArray(serie) && serie.length > 0) {
+              const rows = serie.map((p) => {
+                const [d, mo, y] = p.data.split("/");
+                return {
+                  company_id: companyId,
+                  indice: entry.codigo,
+                  mes_referencia: `${y}-${mo}-01`,
+                  valor_percentual: Number(p.valor),
+                  fonte: entry.fonte,
+                  created_by: context.userId,
+                };
+              });
+              await supabase
+                .from("indices_economicos")
+                .upsert(rows, { onConflict: "company_id,indice,mes_referencia" });
+              const retry = await fetchSerie();
+              if (!retry.error) indices = retry.data;
+            }
+          }
+        }
+      } catch {
+        // segue com o que tiver
+      }
     }
+
+
+    if (!indices || indices.length === 0) {
+      throw new Error(
+        "Sem índices para o período. Sincronize em /indices ou lance manualmente.",
+      );
+    }
+    if (indices.length < mesesEsperados) {
+      throw new Error(
+        `Série incompleta: ${indices.length}/${mesesEsperados} meses encontrados para ${data.indice.toUpperCase()}.`,
+      );
+    }
+
 
     const fator = (indices as Array<{ valor_percentual: number | string }>).reduce(
       (acc, r) => acc * (1 + Number(r.valor_percentual) / 100),
