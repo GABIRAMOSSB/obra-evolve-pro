@@ -1,15 +1,23 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { BarChart3, FileText, Package, HardHat, Wrench, Users, Database, LogOut, PenTool, Settings } from "lucide-react";
+import { BarChart3, FileText, Package, HardHat, Wrench, Users, Database, LogOut, PenTool, Settings, Building2, Radar, Sparkles, BookOpen, FileSignature, Wallet, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useCompany } from "@/hooks/use-company";
 
 const NAV_ITEMS: { to: string; icon: typeof HardHat; label: string; exact?: boolean }[] = [
   { to: "/", icon: BarChart3, label: "Visão", exact: true },
+  { to: "/obras", icon: Building2, label: "Obras" },
+  { to: "/oportunidades", icon: Radar, label: "Radar PNCP" },
+  { to: "/editais", icon: Sparkles, label: "Editais IA" },
+  { to: "/propostas", icon: Sparkles, label: "Propostas IA" },
+  { to: "/biblioteca", icon: BookOpen, label: "Biblioteca" },
+  { to: "/contratos", icon: FileSignature, label: "Contratos" },
+  { to: "/financeiro", icon: Wallet, label: "Financeiro" },
   { to: "/realizado", icon: BarChart3, label: "Realizado" },
   { to: "/notas-fiscais", icon: FileText, label: "Notas" },
   { to: "/estoque", icon: Package, label: "Estoque" },
   { to: "/assinaturas", icon: PenTool, label: "Assinaturas" },
+  { to: "/compliance", icon: ShieldCheck, label: "Certidões" },
   { to: "/mao-de-obra", icon: HardHat, label: "Mão obra" },
   { to: "/equipamentos", icon: Wrench, label: "Equip." },
   { to: "/insumos", icon: Package, label: "Insumos" },
