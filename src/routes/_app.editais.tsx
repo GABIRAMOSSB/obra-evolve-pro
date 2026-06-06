@@ -448,23 +448,43 @@ function EditalDetail({ id, onDeleted }: { id: string; onDeleted: () => void }) 
             </label>
             {(docs ?? []).length > 0 && (
               <div className="mt-2 space-y-1">
-                {(docs as Array<{ id: string; nome_arquivo: string }>).map((d) => (
-                  <div key={d.id} className="flex items-center justify-between text-xs p-2 border rounded">
-                    <span className="flex items-center gap-2 truncate">
-                      <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                      <span className="truncate">{d.nome_arquivo}</span>
-                    </span>
-                    <Button
-                      size="sm" variant="ghost" className="h-6"
-                      onClick={async () => {
-                        try {
-                          const { url } = await getUrlFn({ data: { documento_id: d.id } });
-                          window.open(url, "_blank");
-                        } catch (e) { toast.error((e as Error).message); }
-                      }}
-                    >abrir</Button>
-                  </div>
-                ))}
+                {(docs as Array<{ id: string; nome_arquivo: string; mime_type: string | null; paginas: number | null; texto_extraido?: string | null }>).map((d) => {
+                  const extracted = (d.paginas ?? 0) > 0;
+                  const isPdf = (d.mime_type ?? "").includes("pdf");
+                  return (
+                    <div key={d.id} className="flex items-center justify-between text-xs p-2 border rounded">
+                      <span className="flex items-center gap-2 truncate">
+                        <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                        <span className="truncate">{d.nome_arquivo}</span>
+                        {extracted && (
+                          <Badge variant="outline" className="text-[10px]">{d.paginas}p extraídas</Badge>
+                        )}
+                      </span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {isPdf && (
+                          <Button
+                            size="sm" variant="ghost" className="h-6"
+                            disabled={extractMut.isPending}
+                            onClick={() => extractMut.mutate(d.id)}
+                          >
+                            {extractMut.isPending && extractMut.variables === d.id
+                              ? "extraindo…"
+                              : extracted ? "reextrair" : "extrair texto"}
+                          </Button>
+                        )}
+                        <Button
+                          size="sm" variant="ghost" className="h-6"
+                          onClick={async () => {
+                            try {
+                              const { url } = await getUrlFn({ data: { documento_id: d.id } });
+                              window.open(url, "_blank");
+                            } catch (e) { toast.error((e as Error).message); }
+                          }}
+                        >abrir</Button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
