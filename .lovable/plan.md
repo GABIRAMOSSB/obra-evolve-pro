@@ -1,89 +1,113 @@
-## Módulo Governança e Compliance — Central de Certidões
 
-Vou implementar um módulo completo de compliance documental para a Solv Construtora, em **modo sandbox** desde o início, sem quebrar nenhuma funcionalidade existente do aplicativo (assinaturas, obras, NF-e, etc).
+# Fase 0 — Auditoria executiva (sem alterações)
 
-> **Importante sobre arquitetura:** Este projeto roda em **TanStack Start** (não Next.js). A diretriz padrão da stack é usar **server functions (`createServerFn`)** para lógica de backend em vez de Supabase Edge Functions. Vou seguir esse padrão (que é o correto para o projeto), mas mantendo exatamente a separação de responsabilidades que você descreveu (adapter, update, update-all, scheduled, upload, health-check). O token da InfoSimples ficará só nos Secrets do backend, lido via `process.env` dentro do handler — nunca exposto ao frontend. Se preferir Edge Functions Supabase mesmo assim, me avise antes de eu começar.
+## 1. Identidade do sistema atual
+- Aplicação real em produção, multi-empresa, com `b88c560c-…` = **SOLV CONSTRUTORA E SOLUÇÕES LTDA** e outras 3 empresas.
+- Branding interno: **"Obralytics"** (sidebar) — não é "SOLV GESTÃO". → ver questão Q1.
+- Stack: TanStack Start v1 + React 19 + Tailwind v4 + shadcn + Supabase (Lovable Cloud) em Cloudflare Workers.
+- Backend: **TanStack `createServerFn`** (não há Edge Functions). RLS ativo em todas as 38 tabelas públicas.
 
----
+## 2. Mapa de rotas (todas em `_app/*`, layout autenticado)
+Visão geral · Previsto×Realizado · Comparativo Composição · Notas Fiscais · Estoque · **Assinaturas + Relatório** · Mão de obra · Equipamentos · Insumos (+ importar) · Composições · Centros de Custo · **Central de Certidões** (Compliance) · Equipe · Parâmetros Financeiros · Backup · **Config ZapSign + Roteiro de Testes Sandbox**. Públicas: `/login`, `/reset-password`, `/invite/$token`, `api/public/zapsign-webhook`, `api/public/zapsign-reminders`.
 
-### 1. Banco de dados (migration única)
+## 3. Mapa de dados (38 tabelas, todas com `company_id` + RLS por `is_company_member`)
+**Cadastros**: companies, company_members, company_invites, company_workspaces, user_workspaces.
+**Obra (JSONB)**: `company_workspaces.workspace` — guarda **obras, BMs, cronogramas, RDOs, fotos, BDI, encargos, planilha orçamentária** como blob. ⚠️ Não há tabela relacional `obras`, `contratos`, `propostas`, `cronogramas`, `boletins_medicao`.
+**Recursos**: insumos_mestre, insumo_categorias, insumo_aliases, unidades_medida, composicoes_proprias(+_insumos), equipamentos, funcionarios, equipes, equipe_membros, funcoes_mao_obra.
+**Apropriação**: apontamentos_mao_obra, notas_fiscais, nota_fiscal_itens, nfe_item_apropriacoes, estoque_movimentos, centros_custo, parametros_financeiros, historico_importacoes_sinapi.
+**Compliance/CNDs**: certificate_types, company_certificates, certificate_versions, certificate_checks, compliance_alerts, compliance_audit_logs, integration_settings (Infosimples), notification_rules.
+**Assinatura ZapSign**: signature_requests, signature_signers, signature_fields, signature_events, signature_settings, signature_templates.
+**Buckets**: `obra-documentos` (priv) · `company-certificates` (priv) · `obra-fotos` (pub) · `sinapi-imagens` (pub).
 
-Reutilizo a tabela `companies` existente (já tem Solv cadastrada via `company_members`). Adiciono colunas que faltam (`cnpj`, `legal_name`, `trade_name`, `city`, `state`, `address`, etc) sem quebrar nada.
+## 4. Integrações já existentes (NÃO recriar)
+| Domínio | Existe? | Como |
+|---|---|---|
+| **Assinatura eletrônica (ZapSign)** | ✅ Sandbox completo | `zapsign-*.functions.ts`, webhook HMAC, templates, dashboard, relatório, roteiro de testes |
+| **CNDs / Regularidade (Infosimples)** | ✅ Sandbox + produção opt-in | `compliance.functions.ts`, fluxo: API → fallback upload, versionamento, audit log |
+| **Apropriação NFe (XML)** | ✅ | `nfe-parser.ts`, `NfeRateioDialog` |
+| **Importação SINAPI** | ✅ | `import_sinapi_batch()` |
+| **Boletim de Medição** | ✅ Maduro | `ObraApp.tsx` + `MeasurementClosure.tsx` + `pdf.ts` + `excel.ts` — **PRESERVAR INTEGRALMENTE** |
+| Lovable AI Gateway | ✅ Disponível (LOVABLE_API_KEY) | Não usado ainda |
+| PNCP / Editais / IA edital | ❌ | A construir |
+| Signatários · Procurações · Matriz de poderes | ❌ (ZapSign tem signers efêmeros por documento) | A construir |
+| Biblioteca técnica · Atestados · CATs · ARTs | ❌ | A construir |
+| Propostas · Carta proposta · Readequação | ❌ | A construir |
+| Cronograma físico-financeiro · Curva S relacional | ❌ (existe no JSONB) | A normalizar |
+| Contratos · Eventos · Reajustes · Apostilamentos | ❌ | A construir |
+| Índices IBGE/BCB/FGV · Snapshots | ❌ | A construir |
+| Dossiês · Templates · Perfis de portal · Simulador | ❌ | A construir |
 
-Novas tabelas (todas com RLS, escopadas por `company_id` + `has_role`):
-- `certificate_types` — catálogo extensível
-- `company_certificates` — estado atual (1 por empresa+tipo)
-- `certificate_versions` — histórico imutável com hash
-- `certificate_checks` — log de cada tentativa
-- `integration_settings` — sandbox/produção, sem token
-- `notification_rules` — regras de alerta
-- `compliance_alerts` — alertas gerados (prefixo para não colidir)
-- `compliance_audit_logs` — trilha de auditoria
-- `user_roles` + enum `app_role` (`admin`, `compliance_manager`, `viewer`) + função `has_role` — padrão Lovable
+## 5. Riscos críticos identificados
+1. **Obras em JSONB** — incompatível com reajustes (precisão DECIMAL, auditoria por linha, base elegível por período, RLS por contrato). Cronograma/BM/Curva S relacionais exigem normalização incremental SEM mexer no blob legado (espelhamento read-side). → Q2.
+2. **`obra_id` é `text` UUID em todas as tabelas** (não FK). Funciona, mas impede `ON DELETE CASCADE` e validação referencial — risco de órfãos ao introduzir tabela `obras`.
+3. **Branding inconsistente** ("Obralytics" no header, "SOLV CONSTRUTORA" como company). → Q1.
+4. **Cálculos financeiros do BM atual em `Number` JS** (`calc.ts`) — funciona para BM mas não atende à regra absoluta do briefing (NUMERIC backend) para reajustes/propostas. Decisão: novos módulos calculam no backend com NUMERIC; BM atual fica preservado como está.
+5. **FGV (INCC/IGP-M)** não tem API pública gratuita. → Q3.
+6. **PNCP** publica licitações, não recebe propostas. Escopo "Radar" = leitura/triagem; envio final continua manual nos portais (Comprasnet, BNC, Licitar Digital etc.). → Q4.
+7. **`integration_settings` é tabela global** (única linha por provider). Hoje OK para Infosimples; ao adicionar IBGE/BCB/FGV/ZapSign-prod precisa ser estendida ou criar `provider_credentials` por empresa.
+8. **Tabela `notification_rules`** existe mas sem UI — pode ser reaproveitada para alertas de reajuste/CND/edital.
 
-Seeds: 9 certidões iniciais no catálogo + linhas em `company_certificates` para Solv + regras de notificação padrão (30/15/7/1/0).
+## 6. Componentes e estruturas reutilizáveis
+- `PdfFieldPlacer` (posicionamento visual em PDF) → reaproveitar em **declarações** e **carta proposta**.
+- `SendForSignatureDialog` + `BatchSendForSignatureDialog` → fluxo de assinatura pronto.
+- `SignatureTemplateManager` → base para "modelos de declaração".
+- `DocumentsTab` + bucket `obra-documentos` → base para biblioteca técnica e dossiês (criar subpastas com prefixo).
+- `compliance.functions.ts` (estrutura: API → fallback → versão → audit) → padrão de ouro para índices IBGE/BCB.
+- Tabelas `certificate_*` → padrão para `atestados_*`, `arts_*`, `procuracoes_*` (mesmo modelo: type/version/check).
+- `MeasurementClosure` → padrão para "ofício de reajuste".
 
-Bucket privado **`company-certificates`** com policies por `company_id`.
+## 7. Arquitetura proposta (acréscimo, não substituição)
 
-### 2. Server functions (substituem as edge functions)
+```text
+Camada nova (incremental)               Camada existente (preservada)
+┌──────────────────────────────┐        ┌──────────────────────────────┐
+│ obras (normalizada)          │←──────►│ company_workspaces.workspace │
+│ contratos                    │   sync │ (JSONB legado, read-only)    │
+│ propostas (orig/readequada)  │        │ ObraApp + MeasurementClosure │
+│ cronograma_itens, curva_s    │        │ apontamentos / NFe / CNDs    │
+│ oportunidades (PNCP)         │        │ ZapSign / Infosimples        │
+│ editais + versoes + hash     │        └──────────────────────────────┘
+│ analises_ia + evidencias     │
+│ signatarios / procuracoes    │        Tudo novo respeita:
+│ matriz_poderes               │         • RLS por company_id
+│ atestados / cats / arts      │         • Auditoria (audit_logs por módulo)
+│ declaracoes_modelos          │         • Versionamento + hash sha256
+│ dossie_templates / dossies   │         • Cálculos no backend (NUMERIC)
+│ perfis_portal / simulacoes   │         • Bucket privado + signed URL
+│ protocolos                   │         • Lovable AI Gateway (sem API key user)
+│ indices_catalogo + snapshots │
+│ reajustes_ciclos + memorias  │
+│ oficios / apostilamentos     │
+└──────────────────────────────┘
+```
 
-Em `src/lib/compliance/`:
-- `infosimples-adapter.server.ts` — wrapper isolado, lê `INFOSIMPLES_TOKEN` de `process.env` dentro do handler, retorno normalizado, suporta sandbox com payloads simulados realistas
-- `compliance.functions.ts` expõe:
-  - `updateCertificate` — atualiza uma certidão
-  - `updateAllCertificates` — atualiza todas as automáticas
-  - `uploadManualCertificate` — recebe PDF, valida MIME/tamanho, calcula hash, evita duplicata
-  - `getSignedCertificateUrl` — URL assinada temporária
-  - `runComplianceHealthCheck` — verifica config sem revelar token
-  - `clearSandboxData` — limpa dados simulados (só com sandbox=true)
-  - `requestProductionActivation` — registra solicitação, NÃO ativa
-- Rota pública `src/routes/api.public.compliance-scheduled.ts` para o cron diário 06:00 BRT (registrado via `pg_cron`, mas só executando em modo sandbox até produção ser liberada manualmente)
+## 8. Tabelas estritamente necessárias por fase (resumo)
+- **F1 Fundação**: `obras`, `contratos`, `contrato_eventos`, `audit_logs_v2` (genérico jsonb antes/depois).
+- **F2 já existe** (CNDs). Apenas pequenas extensões.
+- **F3 PNCP**: `oportunidades`, `oportunidade_filtros`, `oportunidade_pipeline_eventos`.
+- **F4 Editais**: `editais`, `edital_versoes`, `edital_anexos`, `edital_analises_ia`, `edital_evidencias`, `ia_custos`.
+- **F5 Assinatura**: `signatarios`, `procuracoes`, `matriz_poderes`, `declaracoes_modelos`, `declaracoes_geradas`.
+- **F6 Biblioteca**: `atestados`, `cats`, `arts`, `responsaveis_tecnicos`.
+- **F7 Proposta**: `propostas`, `proposta_itens`, `proposta_readequacao_residuos`, `cartas_proposta`.
+- **F8 Cronograma**: `cronograma_etapas`, `cronograma_periodos`, `cronograma_baseline`.
+- **F9 Dossiês**: `dossie_templates`, `dossie_template_itens`, `dossies`, `dossie_itens`.
+- **F10 Portais**: `portais`, `portal_perfis`, `simulacoes_upload`, `protocolos`.
+- **F11 Índices**: `indices_catalogo`, `indices_series`, `indices_snapshots`, `provider_credentials` (por empresa).
+- **F12 Reajustes**: `reajustes_ciclos`, `reajuste_bases_elegiveis`, `reajuste_memorias`, `oficios`, `apostilamentos`.
 
-### 3. Frontend (qualidade Figma sênior)
+## 9. Sequência segura (alinhada às 13 fases do briefing)
+F1 → F2 → F3 → F4 → F5 → F6 → F7 → F8 → F9 → F10 → F11 → F12 → F13.
+Cada fase termina com: lista de arquivos · migrations · functions · policies · testes · riscos · pendências · **estimativa de créditos** · aprovação antes da próxima.
 
-Item de menu novo no `AppSidebar` agrupado como **Governança e Compliance** com submenu (Visão Geral, Central de Certidões, Histórico, Alertas, Logs, Configurações).
+## 10. Estimativa de créditos por fase (ordem de grandeza)
+F1 fundação 6–10 · F2 ajustes CND 2–4 · F3 PNCP 10–15 · F4 IA editais 18–28 (depende de tokens IA) · F5 assinaturas/poderes 10–14 · F6 biblioteca técnica 12–18 · F7 propostas 14–20 · F8 cronograma 10–14 · F9 dossiês 14–20 · F10 portais/simulador 8–12 · F11 índices 10–14 · F12 reajustes 18–26 · F13 QA 6–10. **Total bruto: 138–205 créditos**, fortemente dependente do uso real de IA na F4 e F6.
 
-Rotas em `src/routes/_app.compliance.*.tsx`:
-- `_app.compliance.tsx` — layout pai com badge sandbox fixo
-- `_app.compliance.index.tsx` — **Visão Geral**: KPIs, barra de saúde documental, próximos vencimentos, atividade recente
-- `_app.compliance.certidoes.tsx` — **Central**: tabela premium + toggle cards, filtros, drawer lateral de detalhes com timeline
-- `_app.compliance.historico.tsx` — versões com hash e comparação
-- `_app.compliance.alertas.tsx` — agrupado por gravidade
-- `_app.compliance.logs.tsx` — checks e auditoria
-- `_app.compliance.configuracoes.tsx` — admin: integração, frequência, alertas, catálogo
+## 11. Dúvidas estritamente necessárias (bloqueiam F1)
+Antes de iniciar a Fase 1, preciso decidir 4 pontos que não consigo extrair do código/banco:
 
-Componentes reutilizáveis em `src/components/compliance/`: `StatusBadge`, `CertificateRow`, `CertificateDrawer`, `ManualUploadDialog`, `SandboxBanner`, `HealthBar`.
+- **Q1 — Branding**: substituir "Obralytics" por **"SOLV Gestão"** em todo o UI, ou manter "Obralytics" como produto e SOLV como cliente?
+- **Q2 — Modelo de obras**: criar tabela relacional `obras`/`contratos` e **espelhar** o JSONB legado (zero perda, BM atual segue lendo o blob), ou **migrar** o blob para as novas tabelas (mais limpo, exige rollback plan)?
+- **Q3 — FGV (INCC/IGP-M)**: existe credencial paga FGV/IPEA? Se não, índices FGV ficam só como **upload manual validado em duas etapas** (regra do briefing já prevê fallback).
+- **Q4 — PNCP**: confirma que o Radar é **somente leitura/triagem** (download de editais e gestão do pipeline interno) e o envio da proposta segue manual nos portais específicos?
 
-Tokens de cor seguem o sistema atual (`primary`, `success`, `warning`, `destructive`, `measure`, `muted`) — mesmo padrão da página de Atividades que já normalizamos. Tipografia, espaçamento 8px, cartões discretos, sem gradientes artificiais.
-
-### 4. Segurança
-
-- RLS em todas as tabelas com `has_role` (security definer, padrão Lovable)
-- Bucket privado, downloads só via URL assinada
-- Validação de permissão também dentro de cada server function
-- `INFOSIMPLES_TOKEN` só nos Secrets; só leio dentro do `.handler()`
-- Sandbox como default; ativação de produção exige confirmação dupla + role admin
-- Auditoria em uploads, downloads, atualizações, mudança de config, ativação
-
-### 5. Modo sandbox
-
-- Banner discreto no topo do módulo
-- Adapter retorna payloads simulados realistas (Solv: CND válida, FGTS vencendo, Municipal manual, etc)
-- Botão "Limpar dados simulados" visível só em sandbox
-- Cron não chama API externa enquanto sandbox=true
-
-### 6. O que NÃO vou fazer
-
-- Não alterar/quebrar nada existente (assinaturas ZapSign, obras, NF-e, etc)
-- Não criar mock dizendo "API conectada" sem token
-- Não colocar token no frontend nem em `VITE_*`
-- Não ativar produção automaticamente
-- Não usar URLs reais da InfoSimples (deixo `provider_service_key` configurável + comentário onde mapear)
-
-### Entrega
-
-Ao final apresento: tabelas criadas, server functions criadas, onde cadastrar `INFOSIMPLES_TOKEN`, confirmação de sandbox ativo, e checklist de validações executadas.
-
----
-
-**Escopo é grande (≈ 15-20 arquivos novos + 1 migration robusta).** Posso começar pela migration + estrutura básica e ir construindo as telas em sequência. Confirma para eu seguir?
+Após as respostas, abro a Fase 1 (Fundação Segura) com migrations incrementais, sem tocar nada do BM atual.
