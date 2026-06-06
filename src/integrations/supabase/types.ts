@@ -3262,6 +3262,10 @@ export type Database = {
           emitente_uf: string | null
           id: string
           imported_by: string | null
+          manifestacao_data: string | null
+          manifestacao_justificativa: string | null
+          manifestacao_por: string | null
+          manifestacao_tipo: string | null
           modelo: string | null
           natureza_operacao: string | null
           numero: string
@@ -3293,6 +3297,10 @@ export type Database = {
           emitente_uf?: string | null
           id?: string
           imported_by?: string | null
+          manifestacao_data?: string | null
+          manifestacao_justificativa?: string | null
+          manifestacao_por?: string | null
+          manifestacao_tipo?: string | null
           modelo?: string | null
           natureza_operacao?: string | null
           numero: string
@@ -3324,6 +3332,10 @@ export type Database = {
           emitente_uf?: string | null
           id?: string
           imported_by?: string | null
+          manifestacao_data?: string | null
+          manifestacao_justificativa?: string | null
+          manifestacao_por?: string | null
+          manifestacao_tipo?: string | null
           modelo?: string | null
           natureza_operacao?: string | null
           numero?: string
