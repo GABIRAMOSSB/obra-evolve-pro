@@ -60,7 +60,7 @@ export interface PropostaRow {
   cronograma: string | null;
   diferenciais: string | null;
   observacoes: string | null;
-  ai_meta: Record<string, unknown>;
+  ai_meta: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
 }
