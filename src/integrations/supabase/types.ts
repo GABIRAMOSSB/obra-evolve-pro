@@ -2050,6 +2050,85 @@ export type Database = {
         }
         Relationships: []
       }
+      medicoes: {
+        Row: {
+          company_id: string
+          contrato_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          metadata: Json
+          numero: number
+          obra_id: string | null
+          observacoes: string | null
+          percentual_fisico: number
+          periodo_fim: string
+          periodo_inicio: string
+          status: string
+          updated_at: string
+          valor_acumulado: number
+          valor_executado: number
+        }
+        Insert: {
+          company_id: string
+          contrato_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metadata?: Json
+          numero: number
+          obra_id?: string | null
+          observacoes?: string | null
+          percentual_fisico?: number
+          periodo_fim: string
+          periodo_inicio: string
+          status?: string
+          updated_at?: string
+          valor_acumulado?: number
+          valor_executado?: number
+        }
+        Update: {
+          company_id?: string
+          contrato_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metadata?: Json
+          numero?: number
+          obra_id?: string | null
+          observacoes?: string | null
+          percentual_fisico?: number
+          periodo_fim?: string
+          periodo_inicio?: string
+          status?: string
+          updated_at?: string
+          valor_acumulado?: number
+          valor_executado?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medicoes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medicoes_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medicoes_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       nfe_item_apropriacoes: {
         Row: {
           centro_custo: string | null
