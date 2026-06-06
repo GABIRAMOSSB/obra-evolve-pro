@@ -25,6 +25,7 @@ import { Route as AppNotasFiscaisRouteImport } from './routes/_app.notas-fiscais
 import { Route as AppMedicoesRouteImport } from './routes/_app.medicoes'
 import { Route as AppMaoDeObraRouteImport } from './routes/_app.mao-de-obra'
 import { Route as AppInsumosRouteImport } from './routes/_app.insumos'
+import { Route as AppIndicesRouteImport } from './routes/_app.indices'
 import { Route as AppFinanceiroRouteImport } from './routes/_app.financeiro'
 import { Route as AppEstoqueRouteImport } from './routes/_app.estoque'
 import { Route as AppEquipeRouteImport } from './routes/_app.equipe'
@@ -124,6 +125,11 @@ const AppMaoDeObraRoute = AppMaoDeObraRouteImport.update({
 const AppInsumosRoute = AppInsumosRouteImport.update({
   id: '/insumos',
   path: '/insumos',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppIndicesRoute = AppIndicesRouteImport.update({
+  id: '/indices',
+  path: '/indices',
   getParentRoute: () => AppRoute,
 } as any)
 const AppFinanceiroRoute = AppFinanceiroRouteImport.update({
@@ -248,6 +254,7 @@ export interface FileRoutesByFullPath {
   '/equipe': typeof AppEquipeRoute
   '/estoque': typeof AppEstoqueRoute
   '/financeiro': typeof AppFinanceiroRoute
+  '/indices': typeof AppIndicesRoute
   '/insumos': typeof AppInsumosRouteWithChildren
   '/mao-de-obra': typeof AppMaoDeObraRoute
   '/medicoes': typeof AppMedicoesRoute
@@ -284,6 +291,7 @@ export interface FileRoutesByTo {
   '/equipe': typeof AppEquipeRoute
   '/estoque': typeof AppEstoqueRoute
   '/financeiro': typeof AppFinanceiroRoute
+  '/indices': typeof AppIndicesRoute
   '/insumos': typeof AppInsumosRouteWithChildren
   '/mao-de-obra': typeof AppMaoDeObraRoute
   '/medicoes': typeof AppMedicoesRoute
@@ -323,6 +331,7 @@ export interface FileRoutesById {
   '/_app/equipe': typeof AppEquipeRoute
   '/_app/estoque': typeof AppEstoqueRoute
   '/_app/financeiro': typeof AppFinanceiroRoute
+  '/_app/indices': typeof AppIndicesRoute
   '/_app/insumos': typeof AppInsumosRouteWithChildren
   '/_app/mao-de-obra': typeof AppMaoDeObraRoute
   '/_app/medicoes': typeof AppMedicoesRoute
@@ -363,6 +372,7 @@ export interface FileRouteTypes {
     | '/equipe'
     | '/estoque'
     | '/financeiro'
+    | '/indices'
     | '/insumos'
     | '/mao-de-obra'
     | '/medicoes'
@@ -399,6 +409,7 @@ export interface FileRouteTypes {
     | '/equipe'
     | '/estoque'
     | '/financeiro'
+    | '/indices'
     | '/insumos'
     | '/mao-de-obra'
     | '/medicoes'
@@ -437,6 +448,7 @@ export interface FileRouteTypes {
     | '/_app/equipe'
     | '/_app/estoque'
     | '/_app/financeiro'
+    | '/_app/indices'
     | '/_app/insumos'
     | '/_app/mao-de-obra'
     | '/_app/medicoes'
@@ -579,6 +591,13 @@ declare module '@tanstack/react-router' {
       path: '/insumos'
       fullPath: '/insumos'
       preLoaderRoute: typeof AppInsumosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/indices': {
+      id: '/_app/indices'
+      path: '/indices'
+      fullPath: '/indices'
+      preLoaderRoute: typeof AppIndicesRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/financeiro': {
@@ -777,6 +796,7 @@ interface AppRouteChildren {
   AppEquipeRoute: typeof AppEquipeRoute
   AppEstoqueRoute: typeof AppEstoqueRoute
   AppFinanceiroRoute: typeof AppFinanceiroRoute
+  AppIndicesRoute: typeof AppIndicesRoute
   AppInsumosRoute: typeof AppInsumosRouteWithChildren
   AppMaoDeObraRoute: typeof AppMaoDeObraRoute
   AppMedicoesRoute: typeof AppMedicoesRoute
@@ -807,6 +827,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppEquipeRoute: AppEquipeRoute,
   AppEstoqueRoute: AppEstoqueRoute,
   AppFinanceiroRoute: AppFinanceiroRoute,
+  AppIndicesRoute: AppIndicesRoute,
   AppInsumosRoute: AppInsumosRouteWithChildren,
   AppMaoDeObraRoute: AppMaoDeObraRoute,
   AppMedicoesRoute: AppMedicoesRoute,

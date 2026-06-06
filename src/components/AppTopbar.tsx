@@ -14,6 +14,7 @@ const NAV_ITEMS: { to: string; icon: typeof HardHat; label: string; exact?: bool
   { to: "/contratos", icon: FileSignature, label: "Contratos" },
   { to: "/aditivos", icon: FilePlus2, label: "Aditivos" },
   { to: "/reajustes", icon: TrendingUp, label: "Reajustes" },
+  { to: "/indices", icon: TrendingUp, label: "Índices" },
   { to: "/medicoes", icon: ClipboardList, label: "Medições" },
   { to: "/rdo", icon: NotebookPen, label: "RDO" },
   { to: "/financeiro", icon: Wallet, label: "Financeiro" },
