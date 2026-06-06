@@ -653,7 +653,7 @@ export const extractDocumentoTexto = createServerFn({ method: "POST" })
 
     const { data: doc, error } = await supabase
       .from("edital_documentos")
-      .select("id, storage_path, mime_type, nome_arquivo")
+      .select("id, edital_id, storage_path, mime_type, nome_arquivo")
       .eq("id", data.documento_id)
       .eq("company_id", companyId)
       .maybeSingle();
@@ -699,8 +699,30 @@ export const extractDocumentoTexto = createServerFn({ method: "POST" })
       .eq("company_id", companyId);
     if (upErr) throw new Error(upErr.message);
 
-    return { ok: true, paginas: totalPages, caracteres: agregado.length };
+    // F4.4 — Auto-indexa o edital para RAG logo após a extração.
+    // Falhas aqui não invalidam a extração (usuário pode reindexar manualmente).
+    let indexado: { chunks: number; documentos: number } | null = null;
+    let indexError: string | null = null;
+    try {
+      const apiKey = process.env.LOVABLE_API_KEY;
+      if (apiKey && doc.edital_id) {
+        indexado = await indexarEditalChunks(supabase, companyId, doc.edital_id, apiKey);
+      } else if (!apiKey) {
+        indexError = "LOVABLE_API_KEY não configurada — indexação manual necessária.";
+      }
+    } catch (e) {
+      indexError = e instanceof Error ? e.message : String(e);
+    }
+
+    return {
+      ok: true,
+      paginas: totalPages,
+      caracteres: agregado.length,
+      indexado,
+      indexError,
+    };
   });
+
 
 /* ============================ RAG / Busca semântica (Fase 4.3) ============================ */
 
