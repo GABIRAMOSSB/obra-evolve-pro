@@ -562,6 +562,7 @@ export type Database = {
           certificate_number: string | null
           certificate_type_id: string
           company_id: string
+          contrato_id: string | null
           created_at: string
           current_version_id: string | null
           expiration_date: string | null
@@ -574,6 +575,7 @@ export type Database = {
           last_success_at: string | null
           manual_review_required: boolean
           next_check_at: string | null
+          obra_id: string | null
           source_type: string | null
           status: string
           status_message: string | null
@@ -586,6 +588,7 @@ export type Database = {
           certificate_number?: string | null
           certificate_type_id: string
           company_id: string
+          contrato_id?: string | null
           created_at?: string
           current_version_id?: string | null
           expiration_date?: string | null
@@ -598,6 +601,7 @@ export type Database = {
           last_success_at?: string | null
           manual_review_required?: boolean
           next_check_at?: string | null
+          obra_id?: string | null
           source_type?: string | null
           status?: string
           status_message?: string | null
@@ -610,6 +614,7 @@ export type Database = {
           certificate_number?: string | null
           certificate_type_id?: string
           company_id?: string
+          contrato_id?: string | null
           created_at?: string
           current_version_id?: string | null
           expiration_date?: string | null
@@ -622,6 +627,7 @@ export type Database = {
           last_success_at?: string | null
           manual_review_required?: boolean
           next_check_at?: string | null
+          obra_id?: string | null
           source_type?: string | null
           status?: string
           status_message?: string | null
@@ -643,10 +649,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "company_certificates_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "company_certificates_current_version_fk"
             columns: ["current_version_id"]
             isOneToOne: false
             referencedRelation: "certificate_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_certificates_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
             referencedColumns: ["id"]
           },
         ]

@@ -23,6 +23,7 @@ import {
   upsertNotificationRule,
   deleteNotificationRule,
 } from "@/lib/compliance.functions";
+import { CertificateScopeCell } from "@/components/compliance/CertificateScopeCell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -77,6 +78,8 @@ type CertRow = {
   certificate_number: string | null;
   last_checked_at: string | null;
   current_version_id: string | null;
+  obra_id: string | null;
+  contrato_id: string | null;
   certificate_types: {
     code: string;
     name: string;
@@ -479,6 +482,7 @@ function CertList({
               <th className="px-4 py-2.5">Emissor</th>
               <th className="px-4 py-2.5">Validade</th>
               <th className="px-4 py-2.5">Status</th>
+              <th className="px-4 py-2.5">Vínculo</th>
               <th className="px-4 py-2.5">Última verificação</th>
               <th className="px-4 py-2.5 text-right">Ações</th>
             </tr>
@@ -493,6 +497,14 @@ function CertList({
                 <td className="px-4 py-3 text-muted-foreground">{c.certificate_types.issuing_authority ?? "—"}</td>
                 <td className="px-4 py-3">{fmtDate(c.expiration_date)}</td>
                 <td className="px-4 py-3"><StatusBadge status={c.status} /></td>
+                <td className="px-4 py-3">
+                  <CertificateScopeCell
+                    certId={c.id}
+                    obraId={c.obra_id ?? null}
+                    contratoId={c.contrato_id ?? null}
+                    onChanged={onChanged}
+                  />
+                </td>
                 <td className="px-4 py-3 text-xs text-muted-foreground">{fmtDateTime(c.last_checked_at)}</td>
                 <td className="px-4 py-3 text-right">
                   <div className="inline-flex gap-1.5">
@@ -520,7 +532,7 @@ function CertList({
               </tr>
             ))}
             {certs.length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground text-sm">Nenhuma certidão cadastrada.</td></tr>
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground text-sm">Nenhuma certidão cadastrada.</td></tr>
             )}
           </tbody>
         </table>
