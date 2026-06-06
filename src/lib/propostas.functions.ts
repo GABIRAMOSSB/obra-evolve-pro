@@ -52,7 +52,7 @@ export interface PropostaRow {
   id: string;
   edital_id: string | null;
   titulo: string;
-  status: Status;
+  status: PropostaStatus;
   valor_proposto: number | null;
   prazo_execucao_dias: number | null;
   resumo_executivo: string | null;
@@ -61,10 +61,11 @@ export interface PropostaRow {
   cronograma: string | null;
   diferenciais: string | null;
   observacoes: string | null;
-  ai_meta: Record<string, unknown>;
+  ai_meta_gerado_em: string | null;
+  ai_meta_modelo: string | null;
   created_at: string;
   updated_at: string;
-  edital_titulo?: string | null;
+  edital_titulo: string | null;
 }
 
 /* ============================ LIST ============================ */
