@@ -3057,6 +3057,66 @@ export type Database = {
           },
         ]
       }
+      rdo_fotos: {
+        Row: {
+          categoria: string
+          company_id: string
+          created_at: string
+          file_name: string
+          id: string
+          legenda: string | null
+          mime_type: string | null
+          rdo_id: string
+          size_bytes: number | null
+          storage_path: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          categoria?: string
+          company_id: string
+          created_at?: string
+          file_name: string
+          id?: string
+          legenda?: string | null
+          mime_type?: string | null
+          rdo_id: string
+          size_bytes?: number | null
+          storage_path: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          categoria?: string
+          company_id?: string
+          created_at?: string
+          file_name?: string
+          id?: string
+          legenda?: string | null
+          mime_type?: string | null
+          rdo_id?: string
+          size_bytes?: number | null
+          storage_path?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rdo_fotos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rdo_fotos_rdo_id_fkey"
+            columns: ["rdo_id"]
+            isOneToOne: false
+            referencedRelation: "rdos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rdo_ocorrencias: {
         Row: {
           company_id: string

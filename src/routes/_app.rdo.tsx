@@ -3,7 +3,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, CheckCircle2, FileText, ClipboardList } from "lucide-react";
+import { Plus, Trash2, CheckCircle2, FileText, ClipboardList, Image as ImageIcon } from "lucide-react";
+import { RDOFotosDialog } from "@/components/RDOFotosDialog";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,7 @@ function RDOPage() {
   });
 
   const [open, setOpen] = useState(false);
+  const [fotosRdoId, setFotosRdoId] = useState<string | null>(null);
   const today = new Date().toISOString().slice(0, 10);
   const empty = {
     obra_id: "",
@@ -314,6 +316,10 @@ function RDOPage() {
                         <td className="py-2 px-2">{statusBadge(r.status)}</td>
                         <td className="py-2 px-2">
                           <div className="flex items-center justify-end gap-1">
+                            <Button size="icon" variant="ghost" title="Fotos"
+                              onClick={() => setFotosRdoId(r.id)}>
+                              <ImageIcon className="w-4 h-4" />
+                            </Button>
                             {r.status === "rascunho" && (
                               <Button size="icon" variant="ghost" title="Fechar"
                                 onClick={() => statusMut.mutate({ id: r.id, status: "fechado" })}>
@@ -341,6 +347,12 @@ function RDOPage() {
           )}
         </CardContent>
       </Card>
+
+      <RDOFotosDialog
+        rdoId={fotosRdoId}
+        open={!!fotosRdoId}
+        onOpenChange={(o) => { if (!o) setFotosRdoId(null); }}
+      />
     </div>
   );
 }
