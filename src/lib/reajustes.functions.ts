@@ -253,7 +253,28 @@ export const calcularReajuste = createServerFn({ method: "POST" })
       1,
     );
     const percentual = Number(((fator - 1) * 100).toFixed(6));
-    const valorBase = Number(contrato.valor_atualizado || contrato.valor_original || 0);
+
+    let valorBase = Number(contrato.valor_atualizado || contrato.valor_original || 0);
+    let baseDetalhe: { modo: string; medicoes?: number; periodo?: [string, string] } = { modo: "contrato" };
+
+    if (data.base_modo === "medicoes") {
+      const { data: bms, error: bmErr } = await supabase
+        .from("medicoes")
+        .select("numero, valor_executado, status, periodo_inicio, periodo_fim")
+        .eq("company_id", companyId)
+        .eq("contrato_id", data.contrato_id)
+        .in("status", ["aprovada", "paga"])
+        .gte("periodo_inicio", ini)
+        .lte("periodo_fim", fim);
+      if (bmErr) throw new Error(bmErr.message);
+      const soma = (bms ?? []).reduce((s: number, m: { valor_executado: number | string }) => s + Number(m.valor_executado || 0), 0);
+      if (soma <= 0) {
+        throw new Error("Sem medições aprovadas/pagas no período para usar como base elegível.");
+      }
+      valorBase = Number(soma.toFixed(2));
+      baseDetalhe = { modo: "medicoes", medicoes: (bms ?? []).length, periodo: [ini, fim] };
+    }
+
     const valorReajuste = Number((valorBase * (fator - 1)).toFixed(2));
 
     const { data: anteriores } = await supabase
@@ -278,7 +299,7 @@ export const calcularReajuste = createServerFn({ method: "POST" })
         valor_reajuste: valorReajuste,
         status: data.status,
         observacoes: data.observacoes ?? null,
-        metadata: { meses: indices.length },
+        metadata: { meses: indices.length, base: baseDetalhe },
         created_by: context.userId,
       })
       .select("id")
