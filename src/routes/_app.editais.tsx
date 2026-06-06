@@ -5,7 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import {
   Sparkles, Plus, FileText, Upload, Trash2, RefreshCw, ExternalLink,
-  CheckCircle2, XCircle, MinusCircle, Clock,
+  CheckCircle2, XCircle, MinusCircle, Clock, Search, Database,
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
