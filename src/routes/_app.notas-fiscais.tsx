@@ -81,6 +81,9 @@ type NotaRow = {
   valor_total: number;
   status: string;
   created_at: string;
+  manifestacao_tipo: string | null;
+  manifestacao_data: string | null;
+  manifestacao_justificativa: string | null;
 };
 
 type ItemRow = {
