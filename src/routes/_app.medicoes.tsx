@@ -120,7 +120,7 @@ function MedicoesPage() {
                 <Select value={contratoId} onValueChange={setContratoId}>
                   <SelectTrigger><SelectValue placeholder="Selecione um contrato" /></SelectTrigger>
                   <SelectContent>
-                    {contratos.map((c) => (
+                    {contratos.map((c: Contrato) => (
                       <SelectItem key={c.id} value={c.id}>
                         {c.numero} — {c.objeto?.slice(0, 50) ?? "sem objeto"}
                       </SelectItem>
