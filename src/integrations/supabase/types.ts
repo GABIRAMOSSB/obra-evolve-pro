@@ -1158,6 +1158,210 @@ export type Database = {
           },
         ]
       }
+      editais: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          data_abertura: string | null
+          ia_erro: string | null
+          ia_modelo: string | null
+          ia_processado_em: string | null
+          id: string
+          modalidade: string | null
+          numero_edital: string | null
+          objeto: string | null
+          oportunidade_id: string | null
+          orgao: string | null
+          origem: string
+          resumo_ia: string | null
+          status: string
+          titulo: string
+          updated_at: string
+          url_origem: string | null
+          valor_estimado: number | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          data_abertura?: string | null
+          ia_erro?: string | null
+          ia_modelo?: string | null
+          ia_processado_em?: string | null
+          id?: string
+          modalidade?: string | null
+          numero_edital?: string | null
+          objeto?: string | null
+          oportunidade_id?: string | null
+          orgao?: string | null
+          origem?: string
+          resumo_ia?: string | null
+          status?: string
+          titulo: string
+          updated_at?: string
+          url_origem?: string | null
+          valor_estimado?: number | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          data_abertura?: string | null
+          ia_erro?: string | null
+          ia_modelo?: string | null
+          ia_processado_em?: string | null
+          id?: string
+          modalidade?: string | null
+          numero_edital?: string | null
+          objeto?: string | null
+          oportunidade_id?: string | null
+          orgao?: string | null
+          origem?: string
+          resumo_ia?: string | null
+          status?: string
+          titulo?: string
+          updated_at?: string
+          url_origem?: string | null
+          valor_estimado?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "editais_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "editais_oportunidade_id_fkey"
+            columns: ["oportunidade_id"]
+            isOneToOne: false
+            referencedRelation: "oportunidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      edital_checklist: {
+        Row: {
+          categoria: string
+          company_id: string
+          created_at: string
+          edital_id: string
+          id: string
+          obrigatorio: boolean
+          observacoes: string | null
+          ordem: number
+          pagina_referencia: number | null
+          requisito: string
+          status: string
+          trecho_edital: string | null
+          updated_at: string
+        }
+        Insert: {
+          categoria: string
+          company_id: string
+          created_at?: string
+          edital_id: string
+          id?: string
+          obrigatorio?: boolean
+          observacoes?: string | null
+          ordem?: number
+          pagina_referencia?: number | null
+          requisito: string
+          status?: string
+          trecho_edital?: string | null
+          updated_at?: string
+        }
+        Update: {
+          categoria?: string
+          company_id?: string
+          created_at?: string
+          edital_id?: string
+          id?: string
+          obrigatorio?: boolean
+          observacoes?: string | null
+          ordem?: number
+          pagina_referencia?: number | null
+          requisito?: string
+          status?: string
+          trecho_edital?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "edital_checklist_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "edital_checklist_edital_id_fkey"
+            columns: ["edital_id"]
+            isOneToOne: false
+            referencedRelation: "editais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      edital_documentos: {
+        Row: {
+          company_id: string
+          created_at: string
+          edital_id: string
+          id: string
+          mime_type: string | null
+          nome_arquivo: string
+          paginas: number | null
+          storage_path: string
+          tamanho_bytes: number | null
+          texto_extraido: string | null
+          tipo: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          edital_id: string
+          id?: string
+          mime_type?: string | null
+          nome_arquivo: string
+          paginas?: number | null
+          storage_path: string
+          tamanho_bytes?: number | null
+          texto_extraido?: string | null
+          tipo?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          edital_id?: string
+          id?: string
+          mime_type?: string | null
+          nome_arquivo?: string
+          paginas?: number | null
+          storage_path?: string
+          tamanho_bytes?: number | null
+          texto_extraido?: string | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "edital_documentos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "edital_documentos_edital_id_fkey"
+            columns: ["edital_id"]
+            isOneToOne: false
+            referencedRelation: "editais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       equipamentos: {
         Row: {
           ativo: boolean
