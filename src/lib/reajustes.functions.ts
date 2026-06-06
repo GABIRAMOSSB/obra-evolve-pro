@@ -175,18 +175,50 @@ export const calcularReajuste = createServerFn({ method: "POST" })
     if (cErr) throw new Error(cErr.message);
     if (!contrato) throw new Error("Contrato não encontrado.");
 
-    const { data: indices, error: iErr } = await supabase
-      .from("indices_economicos")
-      .select("mes_referencia, valor_percentual")
-      .eq("company_id", companyId)
-      .eq("indice", data.indice.toUpperCase())
-      .gte("mes_referencia", ini)
-      .lte("mes_referencia", fim)
-      .order("mes_referencia", { ascending: true });
+    // Quantos meses esperados no período (inclusivo)
+    const [iy, im] = ini.split("-").map(Number);
+    const [fy, fm] = fim.split("-").map(Number);
+    const mesesEsperados = (fy - iy) * 12 + (fm - im) + 1;
+
+    const fetchSerie = async () =>
+      supabase
+        .from("indices_economicos")
+        .select("mes_referencia, valor_percentual")
+        .eq("company_id", companyId)
+        .eq("indice", data.indice.toUpperCase())
+        .gte("mes_referencia", ini)
+        .lte("mes_referencia", fim)
+        .order("mes_referencia", { ascending: true });
+
+    let { data: indices, error: iErr } = await fetchSerie();
     if (iErr) throw new Error(iErr.message);
-    if (!indices || indices.length === 0) {
-      throw new Error("Sem índices cadastrados para o período informado.");
+
+    // Auto-sync no BCB se faltar dado e o índice for suportado pela SGS
+    if (!indices || indices.length < mesesEsperados) {
+      try {
+        const { sincronizarIndiceBCB } = await import("@/lib/indices.functions");
+        await sincronizarIndiceBCB({
+          data: { indice: data.indice.toUpperCase(), from: ini, to: fim },
+        } as never);
+        const retry = await fetchSerie();
+        if (retry.error) throw new Error(retry.error.message);
+        indices = retry.data;
+      } catch {
+        // segue com o que tiver; mensagem abaixo cobre caso vazio
+      }
     }
+
+    if (!indices || indices.length === 0) {
+      throw new Error(
+        "Sem índices para o período. Sincronize em /indices ou lance manualmente.",
+      );
+    }
+    if (indices.length < mesesEsperados) {
+      throw new Error(
+        `Série incompleta: ${indices.length}/${mesesEsperados} meses encontrados para ${data.indice.toUpperCase()}.`,
+      );
+    }
+
 
     const fator = (indices as Array<{ valor_percentual: number | string }>).reduce(
       (acc, r) => acc * (1 + Number(r.valor_percentual) / 100),
