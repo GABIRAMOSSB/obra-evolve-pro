@@ -18,6 +18,7 @@ import { Route as AppRealizadoRouteImport } from './routes/_app.realizado'
 import { Route as AppReajustesRouteImport } from './routes/_app.reajustes'
 import { Route as AppRdoRouteImport } from './routes/_app.rdo'
 import { Route as AppPropostasRouteImport } from './routes/_app.propostas'
+import { Route as AppPortaisRouteImport } from './routes/_app.portais'
 import { Route as AppPoderesRouteImport } from './routes/_app.poderes'
 import { Route as AppParametrosFinanceirosRouteImport } from './routes/_app.parametros-financeiros'
 import { Route as AppOportunidadesRouteImport } from './routes/_app.oportunidades'
@@ -93,6 +94,11 @@ const AppRdoRoute = AppRdoRouteImport.update({
 const AppPropostasRoute = AppPropostasRouteImport.update({
   id: '/propostas',
   path: '/propostas',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPortaisRoute = AppPortaisRouteImport.update({
+  id: '/portais',
+  path: '/portais',
   getParentRoute: () => AppRoute,
 } as any)
 const AppPoderesRoute = AppPoderesRouteImport.update({
@@ -289,6 +295,7 @@ export interface FileRoutesByFullPath {
   '/oportunidades': typeof AppOportunidadesRoute
   '/parametros-financeiros': typeof AppParametrosFinanceirosRoute
   '/poderes': typeof AppPoderesRoute
+  '/portais': typeof AppPortaisRoute
   '/propostas': typeof AppPropostasRouteWithChildren
   '/rdo': typeof AppRdoRoute
   '/reajustes': typeof AppReajustesRoute
@@ -330,6 +337,7 @@ export interface FileRoutesByTo {
   '/oportunidades': typeof AppOportunidadesRoute
   '/parametros-financeiros': typeof AppParametrosFinanceirosRoute
   '/poderes': typeof AppPoderesRoute
+  '/portais': typeof AppPortaisRoute
   '/propostas': typeof AppPropostasRouteWithChildren
   '/rdo': typeof AppRdoRoute
   '/reajustes': typeof AppReajustesRoute
@@ -374,6 +382,7 @@ export interface FileRoutesById {
   '/_app/oportunidades': typeof AppOportunidadesRoute
   '/_app/parametros-financeiros': typeof AppParametrosFinanceirosRoute
   '/_app/poderes': typeof AppPoderesRoute
+  '/_app/portais': typeof AppPortaisRoute
   '/_app/propostas': typeof AppPropostasRouteWithChildren
   '/_app/rdo': typeof AppRdoRoute
   '/_app/reajustes': typeof AppReajustesRoute
@@ -419,6 +428,7 @@ export interface FileRouteTypes {
     | '/oportunidades'
     | '/parametros-financeiros'
     | '/poderes'
+    | '/portais'
     | '/propostas'
     | '/rdo'
     | '/reajustes'
@@ -460,6 +470,7 @@ export interface FileRouteTypes {
     | '/oportunidades'
     | '/parametros-financeiros'
     | '/poderes'
+    | '/portais'
     | '/propostas'
     | '/rdo'
     | '/reajustes'
@@ -503,6 +514,7 @@ export interface FileRouteTypes {
     | '/_app/oportunidades'
     | '/_app/parametros-financeiros'
     | '/_app/poderes'
+    | '/_app/portais'
     | '/_app/propostas'
     | '/_app/rdo'
     | '/_app/reajustes'
@@ -590,6 +602,13 @@ declare module '@tanstack/react-router' {
       path: '/propostas'
       fullPath: '/propostas'
       preLoaderRoute: typeof AppPropostasRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/portais': {
+      id: '/_app/portais'
+      path: '/portais'
+      fullPath: '/portais'
+      preLoaderRoute: typeof AppPortaisRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/poderes': {
@@ -895,6 +914,7 @@ interface AppRouteChildren {
   AppOportunidadesRoute: typeof AppOportunidadesRoute
   AppParametrosFinanceirosRoute: typeof AppParametrosFinanceirosRoute
   AppPoderesRoute: typeof AppPoderesRoute
+  AppPortaisRoute: typeof AppPortaisRoute
   AppPropostasRoute: typeof AppPropostasRouteWithChildren
   AppRdoRoute: typeof AppRdoRoute
   AppReajustesRoute: typeof AppReajustesRoute
@@ -929,6 +949,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppOportunidadesRoute: AppOportunidadesRoute,
   AppParametrosFinanceirosRoute: AppParametrosFinanceirosRoute,
   AppPoderesRoute: AppPoderesRoute,
+  AppPortaisRoute: AppPortaisRoute,
   AppPropostasRoute: AppPropostasRouteWithChildren,
   AppRdoRoute: AppRdoRoute,
   AppReajustesRoute: AppReajustesRoute,
@@ -950,3 +971,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
