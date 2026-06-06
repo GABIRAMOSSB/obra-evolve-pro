@@ -1,442 +1,360 @@
+/**
+ * Fase 6 — Biblioteca Técnica
+ * Abas: Responsáveis Técnicos · Atestados · CATs · ARTs
+ */
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 import {
-  listBiblioteca,
-  uploadDocumento,
-  updateDocumento,
-  deleteDocumento,
-  getDocumentoUrl,
-  type DocumentoRow,
+  HardHat, FileText, Award, ClipboardCheck, Plus, Trash2, Upload, Edit,
+  ExternalLink, Search, BookOpen,
+} from "lucide-react";
+
+import {
+  listResponsaveisTecnicos, saveResponsavelTecnico, deleteResponsavelTecnico,
+  listAtestados, saveAtestado, deleteAtestado,
+  listCats, saveCat, deleteCat,
+  listArts, saveArt, deleteArt,
+  uploadBibliotecaPDF, getBibliotecaSignedUrl,
 } from "@/lib/biblioteca.functions";
-import { Card } from "@/components/ui/card";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Library, Loader2, Plus, Trash2, Download, Upload, Search } from "lucide-react";
-import { toast } from "sonner";
 
-export const Route = createFileRoute("/_app/biblioteca")({
-  component: BibliotecaPage,
-  head: () => ({ meta: [{ title: "Biblioteca de documentos — SOLV Gestão" }] }),
-});
+export const Route = createFileRoute("/_app/biblioteca")({ component: BibliotecaPage });
 
-const CATEGORIAS = [
-  { id: "habilitacao_juridica", label: "Habilitação Jurídica" },
-  { id: "regularidade_fiscal", label: "Regularidade Fiscal e Trabalhista" },
-  { id: "qualificacao_tecnica", label: "Qualificação Técnica" },
-  { id: "qualificacao_economica", label: "Qualificação Econômico-Financeira" },
-  { id: "documentos_proposta", label: "Documentos da Proposta" },
-  { id: "outros", label: "Outros" },
-] as const;
-
-const CAT_LABEL: Record<string, string> = Object.fromEntries(
-  CATEGORIAS.map((c) => [c.id, c.label]),
-);
-
-function fmtDate(v: string | null): string {
-  if (!v) return "—";
-  try {
-    return new Date(v).toLocaleDateString("pt-BR");
-  } catch {
-    return v;
-  }
-}
-function fmtBytes(b: number | null): string {
-  if (!b) return "—";
-  if (b < 1024) return `${b} B`;
-  if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
-  return `${(b / (1024 * 1024)).toFixed(2)} MB`;
-}
-function validadeTone(v: string | null): string {
-  if (!v) return "bg-muted/40 text-foreground border-border";
-  const d = new Date(v).getTime();
-  const now = Date.now();
-  const days = Math.floor((d - now) / (1000 * 60 * 60 * 24));
-  if (days < 0) return "bg-red-500/15 text-red-400 border-red-500/30";
-  if (days < 30) return "bg-amber-500/15 text-amber-400 border-amber-500/30";
-  return "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
-}
+const brl = (v: number | null | undefined) =>
+  v == null ? "—" : new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(v));
+const fmtDate = (d: string | null | undefined) => (d ? new Date(d).toLocaleDateString("pt-BR") : "—");
 
 function BibliotecaPage() {
-  const list = useServerFn(listBiblioteca);
-  const del = useServerFn(deleteDocumento);
-  const url = useServerFn(getDocumentoUrl);
-  const qc = useQueryClient();
-
-  const [cat, setCat] = useState<string>("");
-  const [q, setQ] = useState("");
-
-  const { data, isLoading } = useQuery({
-    queryKey: ["biblioteca", cat, q],
-    queryFn: () =>
-      list({
-        data: {
-          categoria: (cat || undefined) as
-            | "habilitacao_juridica"
-            | "regularidade_fiscal"
-            | "qualificacao_tecnica"
-            | "qualificacao_economica"
-            | "documentos_proposta"
-            | "outros"
-            | undefined,
-          q: q || undefined,
-        },
-      }),
-  });
-
-  const remove = useMutation({
-    mutationFn: (id: string) => del({ data: { id } }),
-    onSuccess: () => {
-      toast.success("Documento removido");
-      qc.invalidateQueries({ queryKey: ["biblioteca"] });
-    },
-    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : String(e)),
-  });
-
-  const download = useMutation({
-    mutationFn: async (id: string) => {
-      const r = await url({ data: { id } });
-      window.open(r.url, "_blank");
-    },
-    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : String(e)),
-  });
-
-  // agrupar por categoria
-  const grouped: Record<string, DocumentoRow[]> = {};
-  for (const d of data ?? []) {
-    (grouped[d.categoria] ??= []).push(d);
-  }
-
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+    <div className="p-4 max-w-7xl mx-auto space-y-4">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-display font-bold flex items-center gap-2">
-            <Library className="w-6 h-6 text-primary" />
-            Biblioteca de documentos
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <BookOpen className="w-6 h-6 text-primary" /> Biblioteca Técnica
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Documentos reutilizáveis da empresa (contrato social, atestados, balanços, certidões).
-            Podem ser vinculados automaticamente aos itens de checklist dos editais.
+          <p className="text-sm text-muted-foreground">
+            Acervo para qualificação técnica em licitações: responsáveis, atestados, CATs e ARTs.
           </p>
         </div>
-        <UploadDialog onCreated={() => qc.invalidateQueries({ queryKey: ["biblioteca"] })} />
       </div>
 
-      <Card className="p-4 flex flex-wrap items-end gap-3">
-        <div className="flex-1 min-w-[200px]">
-          <Label>Buscar</Label>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              className="pl-9"
-              placeholder="nome, emissor, número…"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-            />
-          </div>
-        </div>
-        <div className="w-[260px]">
-          <Label>Categoria</Label>
-          <Select value={cat || "all"} onValueChange={(v) => setCat(v === "all" ? "" : v)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas</SelectItem>
-              {CATEGORIAS.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </Card>
-
-      {isLoading && (
-        <Card className="p-8 text-center text-muted-foreground">
-          <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
-          Carregando…
-        </Card>
-      )}
-
-      {!isLoading && (data?.length ?? 0) === 0 && (
-        <Card className="p-8 text-center text-muted-foreground">
-          Nenhum documento cadastrado ainda. Clique em "Adicionar documento".
-        </Card>
-      )}
-
-      {Object.entries(grouped).map(([catId, docs]) => (
-        <Card key={catId} className="overflow-hidden">
-          <div className="px-4 py-3 bg-muted/30 border-b border-border font-medium flex items-center gap-2">
-            {CAT_LABEL[catId] ?? catId}
-            <span className="text-xs text-muted-foreground">({docs.length})</span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/20 border-b border-border/40">
-                <tr className="text-left">
-                  <th className="px-4 py-2 font-medium">Documento</th>
-                  <th className="px-4 py-2 font-medium">Emissor / Nº</th>
-                  <th className="px-4 py-2 font-medium">Emissão</th>
-                  <th className="px-4 py-2 font-medium">Validade</th>
-                  <th className="px-4 py-2 font-medium">Arquivo</th>
-                  <th className="px-4 py-2" />
-                </tr>
-              </thead>
-              <tbody>
-                {docs.map((d) => (
-                  <tr key={d.id} className="border-b border-border/40 hover:bg-muted/10">
-                    <td className="px-4 py-2">
-                      <div className="font-medium">{d.nome}</div>
-                      {d.descricao && (
-                        <div className="text-xs text-muted-foreground line-clamp-1">
-                          {d.descricao}
-                        </div>
-                      )}
-                      {d.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {d.tags.map((t) => (
-                            <Badge key={t} variant="outline" className="text-[10px] py-0">
-                              {t}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-2 text-muted-foreground">
-                      <div>{d.emissor ?? "—"}</div>
-                      {d.numero_documento && (
-                        <div className="text-xs">nº {d.numero_documento}</div>
-                      )}
-                    </td>
-                    <td className="px-4 py-2 tabular-nums">{fmtDate(d.data_emissao)}</td>
-                    <td className="px-4 py-2">
-                      <Badge variant="outline" className={validadeTone(d.data_validade)}>
-                        {fmtDate(d.data_validade)}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-2 text-xs text-muted-foreground">
-                      {d.nome_arquivo}
-                      <div>{fmtBytes(d.tamanho_bytes)}</div>
-                    </td>
-                    <td className="px-4 py-2 text-right whitespace-nowrap">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => download.mutate(d.id)}
-                        disabled={download.isPending}
-                      >
-                        <Download className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          if (confirm(`Remover "${d.nome}"?`)) remove.mutate(d.id);
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      ))}
+      <Tabs defaultValue="rt" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="rt"><HardHat className="w-4 h-4 mr-1" /> Responsáveis</TabsTrigger>
+          <TabsTrigger value="atestados"><Award className="w-4 h-4 mr-1" /> Atestados</TabsTrigger>
+          <TabsTrigger value="cats"><ClipboardCheck className="w-4 h-4 mr-1" /> CATs</TabsTrigger>
+          <TabsTrigger value="arts"><FileText className="w-4 h-4 mr-1" /> ARTs</TabsTrigger>
+        </TabsList>
+        <TabsContent value="rt"><ResponsaveisTab /></TabsContent>
+        <TabsContent value="atestados"><AtestadosTab /></TabsContent>
+        <TabsContent value="cats"><CatsTab /></TabsContent>
+        <TabsContent value="arts"><ArtsTab /></TabsContent>
+      </Tabs>
     </div>
   );
 }
 
-/* ============ UPLOAD DIALOG ============ */
+/* ============================== RESPONSÁVEIS ============================== */
 
-function UploadDialog({ onCreated }: { onCreated: () => void }) {
-  const up = useServerFn(uploadDocumento);
-  const [open, setOpen] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
-  const [categoria, setCategoria] = useState<string>("habilitacao_juridica");
-  const [nome, setNome] = useState("");
-  const [descricao, setDescricao] = useState("");
-  const [tags, setTags] = useState("");
-  const [emissor, setEmissor] = useState("");
-  const [numero, setNumero] = useState("");
-  const [dataEmissao, setDataEmissao] = useState("");
-  const [dataValidade, setDataValidade] = useState("");
+type RT = {
+  id: string; nome: string; cpf: string | null; email: string | null; telefone: string | null;
+  formacao: string | null; conselho: string | null; numero_registro: string | null;
+  uf_registro: string | null; ativo: boolean; observacoes: string | null;
+};
 
-  const mut = useMutation({
-    mutationFn: async () => {
-      if (!file) throw new Error("Selecione um arquivo.");
-      const buf = await file.arrayBuffer();
-      let bin = "";
-      const bytes = new Uint8Array(buf);
-      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-      const b64 = btoa(bin);
-      return up({
-        data: {
-          categoria: categoria as
-            | "habilitacao_juridica"
-            | "regularidade_fiscal"
-            | "qualificacao_tecnica"
-            | "qualificacao_economica"
-            | "documentos_proposta"
-            | "outros",
-          nome: nome || file.name,
-          descricao: descricao || null,
-          tags: tags
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean),
-          nome_arquivo: file.name,
-          mime_type: file.type || "application/octet-stream",
-          emissor: emissor || null,
-          numero_documento: numero || null,
-          data_emissao: dataEmissao || null,
-          data_validade: dataValidade || null,
-          base64: b64,
-        },
-      });
-    },
-    onSuccess: () => {
-      toast.success("Documento adicionado");
-      setOpen(false);
-      setFile(null);
-      setNome("");
-      setDescricao("");
-      setTags("");
-      setEmissor("");
-      setNumero("");
-      setDataEmissao("");
-      setDataValidade("");
-      onCreated();
-    },
-    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : String(e)),
+function ResponsaveisTab() {
+  const listFn = useServerFn(listResponsaveisTecnicos);
+  const saveFn = useServerFn(saveResponsavelTecnico);
+  const delFn = useServerFn(deleteResponsavelTecnico);
+  const qc = useQueryClient();
+  const { data, isLoading } = useQuery({ queryKey: ["rt"], queryFn: () => listFn() });
+  const [editing, setEditing] = useState<Partial<RT> | null>(null);
+  const [filter, setFilter] = useState("");
+
+  const delMut = useMutation({
+    mutationFn: (id: string) => delFn({ data: { id } }),
+    onSuccess: () => { toast.success("Removido."); qc.invalidateQueries({ queryKey: ["rt"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const rows = (data ?? []) as RT[];
+  const filtered = rows.filter((r) => {
+    const q = filter.toLowerCase();
+    return !q || r.nome.toLowerCase().includes(q) || (r.numero_registro ?? "").toLowerCase().includes(q);
   });
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          Adicionar documento
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Adicionar documento à biblioteca</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3">
-          <div>
-            <Label>Arquivo *</Label>
-            <Input
-              type="file"
-              onChange={(e) => {
-                const f = e.target.files?.[0] ?? null;
-                setFile(f);
-                if (f && !nome) setNome(f.name.replace(/\.[^.]+$/, ""));
-              }}
-            />
-            {file && (
-              <p className="text-xs text-muted-foreground mt-1">
-                {fmtBytes(file.size)} · {file.type || "tipo desconhecido"}
-              </p>
-            )}
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <CardTitle className="text-base">Responsáveis Técnicos ({rows.length})</CardTitle>
+          <div className="flex gap-2">
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-2 top-2.5 text-muted-foreground" />
+              <Input className="pl-8 h-9 w-56" placeholder="Buscar..." value={filter} onChange={(e) => setFilter(e.target.value)} />
+            </div>
+            <Button size="sm" onClick={() => setEditing({})}><Plus className="w-4 h-4 mr-1" /> Novo</Button>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Categoria *</Label>
-              <Select value={categoria} onValueChange={setCategoria}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CATEGORIAS.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Nome *</Label>
-              <Input value={nome} onChange={(e) => setNome(e.target.value)} />
-            </div>
-            <div>
-              <Label>Emissor</Label>
-              <Input value={emissor} onChange={(e) => setEmissor(e.target.value)} />
-            </div>
-            <div>
-              <Label>Nº do documento</Label>
-              <Input value={numero} onChange={(e) => setNumero(e.target.value)} />
-            </div>
-            <div>
-              <Label>Data de emissão</Label>
-              <Input
-                type="date"
-                value={dataEmissao}
-                onChange={(e) => setDataEmissao(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label>Data de validade</Label>
-              <Input
-                type="date"
-                value={dataValidade}
-                onChange={(e) => setDataValidade(e.target.value)}
-              />
-            </div>
-            <div className="col-span-2">
-              <Label>Tags (separadas por vírgula)</Label>
-              <Input
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                placeholder="atestado, pavimentação, 2024"
-              />
-            </div>
-            <div className="col-span-2">
-              <Label>Descrição</Label>
-              <Textarea
-                rows={2}
-                value={descricao}
-                onChange={(e) => setDescricao(e.target.value)}
-                placeholder="Detalhes adicionais (objeto, escopo, etc.)"
-              />
-            </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? <div className="text-sm text-muted-foreground py-4">Carregando…</div> :
+          filtered.length === 0 ? <div className="text-sm text-muted-foreground py-6 text-center">Nenhum responsável técnico cadastrado.</div> :
+          <div className="space-y-2">
+            {filtered.map((r) => (
+              <div key={r.id} className="flex items-center justify-between p-3 border rounded gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium">{r.nome}</span>
+                    {r.conselho && r.numero_registro && (
+                      <Badge variant="outline" className="text-xs">{r.conselho} {r.numero_registro}{r.uf_registro ? `/${r.uf_registro}` : ""}</Badge>
+                    )}
+                    {!r.ativo && <Badge variant="secondary" className="text-xs">inativo</Badge>}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    {[r.formacao, r.email, r.telefone].filter(Boolean).join(" · ") || "—"}
+                  </div>
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  <Button size="sm" variant="ghost" onClick={() => setEditing(r)}><Edit className="w-4 h-4" /></Button>
+                  <Button size="sm" variant="ghost" onClick={() => { if (confirm("Excluir?")) delMut.mutate(r.id); }}>
+                    <Trash2 className="w-4 h-4 text-destructive" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        }
+      </CardContent>
+
+      {editing !== null && (
+        <RTDialog
+          value={editing}
+          onClose={() => setEditing(null)}
+          onSave={async (v) => {
+            try {
+              await saveFn({ data: v });
+              toast.success("Salvo.");
+              qc.invalidateQueries({ queryKey: ["rt"] });
+              setEditing(null);
+            } catch (e) { toast.error((e as Error).message); }
+          }}
+        />
+      )}
+    </Card>
+  );
+}
+
+function RTDialog({ value, onClose, onSave }: { value: Partial<RT>; onClose: () => void; onSave: (v: Partial<RT>) => Promise<void> }) {
+  const [f, setF] = useState<Partial<RT>>({ ativo: true, ...value });
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-xl">
+        <DialogHeader><DialogTitle>{value.id ? "Editar" : "Novo"} responsável técnico</DialogTitle></DialogHeader>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="col-span-2"><Label>Nome *</Label><Input value={f.nome ?? ""} onChange={(e) => setF({ ...f, nome: e.target.value })} /></div>
+          <div><Label>CPF</Label><Input value={f.cpf ?? ""} onChange={(e) => setF({ ...f, cpf: e.target.value })} /></div>
+          <div><Label>Formação</Label><Input placeholder="Engº Civil" value={f.formacao ?? ""} onChange={(e) => setF({ ...f, formacao: e.target.value })} /></div>
+          <div><Label>Conselho</Label>
+            <Select value={f.conselho ?? ""} onValueChange={(v) => setF({ ...f, conselho: v })}>
+              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="CREA">CREA</SelectItem>
+                <SelectItem value="CAU">CAU</SelectItem>
+                <SelectItem value="CFT">CFT</SelectItem>
+                <SelectItem value="CRQ">CRQ</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div><Label>Registro</Label><Input value={f.numero_registro ?? ""} onChange={(e) => setF({ ...f, numero_registro: e.target.value })} /></div>
+          <div><Label>UF</Label><Input maxLength={2} value={f.uf_registro ?? ""} onChange={(e) => setF({ ...f, uf_registro: e.target.value.toUpperCase() })} /></div>
+          <div><Label>E-mail</Label><Input type="email" value={f.email ?? ""} onChange={(e) => setF({ ...f, email: e.target.value })} /></div>
+          <div><Label>Telefone</Label><Input value={f.telefone ?? ""} onChange={(e) => setF({ ...f, telefone: e.target.value })} /></div>
+          <div className="col-span-2"><Label>Observações</Label><Textarea rows={2} value={f.observacoes ?? ""} onChange={(e) => setF({ ...f, observacoes: e.target.value })} /></div>
+          <div className="col-span-2 flex items-center gap-2">
+            <input id="ativo" type="checkbox" checked={f.ativo ?? true} onChange={(e) => setF({ ...f, ativo: e.target.checked })} />
+            <Label htmlFor="ativo">Ativo</Label>
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancelar
-          </Button>
-          <Button onClick={() => mut.mutate()} disabled={!file || !nome || mut.isPending}>
-            {mut.isPending ? (
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-            ) : (
-              <Upload className="w-4 h-4 mr-2" />
-            )}
-            Enviar
+          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+          <Button disabled={!f.nome || f.nome.length < 2} onClick={() => onSave(f)}>Salvar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ============================== ATESTADOS ============================== */
+
+type Atestado = {
+  id: string; titulo: string; contratante_nome: string | null; contratante_cnpj: string | null;
+  objeto: string | null; valor: number | null; data_emissao: string | null;
+  periodo_inicio: string | null; periodo_fim: string | null; observacoes: string | null;
+  storage_path: string | null; nome_arquivo: string | null;
+  responsavel_id: string | null;
+  responsavel?: { id: string; nome: string; numero_registro: string | null; conselho: string | null } | null;
+};
+
+function AtestadosTab() {
+  const listFn = useServerFn(listAtestados);
+  const saveFn = useServerFn(saveAtestado);
+  const delFn = useServerFn(deleteAtestado);
+  const listRtFn = useServerFn(listResponsaveisTecnicos);
+  const uploadFn = useServerFn(uploadBibliotecaPDF);
+  const urlFn = useServerFn(getBibliotecaSignedUrl);
+  const qc = useQueryClient();
+  const { data, isLoading } = useQuery({ queryKey: ["atestados"], queryFn: () => listFn() });
+  const { data: rts } = useQuery({ queryKey: ["rt"], queryFn: () => listRtFn() });
+  const [editing, setEditing] = useState<Partial<Atestado> | null>(null);
+
+  const delMut = useMutation({
+    mutationFn: (id: string) => delFn({ data: { id } }),
+    onSuccess: () => { toast.success("Removido."); qc.invalidateQueries({ queryKey: ["atestados"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const rows = (data ?? []) as Atestado[];
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <CardTitle className="text-base">Atestados de Capacidade Técnica ({rows.length})</CardTitle>
+          <Button size="sm" onClick={() => setEditing({})}><Plus className="w-4 h-4 mr-1" /> Novo</Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? <div className="text-sm text-muted-foreground py-4">Carregando…</div> :
+          rows.length === 0 ? <div className="text-sm text-muted-foreground py-6 text-center">Sem atestados.</div> :
+          <div className="space-y-2">
+            {rows.map((a) => (
+              <div key={a.id} className="p-3 border rounded space-y-1">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium">{a.titulo}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {a.contratante_nome ?? "—"} {a.contratante_cnpj ? `(${a.contratante_cnpj})` : ""}
+                    </div>
+                    <div className="text-xs mt-1 flex gap-2 flex-wrap">
+                      <Badge variant="outline">Valor: {brl(a.valor)}</Badge>
+                      <Badge variant="outline">Emissão: {fmtDate(a.data_emissao)}</Badge>
+                      {(a.periodo_inicio || a.periodo_fim) && (
+                        <Badge variant="outline">Período: {fmtDate(a.periodo_inicio)} → {fmtDate(a.periodo_fim)}</Badge>
+                      )}
+                      {a.responsavel && <Badge variant="secondary">{a.responsavel.nome}</Badge>}
+                    </div>
+                    {a.objeto && <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{a.objeto}</div>}
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    {a.storage_path && (
+                      <Button size="sm" variant="ghost" onClick={async () => {
+                        try { const { url } = await urlFn({ data: { entidade: "atestado", id: a.id } }); window.open(url, "_blank"); }
+                        catch (e) { toast.error((e as Error).message); }
+                      }}><ExternalLink className="w-4 h-4" /></Button>
+                    )}
+                    <Button size="sm" variant="ghost" onClick={() => setEditing(a)}><Edit className="w-4 h-4" /></Button>
+                    <Button size="sm" variant="ghost" onClick={() => { if (confirm("Excluir?")) delMut.mutate(a.id); }}>
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        }
+      </CardContent>
+
+      {editing !== null && (
+        <AtestadoDialog
+          value={editing}
+          rts={(rts ?? []) as RT[]}
+          onClose={() => setEditing(null)}
+          onSave={async (v, file) => {
+            try {
+              const { id } = await saveFn({ data: v });
+              if (file) await uploadFile(uploadFn, "atestado", id, file);
+              toast.success("Salvo.");
+              qc.invalidateQueries({ queryKey: ["atestados"] });
+              setEditing(null);
+            } catch (e) { toast.error((e as Error).message); }
+          }}
+        />
+      )}
+    </Card>
+  );
+}
+
+async function uploadFile(
+  uploadFn: (args: { data: { entidade: "atestado" | "cat" | "art"; id: string; nome_arquivo: string; mime_type: string; base64: string } }) => Promise<{ ok: boolean }>,
+  entidade: "atestado" | "cat" | "art",
+  id: string,
+  file: File,
+) {
+  if (file.size > 20 * 1024 * 1024) throw new Error("Arquivo máximo 20MB.");
+  const buf = await file.arrayBuffer();
+  let bin = "";
+  const bytes = new Uint8Array(buf);
+  const CH = 0x8000;
+  for (let i = 0; i < bytes.length; i += CH) bin += String.fromCharCode(...bytes.subarray(i, i + CH));
+  const base64 = btoa(bin);
+  await uploadFn({ data: { entidade, id, nome_arquivo: file.name, mime_type: file.type || "application/pdf", base64 } });
+}
+
+function AtestadoDialog({ value, rts, onClose, onSave }: {
+  value: Partial<Atestado>; rts: RT[]; onClose: () => void;
+  onSave: (v: Partial<Atestado>, file: File | null) => Promise<void>;
+}) {
+  const [f, setF] = useState<Partial<Atestado>>(value);
+  const [file, setFile] = useState<File | null>(null);
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader><DialogTitle>{value.id ? "Editar" : "Novo"} atestado</DialogTitle></DialogHeader>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="col-span-2"><Label>Título *</Label><Input value={f.titulo ?? ""} onChange={(e) => setF({ ...f, titulo: e.target.value })} /></div>
+          <div><Label>Contratante</Label><Input value={f.contratante_nome ?? ""} onChange={(e) => setF({ ...f, contratante_nome: e.target.value })} /></div>
+          <div><Label>CNPJ</Label><Input value={f.contratante_cnpj ?? ""} onChange={(e) => setF({ ...f, contratante_cnpj: e.target.value })} /></div>
+          <div><Label>Valor (R$)</Label><Input type="number" step="0.01" value={f.valor ?? ""} onChange={(e) => setF({ ...f, valor: e.target.value ? Number(e.target.value) : null })} /></div>
+          <div><Label>Data de emissão</Label><Input type="date" value={f.data_emissao ?? ""} onChange={(e) => setF({ ...f, data_emissao: e.target.value || null })} /></div>
+          <div><Label>Início execução</Label><Input type="date" value={f.periodo_inicio ?? ""} onChange={(e) => setF({ ...f, periodo_inicio: e.target.value || null })} /></div>
+          <div><Label>Fim execução</Label><Input type="date" value={f.periodo_fim ?? ""} onChange={(e) => setF({ ...f, periodo_fim: e.target.value || null })} /></div>
+          <div className="col-span-2"><Label>Responsável técnico</Label>
+            <Select value={f.responsavel_id ?? "_none"} onValueChange={(v) => setF({ ...f, responsavel_id: v === "_none" ? null : v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_none">— nenhum —</SelectItem>
+                {rts.map((r) => <SelectItem key={r.id} value={r.id}>{r.nome}{r.numero_registro ? ` (${r.conselho} ${r.numero_registro})` : ""}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="col-span-2"><Label>Objeto</Label><Textarea rows={3} value={f.objeto ?? ""} onChange={(e) => setF({ ...f, objeto: e.target.value })} /></div>
+          <div className="col-span-2"><Label>Observações</Label><Textarea rows={2} value={f.observacoes ?? ""} onChange={(e) => setF({ ...f, observacoes: e.target.value })} /></div>
+          <div className="col-span-2">
+            <Label>{f.storage_path ? "Substituir PDF" : "Anexar PDF"} {f.nome_arquivo && <span className="text-xs text-muted-foreground">(atual: {f.nome_arquivo})</span>}</Label>
+            <Input type="file" accept=".pdf,application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+          <Button disabled={!f.titulo || f.titulo.length < 2} onClick={() => onSave(f, file)}>
+            <Upload className="w-4 h-4 mr-1" /> Salvar
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -444,5 +362,347 @@ function UploadDialog({ onCreated }: { onCreated: () => void }) {
   );
 }
 
-// Export para uso opcional pelo updateDocumento futuro
-export { updateDocumento };
+/* ============================== CATs ============================== */
+
+type Cat = {
+  id: string; numero_cat: string; conselho: string | null; uf: string | null;
+  data_emissao: string | null; atividades: string | null; observacoes: string | null;
+  storage_path: string | null; nome_arquivo: string | null;
+  responsavel_id: string | null; atestado_id: string | null;
+  responsavel?: { id: string; nome: string } | null;
+  atestado?: { id: string; titulo: string } | null;
+};
+
+function CatsTab() {
+  const listFn = useServerFn(listCats);
+  const saveFn = useServerFn(saveCat);
+  const delFn = useServerFn(deleteCat);
+  const listRtFn = useServerFn(listResponsaveisTecnicos);
+  const listAtFn = useServerFn(listAtestados);
+  const uploadFn = useServerFn(uploadBibliotecaPDF);
+  const urlFn = useServerFn(getBibliotecaSignedUrl);
+  const qc = useQueryClient();
+  const { data, isLoading } = useQuery({ queryKey: ["cats"], queryFn: () => listFn() });
+  const { data: rts } = useQuery({ queryKey: ["rt"], queryFn: () => listRtFn() });
+  const { data: atestados } = useQuery({ queryKey: ["atestados"], queryFn: () => listAtFn() });
+  const [editing, setEditing] = useState<Partial<Cat> | null>(null);
+
+  const delMut = useMutation({
+    mutationFn: (id: string) => delFn({ data: { id } }),
+    onSuccess: () => { toast.success("Removido."); qc.invalidateQueries({ queryKey: ["cats"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const rows = (data ?? []) as Cat[];
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <CardTitle className="text-base">CATs ({rows.length})</CardTitle>
+          <Button size="sm" onClick={() => setEditing({})}><Plus className="w-4 h-4 mr-1" /> Nova</Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? <div className="text-sm text-muted-foreground py-4">Carregando…</div> :
+          rows.length === 0 ? <div className="text-sm text-muted-foreground py-6 text-center">Sem CATs.</div> :
+          <div className="space-y-2">
+            {rows.map((c) => (
+              <div key={c.id} className="p-3 border rounded">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium">CAT {c.numero_cat} {c.conselho && `· ${c.conselho}${c.uf ? "/" + c.uf : ""}`}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5 flex gap-2 flex-wrap">
+                      <Badge variant="outline">Emissão: {fmtDate(c.data_emissao)}</Badge>
+                      {c.responsavel && <Badge variant="secondary">{c.responsavel.nome}</Badge>}
+                      {c.atestado && <Badge variant="outline">↳ {c.atestado.titulo}</Badge>}
+                    </div>
+                    {c.atividades && <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{c.atividades}</div>}
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    {c.storage_path && (
+                      <Button size="sm" variant="ghost" onClick={async () => {
+                        try { const { url } = await urlFn({ data: { entidade: "cat", id: c.id } }); window.open(url, "_blank"); }
+                        catch (e) { toast.error((e as Error).message); }
+                      }}><ExternalLink className="w-4 h-4" /></Button>
+                    )}
+                    <Button size="sm" variant="ghost" onClick={() => setEditing(c)}><Edit className="w-4 h-4" /></Button>
+                    <Button size="sm" variant="ghost" onClick={() => { if (confirm("Excluir?")) delMut.mutate(c.id); }}>
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        }
+      </CardContent>
+
+      {editing !== null && (
+        <CatDialog
+          value={editing}
+          rts={(rts ?? []) as RT[]}
+          atestados={(atestados ?? []) as Atestado[]}
+          onClose={() => setEditing(null)}
+          onSave={async (v, file) => {
+            try {
+              const { id } = await saveFn({ data: v });
+              if (file) await uploadFile(uploadFn, "cat", id, file);
+              toast.success("Salvo.");
+              qc.invalidateQueries({ queryKey: ["cats"] });
+              setEditing(null);
+            } catch (e) { toast.error((e as Error).message); }
+          }}
+        />
+      )}
+    </Card>
+  );
+}
+
+function CatDialog({ value, rts, atestados, onClose, onSave }: {
+  value: Partial<Cat>; rts: RT[]; atestados: Atestado[]; onClose: () => void;
+  onSave: (v: Partial<Cat>, file: File | null) => Promise<void>;
+}) {
+  const [f, setF] = useState<Partial<Cat>>(value);
+  const [file, setFile] = useState<File | null>(null);
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader><DialogTitle>{value.id ? "Editar" : "Nova"} CAT</DialogTitle></DialogHeader>
+        <div className="grid grid-cols-2 gap-3">
+          <div><Label>Número *</Label><Input value={f.numero_cat ?? ""} onChange={(e) => setF({ ...f, numero_cat: e.target.value })} /></div>
+          <div><Label>Conselho</Label>
+            <Select value={f.conselho ?? ""} onValueChange={(v) => setF({ ...f, conselho: v })}>
+              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="CREA">CREA</SelectItem>
+                <SelectItem value="CAU">CAU</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div><Label>UF</Label><Input maxLength={2} value={f.uf ?? ""} onChange={(e) => setF({ ...f, uf: e.target.value.toUpperCase() })} /></div>
+          <div><Label>Data emissão</Label><Input type="date" value={f.data_emissao ?? ""} onChange={(e) => setF({ ...f, data_emissao: e.target.value || null })} /></div>
+          <div className="col-span-2"><Label>Responsável técnico</Label>
+            <Select value={f.responsavel_id ?? "_none"} onValueChange={(v) => setF({ ...f, responsavel_id: v === "_none" ? null : v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_none">— nenhum —</SelectItem>
+                {rts.map((r) => <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="col-span-2"><Label>Atestado vinculado</Label>
+            <Select value={f.atestado_id ?? "_none"} onValueChange={(v) => setF({ ...f, atestado_id: v === "_none" ? null : v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_none">— nenhum —</SelectItem>
+                {atestados.map((a) => <SelectItem key={a.id} value={a.id}>{a.titulo}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="col-span-2"><Label>Atividades técnicas</Label><Textarea rows={3} value={f.atividades ?? ""} onChange={(e) => setF({ ...f, atividades: e.target.value })} /></div>
+          <div className="col-span-2"><Label>Observações</Label><Textarea rows={2} value={f.observacoes ?? ""} onChange={(e) => setF({ ...f, observacoes: e.target.value })} /></div>
+          <div className="col-span-2">
+            <Label>{f.storage_path ? "Substituir PDF" : "Anexar PDF"} {f.nome_arquivo && <span className="text-xs text-muted-foreground">(atual: {f.nome_arquivo})</span>}</Label>
+            <Input type="file" accept=".pdf,application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+          <Button disabled={!f.numero_cat || f.numero_cat.length < 1} onClick={() => onSave(f, file)}>
+            <Upload className="w-4 h-4 mr-1" /> Salvar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ============================== ARTs ============================== */
+
+type Art = {
+  id: string; numero_art: string; conselho: string | null; uf: string | null;
+  tipo: string; contratante: string | null; objeto: string | null;
+  data_emissao: string | null; data_inicio: string | null; data_termino: string | null;
+  valor_contrato: number | null; status: string; observacoes: string | null;
+  storage_path: string | null; nome_arquivo: string | null;
+  responsavel_id: string | null;
+  responsavel?: { id: string; nome: string } | null;
+};
+
+const ART_TIPO_LABEL: Record<string, string> = {
+  execucao: "Execução", projeto: "Projeto", fiscalizacao: "Fiscalização",
+  consultoria: "Consultoria", outros: "Outros",
+};
+const STATUS_COLOR: Record<string, string> = {
+  ativa: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30",
+  baixada: "bg-muted text-muted-foreground",
+  cancelada: "bg-destructive/15 text-destructive border-destructive/30",
+  vencida: "bg-amber-500/15 text-amber-700 border-amber-500/30",
+};
+
+function ArtsTab() {
+  const listFn = useServerFn(listArts);
+  const saveFn = useServerFn(saveArt);
+  const delFn = useServerFn(deleteArt);
+  const listRtFn = useServerFn(listResponsaveisTecnicos);
+  const uploadFn = useServerFn(uploadBibliotecaPDF);
+  const urlFn = useServerFn(getBibliotecaSignedUrl);
+  const qc = useQueryClient();
+  const { data, isLoading } = useQuery({ queryKey: ["arts"], queryFn: () => listFn() });
+  const { data: rts } = useQuery({ queryKey: ["rt"], queryFn: () => listRtFn() });
+  const [editing, setEditing] = useState<Partial<Art> | null>(null);
+
+  const delMut = useMutation({
+    mutationFn: (id: string) => delFn({ data: { id } }),
+    onSuccess: () => { toast.success("Removido."); qc.invalidateQueries({ queryKey: ["arts"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const rows = (data ?? []) as Art[];
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <CardTitle className="text-base">ARTs ({rows.length})</CardTitle>
+          <Button size="sm" onClick={() => setEditing({})}><Plus className="w-4 h-4 mr-1" /> Nova</Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? <div className="text-sm text-muted-foreground py-4">Carregando…</div> :
+          rows.length === 0 ? <div className="text-sm text-muted-foreground py-6 text-center">Sem ARTs.</div> :
+          <div className="space-y-2">
+            {rows.map((a) => (
+              <div key={a.id} className="p-3 border rounded">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium">ART {a.numero_art}</span>
+                      <Badge variant="outline" className="text-xs">{ART_TIPO_LABEL[a.tipo] ?? a.tipo}</Badge>
+                      <Badge className={`text-xs ${STATUS_COLOR[a.status] ?? ""}`} variant="outline">{a.status}</Badge>
+                      {a.conselho && <Badge variant="outline" className="text-xs">{a.conselho}{a.uf ? `/${a.uf}` : ""}</Badge>}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {a.contratante ?? "—"} {a.responsavel && `· RT: ${a.responsavel.nome}`}
+                    </div>
+                    <div className="text-xs mt-1 flex gap-2 flex-wrap">
+                      <Badge variant="outline">Emissão: {fmtDate(a.data_emissao)}</Badge>
+                      {(a.data_inicio || a.data_termino) && (
+                        <Badge variant="outline">{fmtDate(a.data_inicio)} → {fmtDate(a.data_termino)}</Badge>
+                      )}
+                      <Badge variant="outline">Contrato: {brl(a.valor_contrato)}</Badge>
+                    </div>
+                    {a.objeto && <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{a.objeto}</div>}
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    {a.storage_path && (
+                      <Button size="sm" variant="ghost" onClick={async () => {
+                        try { const { url } = await urlFn({ data: { entidade: "art", id: a.id } }); window.open(url, "_blank"); }
+                        catch (e) { toast.error((e as Error).message); }
+                      }}><ExternalLink className="w-4 h-4" /></Button>
+                    )}
+                    <Button size="sm" variant="ghost" onClick={() => setEditing(a)}><Edit className="w-4 h-4" /></Button>
+                    <Button size="sm" variant="ghost" onClick={() => { if (confirm("Excluir?")) delMut.mutate(a.id); }}>
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        }
+      </CardContent>
+
+      {editing !== null && (
+        <ArtDialog
+          value={editing}
+          rts={(rts ?? []) as RT[]}
+          onClose={() => setEditing(null)}
+          onSave={async (v, file) => {
+            try {
+              const { id } = await saveFn({ data: v });
+              if (file) await uploadFile(uploadFn, "art", id, file);
+              toast.success("Salvo.");
+              qc.invalidateQueries({ queryKey: ["arts"] });
+              setEditing(null);
+            } catch (e) { toast.error((e as Error).message); }
+          }}
+        />
+      )}
+    </Card>
+  );
+}
+
+function ArtDialog({ value, rts, onClose, onSave }: {
+  value: Partial<Art>; rts: RT[]; onClose: () => void;
+  onSave: (v: Partial<Art>, file: File | null) => Promise<void>;
+}) {
+  const [f, setF] = useState<Partial<Art>>({ tipo: "execucao", status: "ativa", ...value });
+  const [file, setFile] = useState<File | null>(null);
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader><DialogTitle>{value.id ? "Editar" : "Nova"} ART</DialogTitle></DialogHeader>
+        <div className="grid grid-cols-2 gap-3">
+          <div><Label>Número *</Label><Input value={f.numero_art ?? ""} onChange={(e) => setF({ ...f, numero_art: e.target.value })} /></div>
+          <div><Label>Tipo</Label>
+            <Select value={f.tipo ?? "execucao"} onValueChange={(v) => setF({ ...f, tipo: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {Object.entries(ART_TIPO_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div><Label>Conselho</Label>
+            <Select value={f.conselho ?? ""} onValueChange={(v) => setF({ ...f, conselho: v })}>
+              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="CREA">CREA</SelectItem>
+                <SelectItem value="CAU">CAU</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div><Label>UF</Label><Input maxLength={2} value={f.uf ?? ""} onChange={(e) => setF({ ...f, uf: e.target.value.toUpperCase() })} /></div>
+          <div className="col-span-2"><Label>Responsável técnico</Label>
+            <Select value={f.responsavel_id ?? "_none"} onValueChange={(v) => setF({ ...f, responsavel_id: v === "_none" ? null : v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_none">— nenhum —</SelectItem>
+                {rts.map((r) => <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="col-span-2"><Label>Contratante</Label><Input value={f.contratante ?? ""} onChange={(e) => setF({ ...f, contratante: e.target.value })} /></div>
+          <div><Label>Data emissão</Label><Input type="date" value={f.data_emissao ?? ""} onChange={(e) => setF({ ...f, data_emissao: e.target.value || null })} /></div>
+          <div><Label>Valor contrato (R$)</Label><Input type="number" step="0.01" value={f.valor_contrato ?? ""} onChange={(e) => setF({ ...f, valor_contrato: e.target.value ? Number(e.target.value) : null })} /></div>
+          <div><Label>Início</Label><Input type="date" value={f.data_inicio ?? ""} onChange={(e) => setF({ ...f, data_inicio: e.target.value || null })} /></div>
+          <div><Label>Término</Label><Input type="date" value={f.data_termino ?? ""} onChange={(e) => setF({ ...f, data_termino: e.target.value || null })} /></div>
+          <div className="col-span-2"><Label>Status</Label>
+            <Select value={f.status ?? "ativa"} onValueChange={(v) => setF({ ...f, status: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ativa">Ativa</SelectItem>
+                <SelectItem value="baixada">Baixada</SelectItem>
+                <SelectItem value="cancelada">Cancelada</SelectItem>
+                <SelectItem value="vencida">Vencida</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="col-span-2"><Label>Objeto</Label><Textarea rows={3} value={f.objeto ?? ""} onChange={(e) => setF({ ...f, objeto: e.target.value })} /></div>
+          <div className="col-span-2"><Label>Observações</Label><Textarea rows={2} value={f.observacoes ?? ""} onChange={(e) => setF({ ...f, observacoes: e.target.value })} /></div>
+          <div className="col-span-2">
+            <Label>{f.storage_path ? "Substituir PDF" : "Anexar PDF"} {f.nome_arquivo && <span className="text-xs text-muted-foreground">(atual: {f.nome_arquivo})</span>}</Label>
+            <Input type="file" accept=".pdf,application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+          <Button disabled={!f.numero_art || f.numero_art.length < 1} onClick={() => onSave(f, file)}>
+            <Upload className="w-4 h-4 mr-1" /> Salvar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
