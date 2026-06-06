@@ -1494,6 +1494,64 @@ export type Database = {
           },
         ]
       }
+      edital_chunks: {
+        Row: {
+          chunk_index: number
+          company_id: string
+          conteudo: string
+          created_at: string
+          documento_id: string
+          edital_id: string
+          embedding: string | null
+          id: string
+          pagina: number | null
+        }
+        Insert: {
+          chunk_index: number
+          company_id: string
+          conteudo: string
+          created_at?: string
+          documento_id: string
+          edital_id: string
+          embedding?: string | null
+          id?: string
+          pagina?: number | null
+        }
+        Update: {
+          chunk_index?: number
+          company_id?: string
+          conteudo?: string
+          created_at?: string
+          documento_id?: string
+          edital_id?: string
+          embedding?: string | null
+          id?: string
+          pagina?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "edital_chunks_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "edital_chunks_documento_id_fkey"
+            columns: ["documento_id"]
+            isOneToOne: false
+            referencedRelation: "edital_documentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "edital_chunks_edital_id_fkey"
+            columns: ["edital_id"]
+            isOneToOne: false
+            referencedRelation: "editais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       edital_documentos: {
         Row: {
           company_id: string
@@ -3858,6 +3916,21 @@ export type Database = {
           _resultado?: string
         }
         Returns: string
+      }
+      match_edital_chunks: {
+        Args: {
+          p_edital_id: string
+          p_match_count?: number
+          p_query_embedding: string
+        }
+        Returns: {
+          chunk_index: number
+          conteudo: string
+          documento_id: string
+          id: string
+          pagina: number
+          similarity: number
+        }[]
       }
       registrar_entrada_nfe: {
         Args: { _nota_id: string; _obra_id?: string }

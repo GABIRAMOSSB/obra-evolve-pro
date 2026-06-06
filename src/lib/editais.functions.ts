@@ -701,3 +701,203 @@ export const extractDocumentoTexto = createServerFn({ method: "POST" })
 
     return { ok: true, paginas: totalPages, caracteres: agregado.length };
   });
+
+/* ============================ RAG / Busca semântica (Fase 4.3) ============================ */
+
+const EMBEDDING_MODEL = "openai/text-embedding-3-small"; // 1536 dims
+const EMBEDDING_URL = "https://ai.gateway.lovable.dev/v1/embeddings";
+
+function chunkText(text: string, size = 1200, overlap = 200): string[] {
+  const clean = (text ?? "").replace(/\s+/g, " ").trim();
+  if (!clean) return [];
+  const out: string[] = [];
+  let i = 0;
+  while (i < clean.length) {
+    out.push(clean.slice(i, i + size));
+    if (i + size >= clean.length) break;
+    i += size - overlap;
+  }
+  return out;
+}
+
+async function embedBatch(apiKey: string, inputs: string[]): Promise<number[][]> {
+  const res = await fetch(EMBEDDING_URL, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ model: EMBEDDING_MODEL, input: inputs }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Embeddings falhou (${res.status}): ${text.slice(0, 300)}`);
+  }
+  const json = (await res.json()) as { data: Array<{ embedding: number[] }> };
+  return json.data.map((d) => d.embedding);
+}
+
+const indexarSchema = z.object({ edital_id: z.string().uuid() });
+
+export const indexarEditalRAG = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => indexarSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as AnySupabase;
+    const companyId = await requireEditor(supabase, context.userId);
+    const apiKey = process.env.LOVABLE_API_KEY;
+    if (!apiKey) throw new Error("LOVABLE_API_KEY não configurada.");
+
+    const { data: docs, error } = await supabase
+      .from("edital_documentos")
+      .select("id, nome_arquivo, texto_por_pagina")
+      .eq("edital_id", data.edital_id)
+      .eq("company_id", companyId);
+    if (error) throw new Error(error.message);
+
+    const docsList = (docs ?? []) as Array<{
+      id: string;
+      nome_arquivo: string;
+      texto_por_pagina: Array<{ pagina: number; texto: string }> | null;
+    }>;
+    if (!docsList.length) throw new Error("Nenhum documento. Anexe um PDF antes.");
+    const comTexto = docsList.filter((d) => (d.texto_por_pagina ?? []).length > 0);
+    if (!comTexto.length) throw new Error('Extraia o texto do PDF antes (botão "extrair texto").');
+
+    // limpa chunks anteriores deste edital
+    await supabase.from("edital_chunks").delete().eq("edital_id", data.edital_id);
+
+    let totalChunks = 0;
+    for (const doc of comTexto) {
+      const pages = doc.texto_por_pagina ?? [];
+      const chunks: Array<{ pagina: number; conteudo: string }> = [];
+      for (const p of pages) {
+        for (const piece of chunkText(p.texto ?? "", 1200, 200)) {
+          if (piece.trim().length > 50) chunks.push({ pagina: p.pagina, conteudo: piece });
+        }
+      }
+      if (!chunks.length) continue;
+
+      const BATCH = 64;
+      for (let i = 0; i < chunks.length; i += BATCH) {
+        const slice = chunks.slice(i, i + BATCH);
+        const embeddings = await embedBatch(apiKey, slice.map((c) => c.conteudo));
+        const rows = slice.map((c, j) => ({
+          edital_id: data.edital_id,
+          documento_id: doc.id,
+          company_id: companyId,
+          pagina: c.pagina,
+          chunk_index: totalChunks + i + j,
+          conteudo: c.conteudo,
+          // pgvector aceita o array serializado como string "[..]"
+          embedding: JSON.stringify(embeddings[j]),
+        }));
+        const { error: insErr } = await supabase.from("edital_chunks").insert(rows);
+        if (insErr) throw new Error(`Falha ao inserir chunks: ${insErr.message}`);
+      }
+      totalChunks += chunks.length;
+    }
+
+    return { ok: true, chunks: totalChunks, documentos: comTexto.length };
+  });
+
+const perguntarSchema = z.object({
+  edital_id: z.string().uuid(),
+  pergunta: z.string().min(3).max(2000),
+  k: z.number().int().min(1).max(20).optional(),
+  modelo: z.string().optional(),
+});
+
+export interface RagTrecho {
+  documento_id: string;
+  pagina: number | null;
+  conteudo: string;
+  similarity: number;
+}
+
+export const perguntarEdital = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => perguntarSchema.parse(input))
+  .handler(async ({ data, context }): Promise<{ resposta: string; trechos: RagTrecho[] }> => {
+    const supabase = context.supabase as AnySupabase;
+    const companyId = await requireEditor(supabase, context.userId);
+    const apiKey = process.env.LOVABLE_API_KEY;
+    if (!apiKey) throw new Error("LOVABLE_API_KEY não configurada.");
+
+    const { data: ed } = await supabase
+      .from("editais")
+      .select("id, titulo")
+      .eq("id", data.edital_id)
+      .eq("company_id", companyId)
+      .maybeSingle();
+    if (!ed) throw new Error("Edital não encontrado.");
+
+    const [queryEmb] = await embedBatch(apiKey, [data.pergunta]);
+    const { data: matches, error } = await supabase.rpc("match_edital_chunks", {
+      p_edital_id: data.edital_id,
+      p_query_embedding: JSON.stringify(queryEmb),
+      p_match_count: data.k ?? 8,
+    });
+    if (error) throw new Error(`Busca semântica falhou: ${error.message}`);
+
+    const ctxRows = (matches ?? []) as RagTrecho[];
+    if (!ctxRows.length) {
+      return {
+        resposta:
+          'Nenhum trecho indexado encontrado. Clique em "Indexar para perguntas" depois de extrair o texto.',
+        trechos: [],
+      };
+    }
+
+    const ctx = ctxRows
+      .map((r, i) => `[#${i + 1} | página ${r.pagina ?? "?"}]\n${r.conteudo}`)
+      .join("\n\n---\n\n");
+    const prompt = `Você é assistente especialista em editais públicos brasileiros (Lei 14.133/21).
+Responda objetivamente à PERGUNTA usando APENAS os TRECHOS abaixo.
+- Se a resposta não estiver clara nos trechos, responda "Não encontrado nos trechos analisados".
+- Sempre cite a página entre colchetes ao final de cada afirmação relevante, ex: [pág. 12].
+- Seja conciso (até 8 linhas) e use marcadores quando houver múltiplos itens.
+
+# PERGUNTA
+${data.pergunta}
+
+# TRECHOS DO EDITAL "${ed.titulo}"
+${ctx}`;
+
+    const modelo = data.modelo ?? DEFAULT_MODEL;
+    const res = await fetch(AI_GATEWAY, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: modelo, messages: [{ role: "user", content: prompt }] }),
+    });
+    if (!res.ok) {
+      const t = await res.text();
+      throw new Error(`IA falhou (${res.status}): ${t.slice(0, 300)}`);
+    }
+    const json = (await res.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
+    const resposta = json.choices?.[0]?.message?.content?.toString() ?? "(sem resposta)";
+
+    return {
+      resposta,
+      trechos: ctxRows.map((r) => ({
+        documento_id: r.documento_id,
+        pagina: r.pagina,
+        conteudo: r.conteudo.slice(0, 400),
+        similarity: r.similarity,
+      })),
+    };
+  });
+
+export const ragStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ edital_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as AnySupabase;
+    const companyId = await resolveCompanyId(supabase, context.userId);
+    const { count, error } = await supabase
+      .from("edital_chunks")
+      .select("id", { count: "exact", head: true })
+      .eq("edital_id", data.edital_id)
+      .eq("company_id", companyId);
+    if (error) throw new Error(error.message);
+    return { chunks: count ?? 0 };
+  });

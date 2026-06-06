@@ -5,7 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import {
   Sparkles, Plus, FileText, Upload, Trash2, RefreshCw, ExternalLink,
-  CheckCircle2, XCircle, MinusCircle, Clock,
+  CheckCircle2, XCircle, MinusCircle, Clock, Search, Database,
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,6 +32,9 @@ import {
   listEditalDocumentos,
   getEditalDocumentoUrl,
   extractDocumentoTexto,
+  indexarEditalRAG,
+  perguntarEdital,
+  ragStatus,
   type ChecklistRow,
 } from "@/lib/editais.functions";
 
@@ -275,6 +278,9 @@ function EditalDetail({ id, onDeleted }: { id: string; onDeleted: () => void }) 
   const uploadDocFn = useServerFn(uploadEditalDocumento);
   const getUrlFn = useServerFn(getEditalDocumentoUrl);
   const extractFn = useServerFn(extractDocumentoTexto);
+  const indexFn = useServerFn(indexarEditalRAG);
+  const askFn = useServerFn(perguntarEdital);
+  const ragStatusFn = useServerFn(ragStatus);
   const qc = useQueryClient();
 
   const { data: editais } = useQuery({
@@ -343,6 +349,26 @@ function EditalDetail({ id, onDeleted }: { id: string; onDeleted: () => void }) 
       qc.invalidateQueries({ queryKey: ["edital-docs", id] });
     },
     onError: (e: Error) => toast.error(`Extração falhou: ${e.message}`),
+  });
+
+  const { data: rag } = useQuery({
+    queryKey: ["edital-rag", id],
+    queryFn: () => ragStatusFn({ data: { edital_id: id } }),
+  });
+  const indexMut = useMutation({
+    mutationFn: async () => indexFn({ data: { edital_id: id } }),
+    onSuccess: (r) => {
+      toast.success(`Indexado: ${r.chunks} trechos de ${r.documentos} documento(s).`);
+      qc.invalidateQueries({ queryKey: ["edital-rag", id] });
+    },
+    onError: (e: Error) => toast.error(`Indexação falhou: ${e.message}`),
+  });
+  const [pergunta, setPergunta] = useState("");
+  const [resposta, setResposta] = useState<{ resposta: string; trechos: Array<{ documento_id: string; pagina: number | null; conteudo: string; similarity: number }> } | null>(null);
+  const askMut = useMutation({
+    mutationFn: async (q: string) => askFn({ data: { edital_id: id, pergunta: q } }),
+    onSuccess: (r) => setResposta(r),
+    onError: (e: Error) => toast.error(`Pergunta falhou: ${e.message}`),
   });
 
   if (!edital) return null;
@@ -546,6 +572,102 @@ function EditalDetail({ id, onDeleted }: { id: string; onDeleted: () => void }) 
                 </div>
               </div>
             ))
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Perguntar ao Edital (RAG) */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Search className="w-4 h-4" /> Perguntar ao edital
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-xs">
+                <Database className="w-3 h-3 mr-1" />
+                {rag?.chunks ?? 0} trechos indexados
+              </Badge>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => indexMut.mutate()}
+                disabled={indexMut.isPending}
+              >
+                {indexMut.isPending ? (
+                  <><RefreshCw className="w-3 h-3 mr-1 animate-spin" /> Indexando…</>
+                ) : (
+                  <><RefreshCw className="w-3 h-3 mr-1" /> {(rag?.chunks ?? 0) > 0 ? "Reindexar" : "Indexar para perguntas"}</>
+                )}
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="text-xs text-muted-foreground">
+            Faça perguntas em linguagem natural sobre este edital. A IA busca os trechos mais relevantes e responde com citações de página.
+          </div>
+          <div className="flex gap-2">
+            <Input
+              value={pergunta}
+              onChange={(e) => setPergunta(e.target.value)}
+              placeholder='Ex.: "Qual o prazo de execução?" ou "Quais atestados são exigidos?"'
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && pergunta.trim().length >= 3 && !askMut.isPending) {
+                  askMut.mutate(pergunta.trim());
+                }
+              }}
+            />
+            <Button
+              onClick={() => askMut.mutate(pergunta.trim())}
+              disabled={askMut.isPending || pergunta.trim().length < 3 || (rag?.chunks ?? 0) === 0}
+            >
+              {askMut.isPending ? <Clock className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+            </Button>
+          </div>
+          {(rag?.chunks ?? 0) === 0 && (
+            <div className="text-xs text-amber-600">
+              Extraia o texto de pelo menos um PDF e clique em "Indexar para perguntas" antes de perguntar.
+            </div>
+          )}
+          {resposta && (
+            <div className="space-y-3">
+              <div className="bg-primary/5 border border-primary/20 rounded p-3">
+                <div className="text-xs uppercase text-primary mb-1 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" /> Resposta
+                </div>
+                <div className="text-sm whitespace-pre-wrap">{resposta.resposta}</div>
+              </div>
+              {resposta.trechos.length > 0 && (
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground mb-1">Trechos consultados</div>
+                  <div className="space-y-1">
+                    {resposta.trechos.map((t, i) => (
+                      <div key={i} className="text-xs border rounded p-2 bg-muted/30">
+                        <div className="flex items-center justify-between mb-1">
+                          <button
+                            type="button"
+                            className="text-primary hover:underline"
+                            onClick={async () => {
+                              try {
+                                const { url } = await getUrlFn({ data: { documento_id: t.documento_id } });
+                                window.open(t.pagina ? `${url}#page=${t.pagina}` : url, "_blank");
+                              } catch (e) { toast.error((e as Error).message); }
+                            }}
+                          >
+                            #{i + 1} · p.{t.pagina ?? "?"}
+                          </button>
+                          <span className="text-[10px] text-muted-foreground">
+                            sim. {(t.similarity * 100).toFixed(0)}%
+                          </span>
+                        </div>
+                        <div className="italic text-muted-foreground">"{t.conteudo}"</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>
