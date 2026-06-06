@@ -349,15 +349,32 @@ function ReajustesPage() {
                         onChange={(e) => setCForm((f) => ({ ...f, periodo_fim: e.target.value }))} />
                     </div>
                   </div>
-                  <div>
-                    <Label>Status</Label>
-                    <Select value={cForm.status} onValueChange={(v) => setCForm((f) => ({ ...f, status: v as typeof cForm.status }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="rascunho">Rascunho</SelectItem>
-                        <SelectItem value="aplicado">Aplicar imediatamente</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>Base do cálculo</Label>
+                      <Select value={cForm.base_modo} onValueChange={(v) => setCForm((f) => ({ ...f, base_modo: v as typeof cForm.base_modo }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="contrato">Valor atualizado do contrato</SelectItem>
+                          <SelectItem value="medicoes">Soma das medições aprovadas/pagas no período</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {cForm.base_modo === "medicoes"
+                          ? "Considera apenas BMs com status aprovada ou paga dentro do período informado."
+                          : "Usa o valor_atualizado do contrato (ou original, se nulo)."}
+                      </p>
+                    </div>
+                    <div>
+                      <Label>Status</Label>
+                      <Select value={cForm.status} onValueChange={(v) => setCForm((f) => ({ ...f, status: v as typeof cForm.status }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="rascunho">Rascunho</SelectItem>
+                          <SelectItem value="aplicado">Aplicar imediatamente</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   <div>
                     <Label>Observações</Label>
