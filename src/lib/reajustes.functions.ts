@@ -196,17 +196,44 @@ export const calcularReajuste = createServerFn({ method: "POST" })
     // Auto-sync no BCB se faltar dado e o índice for suportado pela SGS
     if (!indices || indices.length < mesesEsperados) {
       try {
-        const { sincronizarIndiceBCB } = await import("@/lib/indices.functions");
-        await sincronizarIndiceBCB({
-          data: { indice: data.indice.toUpperCase(), from: ini, to: fim },
-        } as never);
-        const retry = await fetchSerie();
-        if (retry.error) throw new Error(retry.error.message);
-        indices = retry.data;
+        const { CATALOGO_INDICES } = await import("@/lib/indices.functions");
+        const entry = CATALOGO_INDICES.find(
+          (c) => c.codigo === data.indice.toUpperCase(),
+        );
+        if (entry) {
+          const toBcb = (iso: string) => {
+            const [y, m, d] = iso.split("-");
+            return `${d}/${m}/${y}`;
+          };
+          const url = `https://api.bcb.gov.br/dados/serie/bcdata.sgs.${entry.sgs}/dados?formato=json&dataInicial=${toBcb(ini)}&dataFinal=${toBcb(fim)}`;
+          const res = await fetch(url, { headers: { Accept: "application/json" } });
+          if (res.ok) {
+            const serie = (await res.json()) as Array<{ data: string; valor: string }>;
+            if (Array.isArray(serie) && serie.length > 0) {
+              const rows = serie.map((p) => {
+                const [d, mo, y] = p.data.split("/");
+                return {
+                  company_id: companyId,
+                  indice: entry.codigo,
+                  mes_referencia: `${y}-${mo}-01`,
+                  valor_percentual: Number(p.valor),
+                  fonte: entry.fonte,
+                  created_by: context.userId,
+                };
+              });
+              await supabase
+                .from("indices_economicos")
+                .upsert(rows, { onConflict: "company_id,indice,mes_referencia" });
+              const retry = await fetchSerie();
+              if (!retry.error) indices = retry.data;
+            }
+          }
+        }
       } catch {
-        // segue com o que tiver; mensagem abaixo cobre caso vazio
+        // segue com o que tiver
       }
     }
+
 
     if (!indices || indices.length === 0) {
       throw new Error(
