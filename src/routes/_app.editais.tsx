@@ -368,6 +368,11 @@ function EditalDetail({ id, onBack }: { id: string; onBack: () => void }) {
   const upload = useServerFn(uploadEditalDocumento);
   const listCk = useServerFn(listChecklist);
   const updateCk = useServerFn(updateChecklistItem);
+  const listBib = useServerFn(listBiblioteca);
+  const listVinc = useServerFn(listVinculosChecklistEdital);
+  const vinc = useServerFn(vincularDocumento);
+  const desvinc = useServerFn(desvincularDocumento);
+  const sugerir = useServerFn(sugerirVinculosChecklist);
 
   const qc = useQueryClient();
   const { data: editais } = useQuery({ queryKey: ["editais"], queryFn: () => list() });
@@ -377,9 +382,46 @@ function EditalDetail({ id, onBack }: { id: string; onBack: () => void }) {
     queryKey: ["edital-checklist", id],
     queryFn: () => listCk({ data: { edital_id: id } }),
   });
+  const { data: vinculos } = useQuery({
+    queryKey: ["edital-vinculos", id],
+    queryFn: () => listVinc({ data: { edital_id: id } }),
+  });
+  const { data: biblioteca } = useQuery({
+    queryKey: ["biblioteca"],
+    queryFn: () => listBib({ data: {} }),
+  });
 
   const ana = useMutation({
     mutationFn: () => analyze({ data: { edital_id: id } }),
+    onSuccess: (r) => {
+      toast.success(`Análise concluída — ${r.itens} item(s) no checklist.`);
+      qc.invalidateQueries({ queryKey: ["editais"] });
+      qc.invalidateQueries({ queryKey: ["edital-checklist", id] });
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : String(e)),
+  });
+
+  const sug = useMutation({
+    mutationFn: () => sugerir({ data: { edital_id: id, confianca_minima: 0.6, aplicar: true } }),
+    onSuccess: (r) => {
+      toast.success(`${r.aplicadas} vínculo(s) aplicado(s) com base na biblioteca.`);
+      qc.invalidateQueries({ queryKey: ["edital-vinculos", id] });
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : String(e)),
+  });
+
+  const linkMut = useMutation({
+    mutationFn: (vars: { checklist_item_id: string; documento_id: string }) =>
+      vinc({ data: vars }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["edital-vinculos", id] }),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : String(e)),
+  });
+  const unlinkMut = useMutation({
+    mutationFn: (vid: string) => desvinc({ data: { id: vid } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["edital-vinculos", id] }),
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : String(e)),
+  });
+
     onSuccess: (r) => {
       toast.success(`Análise concluída — ${r.itens} item(s) no checklist.`);
       qc.invalidateQueries({ queryKey: ["editais"] });
