@@ -177,8 +177,8 @@ function MedicoesPage() {
         </Card>
       ) : (
         <Card className="divide-y">
-          {medicoes.map((m) => {
-            const contrato = contratos.find((c) => c.id === m.contrato_id);
+          {medicoes.map((m: Medicao) => {
+            const contrato = contratos.find((c: Contrato) => c.id === m.contrato_id);
             return (
               <div key={m.id} className="p-4 flex flex-wrap items-center gap-4">
                 <div className="flex-1 min-w-[240px]">
