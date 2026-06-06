@@ -600,6 +600,19 @@ function EditalDetail({ id, onBack }: { id: string; onBack: () => void }) {
                           upCk.mutate({ id: it.id, observacoes: v || null });
                       }}
                     />
+                    <ChecklistDocs
+                      itemId={it.id}
+                      itemCategoria={it.categoria}
+                      vinculos={(vinculos ?? []).filter(
+                        (v: VinculoRow) => v.checklist_item_id === it.id,
+                      )}
+                      biblioteca={biblioteca ?? []}
+                      onAttach={(docId) =>
+                        linkMut.mutate({ checklist_item_id: it.id, documento_id: docId })
+                      }
+                      onDetach={(vid) => unlinkMut.mutate(vid)}
+                    />
+
                   </div>
                   <Select
                     value={it.status}
