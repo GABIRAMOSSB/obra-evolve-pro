@@ -54,6 +54,7 @@ import {
   type NFeParsed,
 } from "@/lib/nfe-parser";
 import { NfeRateioDialog, type RateioItem } from "@/components/NfeRateioDialog";
+import { NfeManifestacaoDialog } from "@/components/NfeManifestacaoDialog";
 import type { BudgetRow, ProjectData } from "@/lib/types";
 
 export const Route = createFileRoute("/_app/notas-fiscais")({
