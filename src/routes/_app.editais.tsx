@@ -345,9 +345,19 @@ function EditalDetail({ id, onDeleted }: { id: string; onDeleted: () => void }) 
   const extractMut = useMutation({
     mutationFn: async (documento_id: string) => extractFn({ data: { documento_id } }),
     onSuccess: (r) => {
-      toast.success(`Texto extraído: ${r.paginas} página(s), ${r.caracteres} caracteres.`);
+      const base = `Texto extraído: ${r.paginas} página(s), ${r.caracteres} caracteres.`;
+      if (r.indexado) {
+        toast.success(`${base} Indexado automaticamente (${r.indexado.chunks} trechos).`);
+      } else if (r.indexError) {
+        toast.success(base);
+        toast.warning(`Auto-indexação falhou: ${r.indexError}. Use o botão "Indexar para perguntas".`);
+      } else {
+        toast.success(base);
+      }
       qc.invalidateQueries({ queryKey: ["edital-docs", id] });
+      qc.invalidateQueries({ queryKey: ["edital-rag", id] });
     },
+
     onError: (e: Error) => toast.error(`Extração falhou: ${e.message}`),
   });
 
