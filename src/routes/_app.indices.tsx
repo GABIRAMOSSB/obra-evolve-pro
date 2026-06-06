@@ -214,7 +214,7 @@ function IndicesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r) => (
+                  {(rows as Array<{ id: string; indice: string; mes_referencia: string; valor_percentual: number | string; fonte: string | null }>).map((r) => (
                     <tr key={r.id} className="border-t hover:bg-muted/20">
                       <td className="p-2 font-medium">{r.indice}</td>
                       <td className="p-2">{fmtMes(r.mes_referencia as string)}</td>
