@@ -34,6 +34,7 @@ export function AppSidebar() {
         <SidebarLink to="/oportunidades" icon={Radar} label="Radar PNCP" />
         <SidebarLink to="/editais" icon={FileText} label="Editais (IA)" />
         <SidebarLink to="/biblioteca" icon={Library} label="Biblioteca Docs" />
+        <SidebarLink to="/contratos" icon={FileSignature} label="Contratos" />
 
 
         <SidebarLink to="/realizado" icon={BarChart3} label="Previsto × Realizado" />
