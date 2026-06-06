@@ -2117,6 +2117,214 @@ export type Database = {
           },
         ]
       }
+      oportunidade_filtros: {
+        Row: {
+          ativo: boolean
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          modalidades: string[]
+          nome: string
+          palavras_chave: string[]
+          ufs: string[]
+          updated_at: string
+          valor_max: number | null
+          valor_min: number | null
+        }
+        Insert: {
+          ativo?: boolean
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          modalidades?: string[]
+          nome: string
+          palavras_chave?: string[]
+          ufs?: string[]
+          updated_at?: string
+          valor_max?: number | null
+          valor_min?: number | null
+        }
+        Update: {
+          ativo?: boolean
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          modalidades?: string[]
+          nome?: string
+          palavras_chave?: string[]
+          ufs?: string[]
+          updated_at?: string
+          valor_max?: number | null
+          valor_min?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oportunidade_filtros_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      oportunidade_pipeline_eventos: {
+        Row: {
+          actor_user_id: string | null
+          company_id: string
+          created_at: string
+          id: string
+          metadata: Json
+          motivo: string | null
+          oportunidade_id: string
+          situacao_anterior: string | null
+          situacao_nova: string
+        }
+        Insert: {
+          actor_user_id?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          motivo?: string | null
+          oportunidade_id: string
+          situacao_anterior?: string | null
+          situacao_nova: string
+        }
+        Update: {
+          actor_user_id?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          motivo?: string | null
+          oportunidade_id?: string
+          situacao_anterior?: string | null
+          situacao_nova?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oportunidade_pipeline_eventos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oportunidade_pipeline_eventos_oportunidade_id_fkey"
+            columns: ["oportunidade_id"]
+            isOneToOne: false
+            referencedRelation: "oportunidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      oportunidades: {
+        Row: {
+          ano_compra: number | null
+          anotacoes: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          data_abertura_propostas: string | null
+          data_encerramento_propostas: string | null
+          data_publicacao: string | null
+          escore_aderencia: number | null
+          fonte: string
+          id: string
+          link_edital: string | null
+          link_sistema_origem: string | null
+          modalidade: string | null
+          modo_disputa: string | null
+          municipio: string | null
+          numero_compra: string | null
+          objeto: string | null
+          orgao_cnpj: string | null
+          orgao_nome: string | null
+          pncp_id: string | null
+          prioridade: string | null
+          raw: Json
+          responsavel_user_id: string | null
+          situacao: string
+          uf: string | null
+          unidade_nome: string | null
+          updated_at: string
+          valor_estimado: number | null
+        }
+        Insert: {
+          ano_compra?: number | null
+          anotacoes?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          data_abertura_propostas?: string | null
+          data_encerramento_propostas?: string | null
+          data_publicacao?: string | null
+          escore_aderencia?: number | null
+          fonte?: string
+          id?: string
+          link_edital?: string | null
+          link_sistema_origem?: string | null
+          modalidade?: string | null
+          modo_disputa?: string | null
+          municipio?: string | null
+          numero_compra?: string | null
+          objeto?: string | null
+          orgao_cnpj?: string | null
+          orgao_nome?: string | null
+          pncp_id?: string | null
+          prioridade?: string | null
+          raw?: Json
+          responsavel_user_id?: string | null
+          situacao?: string
+          uf?: string | null
+          unidade_nome?: string | null
+          updated_at?: string
+          valor_estimado?: number | null
+        }
+        Update: {
+          ano_compra?: number | null
+          anotacoes?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          data_abertura_propostas?: string | null
+          data_encerramento_propostas?: string | null
+          data_publicacao?: string | null
+          escore_aderencia?: number | null
+          fonte?: string
+          id?: string
+          link_edital?: string | null
+          link_sistema_origem?: string | null
+          modalidade?: string | null
+          modo_disputa?: string | null
+          municipio?: string | null
+          numero_compra?: string | null
+          objeto?: string | null
+          orgao_cnpj?: string | null
+          orgao_nome?: string | null
+          pncp_id?: string | null
+          prioridade?: string | null
+          raw?: Json
+          responsavel_user_id?: string | null
+          situacao?: string
+          uf?: string | null
+          unidade_nome?: string | null
+          updated_at?: string
+          valor_estimado?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oportunidades_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parametros_financeiros: {
         Row: {
           cofins_percent: number
