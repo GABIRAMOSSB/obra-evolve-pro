@@ -960,6 +960,62 @@ export type Database = {
           },
         ]
       }
+      company_signatarios: {
+        Row: {
+          ativo: boolean
+          cargo: string | null
+          company_id: string
+          cpf: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          telefone: string | null
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          cargo?: string | null
+          company_id: string
+          cpf?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          telefone?: string | null
+          tipo?: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          cargo?: string | null
+          company_id?: string
+          cpf?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          telefone?: string | null
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_signatarios_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_workspaces: {
         Row: {
           company_id: string
@@ -3245,6 +3301,90 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: []
+      }
+      procuracoes: {
+        Row: {
+          arquivo_path: string | null
+          cartorio: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          data_outorga: string
+          data_validade: string | null
+          escopo: Json
+          id: string
+          numero: string | null
+          observacoes: string | null
+          poderes_especificos: string | null
+          poderes_gerais: boolean
+          revogada_em: string | null
+          revogada_motivo: string | null
+          signatario_id: string
+          status: string
+          substabelecimento: boolean
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          arquivo_path?: string | null
+          cartorio?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          data_outorga: string
+          data_validade?: string | null
+          escopo?: Json
+          id?: string
+          numero?: string | null
+          observacoes?: string | null
+          poderes_especificos?: string | null
+          poderes_gerais?: boolean
+          revogada_em?: string | null
+          revogada_motivo?: string | null
+          signatario_id: string
+          status?: string
+          substabelecimento?: boolean
+          tipo?: string
+          updated_at?: string
+        }
+        Update: {
+          arquivo_path?: string | null
+          cartorio?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          data_outorga?: string
+          data_validade?: string | null
+          escopo?: Json
+          id?: string
+          numero?: string | null
+          observacoes?: string | null
+          poderes_especificos?: string | null
+          poderes_gerais?: boolean
+          revogada_em?: string | null
+          revogada_motivo?: string | null
+          signatario_id?: string
+          status?: string
+          substabelecimento?: boolean
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "procuracoes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "procuracoes_signatario_id_fkey"
+            columns: ["signatario_id"]
+            isOneToOne: false
+            referencedRelation: "company_signatarios"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       proposta_itens: {
         Row: {
