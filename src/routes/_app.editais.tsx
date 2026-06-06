@@ -426,9 +426,11 @@ function EditalDetail({ id, onBack }: { id: string; onBack: () => void }) {
   const up = useMutation({
     mutationFn: async (file: File) => {
       const buf = await file.arrayBuffer();
-      let bin = "";
       const bytes = new Uint8Array(buf);
-      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      let bin = "";
+      bytes.forEach((b) => {
+        bin += String.fromCharCode(b);
+      });
       const b64 = btoa(bin);
       return upload({
         data: {
