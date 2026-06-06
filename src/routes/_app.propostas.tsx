@@ -240,7 +240,7 @@ function NovaPropostaDialog() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">— Nenhum —</SelectItem>
-                {(editais ?? []).map((e) => (
+                {((editais ?? []) as Array<{ id: string; titulo: string }>).map((e) => (
                   <SelectItem key={e.id} value={e.id}>
                     {e.titulo}
                   </SelectItem>
