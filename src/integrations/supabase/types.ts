@@ -3489,6 +3489,167 @@ export type Database = {
         }
         Relationships: []
       }
+      portal_perfis: {
+        Row: {
+          ativo: boolean
+          casas_decimais_preco: number
+          casas_decimais_qtd: number
+          codigo: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          encoding: string
+          exige_assinatura_digital: boolean
+          exige_planilha_modelo: boolean
+          formato_preferido: string
+          id: string
+          max_chars_descricao: number | null
+          nome: string
+          observacoes: string | null
+          separador_decimal: string
+          separador_milhar: string
+          updated_at: string
+          url_portal: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          casas_decimais_preco?: number
+          casas_decimais_qtd?: number
+          codigo?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          encoding?: string
+          exige_assinatura_digital?: boolean
+          exige_planilha_modelo?: boolean
+          formato_preferido?: string
+          id?: string
+          max_chars_descricao?: number | null
+          nome: string
+          observacoes?: string | null
+          separador_decimal?: string
+          separador_milhar?: string
+          updated_at?: string
+          url_portal?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          casas_decimais_preco?: number
+          casas_decimais_qtd?: number
+          codigo?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          encoding?: string
+          exige_assinatura_digital?: boolean
+          exige_planilha_modelo?: boolean
+          formato_preferido?: string
+          id?: string
+          max_chars_descricao?: number | null
+          nome?: string
+          observacoes?: string | null
+          separador_decimal?: string
+          separador_milhar?: string
+          updated_at?: string
+          url_portal?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_perfis_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      portal_protocolos: {
+        Row: {
+          company_id: string
+          comprovante_path: string | null
+          created_at: string
+          created_by: string | null
+          data_envio: string
+          edital_id: string | null
+          id: string
+          numero_protocolo: string | null
+          observacoes: string | null
+          oportunidade_id: string | null
+          portal_id: string | null
+          proposta_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          comprovante_path?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_envio?: string
+          edital_id?: string | null
+          id?: string
+          numero_protocolo?: string | null
+          observacoes?: string | null
+          oportunidade_id?: string | null
+          portal_id?: string | null
+          proposta_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          comprovante_path?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_envio?: string
+          edital_id?: string | null
+          id?: string
+          numero_protocolo?: string | null
+          observacoes?: string | null
+          oportunidade_id?: string | null
+          portal_id?: string | null
+          proposta_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_protocolos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portal_protocolos_edital_id_fkey"
+            columns: ["edital_id"]
+            isOneToOne: false
+            referencedRelation: "editais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portal_protocolos_oportunidade_id_fkey"
+            columns: ["oportunidade_id"]
+            isOneToOne: false
+            referencedRelation: "oportunidades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portal_protocolos_portal_id_fkey"
+            columns: ["portal_id"]
+            isOneToOne: false
+            referencedRelation: "portal_perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portal_protocolos_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       procuracoes: {
         Row: {
           arquivo_path: string | null
