@@ -338,3 +338,166 @@ export const excluirReajuste = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/* ============================ F12.x — Extração de cláusula de reajuste por IA ============================ */
+
+const extrairClausulaSchema = z.object({
+  contrato_id: z.string().uuid(),
+  texto: z.string().min(50).max(60000),
+  aplicar: z.boolean().optional().default(false),
+});
+
+export type ClausulaReajusteExtraida = {
+  indice: string | null;
+  periodicidade: "anual" | "mensal" | "trimestral" | "semestral" | "sem_reajuste" | null;
+  data_base: string | null; // YYYY-MM-DD
+  formula: string | null;
+  trecho_citado: string | null;
+  observacoes: string | null;
+  confianca: number; // 0-1
+};
+
+export const extrairClausulaReajusteIA = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => extrairClausulaSchema.parse(d))
+  .handler(async ({ data, context }): Promise<{
+    extraido: ClausulaReajusteExtraida;
+    aplicado: boolean;
+  }> => {
+    const supabase = context.supabase as AnySupabase;
+    const companyId = await resolveCompany(supabase, context.userId, true);
+    const apiKey = process.env.LOVABLE_API_KEY;
+    if (!apiKey) throw new Error("LOVABLE_API_KEY não configurada.");
+
+    const { data: contrato, error: cErr } = await supabase
+      .from("contratos")
+      .select("id")
+      .eq("id", data.contrato_id)
+      .eq("company_id", companyId)
+      .maybeSingle();
+    if (cErr) throw new Error(cErr.message);
+    if (!contrato) throw new Error("Contrato não encontrado.");
+
+    const tool = {
+      type: "function" as const,
+      function: {
+        name: "registrar_clausula_reajuste",
+        description:
+          "Registra a cláusula de reajuste contratual identificada no texto. " +
+          "Use null quando a informação não estiver explícita.",
+        parameters: {
+          type: "object",
+          properties: {
+            indice: {
+              type: ["string", "null"],
+              description:
+                "Índice econômico (ex.: IPCA, INCC, IGP-M, INPC). Maiúsculo, sem aspas.",
+            },
+            periodicidade: {
+              type: ["string", "null"],
+              enum: ["anual", "mensal", "trimestral", "semestral", "sem_reajuste", null],
+              description: "Periodicidade da revisão.",
+            },
+            data_base: {
+              type: ["string", "null"],
+              description: "Data-base do reajuste no formato YYYY-MM-DD.",
+            },
+            formula: {
+              type: ["string", "null"],
+              description: "Fórmula matemática literal, se citada (ex.: V1 = V0 * (I1/I0)).",
+            },
+            trecho_citado: {
+              type: ["string", "null"],
+              description: "Trecho exato da cláusula identificada (máx. 500 caracteres).",
+            },
+            observacoes: {
+              type: ["string", "null"],
+              description: "Notas relevantes (ex.: anualidade, gatilho, exceções).",
+            },
+            confianca: {
+              type: "number",
+              description: "Confiança 0-1 da extração.",
+            },
+          },
+          required: ["indice", "periodicidade", "data_base", "formula", "trecho_citado", "observacoes", "confianca"],
+          additionalProperties: false,
+        },
+      },
+    };
+
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "system",
+            content:
+              "Você é especialista em contratos administrativos brasileiros (Lei 14.133/2021 e Lei 8.666/1993). " +
+              "Sua tarefa é identificar a cláusula de reajuste/reequilíbrio econômico-financeiro num texto e extrair os campos estruturados. " +
+              "Responda SEMPRE chamando a tool registrar_clausula_reajuste.",
+          },
+          {
+            role: "user",
+            content: `Texto do contrato (pode conter ruído de OCR):\n\n${data.texto}`,
+          },
+        ],
+        tools: [tool],
+        tool_choice: { type: "function", function: { name: "registrar_clausula_reajuste" } },
+      }),
+    });
+    if (!res.ok) {
+      const txt = await res.text();
+      if (res.status === 402) throw new Error("Créditos da IA esgotados. Adicione créditos.");
+      if (res.status === 429) throw new Error("Limite da IA atingido. Tente novamente em instantes.");
+      throw new Error(`Falha na IA (${res.status}): ${txt.slice(0, 200)}`);
+    }
+    const json = (await res.json()) as {
+      choices: Array<{
+        message: { tool_calls?: Array<{ function: { arguments: string } }> };
+      }>;
+    };
+    const args = json.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+    if (!args) throw new Error("IA não retornou estrutura. Tente colar um trecho menor com a cláusula.");
+
+    let parsed: ClausulaReajusteExtraida;
+    try {
+      const obj = JSON.parse(args) as ClausulaReajusteExtraida;
+      parsed = {
+        indice: obj.indice ? String(obj.indice).toUpperCase().trim() : null,
+        periodicidade: obj.periodicidade ?? null,
+        data_base: obj.data_base ?? null,
+        formula: obj.formula ?? null,
+        trecho_citado: obj.trecho_citado ? String(obj.trecho_citado).slice(0, 500) : null,
+        observacoes: obj.observacoes ?? null,
+        confianca: typeof obj.confianca === "number" ? obj.confianca : 0,
+      };
+    } catch {
+      throw new Error("IA retornou resposta inválida.");
+    }
+
+    let aplicado = false;
+    if (data.aplicar) {
+      const patch: Record<string, unknown> = {};
+      if (parsed.indice) patch.indice_principal = parsed.indice;
+      if (parsed.periodicidade) patch.periodicidade_reajuste = parsed.periodicidade;
+      if (parsed.data_base) patch.data_base = parsed.data_base;
+      if (parsed.formula) patch.formula_reajuste = parsed.formula;
+      if (Object.keys(patch).length > 0) {
+        const { error: upErr } = await supabase
+          .from("contratos")
+          .update(patch)
+          .eq("id", data.contrato_id)
+          .eq("company_id", companyId);
+        if (upErr) throw new Error(upErr.message);
+        aplicado = true;
+      }
+    }
+
+    return { extraido: parsed, aplicado };
+  });
+

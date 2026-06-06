@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, CheckCircle2, XCircle, Calculator, TrendingUp } from "lucide-react";
+import { Plus, Trash2, CheckCircle2, XCircle, Calculator, TrendingUp, Sparkles } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,11 @@ import {
   calcularReajuste,
   atualizarStatusReajuste,
   excluirReajuste,
+  extrairClausulaReajusteIA,
+  type ClausulaReajusteExtraida,
 } from "@/lib/reajustes.functions";
+
+
 
 export const Route = createFileRoute("/_app/reajustes")({
   component: ReajustesPage,
@@ -144,6 +148,31 @@ function ReajustesPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // --- F12.x: extração de cláusula por IA ---
+  const extrairFn = useServerFn(extrairClausulaReajusteIA);
+  const [openIA, setOpenIA] = useState(false);
+  const [iaForm, setIaForm] = useState({ contrato_id: "", texto: "" });
+  const [iaResult, setIaResult] = useState<ClausulaReajusteExtraida | null>(null);
+  const extrairMut = useMutation({
+    mutationFn: (aplicar: boolean) => {
+      if (!iaForm.contrato_id) throw new Error("Selecione o contrato.");
+      if (iaForm.texto.trim().length < 50) throw new Error("Cole pelo menos 50 caracteres da cláusula.");
+      return extrairFn({ data: { contrato_id: iaForm.contrato_id, texto: iaForm.texto, aplicar } });
+    },
+    onSuccess: (r) => {
+      setIaResult(r.extraido);
+      if (r.aplicado) {
+        toast.success("Cláusula extraída e aplicada ao contrato.");
+        qc.invalidateQueries({ queryKey: ["reajustes"] });
+        qc.invalidateQueries({ queryKey: ["contratos"] });
+      } else {
+        toast.success(`Cláusula extraída (confiança ${Math.round((r.extraido.confianca ?? 0) * 100)}%).`);
+      }
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+
   const indices = data?.indices ?? [];
   const reajustes = data?.reajustes ?? [];
   const contratos = data?.contratos ?? [];
@@ -188,7 +217,70 @@ function ReajustesPage() {
         </TabsList>
 
         <TabsContent value="reajustes" className="space-y-4">
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <Dialog open={openIA} onOpenChange={(o) => { setOpenIA(o); if (!o) setIaResult(null); }}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Sparkles className="w-4 h-4 mr-2" /> Extrair cláusula com IA
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Extrair cláusula de reajuste com IA</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <div>
+                    <Label>Contrato</Label>
+                    <Select value={iaForm.contrato_id} onValueChange={(v) => setIaForm((f) => ({ ...f, contrato_id: v }))}>
+                      <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
+                      <SelectContent>
+                        {contratos.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.numero} — {c.objeto?.slice(0, 50) ?? ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Texto do contrato (cole a cláusula ou trecho relevante)</Label>
+                    <Textarea rows={10} value={iaForm.texto}
+                      placeholder="Cole aqui o trecho contendo a cláusula de reajuste / reequilíbrio econômico-financeiro…"
+                      onChange={(e) => setIaForm((f) => ({ ...f, texto: e.target.value }))} />
+                    <p className="text-xs text-muted-foreground mt-1">{iaForm.texto.length} caracteres</p>
+                  </div>
+                  {iaResult && (
+                    <div className="rounded-md border bg-muted/40 p-3 space-y-1 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold">Resultado da extração</span>
+                        <Badge variant="outline">confiança {Math.round((iaResult.confianca ?? 0) * 100)}%</Badge>
+                      </div>
+                      <div><span className="text-muted-foreground">Índice:</span> <span className="font-mono">{iaResult.indice ?? "—"}</span></div>
+                      <div><span className="text-muted-foreground">Periodicidade:</span> {iaResult.periodicidade ?? "—"}</div>
+                      <div><span className="text-muted-foreground">Data-base:</span> {iaResult.data_base ?? "—"}</div>
+                      {iaResult.formula && <div><span className="text-muted-foreground">Fórmula:</span> <span className="font-mono">{iaResult.formula}</span></div>}
+                      {iaResult.trecho_citado && (
+                        <div className="text-xs text-muted-foreground border-l-2 pl-2 mt-2 italic">
+                          “{iaResult.trecho_citado}”
+                        </div>
+                      )}
+                      {iaResult.observacoes && <div className="text-xs"><span className="text-muted-foreground">Notas:</span> {iaResult.observacoes}</div>}
+                    </div>
+                  )}
+                </div>
+                <DialogFooter className="gap-2">
+                  <Button variant="outline" onClick={() => setOpenIA(false)}>Fechar</Button>
+                  <Button variant="secondary" onClick={() => extrairMut.mutate(false)} disabled={extrairMut.isPending}>
+                    <Sparkles className="w-4 h-4 mr-2" /> Extrair (preview)
+                  </Button>
+                  <Button onClick={() => extrairMut.mutate(true)} disabled={extrairMut.isPending}>
+                    Extrair e aplicar
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+
             <Dialog open={openCalc} onOpenChange={setOpenCalc}>
               <DialogTrigger asChild>
                 <Button><Calculator className="w-4 h-4 mr-2" /> Calcular reajuste</Button>
