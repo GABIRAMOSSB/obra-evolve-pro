@@ -14,6 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
+      aditivos_contratuais: {
+        Row: {
+          aplicado_em: string | null
+          company_id: string
+          contrato_id: string
+          created_at: string
+          created_by: string | null
+          data_assinatura: string | null
+          id: string
+          justificativa: string | null
+          metadata: Json
+          numero: number
+          prazo_dias_delta: number
+          status: string
+          tipo: string
+          updated_at: string
+          valor_delta: number
+        }
+        Insert: {
+          aplicado_em?: string | null
+          company_id: string
+          contrato_id: string
+          created_at?: string
+          created_by?: string | null
+          data_assinatura?: string | null
+          id?: string
+          justificativa?: string | null
+          metadata?: Json
+          numero: number
+          prazo_dias_delta?: number
+          status?: string
+          tipo: string
+          updated_at?: string
+          valor_delta?: number
+        }
+        Update: {
+          aplicado_em?: string | null
+          company_id?: string
+          contrato_id?: string
+          created_at?: string
+          created_by?: string | null
+          data_assinatura?: string | null
+          id?: string
+          justificativa?: string | null
+          metadata?: Json
+          numero?: number
+          prazo_dias_delta?: number
+          status?: string
+          tipo?: string
+          updated_at?: string
+          valor_delta?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aditivos_contratuais_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aditivos_contratuais_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       apontamentos_mao_obra: {
         Row: {
           centro_custo: string | null
