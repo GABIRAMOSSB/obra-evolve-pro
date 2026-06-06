@@ -54,6 +54,7 @@ import {
   type NFeParsed,
 } from "@/lib/nfe-parser";
 import { NfeRateioDialog, type RateioItem } from "@/components/NfeRateioDialog";
+import { NfeManifestacaoDialog } from "@/components/NfeManifestacaoDialog";
 import type { BudgetRow, ProjectData } from "@/lib/types";
 
 export const Route = createFileRoute("/_app/notas-fiscais")({
@@ -81,6 +82,9 @@ type NotaRow = {
   valor_total: number;
   status: string;
   created_at: string;
+  manifestacao_tipo: string | null;
+  manifestacao_data: string | null;
+  manifestacao_justificativa: string | null;
 };
 
 type ItemRow = {
@@ -131,6 +135,7 @@ function NotasFiscaisPage() {
   const [bulkObra, setBulkObra] = useState<string>("");
   const [bulkComp, setBulkComp] = useState<string>("");
   const [rateioItem, setRateioItem] = useState<RateioItem | null>(null);
+  const [manifestNota, setManifestNota] = useState<NotaRow | null>(null);
 
 
   const refresh = async () => {
@@ -139,7 +144,7 @@ function NotasFiscaisPage() {
     const { data, error } = await supabase
       .from("notas_fiscais")
       .select(
-        "id,chave_acesso,numero,serie,data_emissao,emitente_cnpj,emitente_nome,emitente_uf,valor_total,status,created_at",
+        "id,chave_acesso,numero,serie,data_emissao,emitente_cnpj,emitente_nome,emitente_uf,valor_total,status,created_at,manifestacao_tipo,manifestacao_data,manifestacao_justificativa",
       )
       .eq("company_id", companyId)
       .order("data_emissao", { ascending: false, nullsFirst: false })
@@ -485,19 +490,20 @@ function NotasFiscaisPage() {
                       <TableHead>UF</TableHead>
                       <TableHead className="text-right">Valor</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Manifestação</TableHead>
                       <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {loading ? (
                       <TableRow>
-                        <TableCell colSpan={9} className="text-center text-muted-foreground">
+                        <TableCell colSpan={10} className="text-center text-muted-foreground">
                           Carregando…
                         </TableCell>
                       </TableRow>
                     ) : filtered.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={9} className="text-center text-muted-foreground">
+                        <TableCell colSpan={10} className="text-center text-muted-foreground">
                           Nenhuma nota encontrada
                         </TableCell>
                       </TableRow>
@@ -524,6 +530,25 @@ function NotasFiscaisPage() {
                           <TableCell>
                             <Badge variant="secondary">{n.status}</Badge>
                           </TableCell>
+                          <TableCell>
+                            {n.manifestacao_tipo ? (
+                              <Badge
+                                variant={
+                                  n.manifestacao_tipo === "confirmacao" ? "default"
+                                  : n.manifestacao_tipo === "ciencia" ? "secondary"
+                                  : "destructive"
+                                }
+                                className="text-[10px]"
+                              >
+                                {n.manifestacao_tipo === "ciencia" ? "Ciência"
+                                  : n.manifestacao_tipo === "confirmacao" ? "Confirmada"
+                                  : n.manifestacao_tipo === "desconhecimento" ? "Desconhecida"
+                                  : "Não realizada"}
+                              </Badge>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
                           <TableCell className="flex gap-1">
                             <Button
                               size="sm"
@@ -533,6 +558,16 @@ function NotasFiscaisPage() {
                             >
                               <Eye className="w-4 h-4" />
                             </Button>
+                            {canEdit && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setManifestNota(n)}
+                                title="Manifestação do destinatário"
+                              >
+                                <FileText className="w-4 h-4" />
+                              </Button>
+                            )}
                             {canDelete && (
                               <Button
                                 size="sm"
@@ -852,6 +887,13 @@ function NotasFiscaisPage() {
           onSaved={() => detailNota && openDetail(detailNota)}
         />
       )}
+
+      <NfeManifestacaoDialog
+        open={!!manifestNota}
+        onOpenChange={(o) => !o && setManifestNota(null)}
+        nota={manifestNota}
+        onSaved={() => { void refresh(); }}
+      />
     </div>
   );
 }
