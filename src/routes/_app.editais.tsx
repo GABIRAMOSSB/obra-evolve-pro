@@ -274,6 +274,7 @@ function EditalDetail({ id, onDeleted }: { id: string; onDeleted: () => void }) 
   const listDocsFn = useServerFn(listEditalDocumentos);
   const uploadDocFn = useServerFn(uploadEditalDocumento);
   const getUrlFn = useServerFn(getEditalDocumentoUrl);
+  const extractFn = useServerFn(extractDocumentoTexto);
   const qc = useQueryClient();
 
   const { data: editais } = useQuery({
