@@ -47,6 +47,7 @@ import { Route as AppAssinaturasRouteImport } from './routes/_app.assinaturas'
 import { Route as AppAditivosRouteImport } from './routes/_app.aditivos'
 import { Route as ApiPublicZapsignWebhookRouteImport } from './routes/api.public.zapsign-webhook'
 import { Route as ApiPublicZapsignRemindersRouteImport } from './routes/api.public.zapsign-reminders'
+import { Route as ApiPublicComplianceScheduledRouteImport } from './routes/api.public.compliance-scheduled'
 import { Route as AppPropostasIdRouteImport } from './routes/_app.propostas.$id'
 import { Route as AppInsumosImportarRouteImport } from './routes/_app.insumos.importar'
 import { Route as AppConfiguracoesZapsignRouteImport } from './routes/_app.configuracoes.zapsign'
@@ -245,6 +246,12 @@ const ApiPublicZapsignRemindersRoute =
     path: '/api/public/zapsign-reminders',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicComplianceScheduledRoute =
+  ApiPublicComplianceScheduledRouteImport.update({
+    id: '/api/public/compliance-scheduled',
+    path: '/api/public/compliance-scheduled',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AppPropostasIdRoute = AppPropostasIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -312,6 +319,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes/zapsign': typeof AppConfiguracoesZapsignRouteWithChildren
   '/insumos/importar': typeof AppInsumosImportarRoute
   '/propostas/$id': typeof AppPropostasIdRoute
+  '/api/public/compliance-scheduled': typeof ApiPublicComplianceScheduledRoute
   '/api/public/zapsign-reminders': typeof ApiPublicZapsignRemindersRoute
   '/api/public/zapsign-webhook': typeof ApiPublicZapsignWebhookRoute
   '/configuracoes/zapsign/testes': typeof AppConfiguracoesZapsignTestesRoute
@@ -356,6 +364,7 @@ export interface FileRoutesByTo {
   '/configuracoes/zapsign': typeof AppConfiguracoesZapsignRouteWithChildren
   '/insumos/importar': typeof AppInsumosImportarRoute
   '/propostas/$id': typeof AppPropostasIdRoute
+  '/api/public/compliance-scheduled': typeof ApiPublicComplianceScheduledRoute
   '/api/public/zapsign-reminders': typeof ApiPublicZapsignRemindersRoute
   '/api/public/zapsign-webhook': typeof ApiPublicZapsignWebhookRoute
   '/configuracoes/zapsign/testes': typeof AppConfiguracoesZapsignTestesRoute
@@ -402,6 +411,7 @@ export interface FileRoutesById {
   '/_app/configuracoes/zapsign': typeof AppConfiguracoesZapsignRouteWithChildren
   '/_app/insumos/importar': typeof AppInsumosImportarRoute
   '/_app/propostas/$id': typeof AppPropostasIdRoute
+  '/api/public/compliance-scheduled': typeof ApiPublicComplianceScheduledRoute
   '/api/public/zapsign-reminders': typeof ApiPublicZapsignRemindersRoute
   '/api/public/zapsign-webhook': typeof ApiPublicZapsignWebhookRoute
   '/_app/configuracoes/zapsign/testes': typeof AppConfiguracoesZapsignTestesRoute
@@ -448,6 +458,7 @@ export interface FileRouteTypes {
     | '/configuracoes/zapsign'
     | '/insumos/importar'
     | '/propostas/$id'
+    | '/api/public/compliance-scheduled'
     | '/api/public/zapsign-reminders'
     | '/api/public/zapsign-webhook'
     | '/configuracoes/zapsign/testes'
@@ -492,6 +503,7 @@ export interface FileRouteTypes {
     | '/configuracoes/zapsign'
     | '/insumos/importar'
     | '/propostas/$id'
+    | '/api/public/compliance-scheduled'
     | '/api/public/zapsign-reminders'
     | '/api/public/zapsign-webhook'
     | '/configuracoes/zapsign/testes'
@@ -537,6 +549,7 @@ export interface FileRouteTypes {
     | '/_app/configuracoes/zapsign'
     | '/_app/insumos/importar'
     | '/_app/propostas/$id'
+    | '/api/public/compliance-scheduled'
     | '/api/public/zapsign-reminders'
     | '/api/public/zapsign-webhook'
     | '/_app/configuracoes/zapsign/testes'
@@ -547,6 +560,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   InviteTokenRoute: typeof InviteTokenRoute
+  ApiPublicComplianceScheduledRoute: typeof ApiPublicComplianceScheduledRoute
   ApiPublicZapsignRemindersRoute: typeof ApiPublicZapsignRemindersRoute
   ApiPublicZapsignWebhookRoute: typeof ApiPublicZapsignWebhookRoute
 }
@@ -819,6 +833,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicZapsignRemindersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/compliance-scheduled': {
+      id: '/api/public/compliance-scheduled'
+      path: '/api/public/compliance-scheduled'
+      fullPath: '/api/public/compliance-scheduled'
+      preLoaderRoute: typeof ApiPublicComplianceScheduledRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/propostas/$id': {
       id: '/_app/propostas/$id'
       path: '/$id'
@@ -986,6 +1007,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   InviteTokenRoute: InviteTokenRoute,
+  ApiPublicComplianceScheduledRoute: ApiPublicComplianceScheduledRoute,
   ApiPublicZapsignRemindersRoute: ApiPublicZapsignRemindersRoute,
   ApiPublicZapsignWebhookRoute: ApiPublicZapsignWebhookRoute,
 }
