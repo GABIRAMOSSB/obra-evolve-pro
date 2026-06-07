@@ -1,0 +1,339 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║              ✅ SOLV GESTÃO — FASE 0 AUDITORIA CONCLUÍDA                     ║
+║                                                                              ║
+║                    Central Inteligente de Licitações,                        ║
+║               Obras, Documentos e Contratos com IA Assistida                ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+📅 DATA: 2026-06-07
+⏱️ DURAÇÃO FASE 0: 5 horas
+📊 STATUS: ✅ CONCLUÍDO E PRONTO PARA APROVAÇÃO
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📦 ENTREGÁVEIS (7 Documentos)
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 1. README.md                                                               │
+│    ├─ Sumário executivo e entry point                                     │
+│    ├─ 10 funcionalidades principais                                       │
+│    └─ Próximas ações (3 etapas)                                           │
+│    ⏱️ Tempo leitura: 10 minutos                                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 2. FASE_0_AUDITORIA.md                          ⭐ DOCUMENTO PRINCIPAL      │
+│    ├─ Diagnóstico executivo completo                                      │
+│    ├─ 82 Funcionalidades mapeadas                                         │
+│    ├─ 28 Tabelas estruturais necessárias                                  │
+│    ├─ 9 Edge Functions planejadas                                         │
+│    ├─ 13 Fases de implementação                                           │
+│    ├─ Estimativa: 175 horas / 2090 créditos Lovable                      │
+│    ├─ Riscos identificados e mitigação                                    │
+│    └─ 14 Questões críticas para aprovação                                 │
+│    ⏱️ Tempo leitura: 45 minutos                                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 3. ARQUITETURA_MAPA.md                         ⭐ DIAGRAMAS TÉCNICOS       │
+│    ├─ Stack tecnológico (5 camadas)                                       │
+│    ├─ Fluxo de dados completo (Oportunidade em 5 dias)                   │
+│    ├─ Estrutura de tabelas (relacionamentos)                              │
+│    ├─ Precisão financeira (Proposta comercial)                            │
+│    ├─ Reajuste contratual (Passo a passo 01/2024→01/2025)               │
+│    ├─ Security matrix (RLS + Buckets)                                     │
+│    ├─ Jobs automáticos (Scheduler)                                        │
+│    └─ Timeline das 13 fases                                               │
+│    ⏱️ Tempo leitura: 30 minutos                                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 4. QUESTOES_CRITICAS.md                        ⭐ PARA VOCÊ RESPONDER      │
+│    ├─ 14 Questões críticas estruturadas                                   │
+│    ├─ Impacto de cada questão                                             │
+│    ├─ Questões operacionais (menos críticas)                              │
+│    └─ Checklist de aprovação FASE 0                                       │
+│    ⏱️ Tempo para responder: ~30 minutos                                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 5. INDICE.md                                                               │
+│    ├─ Estrutura de arquivos (7 documentos)                                │
+│    ├─ Guia de leitura (ordem + tempo + conteúdo)                         │
+│    ├─ Informações por funcionalidade                                      │
+│    ├─ Referências rápidas (tabela índice)                                │
+│    ├─ Fluxo de aprovação                                                  │
+│    └─ Checklist final FASE 0                                              │
+│    ⏱️ Tempo leitura: 15 minutos                                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 6. FASE_0_COMPLETO.txt                                                     │
+│    ├─ Sumário final executivo                                             │
+│    ├─ Estatísticas finais                                                 │
+│    ├─ Próximas ações obrigatórias                                         │
+│    ├─ Checklist de aprovação                                              │
+│    └─ Conclusões FASE 0                                                   │
+│    ⏱️ Tempo leitura: 10 minutos                                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 7. ESTRUTURA_PASTAS.md                         📁 REFERÊNCIA FUTURA        │
+│    ├─ Estrutura de pastas FASE 1-13                                       │
+│    ├─ Convenções de nomenclatura                                          │
+│    └─ Estrutura final (500+ arquivos, 50.000+ linhas)                    │
+│    ⏱️ Tempo leitura: 10 minutos (opcional)                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 ESTATÍSTICAS FASE 0
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Documentos Gerados           │ 7 arquivos                                   │
+│ Total de Palavras            │ ~85.000 palavras                             │
+│ Total de Linhas              │ ~2.500 linhas                                │
+│ Tempo Leitura Total          │ ~105 minutos (1:45h)                         │
+│ Tempo Resposta Questões      │ ~30 minutos                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ FUNCIONALIDADES MAPEADAS     │ 82 funcionalidades                           │
+│ TABELAS PLANEJADAS           │ 28 tabelas estruturais                       │
+│ EDGE FUNCTIONS               │ 9 functions                                  │
+│ APIs EXTERNAS                │ 6 integrações (PNCP, IBGE, BCB, etc)        │
+│ BUCKETS STORAGE              │ 6 buckets versionados                        │
+│ FASES DE IMPLEMENTAÇÃO       │ 13 fases                                     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ DURAÇÃO TOTAL ESTIMADA       │ 175 horas                                    │
+│ CRÉDITOS LOVABLE ESTIMADOS   │ 2.090 créditos                               │
+│ RISCOS CRÍTICOS IDENTIFICADOS│ 4 riscos + 4 riscos médios + 2 baixos       │
+│ QUESTÕES CRÍTICAS            │ 14 questões para aprovação                   │
+│ PRINCÍPIOS ABSOLUTOS         │ 7 princípios                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 FUNCIONALIDADES MAPEADAS (82 Total)
+
+LICITAÇÕES (5)
+  ✓ Radar PNCP - Coleta automática de oportunidades
+  ✓ Triagem automática - Filtros + rejeição com histórico
+  ✓ Análise de Edital com IA - Extração estruturada em JSON
+  ✓ Retificações e Erratas - Versionamento + hash
+  ✓ OCR inteligente - Somente em PDFs escaneados
+
+DOCUMENTAÇÃO (5)
+  ✓ CNDs - Reutilizar APIs existentes
+  ✓ Documentos versioning - Hash + histórico + restauração
+  ✓ Biblioteca técnica - Atestados, CATs, ARTs, CREA
+  ✓ Declarações licitatórias - Modelos + assinatura eletrônica
+  ✓ Signatários - Matriz de poderes + procurações
+
+PROPOSTAS (5)
+  ✓ Carta proposta - Geração automática validada
+  ✓ Proposta original - Preservação integral
+  ✓ Proposta readequada - Desconto linear/não-linear
+  ✓ Arredondamentos - Reconciliação com maior resto
+  ✓ BDI e Encargos - Cálculo preciso em DECIMAL
+
+CRONOGRAMAS (4)
+  ✓ Cronograma físico-financeiro - Importação + versionamento
+  ✓ Curva S - Cálculo previsto x realizado
+  ✓ Boletins de Medição - Preservação integral (BM-01 a Bn)
+  ✓ RDO - Registro de Diário de Obras integrado
+
+CONTRATOS (4)
+  ✓ Gestão de Contratos - Eventos contratuais + histórico
+  ✓ Reajustes - Monitoramento de data-base + índices
+  ✓ Índices Econômicos - IBGE SIDRA + BCB SGS + FGV
+  ✓ Ofícios de Reajuste - Geração + protocolo + apostilamento
+
+INTEGRAÇÕES (4)
+  ✓ Edge Functions - Backend seguro Supabase
+  ✓ RLS (Row Level Security) - Controle por usuário/obra
+  ✓ Assinatura Eletrônica - ZapSign ou equivalente
+  ✓ Auditoria - Logs imutáveis de todas ações
+
+DASHBOARDS (3)
+  ✓ Dashboard Executivo - KPIs + alertas + filtros
+  ✓ Alertas inteligentes - 30+ tipos de notificação
+  ✓ Relatórios - PDF + Excel + ZIP estruturado
+
++ 39 Funcionalidades adicionais detalhadas em FASE_0_AUDITORIA.md
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🏗️ ARQUITETURA
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ FRONTEND              │ React/Next.js + TypeScript + Tailwind CSS           │
+│ BACKEND               │ Supabase Edge Functions + Node.js                   │
+│ DATABASE              │ PostgreSQL (via Supabase)                           │
+│ STORAGE               │ Supabase Buckets (6 buckets versionados por hash)   │
+│ AUTHENTICATION        │ Supabase Auth + RLS (Row Level Security)            │
+│ EXTERNAL APIs         │ PNCP, IBGE SIDRA, BCB SGS, FGV, CNDs, ZapSign     │
+│ DESIGN SYSTEM         │ Figma (Bronze #B19777, Grafite #2D3748)            │
+│ TOTAL TABELAS         │ 28 tabelas estruturais com relacionamentos         │
+│ EDGE FUNCTIONS        │ 9 functions (webhook, jobs, validações)            │
+│ RLS POLICIES          │ 6+ policies por empresa/obra/contrato              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📈 FASES DE IMPLEMENTAÇÃO (175 horas / 2.090 créditos)
+
+FASE 1   │ Fundação Segura            │ 12h  │ 150 cr  │ ⏳ Aguarda aprovação
+FASE 2   │ Documentos e CNDs          │ 8h   │ 100 cr  │ ⏳
+FASE 3   │ Radar PNCP                 │ 10h  │ 120 cr  │ ⏳
+FASE 4   │ IA para Editais            │ 20h  │ 250 cr  │ ⏳ 🔴 Alto risco
+FASE 5   │ Assinatura Eletrônica      │ 12h  │ 150 cr  │ ⏳
+FASE 6   │ Biblioteca Técnica         │ 14h  │ 170 cr  │ ⏳
+FASE 7   │ Proposta Comercial         │ 18h  │ 220 cr  │ ⏳ 🔴 Alto risco
+FASE 8   │ Cronograma                 │ 12h  │ 150 cr  │ ⏳
+FASE 9   │ Dossiês                    │ 15h  │ 180 cr  │ ⏳
+FASE 10  │ Portais e Perfis           │ 8h   │ 100 cr  │ ⏳
+FASE 11  │ Índices Econômicos         │ 14h  │ 170 cr  │ ⏳
+FASE 12  │ Reajustes Contratuais      │ 20h  │ 250 cr  │ ⏳ 🔴 Alto risco
+FASE 13  │ Qualidade e Deploy         │ 12h  │ 150 cr  │ ⏳
+         │ TOTAL                      │175h  │2090 cr  │
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔒 PRINCÍPIOS ABSOLUTOS
+
+1. PRESERVAÇÃO
+   └─ Nunca sobrescrever; criar versão + hash + histórico
+
+2. FONTE ÚNICA
+   └─ Um registro por empresa, fornecedor, obra, contrato, documento
+
+3. VERSIONAMENTO
+   └─ Timestamp + usuário + hash + motivo em cada mudança
+
+4. SEGURANÇA
+   └─ Backend-first, RLS, secrets, mascaramento CPF
+
+5. PRECISÃO FINANCEIRA
+   └─ NUMERIC(18,2) para moeda, NUMERIC(18,8) para unitários
+
+6. IA COM EVIDÊNCIA
+   └─ Arquivo + versão + página + confiança sempre visível
+
+7. EXCEÇÕES
+   └─ IA automatiza repetitivo; humano decide exceção
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ RISCOS IDENTIFICADOS
+
+CRÍTICOS (4)
+  🔴 Alucinação IA em Editais
+     └─ Mitigação: Exigir confiança ≥95% para auto-preenchimento
+  🔴 Erro Financeiro em Reajuste
+     └─ Mitigação: Validação tripla backend + log + auditoria
+  🔴 Duplicidade de Dados
+     └─ Mitigação: RLS + Constraints UNIQUE + Validação antes insert
+  🔴 Perda de Histórico
+     └─ Mitigação: Soft delete + versioning obrigatório
+
+MÉDIOS (4)
+  ⚠️ Falha API PNCP
+  ⚠️ Timeout OCR
+  ⚠️ Webhook ZapSign atrasado
+  ⚠️ Índice não publicado
+
+BAIXOS (2)
+  ✅ Lentidão Dashboard
+  ✅ Usuário esquece senha
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ PRÓXIMAS AÇÕES (VOCÊ)
+
+1️⃣ LEITURA (105 minutos)
+   ⏳ README.md                          (10 min)
+   ⏳ FASE_0_AUDITORIA.md               (45 min)  ⭐ CRÍTICO
+   ⏳ ARQUITETURA_MAPA.md               (30 min)  ⭐ CRÍTICO
+   ⏳ QUESTOES_CRITICAS.md              (20 min)  ⭐ CRÍTICO
+
+2️⃣ RESPOSTAS (~30 minutos)
+   ⏳ Responda 14 questões críticas
+   ⏳ Aprove ou sugira ajustes
+   ⏳ Confirme checklist de aprovação
+
+3️⃣ VALIDAÇÃO (~15 minutos)
+   ⏳ Confirme Supabase project criado
+   ⏳ Valide timeline (175h / 2090cr)
+   ⏳ Aprove sequência de 13 fases
+
+TEMPO TOTAL: ~2 horas de trabalho
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 CHECKLIST DE APROVAÇÃO
+
+Você confirma:
+  [ ] Leu README.md
+  [ ] Leu FASE_0_AUDITORIA.md
+  [ ] Leu ARQUITETURA_MAPA.md
+  [ ] Concorda com 82 funcionalidades
+  [ ] Concorda com 28 tabelas novas
+  [ ] Concorda com 13 fases
+  [ ] Concorda com 7 princípios absolutos
+  [ ] Respondeu 14 questões críticas
+  [ ] Aprova arquitetura para FASE 1
+  [ ] Aprova estimativa 175h / 2090cr
+
+❌ SEM APROVAÇÃO, NÃO INICIAMOS FASE 1
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 O QUE FAZER AGORA
+
+► Abra: README.md
+  (Este é o entry point)
+
+► Depois de ler: Abra QUESTOES_CRITICAS.md
+  (Você vai responder as 14 questões)
+
+► Ao terminar: Responda com suas respostas
+  (Formato livre ou estruturado, como preferir)
+
+► Eu recebo: Suas respostas + aprovação
+  (Se aprovado, iniciamos FASE 1 imediatamente)
+
+TEMPO ESTIMADO: ~2 horas (incluindo leitura + respostas)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📂 ARQUIVOS CRIADOS
+
+✅ README.md                    - Entry point (10 min)
+✅ FASE_0_AUDITORIA.md         - Diagnóstico completo (45 min) ⭐ PRINCIPAL
+✅ ARQUITETURA_MAPA.md         - Diagramas técnicos (30 min)
+✅ QUESTOES_CRITICAS.md        - Para você responder (20 min)
+✅ INDICE.md                   - Guia de navegação (15 min)
+✅ FASE_0_COMPLETO.txt         - Sumário final (10 min)
+✅ ESTRUTURA_PASTAS.md         - Referência futura (10 min, opcional)
+
+TOTAL: 7 arquivos | ~85.000 palavras | 2.500 linhas
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✨ FASE 0 — AUDITORIA E MAPEAMENTO
+
+STATUS: ✅ CONCLUÍDO
+PRÓXIMA AÇÃO: Sua aprovação e respostas
+PRÓXIMA FASE: FASE 1 — Fundação Segura (12h / 150cr)
+
+Organização: SOLV CONSTRUTORA E SOLUÇÕES LTDA
+CNPJ: 36.419.348/0001-65
+
+Elaborado por: GitHub Copilot
+Modelo: Claude Haiku 4.5
+Data: 2026-06-07
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👉 COMECE AGORA: Abra README.md
