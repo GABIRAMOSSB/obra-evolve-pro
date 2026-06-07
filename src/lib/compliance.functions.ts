@@ -255,9 +255,12 @@ export const updateCertificate = createServerFn({ method: "POST" })
       .select()
       .single();
 
-    const nextCheckDays = 7;
-    const nextCheckAt = new Date();
-    nextCheckAt.setDate(nextCheckAt.getDate() + nextCheckDays);
+    // Agenda renovação automática: exatamente 3 dias antes da validade.
+    // Sem checagens diárias para economizar créditos da API.
+    const nextCheckAt = result.expiration_date
+      ? new Date(new Date(result.expiration_date).getTime() - 3 * 86400000)
+      : (() => { const d = new Date(); d.setDate(d.getDate() + 30); return d; })();
+
 
     await supabaseAdmin
       .from("company_certificates")
@@ -423,8 +426,11 @@ export const updateAllCertificates = createServerFn({ method: "POST" })
 
           updated++;
 
-          const nextCheckAt = new Date();
-          nextCheckAt.setDate(nextCheckAt.getDate() + 7);
+          // Renovação automática: 3 dias antes da validade (economiza créditos InfoSimples).
+          const nextCheckAt = result.expiration_date
+            ? new Date(new Date(result.expiration_date).getTime() - 3 * 86400000)
+            : (() => { const d = new Date(); d.setDate(d.getDate() + 30); return d; })();
+
 
           await supabaseAdmin
             .from("company_certificates")

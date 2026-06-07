@@ -723,25 +723,43 @@ function CertDetailsDrawer({
                         <span>Fonte: {v.source_type}</span>
                         <span>Criada: {fmtDateTime(v.created_at)}</span>
                       </div>
-                      {v.storage_path && (
-                        <div className="mt-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={async () => {
-                              try {
-                                const r = await getSigned({ data: { version_id: v.id } });
-                                window.open(r.url, "_blank");
-                              } catch (e) {
-                                toast.error((e as Error).message);
-                              }
-                            }}
-                          >
-                            <Download className="w-3.5 h-3.5 mr-1" />
-                            Baixar PDF
-                          </Button>
-                        </div>
-                      )}
+                      {(() => {
+                        const raw = (v as { raw_payload_json?: { site_receipts?: unknown } }).raw_payload_json;
+                        const receipts = Array.isArray(raw?.site_receipts) ? (raw!.site_receipts as string[]) : [];
+                        const officialUrl = receipts[0];
+                        return (
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {v.storage_path && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={async () => {
+                                  try {
+                                    const r = await getSigned({ data: { version_id: v.id } });
+                                    window.open(r.url, "_blank");
+                                  } catch (e) {
+                                    toast.error((e as Error).message);
+                                  }
+                                }}
+                              >
+                                <Download className="w-3.5 h-3.5 mr-1" />
+                                Baixar PDF
+                              </Button>
+                            )}
+                            {officialUrl && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => window.open(officialUrl, "_blank")}
+                              >
+                                <Download className="w-3.5 h-3.5 mr-1" />
+                                Baixar PDF Oficial
+                              </Button>
+                            )}
+                          </div>
+                        );
+                      })()}
+
                     </div>
                   ))}
                   {(data?.versions ?? []).length === 0 && (
