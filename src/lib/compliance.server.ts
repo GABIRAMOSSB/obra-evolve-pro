@@ -141,13 +141,36 @@ export function buildSandboxResponse(
 }
 
 /**
- * Adapter — currently always returns sandbox data while sandbox=true.
+ * Adapter — chama a InfoSimples em produção via FormData POST.
  *
- * Production path is intentionally left as a no-op error until an admin
- * (1) cadastra INFOSIMPLES_TOKEN nos Secrets, (2) flag production_enabled=true,
- * (3) flag sandbox_mode=false. The real HTTP call must be implemented here
- * mapping certificate_types.provider_service_key → InfoSimples endpoint.
+ * Endpoint: https://api.infosimples.com/api/v2/consultas/{slug}
+ *   slug = certificate_types.provider_service_key
+ *
+ * Em sandbox (integration_settings.sandbox_mode=true OU production_enabled=false)
+ * retorna dados fictícios sem consumir créditos da API.
  */
+const INFOSIMPLES_BASE = "https://api.infosimples.com/api/v2/consultas";
+
+function parseBRDate(v: unknown): string | null {
+  if (!v || typeof v !== "string") return null;
+  const s = v.trim();
+  // dd/mm/yyyy
+  const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+  // yyyy-mm-dd
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  return null;
+}
+
+function pick(obj: Record<string, unknown> | null | undefined, keys: string[]): string | null {
+  if (!obj) return null;
+  for (const k of keys) {
+    const v = obj[k];
+    if (typeof v === "string" && v.trim()) return v.trim();
+  }
+  return null;
+}
+
 export async function callInfosimples(
   code: string,
   input: InfosimplesQueryInput,
@@ -157,46 +180,87 @@ export async function callInfosimples(
   }
 
   const token = process.env.INFOSIMPLES_TOKEN;
+  const slug = input.provider_service_key;
   if (!token) {
     return {
-      ok: false,
-      execution_mode: "production",
-      status: "api_not_configured",
-      status_message: "Token da InfoSimples não cadastrado em Secrets",
-      issue_date: null,
-      expiration_date: null,
-      certificate_number: null,
-      authentication_code: null,
-      pdf_base64: null,
-      raw: null,
-      error_code: "TOKEN_MISSING",
-      error_message: "INFOSIMPLES_TOKEN ausente nos Secrets",
+      ok: false, execution_mode: "production", status: "api_not_configured",
+      status_message: "Token da InfoSimples não cadastrado",
+      issue_date: null, expiration_date: null, certificate_number: null,
+      authentication_code: null, pdf_base64: null, raw: null,
+      error_code: "TOKEN_MISSING", error_message: "INFOSIMPLES_TOKEN ausente",
+    };
+  }
+  if (!slug) {
+    return {
+      ok: false, execution_mode: "production", status: "api_not_configured",
+      status_message: "Slug InfoSimples não configurado para esta certidão",
+      issue_date: null, expiration_date: null, certificate_number: null,
+      authentication_code: null, pdf_base64: null, raw: null,
+      error_code: "SLUG_MISSING", error_message: `provider_service_key ausente para ${code}`,
     };
   }
 
-  // ATENÇÃO: implementação real fica aqui.
-  // Mapear input.provider_service_key para o endpoint correto da
-  // InfoSimples e enviar payload com input.cnpj / input.state.
-  // Por segurança, retornamos erro controlado enquanto a integração
-  // real não foi homologada pelo admin.
-  return {
-    ok: false,
-    execution_mode: "production",
-    status: "api_not_configured",
-    status_message:
-      "Integração de produção ainda não habilitada para este tipo de certidão.",
-    issue_date: null,
-    expiration_date: null,
-    certificate_number: null,
-    authentication_code: null,
-    pdf_base64: null,
-    raw: null,
-    error_code: "PRODUCTION_NOT_WIRED",
-    error_message:
-      "Mapear endpoint real da InfoSimples para provider_service_key=" +
-      (input.provider_service_key ?? "<none>"),
-  };
+  try {
+    const form = new FormData();
+    form.append("token", token);
+    form.append("timeout", "300");
+    if (input.cnpj) form.append("cnpj", input.cnpj.replace(/\D/g, ""));
+    if (input.state) form.append("uf", input.state);
+    if (input.city) form.append("municipio", input.city);
+
+    const res = await fetch(`${INFOSIMPLES_BASE}/${slug}`, { method: "POST", body: form });
+    const json = await res.json().catch(() => ({} as Record<string, unknown>));
+    const httpStatus = res.status;
+    const apiCode = typeof (json as { code?: number }).code === "number" ? (json as { code: number }).code : null;
+    const dataArr = Array.isArray((json as { data?: unknown[] }).data) ? (json as { data: Record<string, unknown>[] }).data : [];
+    const first = (dataArr[0] ?? null) as Record<string, unknown> | null;
+    const receipts = Array.isArray((json as { site_receipts?: unknown[] }).site_receipts)
+      ? (json as { site_receipts: string[] }).site_receipts : [];
+
+    // 200 = sucesso InfoSimples. Demais códigos = erro lógico (sem créditos consumidos em alguns casos).
+    const ok = res.ok && apiCode === 200 && !!first;
+    if (!ok) {
+      return {
+        ok: false, execution_mode: "production",
+        status: apiCode === 612 ? "certificate_not_found" : "provider_error",
+        status_message: (json as { code_message?: string }).code_message ?? `InfoSimples HTTP ${httpStatus} code=${apiCode}`,
+        issue_date: null, expiration_date: null, certificate_number: null,
+        authentication_code: null, pdf_base64: null, raw: json,
+        http_status: httpStatus,
+        error_code: apiCode ? String(apiCode) : "HTTP_" + httpStatus,
+        error_message: (json as { code_message?: string }).code_message ?? "Falha na consulta",
+      };
+    }
+
+    const issue = parseBRDate(pick(first, ["data_emissao", "emissao", "data_consulta", "expedicao"]));
+    const expiration = parseBRDate(pick(first, ["data_validade", "validade", "data_expiracao", "vencimento"]));
+    const number = pick(first, ["numero_certidao", "numero", "codigo_controle", "numero_documento"]);
+    const auth = pick(first, ["codigo_autenticacao", "codigo_controle", "autenticidade", "hash"]);
+    const statusMsg = pick(first, ["situacao", "status", "resultado", "mensagem"]) ?? "Consulta realizada com sucesso";
+
+    return {
+      ok: true, execution_mode: "production",
+      status: classifyExpiration(expiration),
+      status_message: statusMsg,
+      issue_date: issue,
+      expiration_date: expiration,
+      certificate_number: number,
+      authentication_code: auth,
+      pdf_base64: null,
+      raw: { ...json, site_receipts: receipts },
+      http_status: httpStatus,
+    };
+  } catch (e) {
+    return {
+      ok: false, execution_mode: "production", status: "provider_error",
+      status_message: (e as Error).message,
+      issue_date: null, expiration_date: null, certificate_number: null,
+      authentication_code: null, pdf_base64: null, raw: null,
+      error_code: "NETWORK_ERROR", error_message: (e as Error).message,
+    };
+  }
 }
+
 
 /**
  * Classifies the expiration date into one of our visual status buckets.
