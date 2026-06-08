@@ -1,6 +1,6 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { DiaryPhoto } from "@/lib/types";
-import { uploadDiaryPhoto, deleteDiaryPhoto } from "@/lib/photos";
+import { uploadDiaryPhoto, deleteDiaryPhoto, getDiaryPhotoUrls } from "@/lib/photos";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -21,6 +21,28 @@ export function PhotoUploader({ obraId, companyId, photos, onChange, compact }: 
   const cameraRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const [displayPhotos, setDisplayPhotos] = useState(photos);
+
+  useEffect(() => {
+    let cancelled = false;
+    const paths = photos.map((p) => p.path).filter(Boolean);
+    if (paths.length === 0) {
+      setDisplayPhotos(photos);
+      return;
+    }
+    getDiaryPhotoUrls(paths).then((urls) => {
+      if (cancelled) return;
+      setDisplayPhotos(
+        photos.map((p) => {
+          const signedUrl = urls.get(p.path);
+          return signedUrl ? { ...p, url: signedUrl } : p;
+        }),
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [photos]);
 
   function isSupportedMedia(file: File) {
     if (file.type.startsWith("image/") || file.type.startsWith("video/")) return true;
@@ -142,7 +164,7 @@ export function PhotoUploader({ obraId, companyId, photos, onChange, compact }: 
 
       {photos.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-3 gap-3">
-          {photos.map((p) => (
+          {displayPhotos.map((p) => (
             <div key={p.id} className="border rounded-md overflow-hidden bg-card">
               <div className="relative aspect-video bg-muted">
                 {p.tipo === "video" ? (

@@ -7,6 +7,7 @@ import { usePersistedTab } from "@/hooks/use-persisted-tab";
 import { useNavigate, Link, useRouterState } from "@tanstack/react-router";
 import { ObraInfoDialog } from "@/components/ObraInfoDialog";
 import { PhotoUploader } from "@/components/PhotoUploader";
+import { getDiaryPhotoUrl } from "@/lib/photos";
 import type { ParseResult } from "@/lib/excel";
 import {
  activityMetrics,
@@ -2971,28 +2972,7 @@ function DiaryCard({
  </div>
  <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
  {fotos.map((f) => (
- <a
- key={f.id}
- href={f.url}
- target="_blank"
- rel="noreferrer"
- className="group block rounded-md overflow-hidden border border-border/60 bg-muted/30"
- >
- {f.tipo === "video" ? (
- <video src={f.url} className="w-full h-28 object-cover" />
- ) : (
- <img
- src={f.url}
- alt={f.legenda || "foto"}
- loading="lazy"
- className="w-full h-28 object-cover group-hover:scale-105 transition-transform"
- />
- )}
- <div className="px-1.5 py-1 text-[10px] text-muted-foreground truncate">
- {f.hora}{f.legenda ? ` · ${f.legenda}` : ""}
- {f.tipo && f.tipo !== "geral" && f.tipo !== "video" ? ` · ${f.tipo}` : ""}
- </div>
- </a>
+ <DiaryPhotoCard key={f.id} photo={f} />
  ))}
  </div>
  </div>
@@ -3003,6 +2983,47 @@ function DiaryCard({
  );
 }
 
+function DiaryPhotoCard({ photo }: { photo: DiaryPhoto }) {
+ const [url, setUrl] = useState(photo.url);
+
+ useEffect(() => {
+ let cancelled = false;
+ if (!photo.path) {
+ setUrl(photo.url);
+ return;
+ }
+ getDiaryPhotoUrl(photo.path).then((signedUrl) => {
+ if (!cancelled && signedUrl) setUrl(signedUrl);
+ });
+ return () => {
+ cancelled = true;
+ };
+ }, [photo.path, photo.url]);
+
+ return (
+ <a
+ href={url}
+ target="_blank"
+ rel="noreferrer"
+ className="group block rounded-md overflow-hidden border border-border/60 bg-muted/30"
+ >
+ {photo.tipo === "video" ? (
+ <video src={url} className="w-full h-28 object-cover" />
+ ) : (
+ <img
+ src={url}
+ alt={photo.legenda || "foto"}
+ loading="lazy"
+ className="w-full h-28 object-cover group-hover:scale-105 transition-transform"
+ />
+ )}
+ <div className="px-1.5 py-1 text-[10px] text-muted-foreground truncate">
+ {photo.hora}{photo.legenda ? ` · ${photo.legenda}` : ""}
+ {photo.tipo && photo.tipo !== "geral" && photo.tipo !== "video" ? ` · ${photo.tipo}` : ""}
+ </div>
+ </a>
+ );
+}
 function AddItemDialog({
  etapas,
  onAdd,

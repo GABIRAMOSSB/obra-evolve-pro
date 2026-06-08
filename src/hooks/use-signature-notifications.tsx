@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { useCompany } from "@/hooks/use-company";
 
 const STATUS_MESSAGES: Record<string, { title: string; type: "success" | "warning" | "error" }> = {
   signed: { title: "Documento assinado", type: "success" },
@@ -18,14 +19,24 @@ const STATUS_MESSAGES: Record<string, { title: string; type: "success" | "warnin
  */
 export function useSignatureNotifications() {
   const qc = useQueryClient();
+  const { company } = useCompany();
   const seen = useRef<Map<string, string>>(new Map());
 
   useEffect(() => {
+    if (!company?.id) return;
+
     const channel = supabase
-      .channel("signature-notifications")
+      .channel(`signature-notifications:${company.id}`, {
+        config: { private: true },
+      })
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "signature_requests" },
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "signature_requests",
+          filter: `company_id=eq.${company.id}`,
+        },
         (payload) => {
           const next = payload.new as { id: string; status: string; document_name: string };
           const prev = payload.old as { status?: string };
@@ -54,5 +65,5 @@ export function useSignatureNotifications() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [qc]);
+  }, [company?.id, qc]);
 }
