@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { DiaryPhoto } from "./types";
 
 const BUCKET = "obra-fotos";
+const SIGNED_URL_TTL_SECONDS = 60 * 60;
 
 // Compress image client-side to keep storage tight and uploads fast
 async function compressImage(file: File, maxDim = 1600, quality = 0.8): Promise<Blob> {
@@ -40,11 +41,14 @@ export async function uploadDiaryPhoto(
     upsert: false,
   });
   if (error) throw error;
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+  const { data, error: signedError } = await supabase.storage
+    .from(BUCKET)
+    .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
+  if (signedError) throw signedError;
   const now = new Date();
   return {
     id: crypto.randomUUID(),
-    url: data.publicUrl,
+    url: data.signedUrl,
     path,
     legenda: "",
     hora: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
@@ -52,6 +56,36 @@ export async function uploadDiaryPhoto(
   };
 }
 
+export async function getDiaryPhotoUrl(path: string): Promise<string | null> {
+  const { data, error } = await supabase.storage
+    .from(BUCKET)
+    .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
+  if (error) {
+    console.error("getDiaryPhotoUrl", error);
+    return null;
+  }
+  return data.signedUrl;
+}
+
+export async function getDiaryPhotoUrls(
+  paths: string[],
+): Promise<Map<string, string>> {
+  if (paths.length === 0) return new Map();
+  const { data, error } = await supabase.storage
+    .from(BUCKET)
+    .createSignedUrls(paths, SIGNED_URL_TTL_SECONDS);
+  if (error) {
+    console.error("getDiaryPhotoUrls", error);
+    return new Map();
+  }
+  return new Map(
+    (data ?? [])
+      .filter((item): item is { path: string; signedUrl: string } =>
+        Boolean(item.path && item.signedUrl),
+      )
+      .map((item) => [item.path, item.signedUrl]),
+  );
+}
 export async function deleteDiaryPhoto(path: string) {
   await supabase.storage.from(BUCKET).remove([path]);
 }

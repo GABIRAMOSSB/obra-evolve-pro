@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useCompany } from "@/hooks/use-company";
 import {
   listSignatureRequests,
   getSignatureRequest,
@@ -92,6 +93,7 @@ function StatusBadge({ status }: { status: string }) {
 
 function AssinaturasPage() {
   const qc = useQueryClient();
+  const { company } = useCompany();
   const [status, setStatus] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [obraFilter, setObraFilter] = useState("");
@@ -114,11 +116,20 @@ function AssinaturasPage() {
 
   // Realtime: refletir webhook do ZapSign assim que o status muda.
   useEffect(() => {
+    if (!company?.id) return;
+
     const channel = supabase
-      .channel("signature-updates")
+      .channel(`signature-updates:${company.id}`, {
+        config: { private: true },
+      })
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "signature_requests" },
+        {
+          event: "*",
+          schema: "public",
+          table: "signature_requests",
+          filter: `company_id=eq.${company.id}`,
+        },
         () => {
           qc.invalidateQueries({ queryKey: ["signature-requests"] });
           qc.invalidateQueries({ queryKey: ["signature-request"] });
@@ -135,7 +146,7 @@ function AssinaturasPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [qc]);
+  }, [company?.id, qc]);
 
   const counters = useMemo(() => {
     const c = { total: rows.length, signed: 0, pending: 0, refused: 0 };

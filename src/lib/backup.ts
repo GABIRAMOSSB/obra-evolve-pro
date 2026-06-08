@@ -10,6 +10,7 @@
 
 import JSZip from "jszip";
 import { supabase } from "@/integrations/supabase/client";
+import { getDiaryPhotoUrl, getDiaryPhotoUrls } from "@/lib/photos";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
@@ -145,7 +146,8 @@ export async function exportBackupZip(
     for (const ref of refs) {
       i++;
       onProgress?.({ stage: "photos", current: i, total: refs.length });
-      const blob = await fetchBlob(ref.url);
+      const signedUrl = await getDiaryPhotoUrl(ref.path);
+      const blob = await fetchBlob(signedUrl ?? ref.url);
       if (!blob) continue;
       fotosDir.file(ref.path, blob);
       includedPaths.push(ref.path);
@@ -296,7 +298,7 @@ export async function restoreBackup(
     // Reescreve URLs públicas das fotos para o bucket atual (caso o backup
     // tenha vindo de outro projeto Supabase). Mantém o mesmo path.
     const rewritten = photos.size > 0
-      ? rewritePhotoUrls(file.workspace, photos)
+      ? await rewritePhotoUrls(file.workspace, photos)
       : file.workspace;
     const { error } = await db
       .from("company_workspaces")
@@ -340,17 +342,16 @@ export async function restoreBackup(
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function rewritePhotoUrls(workspace: any, photos: Map<string, Blob>): any {
+async function rewritePhotoUrls(workspace: any, photos: Map<string, Blob>): Promise<any> {
   try {
     const clone = JSON.parse(JSON.stringify(workspace));
+    const signedUrls = await getDiaryPhotoUrls(Array.from(photos.keys()));
     for (const obra of clone?.obras ?? []) {
       for (const d of obra?.diarios ?? []) {
         for (const f of d?.fotos ?? []) {
           if (f?.path && photos.has(f.path)) {
-            const { data } = supabase.storage
-              .from(PHOTO_BUCKET)
-              .getPublicUrl(f.path);
-            if (data?.publicUrl) f.url = data.publicUrl;
+            const signedUrl = signedUrls.get(f.path);
+            if (signedUrl) f.url = signedUrl;
           }
         }
       }
