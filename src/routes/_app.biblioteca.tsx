@@ -9,7 +9,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
   HardHat, FileText, Award, ClipboardCheck, Plus, Trash2, Upload, Edit,
-  ExternalLink, Search, BookOpen, ChevronLeft, ChevronRight,
+  ExternalLink, Search, BookOpen, ChevronLeft, ChevronRight, Sparkles,
 } from "lucide-react";
 
 import {
@@ -18,6 +18,7 @@ import {
   listCats, saveCat, deleteCat,
   listArts, saveArt, deleteArt,
   uploadBibliotecaPDF, getBibliotecaSignedUrl,
+  listEditaisParaSugestaoAtestados, sugerirAtestadosParaEdital,
 } from "@/lib/biblioteca.functions";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,11 +60,13 @@ function BibliotecaPage() {
         <TabsList>
           <TabsTrigger value="rt"><HardHat className="w-4 h-4 mr-1" /> Responsáveis</TabsTrigger>
           <TabsTrigger value="atestados"><Award className="w-4 h-4 mr-1" /> Atestados</TabsTrigger>
+          <TabsTrigger value="sugestoes"><Sparkles className="w-4 h-4 mr-1" /> Sugestoes</TabsTrigger>
           <TabsTrigger value="cats"><ClipboardCheck className="w-4 h-4 mr-1" /> CATs</TabsTrigger>
           <TabsTrigger value="arts"><FileText className="w-4 h-4 mr-1" /> ARTs</TabsTrigger>
         </TabsList>
         <TabsContent value="rt"><ResponsaveisTab /></TabsContent>
         <TabsContent value="atestados"><AtestadosTab /></TabsContent>
+        <TabsContent value="sugestoes"><SugestoesAtestadosTab /></TabsContent>
         <TabsContent value="cats"><CatsTab /></TabsContent>
         <TabsContent value="arts"><ArtsTab /></TabsContent>
       </Tabs>
@@ -241,6 +244,136 @@ type Atestado = {
   responsavel_id: string | null;
   responsavel?: { id: string; nome: string; numero_registro: string | null; conselho: string | null } | null;
 };
+
+
+type EditalSugestaoOption = {
+  id: string;
+  titulo: string;
+  orgao: string | null;
+  valor_estimado: number | null;
+  data_abertura: string | null;
+};
+
+type SugestaoAtestado = {
+  id: string;
+  titulo: string;
+  contratante_nome: string | null;
+  objeto: string | null;
+  valor: number | null;
+  data_emissao: string | null;
+  storage_path: string | null;
+  responsavel: { nome: string; conselho: string | null; numero_registro: string | null } | null;
+  score: number;
+  matched_keywords: string[];
+  reasons: string[];
+};
+
+type SugestaoAtestadoResult = {
+  edital: { id: string; titulo: string; orgao: string | null; valor_estimado: number | null };
+  keywords: string[];
+  sugestoes: SugestaoAtestado[];
+};
+
+function scoreTone(score: number) {
+  if (score >= 70) return "bg-emerald-500/15 text-emerald-700 border-emerald-500/30";
+  if (score >= 45) return "bg-amber-500/15 text-amber-700 border-amber-500/30";
+  return "bg-muted text-muted-foreground";
+}
+
+function SugestoesAtestadosTab() {
+  const listEditaisFn = useServerFn(listEditaisParaSugestaoAtestados);
+  const sugestaoFn = useServerFn(sugerirAtestadosParaEdital);
+  const urlFn = useServerFn(getBibliotecaSignedUrl);
+  const [editalId, setEditalId] = useState("");
+  const { data: editais, isLoading } = useQuery({ queryKey: ["editais-sugestao-atestados"], queryFn: () => listEditaisFn() });
+  const sugestaoMut = useMutation({
+    mutationFn: (id: string) => sugestaoFn({ data: { edital_id: id } }) as Promise<SugestaoAtestadoResult>,
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const result = sugestaoMut.data;
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <CardTitle className="text-base flex items-center gap-2"><Sparkles className="w-4 h-4" /> Sugestao de atestados</CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">Cruza objeto, checklist e valor estimado do edital com a biblioteca tecnica cadastrada.</p>
+          </div>
+          <div className="flex gap-2 min-w-0 flex-wrap sm:flex-nowrap">
+            <Select value={editalId} onValueChange={(v) => { setEditalId(v); sugestaoMut.reset(); }}>
+              <SelectTrigger className="w-full sm:w-80"><SelectValue placeholder={isLoading ? "Carregando editais..." : "Selecione um edital"} /></SelectTrigger>
+              <SelectContent>
+                {((editais ?? []) as EditalSugestaoOption[]).map((ed) => (
+                  <SelectItem key={ed.id} value={ed.id}>{ed.titulo}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button disabled={!editalId || sugestaoMut.isPending} onClick={() => sugestaoMut.mutate(editalId)}>
+              <Sparkles className="w-4 h-4 mr-1" /> Analisar
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {!result && (
+          <div className="text-sm text-muted-foreground py-8 text-center border rounded-md">Selecione um edital para ranquear os atestados mais aderentes.</div>
+        )}
+        {result && (
+          <>
+            <div className="rounded-md border p-3 space-y-2">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                  <div className="font-medium">{result.edital.titulo}</div>
+                  <div className="text-xs text-muted-foreground">{result.edital.orgao ?? "Orgao nao informado"} - {brl(result.edital.valor_estimado)}</div>
+                </div>
+                <Badge variant="outline">{result.sugestoes.length} sugestoes</Badge>
+              </div>
+              <div className="flex gap-1.5 flex-wrap">
+                {result.keywords.slice(0, 14).map((kw) => <Badge key={kw} variant="secondary" className="text-[10px]">{kw}</Badge>)}
+              </div>
+            </div>
+
+            {result.sugestoes.length === 0 ? (
+              <div className="text-sm text-muted-foreground py-8 text-center border rounded-md">Nenhum atestado cadastrado para comparar.</div>
+            ) : (
+              <div className="space-y-2">
+                {result.sugestoes.map((a, idx) => (
+                  <div key={a.id} className="p-3 border rounded-md space-y-2">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant="outline" className={scoreTone(a.score)}>#{idx + 1} - {a.score}%</Badge>
+                          <span className="font-medium">{a.titulo}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {a.contratante_nome ?? "Contratante nao informado"} - {brl(a.valor)} - emissao {fmtDate(a.data_emissao)}
+                        </div>
+                      </div>
+                      {a.storage_path && (
+                        <Button size="sm" variant="ghost" onClick={async () => {
+                          try { const { url } = await urlFn({ data: { entidade: "atestado", id: a.id } }); window.open(url, "_blank"); }
+                          catch (e) { toast.error((e as Error).message); }
+                        }}><ExternalLink className="w-4 h-4" /></Button>
+                      )}
+                    </div>
+                    {a.objeto && <div className="text-xs text-muted-foreground line-clamp-2">{a.objeto}</div>}
+                    <div className="flex gap-1.5 flex-wrap">
+                      {a.reasons.map((reason) => <Badge key={reason} variant="outline" className="text-[10px]">{reason}</Badge>)}
+                    </div>
+                    {a.matched_keywords.length > 0 && (
+                      <div className="text-[11px] text-muted-foreground">Termos: {a.matched_keywords.join(", ")}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 function AtestadosTab() {
   const listFn = useServerFn(listAtestados);
