@@ -3570,6 +3570,75 @@ export type Database = {
           },
         ]
       }
+      oportunidade_alertas: {
+        Row: {
+          acao_realizada: boolean
+          company_id: string
+          created_at: string
+          descricao: string | null
+          destinatarios_email: string | null
+          enviado_via_email: boolean
+          enviado_via_whatsapp: boolean
+          id: string
+          lido_em: string | null
+          oportunidade_id: string | null
+          status: string
+          tipo: string
+          titulo: string
+          updated_at: string
+          urgencia: string
+        }
+        Insert: {
+          acao_realizada?: boolean
+          company_id: string
+          created_at?: string
+          descricao?: string | null
+          destinatarios_email?: string | null
+          enviado_via_email?: boolean
+          enviado_via_whatsapp?: boolean
+          id?: string
+          lido_em?: string | null
+          oportunidade_id?: string | null
+          status?: string
+          tipo: string
+          titulo: string
+          updated_at?: string
+          urgencia?: string
+        }
+        Update: {
+          acao_realizada?: boolean
+          company_id?: string
+          created_at?: string
+          descricao?: string | null
+          destinatarios_email?: string | null
+          enviado_via_email?: boolean
+          enviado_via_whatsapp?: boolean
+          id?: string
+          lido_em?: string | null
+          oportunidade_id?: string | null
+          status?: string
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+          urgencia?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oportunidade_alertas_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oportunidade_alertas_oportunidade_id_fkey"
+            columns: ["oportunidade_id"]
+            isOneToOne: false
+            referencedRelation: "oportunidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       oportunidade_filtros: {
         Row: {
           ativo: boolean
@@ -3822,6 +3891,140 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: []
+      }
+      pncp_coleta_historico: {
+        Row: {
+          company_id: string
+          created_at: string
+          data_coleta: string
+          filtro_id: string | null
+          id: string
+          mensagem_erro: string | null
+          novos_alertas: number
+          status: string
+          tempo_execucao_ms: number | null
+          total_atualizados: number
+          total_encontrados: number
+          total_novos: number
+          total_removidos: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          data_coleta?: string
+          filtro_id?: string | null
+          id?: string
+          mensagem_erro?: string | null
+          novos_alertas?: number
+          status: string
+          tempo_execucao_ms?: number | null
+          total_atualizados?: number
+          total_encontrados?: number
+          total_novos?: number
+          total_removidos?: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          data_coleta?: string
+          filtro_id?: string | null
+          id?: string
+          mensagem_erro?: string | null
+          novos_alertas?: number
+          status?: string
+          tempo_execucao_ms?: number | null
+          total_atualizados?: number
+          total_encontrados?: number
+          total_novos?: number
+          total_removidos?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pncp_coleta_historico_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pncp_coleta_historico_filtro_id_fkey"
+            columns: ["filtro_id"]
+            isOneToOne: false
+            referencedRelation: "oportunidade_filtros"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pncp_configuracoes: {
+        Row: {
+          alertar_via_email: boolean
+          alertar_via_whatsapp: boolean
+          company_id: string
+          created_at: string
+          criar_edital: boolean
+          criar_proposta_automatico: boolean
+          emails_alerta: string | null
+          endpoint_api: string
+          filtro_categoria_economica: string | null
+          filtro_estado: string | null
+          filtro_modalidade: string | null
+          frequencia_coleta_horas: number
+          id: string
+          observacoes: string | null
+          proxima_coleta: string | null
+          status: string
+          ultima_coleta: string | null
+          updated_at: string
+        }
+        Insert: {
+          alertar_via_email?: boolean
+          alertar_via_whatsapp?: boolean
+          company_id: string
+          created_at?: string
+          criar_edital?: boolean
+          criar_proposta_automatico?: boolean
+          emails_alerta?: string | null
+          endpoint_api?: string
+          filtro_categoria_economica?: string | null
+          filtro_estado?: string | null
+          filtro_modalidade?: string | null
+          frequencia_coleta_horas?: number
+          id?: string
+          observacoes?: string | null
+          proxima_coleta?: string | null
+          status?: string
+          ultima_coleta?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alertar_via_email?: boolean
+          alertar_via_whatsapp?: boolean
+          company_id?: string
+          created_at?: string
+          criar_edital?: boolean
+          criar_proposta_automatico?: boolean
+          emails_alerta?: string | null
+          endpoint_api?: string
+          filtro_categoria_economica?: string | null
+          filtro_estado?: string | null
+          filtro_modalidade?: string | null
+          frequencia_coleta_horas?: number
+          id?: string
+          observacoes?: string | null
+          proxima_coleta?: string | null
+          status?: string
+          ultima_coleta?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pncp_configuracoes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       portal_perfis: {
         Row: {
