@@ -90,7 +90,7 @@ function CentrosCustoPage() {
  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
  useEffect(() => {
- if (!authLoading && !user) navigate({ to: "/login" });
+ if (!authLoading && !user) navigate({ to: "/login", search: { redirect: undefined } });
  }, [authLoading, user, navigate]);
 
  // Auto-expand roots on first load

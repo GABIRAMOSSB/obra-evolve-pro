@@ -10,13 +10,16 @@ import {
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Wallet, TrendingDown, TrendingUp, FileText, HardHat, ArrowLeft } from "lucide-react";
+import { Wallet, TrendingDown, TrendingUp, FileText, HardHat, ArrowLeft, Search, ChevronLeft, ChevronRight } from "lucide-react";
 
 export const Route = createFileRoute("/_app/financeiro")({
   component: FinanceiroPage,
 });
+
+const FINANCEIRO_PAGE_SIZE = 20;
 
 function fmt(n: number | null | undefined) {
   if (n === null || n === undefined) return "—";
@@ -27,11 +30,25 @@ function FinanceiroPage() {
   const listFn = useServerFn(listObrasFinanceiro);
   const detailFn = useServerFn(getDetalheObraFinanceiro);
   const [selected, setSelected] = useState<string | null>(null);
+  const [q, setQ] = useState("");
+  const [pagina, setPagina] = useState(1);
 
   const { data: obras, isLoading } = useQuery({
     queryKey: ["financeiro", "obras"],
     queryFn: () => listFn(),
   });
+
+  const filteredObras = useMemo(() => {
+    const termo = q.trim().toLowerCase();
+    return (obras ?? []).filter((o) =>
+      !termo ||
+      o.nome.toLowerCase().includes(termo) ||
+      (o.status ?? "").toLowerCase().includes(termo),
+    );
+  }, [obras, q]);
+  const totalPaginas = Math.max(1, Math.ceil(filteredObras.length / FINANCEIRO_PAGE_SIZE));
+  const paginaAtual = Math.min(pagina, totalPaginas);
+  const paginatedObras = filteredObras.slice((paginaAtual - 1) * FINANCEIRO_PAGE_SIZE, paginaAtual * FINANCEIRO_PAGE_SIZE);
 
   const totals = useMemo(() => {
     const arr = obras ?? [];
@@ -79,8 +96,14 @@ function FinanceiroPage() {
       <Card className="p-0 overflow-hidden">
         <div className="px-5 py-4 border-b border-border/40">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            Obras ({obras?.length ?? 0})
+            Obras ({filteredObras.length})
           </h2>
+        </div>
+        <div className="px-5 py-3 border-b border-border/40">
+          <div className="relative max-w-md">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input value={q} onChange={(e) => { setQ(e.target.value); setPagina(1); }} placeholder="Buscar obra..." className="pl-9" />
+          </div>
         </div>
         {isLoading ? (
           <div className="p-6 space-y-3">
@@ -88,15 +111,28 @@ function FinanceiroPage() {
               <Skeleton key={i} className="h-14 w-full" />
             ))}
           </div>
-        ) : (obras ?? []).length === 0 ? (
+        ) : filteredObras.length === 0 ? (
           <div className="p-10 text-center text-sm text-muted-foreground">
             Nenhuma obra com movimentação financeira encontrada.
           </div>
         ) : (
           <div className="divide-y divide-border/40">
-            {(obras ?? []).map((o) => (
+            {paginatedObras.map((o) => (
               <ObraRow key={o.obra_id} obra={o} onClick={() => setSelected(o.obra_id)} />
             ))}
+          </div>
+        )}
+        {filteredObras.length > 0 && (
+          <div className="px-5 py-3 border-t border-border/40 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+            <span>{filteredObras.length} obras - Pagina {paginaAtual} de {totalPaginas}</span>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" disabled={paginaAtual <= 1} onClick={() => setPagina((p) => Math.max(1, p - 1))} className="gap-1">
+                <ChevronLeft className="w-3.5 h-3.5" /> Anterior
+              </Button>
+              <Button size="sm" variant="outline" disabled={paginaAtual >= totalPaginas} onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))} className="gap-1">
+                Proxima <ChevronRight className="w-3.5 h-3.5" />
+              </Button>
+            </div>
           </div>
         )}
       </Card>

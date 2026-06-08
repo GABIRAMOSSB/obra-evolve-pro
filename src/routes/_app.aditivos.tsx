@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, CheckCircle2, XCircle, FilePlus2 } from "lucide-react";
+import { Plus, Trash2, CheckCircle2, XCircle, FilePlus2, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,8 +38,23 @@ export const Route = createFileRoute("/_app/aditivos")({
   component: AditivosPage,
 });
 
+const ADITIVOS_PAGE_SIZE = 20;
+
 const brl = (n: number | string | null | undefined) =>
   Number(n ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+function AditivosPagination({ total, shown, page, totalPages, onPrev, onNext }: { total: number; shown: number; page: number; totalPages: number; onPrev: () => void; onNext: () => void }) {
+  return (
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t pt-3 mt-3 text-sm text-muted-foreground">
+      <span>Mostrando {shown} de {total} aditivos</span>
+      <div className="flex items-center gap-2">
+        <Button variant="outline" size="sm" onClick={onPrev} disabled={page === 1}><ChevronLeft className="w-4 h-4 mr-1" /> Anterior</Button>
+        <span className="min-w-20 text-center">Pagina {page} de {totalPages}</span>
+        <Button variant="outline" size="sm" onClick={onNext} disabled={page >= totalPages}>Proxima <ChevronRight className="w-4 h-4 ml-1" /></Button>
+      </div>
+    </div>
+  );
+}
 
 function statusBadge(s: string) {
   if (s === "vigente") return <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30">vigente</Badge>;
@@ -60,6 +75,7 @@ function AditivosPage() {
   });
 
   const [open, setOpen] = useState(false);
+  const [page, setPage] = useState(1);
   const [form, setForm] = useState({
     contrato_id: "",
     tipo: "valor" as "valor" | "prazo" | "escopo" | "misto",
@@ -119,6 +135,9 @@ function AditivosPage() {
   const contratos = data?.contratos ?? [];
   const aditivos = data?.aditivos ?? [];
   const contratoMap = new Map(contratos.map((c) => [c.id, c]));
+  const totalPages = Math.max(1, Math.ceil(aditivos.length / ADITIVOS_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedAditivos = aditivos.slice((safePage - 1) * ADITIVOS_PAGE_SIZE, safePage * ADITIVOS_PAGE_SIZE);
 
   const totalValorVigente = aditivos
     .filter((a) => a.status === "vigente")
@@ -256,7 +275,7 @@ function AditivosPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {aditivos.map((a) => {
+                  {paginatedAditivos.map((a) => {
                     const c = contratoMap.get(a.contrato_id);
                     return (
                       <tr key={a.id} className="border-b last:border-b-0 hover:bg-muted/40">
@@ -296,6 +315,9 @@ function AditivosPage() {
                 </tbody>
               </table>
             </div>
+          )}
+          {aditivos.length > ADITIVOS_PAGE_SIZE && (
+            <AditivosPagination total={aditivos.length} shown={paginatedAditivos.length} page={safePage} totalPages={totalPages} onPrev={() => setPage((p) => Math.max(1, p - 1))} onNext={() => setPage((p) => Math.min(totalPages, p + 1))} />
           )}
         </CardContent>
       </Card>

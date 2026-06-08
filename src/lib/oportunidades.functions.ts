@@ -298,6 +298,8 @@ const listSchema = z.object({
     .optional(),
   uf: z.string().length(2).optional(),
   q: z.string().max(120).optional(),
+  pagina: z.number().int().min(1).default(1),
+  tamanhoPagina: z.number().int().min(10).max(100).default(25),
 });
 
 export interface OportunidadeRow {
@@ -321,20 +323,32 @@ export interface OportunidadeRow {
   updated_at: string;
 }
 
+export interface OportunidadesPageResult {
+  total: number;
+  pagina: number;
+  tamanhoPagina: number;
+  totalPaginas: number;
+  items: OportunidadeRow[];
+}
+
 export const listOportunidades = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => listSchema.parse(input ?? {}))
-  .handler(async ({ data, context }): Promise<OportunidadeRow[]> => {
+  .handler(async ({ data, context }): Promise<OportunidadesPageResult> => {
     const supabase = context.supabase as AnySupabase;
     const companyId = await resolveCompanyId(supabase, context.userId);
+    const from = (data.pagina - 1) * data.tamanhoPagina;
+    const to = from + data.tamanhoPagina - 1;
 
     let q = supabase
       .from("oportunidades")
       .select(
         "id, pncp_id, numero_compra, orgao_nome, unidade_nome, uf, municipio, modalidade, objeto, valor_estimado, data_abertura_propostas, data_encerramento_propostas, link_sistema_origem, situacao, prioridade, escore_aderencia, created_at, updated_at",
+        { count: "exact" },
       )
       .eq("company_id", companyId)
-      .order("data_encerramento_propostas", { ascending: true, nullsFirst: false });
+      .order("data_encerramento_propostas", { ascending: true, nullsFirst: false })
+      .range(from, to);
 
     if (data.situacao) q = q.eq("situacao", data.situacao);
     if (data.uf) q = q.eq("uf", data.uf);
@@ -342,9 +356,16 @@ export const listOportunidades = createServerFn({ method: "POST" })
       const kw = `%${data.q}%`;
       q = q.or(`objeto.ilike.${kw},orgao_nome.ilike.${kw},numero_compra.ilike.${kw}`);
     }
-    const { data: rows, error } = await q;
+    const { data: rows, error, count } = await q;
     if (error) throw new Error(error.message);
-    return (rows ?? []) as OportunidadeRow[];
+    const total = count ?? rows?.length ?? 0;
+    return {
+      total,
+      pagina: data.pagina,
+      tamanhoPagina: data.tamanhoPagina,
+      totalPaginas: Math.max(1, Math.ceil(total / data.tamanhoPagina)),
+      items: (rows ?? []) as OportunidadeRow[],
+    };
   });
 
 const updateSituacaoSchema = z.object({

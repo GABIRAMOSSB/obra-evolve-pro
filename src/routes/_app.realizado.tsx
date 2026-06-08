@@ -35,6 +35,7 @@ import {
  TrendingUp,
  TrendingDown,
  Minus,
+ ChevronLeft,
  ChevronRight,
  ChevronDown,
  Pencil,
@@ -133,6 +134,8 @@ interface InsumoLinha {
 
 
 
+const REALIZADO_PAGE_SIZE = 25;
+
 function fmtMoney(v: number | null | undefined) {
  return (v ?? 0).toLocaleString("pt-BR", {
  style: "currency",
@@ -171,9 +174,14 @@ function RealizadoPage() {
 
  const [loading, setLoading] = useState(true);
  const [activeTab, setActiveTab] = usePersistedTab("realizado", "etapas");
+ const [etapasPage, setEtapasPage] = useState(1);
+ const [itensPage, setItensPage] = useState(1);
+ const [notasPage, setNotasPage] = useState(1);
+ const [nfItensPage, setNfItensPage] = useState(1);
+ const [maoObraPage, setMaoObraPage] = useState(1);
 
  useEffect(() => {
- if (!authLoading && !user) navigate({ to: "/login" });
+ if (!authLoading && !user) navigate({ to: "/login", search: { redirect: undefined } });
  }, [authLoading, user, navigate]);
 
  const load = useCallback(async () => {
@@ -745,6 +753,22 @@ function RealizadoPage() {
  // eslint-disable-next-line react-hooks/exhaustive-deps
  }, [obra, getCusto, params]);
 
+ const etapasTotalPages = Math.max(1, Math.ceil(comparativoEtapas.length / REALIZADO_PAGE_SIZE));
+ const safeEtapasPage = Math.min(etapasPage, etapasTotalPages);
+ const paginatedComparativoEtapas = comparativoEtapas.slice((safeEtapasPage - 1) * REALIZADO_PAGE_SIZE, safeEtapasPage * REALIZADO_PAGE_SIZE);
+ const itensTotalPages = Math.max(1, Math.ceil(comparativoItens.length / REALIZADO_PAGE_SIZE));
+ const safeItensPage = Math.min(itensPage, itensTotalPages);
+ const paginatedComparativoItens = comparativoItens.slice((safeItensPage - 1) * REALIZADO_PAGE_SIZE, safeItensPage * REALIZADO_PAGE_SIZE);
+ const notasTotalPages = Math.max(1, Math.ceil(notasObra.length / REALIZADO_PAGE_SIZE));
+ const safeNotasPage = Math.min(notasPage, notasTotalPages);
+ const paginatedNotasObra = notasObra.slice((safeNotasPage - 1) * REALIZADO_PAGE_SIZE, safeNotasPage * REALIZADO_PAGE_SIZE);
+ const nfItensTotalPages = Math.max(1, Math.ceil(nfItens.length / REALIZADO_PAGE_SIZE));
+ const safeNfItensPage = Math.min(nfItensPage, nfItensTotalPages);
+ const paginatedNfItens = nfItens.slice((safeNfItensPage - 1) * REALIZADO_PAGE_SIZE, safeNfItensPage * REALIZADO_PAGE_SIZE);
+ const maoObraTotalPages = Math.max(1, Math.ceil(apontamentosObra.length / REALIZADO_PAGE_SIZE));
+ const safeMaoObraPage = Math.min(maoObraPage, maoObraTotalPages);
+ const paginatedApontamentosObra = apontamentosObra.slice((safeMaoObraPage - 1) * REALIZADO_PAGE_SIZE, safeMaoObraPage * REALIZADO_PAGE_SIZE);
+
 
  if (authLoading || companyLoading || loading) {
  return (
@@ -859,7 +883,7 @@ function RealizadoPage() {
  </TableRow>
  </TableHeader>
  <TableBody>
- {comparativoEtapas.map((e, idx) => (
+ {paginatedComparativoEtapas.map((e, idx) => (
  <TableRow key={idx}>
  <TableCell className="font-mono text-xs">{e.row.item}</TableCell>
  <TableCell className="text-xs font-medium">{e.row.descricao}</TableCell>
@@ -877,6 +901,9 @@ function RealizadoPage() {
  ))}
  </TableBody>
  </Table>
+ )}
+ {comparativoEtapas.length > REALIZADO_PAGE_SIZE && (
+ <RealizadoPagination total={comparativoEtapas.length} shown={paginatedComparativoEtapas.length} page={safeEtapasPage} totalPages={etapasTotalPages} onPrev={() => setEtapasPage((p) => Math.max(1, p - 1))} onNext={() => setEtapasPage((p) => Math.min(etapasTotalPages, p + 1))} />
  )}
  </Card>
  </TabsContent>
@@ -918,7 +945,7 @@ function RealizadoPage() {
  </TableRow>
  </TableHeader>
  <TableBody>
- {comparativoItens.map((c, idx) => {
+ {paginatedComparativoItens.map((c, idx) => {
  if (c.isGroup) {
  const indent = Math.max(0, (c.row.level ?? 1) - 1) * 12;
  return (
@@ -1061,6 +1088,9 @@ function RealizadoPage() {
  </TableBody>
  </Table>
  )}
+ {comparativoItens.length > REALIZADO_PAGE_SIZE && (
+ <RealizadoPagination total={comparativoItens.length} shown={paginatedComparativoItens.length} page={safeItensPage} totalPages={itensTotalPages} onPrev={() => setItensPage((p) => Math.max(1, p - 1))} onNext={() => setItensPage((p) => Math.min(itensTotalPages, p + 1))} />
+ )}
 
  </Card>
  </TabsContent>
@@ -1086,7 +1116,7 @@ function RealizadoPage() {
  </TableRow>
  </TableHeader>
  <TableBody>
- {notasObra.map((n) => (
+ {paginatedNotasObra.map((n) => (
  <TableRow key={n.id}>
  <TableCell className="text-xs">
  {n.data_emissao
@@ -1104,6 +1134,9 @@ function RealizadoPage() {
  ))}
  </TableBody>
  </Table>
+ {notasObra.length > REALIZADO_PAGE_SIZE && (
+ <RealizadoPagination total={notasObra.length} shown={paginatedNotasObra.length} page={safeNotasPage} totalPages={notasTotalPages} onPrev={() => setNotasPage((p) => Math.max(1, p - 1))} onNext={() => setNotasPage((p) => Math.min(notasTotalPages, p + 1))} />
+ )}
  {nfItens.length > 0 && (
  <>
  <h3 className="font-semibold mt-6 mb-2 text-sm">
@@ -1118,7 +1151,7 @@ function RealizadoPage() {
  </TableRow>
  </TableHeader>
  <TableBody>
- {nfItens.slice(0, 50).map((i, idx) => (
+ {paginatedNfItens.map((i, idx) => (
  <TableRow key={idx}>
  <TableCell className="text-xs">
  {i.descricao}
@@ -1133,10 +1166,8 @@ function RealizadoPage() {
  ))}
  </TableBody>
  </Table>
- {nfItens.length > 50 && (
- <p className="text-xs text-muted-foreground mt-2">
- Exibindo 50 de {nfItens.length} itens.
- </p>
+ {nfItens.length > REALIZADO_PAGE_SIZE && (
+ <RealizadoPagination total={nfItens.length} shown={paginatedNfItens.length} page={safeNfItensPage} totalPages={nfItensTotalPages} onPrev={() => setNfItensPage((p) => Math.max(1, p - 1))} onNext={() => setNfItensPage((p) => Math.min(nfItensTotalPages, p + 1))} />
  )}
  </>
  )}
@@ -1167,7 +1198,7 @@ function RealizadoPage() {
  </TableRow>
  </TableHeader>
  <TableBody>
- {apontamentosObra.map((a, idx) => {
+ {paginatedApontamentosObra.map((a, idx) => {
  const orcMatch =
  a.item_codigo &&
  obra.rows.find((r) => r.codigo === a.item_codigo);
@@ -1202,6 +1233,9 @@ function RealizadoPage() {
  })}
  </TableBody>
  </Table>
+ )}
+ {apontamentosObra.length > REALIZADO_PAGE_SIZE && (
+ <RealizadoPagination total={apontamentosObra.length} shown={paginatedApontamentosObra.length} page={safeMaoObraPage} totalPages={maoObraTotalPages} onPrev={() => setMaoObraPage((p) => Math.max(1, p - 1))} onNext={() => setMaoObraPage((p) => Math.min(maoObraTotalPages, p + 1))} />
  )}
  </Card>
  </TabsContent>
@@ -1247,6 +1281,30 @@ function RealizadoPage() {
  );
 }
 
+
+function RealizadoPagination({ total, shown, page, totalPages, onPrev, onNext }: {
+ total: number;
+ shown: number;
+ page: number;
+ totalPages: number;
+ onPrev: () => void;
+ onNext: () => void;
+}) {
+ return (
+ <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t pt-3 mt-3 text-sm text-muted-foreground">
+ <span>Mostrando {shown} de {total} registros</span>
+ <div className="flex items-center gap-2">
+ <Button variant="outline" size="sm" onClick={onPrev} disabled={page === 1}>
+ <ChevronLeft className="w-4 h-4 mr-1" /> Anterior
+ </Button>
+ <span className="min-w-20 text-center">Pagina {page} de {totalPages}</span>
+ <Button variant="outline" size="sm" onClick={onNext} disabled={page >= totalPages}>
+ Proxima <ChevronRight className="w-4 h-4 ml-1" />
+ </Button>
+ </div>
+ </div>
+ );
+}
 
 function KpiCard({
  label,

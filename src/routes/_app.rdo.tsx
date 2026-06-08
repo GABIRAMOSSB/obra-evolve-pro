@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, CheckCircle2, FileText, ClipboardList, Image as ImageIcon } from "lucide-react";
+import { Plus, Trash2, CheckCircle2, FileText, ClipboardList, Image as ImageIcon, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { RDOFotosDialog } from "@/components/RDOFotosDialog";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,6 +33,7 @@ type Equipamento = { equipamento: string; horas_operadas: number; horas_paradas:
 type Ocorrencia = { tipo: "atraso" | "acidente" | "seguranca" | "qualidade" | "visita" | "outro"; descricao: string; severidade?: "baixa" | "media" | "alta" | "critica" | null };
 
 const CLIMAS = ["Bom", "Nublado", "Chuva fraca", "Chuva forte", "Praticável", "Impraticável"];
+const RDO_PAGE_SIZE = 20;
 
 function statusBadge(s: string) {
   if (s === "aprovado") return <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30">aprovado</Badge>;
@@ -46,6 +47,9 @@ function RDOPage() {
   const statusFn = useServerFn(atualizarStatusRDO);
   const delFn = useServerFn(excluirRDO);
   const qc = useQueryClient();
+  const [q, setQ] = useState("");
+  const [statusFiltro, setStatusFiltro] = useState<string>("todos");
+  const [pagina, setPagina] = useState(1);
 
   const { data, isLoading } = useQuery({
     queryKey: ["rdos"],
@@ -100,6 +104,22 @@ function RDOPage() {
   const obras = data?.obras ?? [];
   const rdos = data?.rdos ?? [];
   const obraMap = new Map(obras.map((o) => [o.id, o]));
+  const filteredRdos = useMemo(() => {
+    const termo = q.trim().toLowerCase();
+    return rdos.filter((r) => {
+      const obra = obraMap.get(r.obra_id);
+      const matchesStatus = statusFiltro === "todos" || r.status === statusFiltro;
+      const matchesTermo =
+        !termo ||
+        r.data.includes(termo) ||
+        (obra?.nome ?? "").toLowerCase().includes(termo) ||
+        (r.condicao_trabalho ?? "").toLowerCase().includes(termo);
+      return matchesStatus && matchesTermo;
+    });
+  }, [rdos, obraMap, q, statusFiltro]);
+  const totalPaginas = Math.max(1, Math.ceil(filteredRdos.length / RDO_PAGE_SIZE));
+  const paginaAtual = Math.min(pagina, totalPaginas);
+  const paginatedRdos = filteredRdos.slice((paginaAtual - 1) * RDO_PAGE_SIZE, paginaAtual * RDO_PAGE_SIZE);
 
   const rdosUltimos7 = rdos.filter((r) => {
     const d = new Date(r.data);
@@ -284,10 +304,25 @@ function RDOPage() {
 
       <Card>
         <CardHeader><CardTitle>Diários recentes</CardTitle></CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          <div className="flex flex-col md:flex-row gap-3 md:items-center">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input value={q} onChange={(e) => { setQ(e.target.value); setPagina(1); }} placeholder="Buscar RDO, obra ou data..." className="pl-9" />
+            </div>
+            <Select value={statusFiltro} onValueChange={(v) => { setStatusFiltro(v); setPagina(1); }}>
+              <SelectTrigger className="w-full md:w-[170px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os status</SelectItem>
+                <SelectItem value="rascunho">Rascunho</SelectItem>
+                <SelectItem value="fechado">Fechado</SelectItem>
+                <SelectItem value="aprovado">Aprovado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           {isLoading ? (
             <p className="text-sm text-muted-foreground">Carregando…</p>
-          ) : rdos.length === 0 ? (
+          ) : filteredRdos.length === 0 ? (
             <p className="text-sm text-muted-foreground">Nenhum RDO registrado ainda.</p>
           ) : (
             <div className="overflow-x-auto">
@@ -304,7 +339,7 @@ function RDOPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rdos.map((r) => {
+                  {paginatedRdos.map((r) => {
                     const o = obraMap.get(r.obra_id);
                     return (
                       <tr key={r.id} className="border-b last:border-b-0 hover:bg-muted/40">
@@ -343,6 +378,19 @@ function RDOPage() {
                   })}
                 </tbody>
               </table>
+            </div>
+          )}
+          {filteredRdos.length > 0 && (
+            <div className="pt-3 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+              <span>{filteredRdos.length} RDOs - Pagina {paginaAtual} de {totalPaginas}</span>
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" disabled={paginaAtual <= 1} onClick={() => setPagina((p) => Math.max(1, p - 1))} className="gap-1">
+                  <ChevronLeft className="w-3.5 h-3.5" /> Anterior
+                </Button>
+                <Button size="sm" variant="outline" disabled={paginaAtual >= totalPaginas} onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))} className="gap-1">
+                  Proxima <ChevronRight className="w-3.5 h-3.5" />
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

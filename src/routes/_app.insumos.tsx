@@ -129,7 +129,7 @@ function InsumosPage() {
   const isAdmin = company?.role === "admin";
 
   useEffect(() => {
-    if (!authLoading && !user) navigate({ to: "/login" });
+    if (!authLoading && !user) navigate({ to: "/login", search: { redirect: undefined } });
   }, [authLoading, user, navigate]);
 
   // debounce search

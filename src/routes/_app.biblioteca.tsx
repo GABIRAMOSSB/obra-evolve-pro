@@ -9,7 +9,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
   HardHat, FileText, Award, ClipboardCheck, Plus, Trash2, Upload, Edit,
-  ExternalLink, Search, BookOpen,
+  ExternalLink, Search, BookOpen, ChevronLeft, ChevronRight,
 } from "lucide-react";
 
 import {
@@ -39,6 +39,7 @@ export const Route = createFileRoute("/_app/biblioteca")({ component: Biblioteca
 const brl = (v: number | null | undefined) =>
   v == null ? "—" : new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(v));
 const fmtDate = (d: string | null | undefined) => (d ? new Date(d).toLocaleDateString("pt-BR") : "—");
+const BIBLIOTECA_PAGE_SIZE = 20;
 
 function BibliotecaPage() {
   return (
@@ -86,6 +87,7 @@ function ResponsaveisTab() {
   const { data, isLoading } = useQuery({ queryKey: ["rt"], queryFn: () => listFn() });
   const [editing, setEditing] = useState<Partial<RT> | null>(null);
   const [filter, setFilter] = useState("");
+  const [page, setPage] = useState(1);
 
   const delMut = useMutation({
     mutationFn: (id: string) => delFn({ data: { id } }),
@@ -98,6 +100,12 @@ function ResponsaveisTab() {
     const q = filter.toLowerCase();
     return !q || r.nome.toLowerCase().includes(q) || (r.numero_registro ?? "").toLowerCase().includes(q);
   });
+  const totalPages = Math.max(1, Math.ceil(filtered.length / BIBLIOTECA_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginated = filtered.slice(
+    (safePage - 1) * BIBLIOTECA_PAGE_SIZE,
+    safePage * BIBLIOTECA_PAGE_SIZE,
+  );
 
   return (
     <Card>
@@ -107,7 +115,15 @@ function ResponsaveisTab() {
           <div className="flex gap-2">
             <div className="relative">
               <Search className="w-4 h-4 absolute left-2 top-2.5 text-muted-foreground" />
-              <Input className="pl-8 h-9 w-56" placeholder="Buscar..." value={filter} onChange={(e) => setFilter(e.target.value)} />
+              <Input
+                className="pl-8 h-9 w-56"
+                placeholder="Buscar..."
+                value={filter}
+                onChange={(e) => {
+                  setFilter(e.target.value);
+                  setPage(1);
+                }}
+              />
             </div>
             <Button size="sm" onClick={() => setEditing({})}><Plus className="w-4 h-4 mr-1" /> Novo</Button>
           </div>
@@ -117,7 +133,7 @@ function ResponsaveisTab() {
         {isLoading ? <div className="text-sm text-muted-foreground py-4">Carregando…</div> :
           filtered.length === 0 ? <div className="text-sm text-muted-foreground py-6 text-center">Nenhum responsável técnico cadastrado.</div> :
           <div className="space-y-2">
-            {filtered.map((r) => (
+            {paginated.map((r) => (
               <div key={r.id} className="flex items-center justify-between p-3 border rounded gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -141,6 +157,20 @@ function ResponsaveisTab() {
             ))}
           </div>
         }
+        {filtered.length > BIBLIOTECA_PAGE_SIZE && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t pt-3 mt-3 text-sm text-muted-foreground">
+            <span>Mostrando {paginated.length} de {filtered.length} responsaveis</span>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={safePage === 1}>
+                <ChevronLeft className="w-4 h-4 mr-1" /> Anterior
+              </Button>
+              <span className="min-w-20 text-center">Pagina {safePage} de {totalPages}</span>
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages}>
+                Proxima <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
       </CardContent>
 
       {editing !== null && (
@@ -223,6 +253,7 @@ function AtestadosTab() {
   const { data, isLoading } = useQuery({ queryKey: ["atestados"], queryFn: () => listFn() });
   const { data: rts } = useQuery({ queryKey: ["rt"], queryFn: () => listRtFn() });
   const [editing, setEditing] = useState<Partial<Atestado> | null>(null);
+  const [page, setPage] = useState(1);
 
   const delMut = useMutation({
     mutationFn: (id: string) => delFn({ data: { id } }),
@@ -231,6 +262,12 @@ function AtestadosTab() {
   });
 
   const rows = (data ?? []) as Atestado[];
+  const totalPages = Math.max(1, Math.ceil(rows.length / BIBLIOTECA_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedRows = rows.slice(
+    (safePage - 1) * BIBLIOTECA_PAGE_SIZE,
+    safePage * BIBLIOTECA_PAGE_SIZE,
+  );
 
   return (
     <Card>
@@ -244,7 +281,7 @@ function AtestadosTab() {
         {isLoading ? <div className="text-sm text-muted-foreground py-4">Carregando…</div> :
           rows.length === 0 ? <div className="text-sm text-muted-foreground py-6 text-center">Sem atestados.</div> :
           <div className="space-y-2">
-            {rows.map((a) => (
+            {paginatedRows.map((a) => (
               <div key={a.id} className="p-3 border rounded space-y-1">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
@@ -279,6 +316,20 @@ function AtestadosTab() {
             ))}
           </div>
         }
+        {rows.length > BIBLIOTECA_PAGE_SIZE && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t pt-3 mt-3 text-sm text-muted-foreground">
+            <span>Mostrando {paginatedRows.length} de {rows.length} atestados</span>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={safePage === 1}>
+                <ChevronLeft className="w-4 h-4 mr-1" /> Anterior
+              </Button>
+              <span className="min-w-20 text-center">Pagina {safePage} de {totalPages}</span>
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages}>
+                Proxima <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
       </CardContent>
 
       {editing !== null && (
@@ -386,6 +437,7 @@ function CatsTab() {
   const { data: rts } = useQuery({ queryKey: ["rt"], queryFn: () => listRtFn() });
   const { data: atestados } = useQuery({ queryKey: ["atestados"], queryFn: () => listAtFn() });
   const [editing, setEditing] = useState<Partial<Cat> | null>(null);
+  const [page, setPage] = useState(1);
 
   const delMut = useMutation({
     mutationFn: (id: string) => delFn({ data: { id } }),
@@ -394,6 +446,12 @@ function CatsTab() {
   });
 
   const rows = (data ?? []) as Cat[];
+  const totalPages = Math.max(1, Math.ceil(rows.length / BIBLIOTECA_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedRows = rows.slice(
+    (safePage - 1) * BIBLIOTECA_PAGE_SIZE,
+    safePage * BIBLIOTECA_PAGE_SIZE,
+  );
 
   return (
     <Card>
@@ -407,7 +465,7 @@ function CatsTab() {
         {isLoading ? <div className="text-sm text-muted-foreground py-4">Carregando…</div> :
           rows.length === 0 ? <div className="text-sm text-muted-foreground py-6 text-center">Sem CATs.</div> :
           <div className="space-y-2">
-            {rows.map((c) => (
+            {paginatedRows.map((c) => (
               <div key={c.id} className="p-3 border rounded">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
@@ -436,6 +494,20 @@ function CatsTab() {
             ))}
           </div>
         }
+        {rows.length > BIBLIOTECA_PAGE_SIZE && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t pt-3 mt-3 text-sm text-muted-foreground">
+            <span>Mostrando {paginatedRows.length} de {rows.length} CATs</span>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={safePage === 1}>
+                <ChevronLeft className="w-4 h-4 mr-1" /> Anterior
+              </Button>
+              <span className="min-w-20 text-center">Pagina {safePage} de {totalPages}</span>
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages}>
+                Proxima <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
       </CardContent>
 
       {editing !== null && (
@@ -552,6 +624,7 @@ function ArtsTab() {
   const { data, isLoading } = useQuery({ queryKey: ["arts"], queryFn: () => listFn() });
   const { data: rts } = useQuery({ queryKey: ["rt"], queryFn: () => listRtFn() });
   const [editing, setEditing] = useState<Partial<Art> | null>(null);
+  const [page, setPage] = useState(1);
 
   const delMut = useMutation({
     mutationFn: (id: string) => delFn({ data: { id } }),
@@ -560,6 +633,12 @@ function ArtsTab() {
   });
 
   const rows = (data ?? []) as Art[];
+  const totalPages = Math.max(1, Math.ceil(rows.length / BIBLIOTECA_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedRows = rows.slice(
+    (safePage - 1) * BIBLIOTECA_PAGE_SIZE,
+    safePage * BIBLIOTECA_PAGE_SIZE,
+  );
 
   return (
     <Card>
@@ -573,7 +652,7 @@ function ArtsTab() {
         {isLoading ? <div className="text-sm text-muted-foreground py-4">Carregando…</div> :
           rows.length === 0 ? <div className="text-sm text-muted-foreground py-6 text-center">Sem ARTs.</div> :
           <div className="space-y-2">
-            {rows.map((a) => (
+            {paginatedRows.map((a) => (
               <div key={a.id} className="p-3 border rounded">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
@@ -612,6 +691,20 @@ function ArtsTab() {
             ))}
           </div>
         }
+        {rows.length > BIBLIOTECA_PAGE_SIZE && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t pt-3 mt-3 text-sm text-muted-foreground">
+            <span>Mostrando {paginatedRows.length} de {rows.length} ARTs</span>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={safePage === 1}>
+                <ChevronLeft className="w-4 h-4 mr-1" /> Anterior
+              </Button>
+              <span className="min-w-20 text-center">Pagina {safePage} de {totalPages}</span>
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages}>
+                Proxima <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
       </CardContent>
 
       {editing !== null && (

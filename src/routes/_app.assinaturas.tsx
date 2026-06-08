@@ -44,6 +44,8 @@ import {
   FileSignature,
   Send,
   BarChart3,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_app/assinaturas")({
@@ -58,6 +60,8 @@ export const Route = createFileRoute("/_app/assinaturas")({
   }),
   component: AssinaturasPage,
 });
+
+const ASSINATURAS_PAGE_SIZE = 20;
 
 const STATUS_LABELS: Record<string, { label: string; tone: string; Icon: typeof Clock }> = {
   draft: { label: "Rascunho", tone: "bg-muted text-muted-foreground", Icon: Clock },
@@ -91,6 +95,7 @@ function AssinaturasPage() {
   const [status, setStatus] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [obraFilter, setObraFilter] = useState("");
+  const [page, setPage] = useState(1);
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const { data: rows = [], isLoading } = useQuery({
@@ -146,6 +151,12 @@ function AssinaturasPage() {
     () => Array.from(new Set(rows.map((r) => r.obra_id))).filter(Boolean),
     [rows],
   );
+  const totalPages = Math.max(1, Math.ceil(rows.length / ASSINATURAS_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedRows = rows.slice(
+    (safePage - 1) * ASSINATURAS_PAGE_SIZE,
+    safePage * ASSINATURAS_PAGE_SIZE,
+  );
 
   return (
     <div className="space-y-5 p-4 lg:p-6">
@@ -198,11 +209,14 @@ function AssinaturasPage() {
           <Input
             placeholder="Buscar por nome do documento…"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="pl-8"
           />
         </div>
-        <Select value={status} onValueChange={setStatus}>
+        <Select value={status} onValueChange={(v) => { setStatus(v); setPage(1); }}>
           <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
@@ -218,7 +232,7 @@ function AssinaturasPage() {
           </SelectContent>
         </Select>
         {obras.length > 0 ? (
-          <Select value={obraFilter || "all"} onValueChange={(v) => setObraFilter(v === "all" ? "" : v)}>
+          <Select value={obraFilter || "all"} onValueChange={(v) => { setObraFilter(v === "all" ? "" : v); setPage(1); }}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Obra" />
             </SelectTrigger>
@@ -244,15 +258,31 @@ function AssinaturasPage() {
             Nenhum documento de assinatura encontrado.
           </div>
         ) : (
-          <div className="divide-y">
-            {rows.map((r) => (
-              <RequestRow
-                key={r.id}
-                row={r}
-                onView={() => setActiveId(r.id)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="divide-y">
+              {paginatedRows.map((r) => (
+                <RequestRow
+                  key={r.id}
+                  row={r}
+                  onView={() => setActiveId(r.id)}
+                />
+              ))}
+            </div>
+            {rows.length > ASSINATURAS_PAGE_SIZE && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t px-4 py-3 text-sm text-muted-foreground">
+                <span>Mostrando {paginatedRows.length} de {rows.length} documentos</span>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={safePage === 1}>
+                    <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
+                  </Button>
+                  <span className="min-w-20 text-center">Pagina {safePage} de {totalPages}</span>
+                  <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages}>
+                    Proxima <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </Card>
 

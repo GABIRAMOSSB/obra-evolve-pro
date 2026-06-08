@@ -45,6 +45,7 @@ import {
   Plus,
   Trash2,
   ChevronLeft,
+  ChevronRight,
   CalendarClock,
   FileSignature,
   Loader2,
@@ -54,6 +55,7 @@ import {
   Link2,
   Link2Off,
   CheckCircle2,
+  Search,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -75,6 +77,8 @@ function fmtBRL(v: number | null): string {
   if (v == null) return "—";
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
+
+const CONTRATOS_PAGE_SIZE = 25;
 
 const STATUS_LABEL: Record<string, string> = {
   vigente: "Vigente",
@@ -122,6 +126,9 @@ function ContratosPage() {
 function ContratoList({ onOpen }: { onOpen: (id: string) => void }) {
   const list = useServerFn(listContratos);
   const remove = useServerFn(deleteContrato);
+  const [q, setQ] = useState("");
+  const [status, setStatus] = useState<string>("todos");
+  const [pagina, setPagina] = useState(1);
   const qc = useQueryClient();
 
   const { data, isLoading } = useQuery({
@@ -139,6 +146,21 @@ function ContratoList({ onOpen }: { onOpen: (id: string) => void }) {
   });
 
   const rows = data ?? [];
+  const filteredRows = useMemo(() => {
+    const termo = q.trim().toLowerCase();
+    return rows.filter((c) => {
+      const matchesStatus = status === "todos" || c.status === status;
+      const matchesTermo =
+        !termo ||
+        c.numero.toLowerCase().includes(termo) ||
+        (c.orgao_contratante ?? "").toLowerCase().includes(termo) ||
+        (c.obra_nome ?? "").toLowerCase().includes(termo);
+      return matchesStatus && matchesTermo;
+    });
+  }, [rows, q, status]);
+  const totalPaginas = Math.max(1, Math.ceil(filteredRows.length / CONTRATOS_PAGE_SIZE));
+  const paginaAtual = Math.min(pagina, totalPaginas);
+  const paginatedRows = filteredRows.slice((paginaAtual - 1) * CONTRATOS_PAGE_SIZE, paginaAtual * CONTRATOS_PAGE_SIZE);
   const expirando = useMemo(() => {
     const hoje = new Date();
     const limite = new Date();
@@ -182,12 +204,26 @@ function ContratoList({ onOpen }: { onOpen: (id: string) => void }) {
         </Card>
       </div>
 
+      <Card className="p-3 flex flex-col md:flex-row gap-3 md:items-center">
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input value={q} onChange={(e) => { setQ(e.target.value); setPagina(1); }} placeholder="Buscar contrato, orgao ou obra..." className="pl-9" />
+        </div>
+        <Select value={status} onValueChange={(v) => { setStatus(v); setPagina(1); }}>
+          <SelectTrigger className="w-full md:w-[190px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos os status</SelectItem>
+            {Object.entries(STATUS_LABEL).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </Card>
+
       <Card className="overflow-hidden">
         {isLoading ? (
           <div className="p-10 flex items-center justify-center text-muted-foreground">
             <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Carregando…
           </div>
-        ) : rows.length === 0 ? (
+        ) : filteredRows.length === 0 ? (
           <div className="p-10 text-center text-muted-foreground">
             Nenhum contrato cadastrado ainda.
           </div>
@@ -204,7 +240,7 @@ function ContratoList({ onOpen }: { onOpen: (id: string) => void }) {
               </tr>
             </thead>
             <tbody>
-              {rows.map((c) => (
+              {paginatedRows.map((c) => (
                 <tr
                   key={c.id}
                   className="border-t hover:bg-muted/30 cursor-pointer"
@@ -254,6 +290,19 @@ function ContratoList({ onOpen }: { onOpen: (id: string) => void }) {
               ))}
             </tbody>
           </table>
+        )}
+        {filteredRows.length > 0 && (
+          <div className="px-4 py-3 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+            <span>{filteredRows.length} contratos - Pagina {paginaAtual} de {totalPaginas}</span>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" disabled={paginaAtual <= 1} onClick={() => setPagina((p) => Math.max(1, p - 1))} className="gap-1">
+                <ChevronLeft className="w-3.5 h-3.5" /> Anterior
+              </Button>
+              <Button size="sm" variant="outline" disabled={paginaAtual >= totalPaginas} onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))} className="gap-1">
+                Proxima <ChevronRight className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </div>
         )}
       </Card>
     </div>

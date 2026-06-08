@@ -80,7 +80,7 @@ function ResetPasswordPage() {
             Validando link de recuperação...
             <p className="text-xs mt-3">
               Se demorar, o link pode ter expirado.{" "}
-              <Link to="/login" className="text-primary underline">Voltar ao login</Link>
+              <Link to="/login" search={{ redirect: undefined }} className="text-primary underline">Voltar ao login</Link>
             </p>
           </div>
         ) : (

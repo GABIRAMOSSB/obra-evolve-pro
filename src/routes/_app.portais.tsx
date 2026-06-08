@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Globe2, Plus, Trash2, Sparkles, Send, Download, ExternalLink, AlertTriangle } from "lucide-react";
+import { Globe2, Plus, Trash2, Sparkles, Send, Download, ExternalLink, AlertTriangle, Search, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,9 @@ type Protocolo = {
   numero_protocolo: string | null; data_envio: string; status: string;
   observacoes: string | null;
 };
+
+const PORTAIS_PAGE_SIZE = 8;
+const PROTOCOLOS_PAGE_SIZE = 15;
 
 const STATUS_COLOR: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
   rascunho: "outline", enviado: "secondary", aceito: "default", recusado: "destructive", cancelado: "outline",
@@ -76,6 +79,8 @@ function PerfisTab() {
   const delFn = useServerFn(excluirPortal);
   const qc = useQueryClient();
   const [editId, setEditId] = useState<string | "novo" | null>(null);
+  const [q, setQ] = useState("");
+  const [pagina, setPagina] = useState(1);
 
   const { data, isLoading } = useQuery({
     queryKey: ["portais"],
@@ -94,10 +99,26 @@ function PerfisTab() {
   });
 
   const rows = (data?.rows ?? []) as Portal[];
+  const filteredRows = useMemo(() => {
+    const termo = q.trim().toLowerCase();
+    return rows.filter((p) =>
+      !termo ||
+      p.nome.toLowerCase().includes(termo) ||
+      (p.codigo ?? "").toLowerCase().includes(termo) ||
+      (p.url_portal ?? "").toLowerCase().includes(termo),
+    );
+  }, [rows, q]);
+  const totalPaginas = Math.max(1, Math.ceil(filteredRows.length / PORTAIS_PAGE_SIZE));
+  const paginaAtual = Math.min(pagina, totalPaginas);
+  const paginatedRows = filteredRows.slice((paginaAtual - 1) * PORTAIS_PAGE_SIZE, paginaAtual * PORTAIS_PAGE_SIZE);
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between gap-2">
+      <div className="flex flex-col md:flex-row justify-between gap-2">
+        <div className="relative flex-1 md:max-w-sm">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input value={q} onChange={(e) => { setQ(e.target.value); setPagina(1); }} placeholder="Buscar portal..." className="pl-9" />
+        </div>
         <Button variant="outline" onClick={() => seedMut.mutate()} disabled={seedMut.isPending}>
           <Download className="w-4 h-4 mr-1" />
           {seedMut.isPending ? "Cadastrando…" : "Cadastrar portais padrão"}
@@ -107,13 +128,13 @@ function PerfisTab() {
 
       {isLoading ? (
         <div className="text-sm text-muted-foreground py-8 text-center">Carregando…</div>
-      ) : rows.length === 0 ? (
+      ) : filteredRows.length === 0 ? (
         <Card><CardContent className="py-12 text-center text-sm text-muted-foreground">
           Nenhum portal cadastrado. Use <strong>Cadastrar portais padrão</strong> para começar com Comprasnet, PNCP, BEC e outros.
         </CardContent></Card>
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
-          {rows.map((p) => (
+          {paginatedRows.map((p) => (
             <Card key={p.id}>
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-2">
@@ -152,6 +173,19 @@ function PerfisTab() {
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+      {filteredRows.length > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
+          <span>{filteredRows.length} portais - Pagina {paginaAtual} de {totalPaginas}</span>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" disabled={paginaAtual <= 1} onClick={() => setPagina((p) => Math.max(1, p - 1))} className="gap-1">
+              <ChevronLeft className="w-3.5 h-3.5" /> Anterior
+            </Button>
+            <Button size="sm" variant="outline" disabled={paginaAtual >= totalPaginas} onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))} className="gap-1">
+              Proxima <ChevronRight className="w-3.5 h-3.5" />
+            </Button>
+          </div>
         </div>
       )}
 
@@ -407,6 +441,9 @@ function ProtocolosTab() {
   const listPropFn = useServerFn(listPropostas);
   const qc = useQueryClient();
   const [novoOpen, setNovoOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const [status, setStatus] = useState<string>("todos");
+  const [pagina, setPagina] = useState(1);
 
   const { data, isLoading } = useQuery({ queryKey: ["protocolos"], queryFn: () => listFn({ data: {} }) });
   const { data: portais } = useQuery({ queryKey: ["portais"], queryFn: () => listPortFn({ data: {} }) });
@@ -426,10 +463,40 @@ function ProtocolosTab() {
   const portRows = (portais?.rows ?? []) as Portal[];
   const propRows = ((propostas ?? []) as Array<{ id: string; titulo: string }>);
   const rows = (data?.rows ?? []) as Protocolo[];
+  const filteredRows = useMemo(() => {
+    const termo = q.trim().toLowerCase();
+    return rows.filter((r) => {
+      const portalNome = portRows.find((p) => p.id === r.portal_id)?.nome ?? "";
+      const propNome = propRows.find((p) => p.id === r.proposta_id)?.titulo ?? "";
+      const matchesStatus = status === "todos" || r.status === status;
+      const matchesTermo =
+        !termo ||
+        portalNome.toLowerCase().includes(termo) ||
+        propNome.toLowerCase().includes(termo) ||
+        (r.numero_protocolo ?? "").toLowerCase().includes(termo);
+      return matchesStatus && matchesTermo;
+    });
+  }, [rows, portRows, propRows, q, status]);
+  const totalPaginas = Math.max(1, Math.ceil(filteredRows.length / PROTOCOLOS_PAGE_SIZE));
+  const paginaAtual = Math.min(pagina, totalPaginas);
+  const paginatedRows = filteredRows.slice((paginaAtual - 1) * PROTOCOLOS_PAGE_SIZE, paginaAtual * PROTOCOLOS_PAGE_SIZE);
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex flex-col md:flex-row justify-between gap-2">
+        <div className="flex flex-col md:flex-row gap-2 flex-1">
+          <div className="relative flex-1 md:max-w-sm">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input value={q} onChange={(e) => { setQ(e.target.value); setPagina(1); }} placeholder="Buscar protocolo..." className="pl-9" />
+          </div>
+          <Select value={status} onValueChange={(v) => { setStatus(v); setPagina(1); }}>
+            <SelectTrigger className="w-full md:w-[180px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os status</SelectItem>
+              {Object.keys(STATUS_COLOR).map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
         <Dialog open={novoOpen} onOpenChange={setNovoOpen}>
           <DialogTrigger asChild>
             <Button><Plus className="w-4 h-4 mr-1" />Registrar envio</Button>
@@ -443,7 +510,7 @@ function ProtocolosTab() {
 
       {isLoading ? (
         <div className="text-sm text-muted-foreground py-8 text-center">Carregando…</div>
-      ) : rows.length === 0 ? (
+      ) : filteredRows.length === 0 ? (
         <Card><CardContent className="py-12 text-center text-sm text-muted-foreground">
           Nenhum protocolo. Registre o envio de uma proposta para começar.
         </CardContent></Card>
@@ -463,7 +530,7 @@ function ProtocolosTab() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r) => {
+                  {paginatedRows.map((r) => {
                     const portalNome = portRows.find((p) => p.id === r.portal_id)?.nome ?? "—";
                     const propNome = propRows.find((p) => p.id === r.proposta_id)?.titulo ?? "—";
                     return (
@@ -486,6 +553,19 @@ function ProtocolosTab() {
                 </tbody>
               </table>
             </div>
+            {filteredRows.length > 0 && (
+              <div className="px-4 py-3 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+                <span>{filteredRows.length} protocolos - Pagina {paginaAtual} de {totalPaginas}</span>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="outline" disabled={paginaAtual <= 1} onClick={() => setPagina((p) => Math.max(1, p - 1))} className="gap-1">
+                    <ChevronLeft className="w-3.5 h-3.5" /> Anterior
+                  </Button>
+                  <Button size="sm" variant="outline" disabled={paginaAtual >= totalPaginas} onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))} className="gap-1">
+                    Proxima <ChevronRight className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

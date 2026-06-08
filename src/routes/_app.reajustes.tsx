@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, CheckCircle2, XCircle, Calculator, TrendingUp, Sparkles, FileText, Printer } from "lucide-react";
+import { Plus, Trash2, CheckCircle2, XCircle, Calculator, TrendingUp, Sparkles, FileText, Printer, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,7 +41,22 @@ const brl = (n: number | string | null | undefined) =>
 const pct = (n: number | string | null | undefined) =>
   `${Number(n ?? 0).toFixed(4)}%`;
 
+const REAJUSTES_PAGE_SIZE = 20;
+
 const INDICES_PADRAO = ["IPCA", "INCC", "IGP-M", "INPC", "ICC"];
+
+function ReajustesPagination({ total, shown, page, totalPages, onPrev, onNext, label }: { total: number; shown: number; page: number; totalPages: number; onPrev: () => void; onNext: () => void; label: string }) {
+  return (
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t pt-3 mt-3 text-sm text-muted-foreground">
+      <span>Mostrando {shown} de {total} {label}</span>
+      <div className="flex items-center gap-2">
+        <Button variant="outline" size="sm" onClick={onPrev} disabled={page === 1}><ChevronLeft className="w-4 h-4 mr-1" /> Anterior</Button>
+        <span className="min-w-20 text-center">Pagina {page} de {totalPages}</span>
+        <Button variant="outline" size="sm" onClick={onNext} disabled={page >= totalPages}>Proxima <ChevronRight className="w-4 h-4 ml-1" /></Button>
+      </div>
+    </div>
+  );
+}
 
 function statusBadge(s: string) {
   if (s === "aplicado") return <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30">aplicado</Badge>;
@@ -64,6 +79,8 @@ function ReajustesPage() {
   });
 
   // ---- formulários ----
+  const [reajustesPage, setReajustesPage] = useState(1);
+  const [indicesPage, setIndicesPage] = useState(1);
   const [openIndice, setOpenIndice] = useState(false);
   const [iForm, setIForm] = useState({ indice: "IPCA", mes_referencia: "", valor_percentual: "", fonte: "" });
 
@@ -204,6 +221,12 @@ function ReajustesPage() {
   const reajustes = data?.reajustes ?? [];
   const contratos = data?.contratos ?? [];
   const contratoMap = new Map(contratos.map((c) => [c.id, c]));
+  const reajustesTotalPages = Math.max(1, Math.ceil(reajustes.length / REAJUSTES_PAGE_SIZE));
+  const safeReajustesPage = Math.min(reajustesPage, reajustesTotalPages);
+  const paginatedReajustes = reajustes.slice((safeReajustesPage - 1) * REAJUSTES_PAGE_SIZE, safeReajustesPage * REAJUSTES_PAGE_SIZE);
+  const indicesTotalPages = Math.max(1, Math.ceil(indices.length / REAJUSTES_PAGE_SIZE));
+  const safeIndicesPage = Math.min(indicesPage, indicesTotalPages);
+  const paginatedIndices = indices.slice((safeIndicesPage - 1) * REAJUSTES_PAGE_SIZE, safeIndicesPage * REAJUSTES_PAGE_SIZE);
 
   const indicesUnicos = Array.from(new Set([...INDICES_PADRAO, ...indices.map((i) => i.indice)]));
 
@@ -416,7 +439,7 @@ function ReajustesPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {reajustes.map((r) => {
+                      {paginatedReajustes.map((r) => {
                         const c = contratoMap.get(r.contrato_id);
                         return (
                           <tr key={r.id} className="border-b last:border-b-0 hover:bg-muted/40">
@@ -461,6 +484,9 @@ function ReajustesPage() {
                     </tbody>
                   </table>
                 </div>
+              )}
+              {reajustes.length > REAJUSTES_PAGE_SIZE && (
+                <ReajustesPagination total={reajustes.length} shown={paginatedReajustes.length} page={safeReajustesPage} totalPages={reajustesTotalPages} onPrev={() => setReajustesPage((p) => Math.max(1, p - 1))} onNext={() => setReajustesPage((p) => Math.min(reajustesTotalPages, p + 1))} label="reajustes" />
               )}
             </CardContent>
           </Card>
@@ -529,7 +555,7 @@ function ReajustesPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {indices.map((i) => (
+                      {paginatedIndices.map((i) => (
                         <tr key={i.id} className="border-b last:border-b-0 hover:bg-muted/40">
                           <td className="py-2 px-2 font-mono">{i.indice}</td>
                           <td className="py-2 px-2">{i.mes_referencia.slice(0, 7)}</td>
@@ -546,6 +572,9 @@ function ReajustesPage() {
                     </tbody>
                   </table>
                 </div>
+              )}
+              {indices.length > REAJUSTES_PAGE_SIZE && (
+                <ReajustesPagination total={indices.length} shown={paginatedIndices.length} page={safeIndicesPage} totalPages={indicesTotalPages} onPrev={() => setIndicesPage((p) => Math.max(1, p - 1))} onNext={() => setIndicesPage((p) => Math.min(indicesTotalPages, p + 1))} label="indices" />
               )}
             </CardContent>
           </Card>

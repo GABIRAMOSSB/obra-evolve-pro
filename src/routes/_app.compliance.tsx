@@ -56,6 +56,8 @@ import {
   Pencil,
   Trash2,
   BellRing,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -88,6 +90,8 @@ type CertRow = {
     issuing_authority: string | null;
   };
 };
+
+const COMPLIANCE_PAGE_SIZE = 20;
 
 const STATUS_META: Record<string, { label: string; tone: string; icon: typeof CheckCircle2 }> = {
   valid: { label: "Válida", tone: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30", icon: CheckCircle2 },
@@ -145,6 +149,26 @@ function ComplianceModule() {
   const logsQ = useQuery({ queryKey: ["compliance", "logs"], queryFn: () => listLogs() });
 
   const certs = (certsQ.data ?? []) as unknown as CertRow[];
+  const [versionsPage, setVersionsPage] = useState(1);
+  const [checksPage, setChecksPage] = useState(1);
+  const [alertsPage, setAlertsPage] = useState(1);
+  const [logsPage, setLogsPage] = useState(1);
+  const versions = (versionsQ.data ?? []) as any[];
+  const checks = (checksQ.data ?? []) as any[];
+  const alerts = (alertsQ.data ?? []) as any[];
+  const logs = (logsQ.data ?? []) as any[];
+  const versionsTotalPages = Math.max(1, Math.ceil(versions.length / COMPLIANCE_PAGE_SIZE));
+  const safeVersionsPage = Math.min(versionsPage, versionsTotalPages);
+  const paginatedVersions = versions.slice((safeVersionsPage - 1) * COMPLIANCE_PAGE_SIZE, safeVersionsPage * COMPLIANCE_PAGE_SIZE);
+  const checksTotalPages = Math.max(1, Math.ceil(checks.length / COMPLIANCE_PAGE_SIZE));
+  const safeChecksPage = Math.min(checksPage, checksTotalPages);
+  const paginatedChecks = checks.slice((safeChecksPage - 1) * COMPLIANCE_PAGE_SIZE, safeChecksPage * COMPLIANCE_PAGE_SIZE);
+  const alertsTotalPages = Math.max(1, Math.ceil(alerts.length / COMPLIANCE_PAGE_SIZE));
+  const safeAlertsPage = Math.min(alertsPage, alertsTotalPages);
+  const paginatedAlerts = alerts.slice((safeAlertsPage - 1) * COMPLIANCE_PAGE_SIZE, safeAlertsPage * COMPLIANCE_PAGE_SIZE);
+  const logsTotalPages = Math.max(1, Math.ceil(logs.length / COMPLIANCE_PAGE_SIZE));
+  const safeLogsPage = Math.min(logsPage, logsTotalPages);
+  const paginatedLogs = logs.slice((safeLogsPage - 1) * COMPLIANCE_PAGE_SIZE, safeLogsPage * COMPLIANCE_PAGE_SIZE);
 
   const stats = useMemo(() => {
     const s = { total: certs.length, valid: 0, expiring: 0, expired: 0, pending: 0 };
@@ -273,7 +297,7 @@ function ComplianceModule() {
           <Card className="p-4">
             <h3 className="font-semibold mb-3 text-sm uppercase tracking-wider text-muted-foreground">Versões emitidas</h3>
             <div className="divide-y divide-border/40">
-              {(versionsQ.data ?? []).map((v: any) => (
+              {paginatedVersions.map((v: any) => (
                 <div key={v.id} className="py-2.5 flex items-center justify-between gap-3 flex-wrap">
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-medium">
@@ -298,16 +322,19 @@ function ComplianceModule() {
                   </div>
                 </div>
               ))}
-              {(versionsQ.data ?? []).length === 0 && (
+              {versions.length === 0 && (
                 <div className="text-sm text-muted-foreground py-4 text-center">Nenhuma versão registrada ainda.</div>
               )}
             </div>
+            {versions.length > COMPLIANCE_PAGE_SIZE && (
+              <PaginationFooter total={versions.length} shown={paginatedVersions.length} label="versoes" page={safeVersionsPage} totalPages={versionsTotalPages} onPrev={() => setVersionsPage((p) => Math.max(1, p - 1))} onNext={() => setVersionsPage((p) => Math.min(versionsTotalPages, p + 1))} />
+            )}
           </Card>
 
           <Card className="p-4 mt-4">
             <h3 className="font-semibold mb-3 text-sm uppercase tracking-wider text-muted-foreground">Verificações executadas</h3>
             <div className="divide-y divide-border/40">
-              {(checksQ.data ?? []).slice(0, 50).map((c: any) => (
+              {paginatedChecks.map((c: any) => (
                 <div key={c.id} className="py-2 flex items-center justify-between gap-3 text-sm">
                   <div className="min-w-0 flex-1">
                     <div className="font-medium">{c.certificate_types?.short_name ?? c.certificate_types?.name ?? "—"}</div>
@@ -316,10 +343,13 @@ function ComplianceModule() {
                   <Badge variant={c.status === "success" ? "default" : "destructive"}>{c.status}</Badge>
                 </div>
               ))}
-              {(checksQ.data ?? []).length === 0 && (
+              {checks.length === 0 && (
                 <div className="text-sm text-muted-foreground py-4 text-center">Nenhuma verificação ainda.</div>
               )}
             </div>
+            {checks.length > COMPLIANCE_PAGE_SIZE && (
+              <PaginationFooter total={checks.length} shown={paginatedChecks.length} label="verificacoes" page={safeChecksPage} totalPages={checksTotalPages} onPrev={() => setChecksPage((p) => Math.max(1, p - 1))} onNext={() => setChecksPage((p) => Math.min(checksTotalPages, p + 1))} />
+            )}
           </Card>
         </TabsContent>
 
@@ -327,7 +357,7 @@ function ComplianceModule() {
         <TabsContent value="alerts">
           <Card className="p-4">
             <div className="divide-y divide-border/40">
-              {(alertsQ.data ?? []).map((a: any) => (
+              {paginatedAlerts.map((a: any) => (
                 <div key={a.id} className="py-3 flex items-start justify-between gap-3">
                   <div className="flex items-start gap-2 min-w-0">
                     <AlertTriangle className={`w-4 h-4 mt-0.5 ${a.severity === "critical" ? "text-red-400" : a.severity === "high" ? "text-amber-400" : "text-muted-foreground"}`} />
@@ -349,10 +379,13 @@ function ComplianceModule() {
                   </div>
                 </div>
               ))}
-              {(alertsQ.data ?? []).length === 0 && (
+              {alerts.length === 0 && (
                 <div className="text-sm text-muted-foreground py-6 text-center">Nenhum alerta ativo. Tudo certo!</div>
               )}
             </div>
+            {alerts.length > COMPLIANCE_PAGE_SIZE && (
+              <PaginationFooter total={alerts.length} shown={paginatedAlerts.length} label="alertas" page={safeAlertsPage} totalPages={alertsTotalPages} onPrev={() => setAlertsPage((p) => Math.max(1, p - 1))} onNext={() => setAlertsPage((p) => Math.min(alertsTotalPages, p + 1))} />
+            )}
           </Card>
         </TabsContent>
 
@@ -365,7 +398,7 @@ function ComplianceModule() {
         <TabsContent value="logs">
           <Card className="p-4">
             <div className="divide-y divide-border/40">
-              {(logsQ.data ?? []).map((l: any) => (
+              {paginatedLogs.map((l: any) => (
                 <div key={l.id} className="py-2 text-sm">
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-medium">{l.action}</span>
@@ -374,10 +407,13 @@ function ComplianceModule() {
                   <div className="text-xs text-muted-foreground">{l.description}</div>
                 </div>
               ))}
-              {(logsQ.data ?? []).length === 0 && (
+              {logs.length === 0 && (
                 <div className="text-sm text-muted-foreground py-6 text-center">Nenhum evento registrado.</div>
               )}
             </div>
+            {logs.length > COMPLIANCE_PAGE_SIZE && (
+              <PaginationFooter total={logs.length} shown={paginatedLogs.length} label="logs" page={safeLogsPage} totalPages={logsTotalPages} onPrev={() => setLogsPage((p) => Math.max(1, p - 1))} onNext={() => setLogsPage((p) => Math.min(logsTotalPages, p + 1))} />
+            )}
           </Card>
         </TabsContent>
 
@@ -447,6 +483,31 @@ function StatCard({ label, value, tone }: { label: string; value: number; tone: 
   );
 }
 
+function PaginationFooter({ total, shown, label, page, totalPages, onPrev, onNext }: {
+  total: number;
+  shown: number;
+  label: string;
+  page: number;
+  totalPages: number;
+  onPrev: () => void;
+  onNext: () => void;
+}) {
+  return (
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-border/40 pt-3 mt-3 text-sm text-muted-foreground">
+      <span>Mostrando {shown} de {total} {label}</span>
+      <div className="flex items-center gap-2">
+        <Button variant="outline" size="sm" onClick={onPrev} disabled={page === 1}>
+          <ChevronLeft className="w-4 h-4 mr-1" /> Anterior
+        </Button>
+        <span className="min-w-20 text-center">Pagina {page} de {totalPages}</span>
+        <Button variant="outline" size="sm" onClick={onNext} disabled={page >= totalPages}>
+          Proxima <ChevronRight className="w-4 h-4 ml-1" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function InfoCell({ label, value }: { label: string; value: string | undefined | null }) {
   return (
     <div>
@@ -469,6 +530,10 @@ function CertList({
   onOpenDetails: (id: string) => void;
 }) {
   const [uploadFor, setUploadFor] = useState<CertRow | null>(null);
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(certs.length / COMPLIANCE_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedCerts = certs.slice((safePage - 1) * COMPLIANCE_PAGE_SIZE, safePage * COMPLIANCE_PAGE_SIZE);
 
   if (loading) return <Card className="p-8 flex justify-center"><Loader2 className="w-5 h-5 animate-spin" /></Card>;
 
@@ -488,7 +553,7 @@ function CertList({
             </tr>
           </thead>
           <tbody className="divide-y divide-border/40">
-            {certs.map((c) => (
+            {paginatedCerts.map((c) => (
               <tr key={c.id} className="hover:bg-muted/10">
                 <td className="px-4 py-3">
                   <div className="font-medium">{c.certificate_types.name}</div>
@@ -537,6 +602,9 @@ function CertList({
           </tbody>
         </table>
       </Card>
+      {certs.length > COMPLIANCE_PAGE_SIZE && (
+        <PaginationFooter total={certs.length} shown={paginatedCerts.length} label="certidoes" page={safePage} totalPages={totalPages} onPrev={() => setPage((p) => Math.max(1, p - 1))} onNext={() => setPage((p) => Math.min(totalPages, p + 1))} />
+      )}
 
       <UploadDialog
         cert={uploadFor}
@@ -871,6 +939,10 @@ function NotificationRulesPanel() {
 
   const rules = (rulesQ.data ?? []) as RuleRow[];
   const types = (typesQ.data ?? []) as CertType[];
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(rules.length / COMPLIANCE_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedRules = rules.slice((safePage - 1) * COMPLIANCE_PAGE_SIZE, safePage * COMPLIANCE_PAGE_SIZE);
 
   function openNew() {
     setEditing({
@@ -906,7 +978,7 @@ function NotificationRulesPanel() {
         </div>
       ) : (
         <div className="divide-y divide-border/40 border border-border/60 rounded-md">
-          {rules.map((r) => (
+          {paginatedRules.map((r) => (
             <div key={r.id} className="flex items-center justify-between gap-3 p-3">
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -942,6 +1014,9 @@ function NotificationRulesPanel() {
             </div>
           ))}
         </div>
+      )}
+      {rules.length > COMPLIANCE_PAGE_SIZE && (
+        <PaginationFooter total={rules.length} shown={paginatedRules.length} label="regras" page={safePage} totalPages={totalPages} onPrev={() => setPage((p) => Math.max(1, p - 1))} onNext={() => setPage((p) => Math.min(totalPages, p + 1))} />
       )}
 
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>

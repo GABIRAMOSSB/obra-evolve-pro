@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, Edit, Copy, Printer, FileSignature, Wand2 } from "lucide-react";
+import { Plus, Trash2, Edit, Copy, Printer, FileSignature, Wand2, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,8 @@ type FormState = {
   data_emissao: string;
   observacoes: string;
 };
+
+const DECLARACOES_PAGE_SIZE = 20;
 
 const initialForm = (): FormState => ({
   tipo: "habilitacao",
@@ -82,6 +84,7 @@ function DeclaracoesPage() {
   const [viewOpen, setViewOpen] = useState(false);
   const [viewing, setViewing] = useState<DeclaracaoRow | null>(null);
   const [form, setForm] = useState<FormState>(initialForm());
+  const [page, setPage] = useState(1);
 
   const openNew = () => { setForm(initialForm()); setOpen(true); };
   const openEdit = (d: DeclaracaoRow) => {
@@ -172,6 +175,12 @@ function DeclaracoesPage() {
   };
 
   const declaracoes = data?.declaracoes ?? [];
+  const totalPages = Math.max(1, Math.ceil(declaracoes.length / DECLARACOES_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedDeclaracoes = declaracoes.slice(
+    (safePage - 1) * DECLARACOES_PAGE_SIZE,
+    safePage * DECLARACOES_PAGE_SIZE,
+  );
 
   return (
     <div className="p-6 space-y-6">
@@ -202,7 +211,7 @@ function DeclaracoesPage() {
             </p>
           ) : (
             <div className="space-y-2">
-              {declaracoes.map((d) => (
+              {paginatedDeclaracoes.map((d) => (
                 <div key={d.id} className="flex items-start justify-between gap-3 p-3 border rounded-md">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -232,6 +241,20 @@ function DeclaracoesPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+          {declaracoes.length > DECLARACOES_PAGE_SIZE && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t pt-3 mt-3 text-sm text-muted-foreground">
+              <span>Mostrando {paginatedDeclaracoes.length} de {declaracoes.length} declaracoes</span>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={safePage === 1}>
+                  <ChevronLeft className="w-4 h-4 mr-1" /> Anterior
+                </Button>
+                <span className="min-w-20 text-center">Pagina {safePage} de {totalPages}</span>
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages}>
+                  Proxima <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

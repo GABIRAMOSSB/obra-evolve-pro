@@ -80,6 +80,7 @@ import {
  BookOpen,
  Search,
  Plus,
+ ChevronLeft,
  ChevronRight,
  ChevronDown,
  Building2,
@@ -95,6 +96,9 @@ import {
 
 } from "lucide-react";
 
+
+const ACTIVITIES_PAGE_SIZE = 100;
+const DIARY_PAGE_SIZE = 10;
 
 function statusVariant(status: string): "default" | "secondary" | "outline" {
  if (status === "Concluída") return "default";
@@ -278,7 +282,7 @@ export function ObraApp() {
 
  async function handleSignOut() {
  await signOut();
- navigate({ to: "/login" });
+ navigate({ to: "/login", search: { redirect: undefined } });
  }
 
  const activeObra = ws.obras.find((o) => o.id === ws.activeId) ?? null;
@@ -792,6 +796,7 @@ function Dashboard({
  const [filterDesc, setFilterDesc] = useState("");
  const [filterPercMin, setFilterPercMin] = useState("");
  const [filterMeasurement, setFilterMeasurement] = useState<string>("");
+ const [activitiesPage, setActivitiesPage] = useState(1);
  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
  const toggleCollapse = (item: string) =>
  setCollapsed((c) => ({ ...c, [item]: !c[item] }));
@@ -865,6 +870,17 @@ function Dashboard({
  return true;
  });
  }, [filteredRows, collapsed]);
+
+ useEffect(() => {
+ setActivitiesPage(1);
+ }, [filterEtapas, filterStatuses, filterExec, filterItem, filterDesc, filterPercMin, filterMeasurement]);
+
+ const activitiesTotalPages = Math.max(1, Math.ceil(visibleRows.length / ACTIVITIES_PAGE_SIZE));
+ const safeActivitiesPage = Math.min(activitiesPage, activitiesTotalPages);
+ const paginatedVisibleRows = visibleRows.slice(
+ (safeActivitiesPage - 1) * ACTIVITIES_PAGE_SIZE,
+ safeActivitiesPage * ACTIVITIES_PAGE_SIZE,
+ );
 
  const m = useMemo(
  () => projectMetrics(filteredRows, data.evolutions),
@@ -1459,6 +1475,7 @@ function Dashboard({
  setFilterDesc("");
  setFilterPercMin("");
  setFilterMeasurement("");
+ setActivitiesPage(1);
  }}
  >
  Limpar todos
@@ -1485,7 +1502,7 @@ function Dashboard({
  </div>
 
  <ActivitiesTable
- rows={visibleRows}
+ rows={paginatedVisibleRows}
  allRows={data.rows}
  evolutions={data.evolutions}
  onUpdate={updateEvolution}
@@ -1497,6 +1514,21 @@ function Dashboard({
  currentMeasurement={getCurrentMeasurement(data)}
  viewMeasurement={selectedBM ?? getCurrentMeasurement(data)}
  />
+
+ {visibleRows.length > ACTIVITIES_PAGE_SIZE && (
+ <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-sm text-muted-foreground">
+ <span>Mostrando {paginatedVisibleRows.length} de {visibleRows.length} linhas visiveis</span>
+ <div className="flex items-center gap-2">
+ <Button variant="outline" size="sm" onClick={() => setActivitiesPage((p) => Math.max(1, p - 1))} disabled={safeActivitiesPage === 1}>
+ <ChevronLeft className="w-4 h-4 mr-1" /> Anterior
+ </Button>
+ <span className="min-w-20 text-center">Pagina {safeActivitiesPage} de {activitiesTotalPages}</span>
+ <Button variant="outline" size="sm" onClick={() => setActivitiesPage((p) => Math.min(activitiesTotalPages, p + 1))} disabled={safeActivitiesPage >= activitiesTotalPages}>
+ Proxima <ChevronRight className="w-4 h-4 ml-1" />
+ </Button>
+ </div>
+ </div>
+ )}
 
  <SignatureBlock info={info} municipio={info.municipio} />
  </TabsContent>
@@ -2669,6 +2701,7 @@ function DiaryPanel({
 
  const [from, setFrom] = useState("");
  const [to, setTo] = useState("");
+ const [page, setPage] = useState(1);
 
  const filtered = useMemo(() => {
  return diaries.filter((d) => {
@@ -2678,16 +2711,24 @@ function DiaryPanel({
  });
  }, [diaries, from, to]);
 
+ useEffect(() => {
+ setPage(1);
+ }, [from, to, diaries.length]);
+
+ const totalPages = Math.max(1, Math.ceil(filtered.length / DIARY_PAGE_SIZE));
+ const safePage = Math.min(page, totalPages);
+ const paginated = filtered.slice((safePage - 1) * DIARY_PAGE_SIZE, safePage * DIARY_PAGE_SIZE);
+
  return (
  <div className="space-y-4">
  <Card className="p-4 flex flex-wrap items-end gap-3">
  <div>
  <Label className="text-xs">De</Label>
- <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+ <Input type="date" value={from} onChange={(e) => { setFrom(e.target.value); setPage(1); }} />
  </div>
  <div>
  <Label className="text-xs">Até</Label>
- <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+ <Input type="date" value={to} onChange={(e) => { setTo(e.target.value); setPage(1); }} />
  </div>
  <Button
  variant="outline"
@@ -2708,11 +2749,24 @@ function DiaryPanel({
  </Card>
  ) : (
  <div className="space-y-3">
- {filtered.map((d) => (
+ {paginated.map((d) => (
  <DiaryCard key={d.id} obraId={obraId} companyId={companyId} entry={d} onUpdate={onUpdate} onRemove={onRemove} />
  ))}
  </div>
-
+ )}
+ {filtered.length > DIARY_PAGE_SIZE && (
+ <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-sm text-muted-foreground">
+ <span>Mostrando {paginated.length} de {filtered.length} registros</span>
+ <div className="flex items-center gap-2">
+ <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={safePage === 1}>
+ <ChevronLeft className="w-4 h-4 mr-1" /> Anterior
+ </Button>
+ <span className="min-w-20 text-center">Pagina {safePage} de {totalPages}</span>
+ <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages}>
+ Proxima <ChevronRight className="w-4 h-4 ml-1" />
+ </Button>
+ </div>
+ </div>
  )}
  </div>
  );

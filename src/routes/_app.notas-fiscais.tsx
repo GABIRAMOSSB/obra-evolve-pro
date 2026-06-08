@@ -46,6 +46,8 @@ import {
   Link2,
   AlertCircle,
   Split,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   parseNFeXml,
@@ -69,6 +71,8 @@ export const Route = createFileRoute("/_app/notas-fiscais")({
     ],
   }),
 });
+
+const NOTAS_PAGE_SIZE = 25;
 
 type NotaRow = {
   id: string;
@@ -124,6 +128,7 @@ function NotasFiscaisPage() {
   const [notas, setNotas] = useState<NotaRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [pagina, setPagina] = useState(1);
   const [tab, setTab] = useState("list");
   const [importing, setImporting] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<{ name: string; parsed: NFeParsed }[]>([]);
@@ -209,6 +214,9 @@ function NotasFiscaisPage() {
         n.chave_acesso.includes(s),
     );
   }, [notas, search]);
+  const totalPaginas = Math.max(1, Math.ceil(filtered.length / NOTAS_PAGE_SIZE));
+  const paginaAtual = Math.min(pagina, totalPaginas);
+  const paginatedNotas = filtered.slice((paginaAtual - 1) * NOTAS_PAGE_SIZE, paginaAtual * NOTAS_PAGE_SIZE);
 
   const handleFiles = async (fileList: FileList | null) => {
     if (!fileList) return;
@@ -439,7 +447,7 @@ function NotasFiscaisPage() {
   if (!user) {
     return (
       <div className="p-8">
-        <Link to="/login" className="underline">
+        <Link to="/login" search={{ redirect: undefined }} className="underline">
           Faça login para continuar
         </Link>
       </div>
@@ -474,7 +482,7 @@ function NotasFiscaisPage() {
                 <Input
                   placeholder="Buscar por número, emitente, CNPJ ou chave…"
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => { setSearch(e.target.value); setPagina(1); }}
                   className="max-w-md"
                 />
               </div>
@@ -508,7 +516,7 @@ function NotasFiscaisPage() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filtered.map((n) => (
+                      paginatedNotas.map((n) => (
                         <TableRow key={n.id}>
                           <TableCell className="font-mono">{n.numero}</TableCell>
                           <TableCell>{n.serie || "—"}</TableCell>
@@ -584,6 +592,19 @@ function NotasFiscaisPage() {
                   </TableBody>
                 </Table>
               </div>
+              {filtered.length > 0 && (
+                <div className="pt-3 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+                  <span>{filtered.length} notas - Pagina {paginaAtual} de {totalPaginas}</span>
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" variant="outline" disabled={paginaAtual <= 1} onClick={() => setPagina((p) => Math.max(1, p - 1))} className="gap-1">
+                      <ChevronLeft className="w-3.5 h-3.5" /> Anterior
+                    </Button>
+                    <Button size="sm" variant="outline" disabled={paginaAtual >= totalPaginas} onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))} className="gap-1">
+                      Proxima <ChevronRight className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </Card>
           </TabsContent>
 

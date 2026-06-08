@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Calendar, Trash2, Lock, Wand2, Eye } from "lucide-react";
+import { Plus, Calendar, Trash2, Lock, Wand2, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -19,14 +19,22 @@ import {
 
 export const Route = createFileRoute("/_app/cronogramas")({ component: CronogramasPage });
 
+const CRONOGRAMAS_PAGE_SIZE = 20;
+
 function CronogramasPage() {
   const list = useServerFn(listCronogramas);
   const propostas = useServerFn(listPropostasParaCronograma);
   const qc = useQueryClient();
   const [selected, setSelected] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   const { data, isLoading } = useQuery({ queryKey: ["cronogramas"], queryFn: () => list() });
   const { data: props } = useQuery({ queryKey: ["cron_propostas"], queryFn: () => propostas() });
+
+  const rows = data ?? [];
+  const totalPages = Math.max(1, Math.ceil(rows.length / CRONOGRAMAS_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedRows = rows.slice((safePage - 1) * CRONOGRAMAS_PAGE_SIZE, safePage * CRONOGRAMAS_PAGE_SIZE);
 
   const del = useMutation({
     mutationFn: useServerFn(deleteCronograma),
@@ -63,7 +71,7 @@ function CronogramasPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(data ?? []).map((c) => (
+                {paginatedRows.map((c) => (
                   <TableRow key={c.id}>
                     <TableCell className="font-medium">{c.nome}</TableCell>
                     <TableCell className="text-sm">{c.proposta_titulo ?? c.obra_nome ?? "—"}</TableCell>
@@ -78,16 +86,32 @@ function CronogramasPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {(data ?? []).length === 0 && (
+                {rows.length === 0 && (
                   <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Nenhum cronograma cadastrado.</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
           )}
+          {rows.length > CRONOGRAMAS_PAGE_SIZE && (
+            <CronogramasPagination total={rows.length} shown={paginatedRows.length} page={safePage} totalPages={totalPages} onPrev={() => setPage((p) => Math.max(1, p - 1))} onNext={() => setPage((p) => Math.min(totalPages, p + 1))} />
+          )}
         </CardContent>
       </Card>
 
       {selected && <DetalheCronograma id={selected} onClose={() => setSelected(null)} />}
+    </div>
+  );
+}
+
+function CronogramasPagination({ total, shown, page, totalPages, onPrev, onNext }: { total: number; shown: number; page: number; totalPages: number; onPrev: () => void; onNext: () => void }) {
+  return (
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t pt-3 mt-3 text-sm text-muted-foreground">
+      <span>Mostrando {shown} de {total} cronogramas</span>
+      <div className="flex items-center gap-2">
+        <Button variant="outline" size="sm" onClick={onPrev} disabled={page === 1}><ChevronLeft className="w-4 h-4 mr-1" /> Anterior</Button>
+        <span className="min-w-20 text-center">Pagina {page} de {totalPages}</span>
+        <Button variant="outline" size="sm" onClick={onNext} disabled={page >= totalPages}>Proxima <ChevronRight className="w-4 h-4 ml-1" /></Button>
+      </div>
     </div>
   );
 }

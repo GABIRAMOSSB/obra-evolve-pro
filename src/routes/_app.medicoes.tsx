@@ -16,12 +16,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ClipboardList, Plus, Trash2, Loader2 } from "lucide-react";
+import { ClipboardList, Plus, Trash2, Loader2, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/medicoes")({
   component: MedicoesPage,
 });
+
+const MEDICOES_PAGE_SIZE = 20;
 
 const STATUS_LABEL: Record<string, string> = {
   rascunho: "Rascunho",
@@ -40,6 +42,9 @@ function MedicoesPage() {
   const status = useServerFn(atualizarStatusMedicao);
   const excluir = useServerFn(excluirMedicao);
   const qc = useQueryClient();
+  const [q, setQ] = useState("");
+  const [statusFiltro, setStatusFiltro] = useState<string>("todos");
+  const [pagina, setPagina] = useState(1);
 
   const { data, isLoading } = useQuery({ queryKey: ["medicoes"], queryFn: () => list() });
 
@@ -86,6 +91,22 @@ function MedicoesPage() {
   type Medicao = { id: string; contrato_id: string; numero: number; periodo_inicio: string; periodo_fim: string; valor_executado: number | string; valor_acumulado: number | string; percentual_fisico: number | string; status: string };
   const contratos = (data?.contratos ?? []) as Contrato[];
   const medicoes = (data?.medicoes ?? []) as Medicao[];
+  const filteredMedicoes = useMemo(() => {
+    const termo = q.trim().toLowerCase();
+    return medicoes.filter((m) => {
+      const contrato = contratos.find((c) => c.id === m.contrato_id);
+      const matchesStatus = statusFiltro === "todos" || m.status === statusFiltro;
+      const matchesTermo =
+        !termo ||
+        String(m.numero).includes(termo) ||
+        (contrato?.numero ?? "").toLowerCase().includes(termo) ||
+        (contrato?.objeto ?? "").toLowerCase().includes(termo);
+      return matchesStatus && matchesTermo;
+    });
+  }, [medicoes, contratos, q, statusFiltro]);
+  const totalPaginas = Math.max(1, Math.ceil(filteredMedicoes.length / MEDICOES_PAGE_SIZE));
+  const paginaAtual = Math.min(pagina, totalPaginas);
+  const paginatedMedicoes = filteredMedicoes.slice((paginaAtual - 1) * MEDICOES_PAGE_SIZE, paginaAtual * MEDICOES_PAGE_SIZE);
 
   const totais = useMemo(() => {
     const totalExec = medicoes.reduce((s: number, m: Medicao) => s + Number(m.valor_executado || 0), 0);
@@ -169,15 +190,29 @@ function MedicoesPage() {
         </Card>
       </div>
 
+      <Card className="p-3 flex flex-col md:flex-row gap-3 md:items-center">
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input value={q} onChange={(e) => { setQ(e.target.value); setPagina(1); }} placeholder="Buscar medicao ou contrato..." className="pl-9" />
+        </div>
+        <Select value={statusFiltro} onValueChange={(v) => { setStatusFiltro(v); setPagina(1); }}>
+          <SelectTrigger className="w-full md:w-[180px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos os status</SelectItem>
+            {Object.entries(STATUS_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </Card>
+
       {isLoading ? (
         <div className="text-sm text-muted-foreground">Carregando…</div>
-      ) : medicoes.length === 0 ? (
+      ) : filteredMedicoes.length === 0 ? (
         <Card className="p-12 text-center text-muted-foreground">
           Nenhuma medição emitida ainda. Clique em <strong>Nova medição</strong> para gerar a primeira.
         </Card>
       ) : (
         <Card className="divide-y">
-          {medicoes.map((m: Medicao) => {
+          {paginatedMedicoes.map((m: Medicao) => {
             const contrato = contratos.find((c: Contrato) => c.id === m.contrato_id);
             return (
               <div key={m.id} className="p-4 flex flex-wrap items-center gap-4">
@@ -218,6 +253,19 @@ function MedicoesPage() {
               </div>
             );
           })}
+          {filteredMedicoes.length > 0 && (
+            <div className="p-4 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+              <span>{filteredMedicoes.length} medicoes - Pagina {paginaAtual} de {totalPaginas}</span>
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" disabled={paginaAtual <= 1} onClick={() => setPagina((p) => Math.max(1, p - 1))} className="gap-1">
+                  <ChevronLeft className="w-3.5 h-3.5" /> Anterior
+                </Button>
+                <Button size="sm" variant="outline" disabled={paginaAtual >= totalPaginas} onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))} className="gap-1">
+                  Proxima <ChevronRight className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            </div>
+          )}
         </Card>
       )}
     </div>

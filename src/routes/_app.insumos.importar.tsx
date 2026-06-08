@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import * as XLSX from "xlsx";
 import { useAuth } from "@/hooks/use-auth";
 import { useCompany } from "@/hooks/use-company";
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { ArrowLeft, Upload, FileSpreadsheet, CheckCircle2, AlertCircle } from "lucide-react";
+import { ArrowLeft, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
 
 export const Route = createFileRoute("/_app/insumos/importar")({
  component: ImportarSinapiPage,
@@ -52,6 +52,8 @@ interface HistoricoRow {
 }
 
 const BATCH_SIZE = 500;
+const PREVIEW_PAGE_SIZE = 50;
+const HISTORICO_PAGE_SIZE = 20;
 
 const HEADER_ALIASES: Record<string, keyof SinapiRow> = {
  codigo: "sinapi_codigo",
@@ -125,6 +127,7 @@ function ImportarSinapiPage() {
  const [versao, setVersao] = useState("");
  const [parsing, setParsing] = useState(false);
  const [preview, setPreview] = useState<SinapiRow[]>([]);
+ const [previewPage, setPreviewPage] = useState(1);
  const [importing, setImporting] = useState(false);
  const [progress, setProgress] = useState(0);
  const [result, setResult] = useState<{
@@ -132,8 +135,9 @@ function ImportarSinapiPage() {
  } | null>(null);
 
  const [historico, setHistorico] = useState<HistoricoRow[]>([]);
+ const [historicoPage, setHistoricoPage] = useState(1);
 
- useEffect(() => { if (!authLoading && !user) navigate({ to: "/login" }); }, [authLoading, user, navigate]);
+ useEffect(() => { if (!authLoading && !user) navigate({ to: "/login", search: { redirect: undefined } }); }, [authLoading, user, navigate]);
 
  const loadHistorico = useCallback(async () => {
  if (!company) return;
@@ -152,6 +156,7 @@ function ImportarSinapiPage() {
  setFile(f);
  setParsing(true);
  setPreview([]);
+ setPreviewPage(1);
  setResult(null);
  try {
  const rows = await parseSheet(f);
@@ -168,6 +173,28 @@ function ImportarSinapiPage() {
  setParsing(false);
  }
  };
+
+ const previewTotalPages = Math.max(1, Math.ceil(preview.length / PREVIEW_PAGE_SIZE));
+ const previewCurrentPage = Math.min(previewPage, previewTotalPages);
+ const paginatedPreview = useMemo(
+ () =>
+ preview.slice(
+ (previewCurrentPage - 1) * PREVIEW_PAGE_SIZE,
+ previewCurrentPage * PREVIEW_PAGE_SIZE,
+ ),
+ [preview, previewCurrentPage],
+ );
+
+ const historicoTotalPages = Math.max(1, Math.ceil(historico.length / HISTORICO_PAGE_SIZE));
+ const historicoCurrentPage = Math.min(historicoPage, historicoTotalPages);
+ const paginatedHistorico = useMemo(
+ () =>
+ historico.slice(
+ (historicoCurrentPage - 1) * HISTORICO_PAGE_SIZE,
+ historicoCurrentPage * HISTORICO_PAGE_SIZE,
+ ),
+ [historico, historicoCurrentPage],
+ );
 
  const startImport = async () => {
  if (!company || !preview.length) return;
@@ -313,8 +340,8 @@ function ImportarSinapiPage() {
  </TableRow>
  </TableHeader>
  <TableBody>
- {preview.slice(0, 50).map((r, idx) => (
- <TableRow key={idx}>
+ {paginatedPreview.map((r, idx) => (
+ <TableRow key={`${r.sinapi_codigo}-${(previewCurrentPage - 1) * PREVIEW_PAGE_SIZE + idx}`}>
  <TableCell className="font-mono text-xs">{r.sinapi_codigo}</TableCell>
  <TableCell className="text-xs">{r.descricao}</TableCell>
  <TableCell className="font-mono text-xs">{r.unidade ?? "—"}</TableCell>
@@ -323,12 +350,14 @@ function ImportarSinapiPage() {
  ))}
  </TableBody>
  </Table>
- {preview.length > 50 && (
- <p className="text-xs text-muted-foreground text-center py-2">
- ...e mais {(preview.length - 50).toLocaleString("pt-BR")} registro(s)
- </p>
- )}
  </div>
+ <PaginationFooter
+ page={previewCurrentPage}
+ totalPages={previewTotalPages}
+ totalItems={preview.length}
+ pageSize={PREVIEW_PAGE_SIZE}
+ onPageChange={setPreviewPage}
+ />
  </div>
  )}
 
@@ -373,7 +402,7 @@ function ImportarSinapiPage() {
  </TableCell>
  </TableRow>
  )}
- {historico.map((h) => (
+ {paginatedHistorico.map((h) => (
  <TableRow key={h.id}>
  <TableCell className="text-xs">{new Date(h.data_importacao).toLocaleString("pt-BR")}</TableCell>
  <TableCell className="text-xs">{h.arquivo ?? "—"}</TableCell>
@@ -392,10 +421,63 @@ function ImportarSinapiPage() {
  </TableBody>
  </Table>
  </div>
+ <PaginationFooter
+ page={historicoCurrentPage}
+ totalPages={historicoTotalPages}
+ totalItems={historico.length}
+ pageSize={HISTORICO_PAGE_SIZE}
+ onPageChange={setHistoricoPage}
+ />
  </Card>
  </TabsContent>
  </Tabs>
  </main>
+ </div>
+ );
+}
+
+function PaginationFooter({
+ page,
+ totalPages,
+ totalItems,
+ pageSize,
+ onPageChange,
+}: {
+ page: number;
+ totalPages: number;
+ totalItems: number;
+ pageSize: number;
+ onPageChange: (page: number) => void;
+}) {
+ if (totalItems <= pageSize) return null;
+ const start = (page - 1) * pageSize + 1;
+ const end = Math.min(page * pageSize, totalItems);
+ return (
+ <div className="flex items-center justify-between gap-3 pt-3 text-xs text-muted-foreground">
+ <span>
+ {start}-{end} de {totalItems}
+ </span>
+ <div className="flex items-center gap-2">
+ <Button
+ type="button"
+ variant="outline"
+ size="sm"
+ onClick={() => onPageChange(Math.max(1, page - 1))}
+ disabled={page <= 1}
+ >
+ <ChevronLeft className="h-4 w-4" />
+ </Button>
+ <span>Pagina {page} de {totalPages}</span>
+ <Button
+ type="button"
+ variant="outline"
+ size="sm"
+ onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+ disabled={page >= totalPages}
+ >
+ <ChevronRight className="h-4 w-4" />
+ </Button>
+ </div>
  </div>
  );
 }

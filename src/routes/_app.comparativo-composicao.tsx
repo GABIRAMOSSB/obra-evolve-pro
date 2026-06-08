@@ -18,7 +18,7 @@ import {
  DialogHeader,
  DialogTitle,
 } from "@/components/ui/dialog";
-import { ArrowLeft, Calculator } from "lucide-react";
+import { ArrowLeft, Calculator, ChevronLeft, ChevronRight } from "lucide-react";
 import {
  computeMetaCalc,
  fmtBRL,
@@ -57,6 +57,8 @@ const DEFAULT_PARAMS: MetaParams = {
  lucro: 25,
 };
 
+const COMPARATIVO_PAGE_SIZE = 25;
+
 function ComparativoPage() {
  const { company } = useCompany();
  const [ws, setWs] = useState<Workspace | null>(null);
@@ -65,6 +67,7 @@ function ComparativoPage() {
  const [apontamentos, setApontamentos] = useState<Apontamento[]>([]);
  const [params, setParams] = useState<MetaParams>(DEFAULT_PARAMS);
  const [memoria, setMemoria] = useState<BudgetRow | null>(null);
+ const [page, setPage] = useState(1);
 
  // workspace
  useEffect(() => {
@@ -123,6 +126,10 @@ function ComparativoPage() {
  .eq("company_id", company.id)
  .then(({ data }) => setApontamentos((data as Apontamento[]) ?? []));
  }, [company]);
+
+ useEffect(() => {
+ setPage(1);
+ }, [obraId]);
 
  const obras = ws?.obras ?? [];
  const obra: ProjectData | undefined = useMemo(
@@ -185,6 +192,13 @@ function ComparativoPage() {
  });
  }, [obra, isSintetico, apropriacoes, apontamentos, params]);
 
+ const totalPages = Math.max(1, Math.ceil(linhas.length / COMPARATIVO_PAGE_SIZE));
+ const currentPage = Math.min(page, totalPages);
+ const paginatedLinhas = linhas.slice(
+ (currentPage - 1) * COMPARATIVO_PAGE_SIZE,
+ currentPage * COMPARATIVO_PAGE_SIZE,
+ );
+
  return (
  <div className="p-6 space-y-6">
  <div className="flex items-center gap-3">
@@ -229,7 +243,8 @@ function ComparativoPage() {
  <em>Orçamento Sintético</em> para utilizar o comparativo por composição.
  </Card>
  ) : (
- <Card className="overflow-auto">
+ <Card className="overflow-hidden">
+ <div className="overflow-auto">
  <table className="w-full text-xs">
  <thead className="bg-muted sticky top-0">
  <tr className="text-left">
@@ -257,7 +272,7 @@ function ComparativoPage() {
  </tr>
  </thead>
  <tbody>
- {linhas.map((l) => (
+ {paginatedLinhas.map((l) => (
  <tr key={l.row.item} className="border-t hover:bg-muted/30">
  <td className="px-2 py-1 font-mono">{l.row.item}</td>
  <td className="px-2 py-1 font-mono">{l.row.codigo}</td>
@@ -324,6 +339,14 @@ function ComparativoPage() {
  )}
  </tbody>
  </table>
+ </div>
+ <PaginationFooter
+ page={currentPage}
+ totalPages={totalPages}
+ totalItems={linhas.length}
+ pageSize={COMPARATIVO_PAGE_SIZE}
+ onPageChange={setPage}
+ />
  </Card>
  )}
 
@@ -336,6 +359,52 @@ function ComparativoPage() {
  return l?.realizadoTotal ?? 0;
  }}
  />
+ </div>
+ );
+}
+
+function PaginationFooter({
+ page,
+ totalPages,
+ totalItems,
+ pageSize,
+ onPageChange,
+}: {
+ page: number;
+ totalPages: number;
+ totalItems: number;
+ pageSize: number;
+ onPageChange: (page: number) => void;
+}) {
+ if (totalItems <= pageSize) return null;
+ const start = (page - 1) * pageSize + 1;
+ const end = Math.min(page * pageSize, totalItems);
+ return (
+ <div className="flex items-center justify-between gap-3 border-t px-3 py-2 text-xs text-muted-foreground">
+ <span>
+ {start}-{end} de {totalItems}
+ </span>
+ <div className="flex items-center gap-2">
+ <Button
+ type="button"
+ variant="outline"
+ size="sm"
+ onClick={() => onPageChange(Math.max(1, page - 1))}
+ disabled={page <= 1}
+ >
+ <ChevronLeft className="h-4 w-4" />
+ </Button>
+ <span>Pagina {page} de {totalPages}</span>
+ <Button
+ type="button"
+ variant="outline"
+ size="sm"
+ onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+ disabled={page >= totalPages}
+ >
+ <ChevronRight className="h-4 w-4" />
+ </Button>
+ </div>
  </div>
  );
 }

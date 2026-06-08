@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { FolderKanban, Plus, Trash2, FileText, ArrowUp, ArrowDown, ExternalLink, Save, Sparkles } from "lucide-react";
+import { FolderKanban, Plus, Trash2, FileText, ArrowUp, ArrowDown, ExternalLink, Save, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,9 @@ const STATUS_VARIANTS: Record<string, "default" | "secondary" | "outline"> = {
   arquivado: "secondary",
 };
 
+const DOSSIES_PAGE_SIZE = 12;
+const TEMPLATES_PAGE_SIZE = 12;
+
 function DossiesPage() {
   return (
     <div className="space-y-6 p-6 max-w-7xl mx-auto">
@@ -85,6 +88,7 @@ function DossiesTab() {
   const qc = useQueryClient();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [novoOpen, setNovoOpen] = useState(false);
+  const [page, setPage] = useState(1);
 
   const { data, isLoading } = useQuery({
     queryKey: ["dossies"],
@@ -113,6 +117,12 @@ function DossiesTab() {
   });
 
   const rows = data?.rows ?? [];
+  const totalPages = Math.max(1, Math.ceil(rows.length / DOSSIES_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedRows = (rows as DossieRow[]).slice(
+    (safePage - 1) * DOSSIES_PAGE_SIZE,
+    safePage * DOSSIES_PAGE_SIZE,
+  );
 
   return (
     <div className="grid gap-4 md:grid-cols-[320px_1fr]">
@@ -136,7 +146,7 @@ function DossiesTab() {
               Nenhum dossiê. Clique em <strong>Novo</strong>.
             </div>
           ) : (
-            (rows as DossieRow[]).map((d) => (
+            paginatedRows.map((d) => (
               <button
                 key={d.id}
                 onClick={() => setSelectedId(d.id)}
@@ -155,6 +165,20 @@ function DossiesTab() {
                 )}
               </button>
             ))
+          )}
+          {rows.length > DOSSIES_PAGE_SIZE && (
+            <div className="flex flex-col items-center gap-2 border-t pt-3 mt-3 text-xs text-muted-foreground">
+              <span>Mostrando {paginatedRows.length} de {rows.length} dossies</span>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={safePage === 1}>
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <span className="min-w-16 text-center">{safePage}/{totalPages}</span>
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages}>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -413,6 +437,7 @@ function TemplatesTab() {
   const qc = useQueryClient();
   const [edicaoId, setEdicaoId] = useState<string | "novo" | null>(null);
   const [renderId, setRenderId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   const { data, isLoading } = useQuery({
     queryKey: ["templates"],
@@ -429,6 +454,12 @@ function TemplatesTab() {
   });
 
   const rows = data?.rows ?? [];
+  const totalPages = Math.max(1, Math.ceil(rows.length / TEMPLATES_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedRows = (rows as TemplateRow[]).slice(
+    (safePage - 1) * TEMPLATES_PAGE_SIZE,
+    safePage * TEMPLATES_PAGE_SIZE,
+  );
 
   return (
     <div className="space-y-4">
@@ -449,7 +480,7 @@ function TemplatesTab() {
         </CardContent></Card>
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
-          {(rows as TemplateRow[]).map((t) => (
+          {paginatedRows.map((t) => (
             <Card key={t.id}>
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-2">
@@ -491,6 +522,20 @@ function TemplatesTab() {
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+      {rows.length > TEMPLATES_PAGE_SIZE && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-sm text-muted-foreground">
+          <span>Mostrando {paginatedRows.length} de {rows.length} templates</span>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={safePage === 1}>
+              <ChevronLeft className="w-4 h-4 mr-1" /> Anterior
+            </Button>
+            <span className="min-w-20 text-center">Pagina {safePage} de {totalPages}</span>
+            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages}>
+              Proxima <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
         </div>
       )}
 

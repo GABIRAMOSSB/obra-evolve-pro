@@ -36,6 +36,8 @@ import {
 import { toast } from "sonner";
 import {
   ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
   HardHat,
   Plus,
   Sparkles,
@@ -102,6 +104,9 @@ interface Apontamento {
   observacoes: string | null;
 }
 
+const MAO_DE_OBRA_PAGE_SIZE = 25;
+const PRODUTIVIDADE_PAGE_SIZE = 20;
+
 function fmtMoney(v: number | null | undefined) {
   return (v ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
@@ -117,11 +122,12 @@ function MaoDeObraPage() {
   const [apontamentos, setApontamentos] = useState<Apontamento[]>([]);
   const [obras, setObras] = useState<{ id: string; nome: string }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [produtividadePage, setProdutividadePage] = useState(1);
 
   const canEdit = company?.role === "admin" || company?.role === "editor";
 
   useEffect(() => {
-    if (!authLoading && !user) navigate({ to: "/login" });
+    if (!authLoading && !user) navigate({ to: "/login", search: { redirect: undefined } });
   }, [authLoading, user, navigate]);
 
   const load = useCallback(async () => {
@@ -225,6 +231,13 @@ function MaoDeObraPage() {
     );
   }
 
+  const totalProdutividadePages = Math.max(1, Math.ceil(produtividade.length / PRODUTIVIDADE_PAGE_SIZE));
+  const safeProdutividadePage = Math.min(produtividadePage, totalProdutividadePages);
+  const produtividadePaginada = produtividade.slice(
+    (safeProdutividadePage - 1) * PRODUTIVIDADE_PAGE_SIZE,
+    safeProdutividadePage * PRODUTIVIDADE_PAGE_SIZE,
+  );
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
@@ -298,7 +311,7 @@ function MaoDeObraPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {produtividade.map((p, idx) => {
+                    {produtividadePaginada.map((p, idx) => {
                       const obraNome =
                         obras.find((o) => o.id === p.obra_id)?.nome ?? p.obra_id;
                       const hPorUn = p.qtd > 0 ? p.horas / p.qtd : 0;
@@ -324,6 +337,20 @@ function MaoDeObraPage() {
                     })}
                   </TableBody>
                 </Table>
+              )}
+              {produtividade.length > PRODUTIVIDADE_PAGE_SIZE && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t pt-3 mt-3 text-sm text-muted-foreground">
+                  <span>Mostrando {produtividadePaginada.length} de {produtividade.length} itens</span>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setProdutividadePage((p) => Math.max(1, p - 1))} disabled={safeProdutividadePage === 1}>
+                      <ChevronLeft className="w-4 h-4 mr-1" /> Anterior
+                    </Button>
+                    <span className="min-w-20 text-center">Pagina {safeProdutividadePage} de {totalProdutividadePages}</span>
+                    <Button variant="outline" size="sm" onClick={() => setProdutividadePage((p) => Math.min(totalProdutividadePages, p + 1))} disabled={safeProdutividadePage >= totalProdutividadePages}>
+                      Proxima <ChevronRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  </div>
+                </div>
               )}
             </Card>
           </TabsContent>
@@ -897,6 +924,7 @@ function ApontamentosTab({
   onReload: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [page, setPage] = useState(1);
   const today = new Date().toISOString().slice(0, 10);
   const [form, setForm] = useState({
     obra_id: "",
@@ -985,6 +1013,12 @@ function ApontamentosTab({
   const funcionarioNome = (id: string | null) =>
     funcionarios.find((f) => f.id === id)?.nome ?? "—";
   const obraNome = (id: string) => obras.find((o) => o.id === id)?.nome ?? id;
+  const totalPages = Math.max(1, Math.ceil(apontamentos.length / MAO_DE_OBRA_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const apontamentosPaginados = apontamentos.slice(
+    (safePage - 1) * MAO_DE_OBRA_PAGE_SIZE,
+    safePage * MAO_DE_OBRA_PAGE_SIZE,
+  );
 
   return (
     <Card className="p-4">
@@ -1120,7 +1154,7 @@ function ApontamentosTab({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {apontamentos.map((a) => (
+          {apontamentosPaginados.map((a) => (
             <TableRow key={a.id}>
               <TableCell className="text-xs">{a.data}</TableCell>
               <TableCell className="text-xs">{obraNome(a.obra_id)}</TableCell>
@@ -1152,6 +1186,20 @@ function ApontamentosTab({
           )}
         </TableBody>
       </Table>
+      {apontamentos.length > MAO_DE_OBRA_PAGE_SIZE && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t pt-3 mt-3 text-sm text-muted-foreground">
+          <span>Mostrando {apontamentosPaginados.length} de {apontamentos.length} apontamentos</span>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={safePage === 1}>
+              <ChevronLeft className="w-4 h-4 mr-1" /> Anterior
+            </Button>
+            <span className="min-w-20 text-center">Pagina {safePage} de {totalPages}</span>
+            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages}>
+              Proxima <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }

@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Radar, Loader2, ExternalLink, Plus, Search } from "lucide-react";
+import { Radar, Loader2, ExternalLink, Plus, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/oportunidades")({
@@ -27,6 +27,8 @@ export const Route = createFileRoute("/_app/oportunidades")({
 });
 
 const UFS = ["", "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"];
+const PNCP_PAGE_SIZE = 50;
+const PIPELINE_PAGE_SIZE = 25;
 
 const SITUACOES: Array<{ id: OportunidadeRow["situacao"] extends string ? string : never; label: string; tone: string }> = [
   { id: "triagem", label: "Triagem", tone: "bg-muted/40 text-foreground border-border" },
@@ -84,6 +86,7 @@ function BuscaPanel() {
   const [uf, setUf] = useState<string>("");
   const [dataFinal, setDataFinal] = useState<string>(todayYmd(30));
   const [palavra, setPalavra] = useState<string>("");
+  const [pagina, setPagina] = useState<number>(1);
   const [resultado, setResultado] = useState<PncpSearchResult | null>(null);
 
   const searchFn = useServerFn(searchPncp);
@@ -91,18 +94,19 @@ function BuscaPanel() {
   const qc = useQueryClient();
 
   const buscar = useMutation({
-    mutationFn: () =>
+    mutationFn: (paginaBusca: number) =>
       searchFn({
         data: {
           codigoModalidadeContratacao: Number(modalidade),
           dataFinal,
           uf: (uf || undefined) as never,
           palavraChave: palavra.trim() || undefined,
-          pagina: 1,
-          tamanhoPagina: 50,
+          pagina: paginaBusca,
+          tamanhoPagina: PNCP_PAGE_SIZE,
         },
       }),
     onSuccess: (r) => {
+      setPagina(r.pagina);
       setResultado(r);
       toast.success(`${r.items.length} oportunidades retornadas`);
     },
@@ -172,7 +176,7 @@ function BuscaPanel() {
             <Label className="text-xs">Palavra-chave</Label>
             <Input value={palavra} onChange={(e) => setPalavra(e.target.value)} placeholder="pavimentação, escola…" />
           </div>
-          <Button onClick={() => buscar.mutate()} disabled={buscar.isPending} className="gap-2">
+          <Button onClick={() => buscar.mutate(1)} disabled={buscar.isPending} className="gap-2">
             {buscar.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
             Buscar
           </Button>
@@ -185,7 +189,7 @@ function BuscaPanel() {
       {resultado && (
         <Card className="overflow-hidden">
           <div className="px-4 py-2 text-xs text-muted-foreground bg-muted/30 border-b border-border">
-            {resultado.items.length} de {resultado.total} resultados
+            Pagina {resultado.pagina} de {resultado.totalPaginas} - {resultado.items.length} de {resultado.total} resultados
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -243,6 +247,17 @@ function BuscaPanel() {
               </tbody>
             </table>
           </div>
+          <div className="px-4 py-3 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+            <span>Pagina {resultado.pagina} de {resultado.totalPaginas}</span>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" disabled={buscar.isPending || pagina <= 1} onClick={() => buscar.mutate(Math.max(1, pagina - 1))} className="gap-1">
+                <ChevronLeft className="w-3.5 h-3.5" /> Anterior
+              </Button>
+              <Button size="sm" variant="outline" disabled={buscar.isPending || pagina >= resultado.totalPaginas} onClick={() => buscar.mutate(pagina + 1)} className="gap-1">
+                Proxima <ChevronRight className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </div>
         </Card>
       )}
     </div>
@@ -254,17 +269,20 @@ function BuscaPanel() {
 function PipelinePanel() {
   const [situacao, setSituacao] = useState<string>("");
   const [q, setQ] = useState<string>("");
+  const [pagina, setPagina] = useState<number>(1);
   const listFn = useServerFn(listOportunidades);
   const updateSit = useServerFn(updateOportunidadeSituacao);
   const qc = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["oportunidades", situacao, q],
+    queryKey: ["oportunidades", situacao, q, pagina],
     queryFn: () =>
       listFn({
         data: {
           situacao: (situacao || undefined) as never,
           q: q.trim() || undefined,
+          pagina,
+          tamanhoPagina: PIPELINE_PAGE_SIZE,
         },
       }),
   });
@@ -281,7 +299,7 @@ function PipelinePanel() {
 
   const counts = useMemo(() => {
     const m = new Map<string, number>();
-    for (const it of data ?? []) m.set(it.situacao, (m.get(it.situacao) ?? 0) + 1);
+    for (const it of data?.items ?? []) m.set(it.situacao, (m.get(it.situacao) ?? 0) + 1);
     return m;
   }, [data]);
 
@@ -291,16 +309,16 @@ function PipelinePanel() {
         <Button
           size="sm"
           variant={situacao === "" ? "default" : "outline"}
-          onClick={() => setSituacao("")}
+          onClick={() => { setSituacao(""); setPagina(1); }}
         >
-          Todas {(data?.length ?? 0) > 0 && <span className="ml-1 text-xs opacity-70">({data?.length})</span>}
+          Todas {(data?.total ?? 0) > 0 && <span className="ml-1 text-xs opacity-70">({data?.total})</span>}
         </Button>
         {SITUACOES.map((s) => (
           <Button
             key={s.id}
             size="sm"
             variant={situacao === s.id ? "default" : "outline"}
-            onClick={() => setSituacao(s.id)}
+            onClick={() => { setSituacao(s.id); setPagina(1); }}
           >
             {s.label}
             {(counts.get(s.id) ?? 0) > 0 && (
@@ -312,7 +330,7 @@ function PipelinePanel() {
           <Input
             placeholder="Buscar objeto/órgão…"
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(e) => { setQ(e.target.value); setPagina(1); }}
             className="w-64"
           />
         </div>
@@ -321,7 +339,7 @@ function PipelinePanel() {
       <Card className="overflow-hidden">
         {isLoading ? (
           <div className="p-10 text-center"><Loader2 className="w-5 h-5 animate-spin inline" /></div>
-        ) : (data?.length ?? 0) === 0 ? (
+        ) : (data?.items.length ?? 0) === 0 ? (
           <div className="p-10 text-center text-muted-foreground">
             Nenhuma oportunidade. Use a aba <strong>Buscar no PNCP</strong>.
           </div>
@@ -340,7 +358,7 @@ function PipelinePanel() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/40">
-                {(data ?? []).map((it) => {
+                {(data?.items ?? []).map((it) => {
                   const meta = SITUACOES.find((s) => s.id === it.situacao);
                   return (
                     <tr key={it.id} className="hover:bg-muted/10">
@@ -387,6 +405,19 @@ function PipelinePanel() {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+        {data && data.total > 0 && (
+          <div className="px-4 py-3 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+            <span>{data.total} oportunidades - Pagina {data.pagina} de {data.totalPaginas}</span>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" disabled={isLoading || pagina <= 1} onClick={() => setPagina((p) => Math.max(1, p - 1))} className="gap-1">
+                <ChevronLeft className="w-3.5 h-3.5" /> Anterior
+              </Button>
+              <Button size="sm" variant="outline" disabled={isLoading || pagina >= data.totalPaginas} onClick={() => setPagina((p) => p + 1)} className="gap-1">
+                Proxima <ChevronRight className="w-3.5 h-3.5" />
+              </Button>
+            </div>
           </div>
         )}
       </Card>

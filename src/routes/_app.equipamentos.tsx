@@ -33,7 +33,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Sparkles, Trash2, Pencil, Wrench } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Sparkles, Trash2, Pencil, Wrench } from "lucide-react";
 
 export const Route = createFileRoute("/_app/equipamentos")({
   component: EquipamentosPage,
@@ -65,6 +65,8 @@ function fmtMoney(v: number | null | undefined) {
   return (v ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+const EQUIPAMENTOS_PAGE_SIZE = 25;
+
 const EMPTY_FORM = {
   nome: "",
   descricao: "",
@@ -87,11 +89,12 @@ function EquipamentosPage() {
   const [edit, setEdit] = useState<Equipamento | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [filter, setFilter] = useState("");
+  const [page, setPage] = useState(1);
 
   const canEdit = company?.role === "admin" || company?.role === "editor";
 
   useEffect(() => {
-    if (!authLoading && !user) navigate({ to: "/login" });
+    if (!authLoading && !user) navigate({ to: "/login", search: { redirect: undefined } });
   }, [authLoading, user, navigate]);
 
   const load = useCallback(async () => {
@@ -193,6 +196,12 @@ function EquipamentosPage() {
   const filtered = items.filter((i) =>
     !filter.trim() ? true : i.nome.toLowerCase().includes(filter.toLowerCase()),
   );
+  const totalPages = Math.max(1, Math.ceil(filtered.length / EQUIPAMENTOS_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedItems = filtered.slice(
+    (safePage - 1) * EQUIPAMENTOS_PAGE_SIZE,
+    safePage * EQUIPAMENTOS_PAGE_SIZE,
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -225,7 +234,10 @@ function EquipamentosPage() {
               <Input
                 placeholder="Filtrar por nome..."
                 value={filter}
-                onChange={(e) => setFilter(e.target.value)}
+                onChange={(e) => {
+                  setFilter(e.target.value);
+                  setPage(1);
+                }}
                 className="w-64 h-8"
               />
             </div>
@@ -391,7 +403,7 @@ function EquipamentosPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((e) => (
+                {paginatedItems.map((e) => (
                   <TableRow key={e.id}>
                     <TableCell>
                       <div className="font-medium">{e.nome}</div>
@@ -428,6 +440,36 @@ function EquipamentosPage() {
                 ))}
               </TableBody>
             </Table>
+          )}
+          {filtered.length > EQUIPAMENTOS_PAGE_SIZE && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t pt-3 mt-3 text-sm text-muted-foreground">
+              <span>
+                Mostrando {paginatedItems.length} de {filtered.length} equipamentos
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={safePage === 1}
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" /> Anterior
+                </Button>
+                <span className="min-w-20 text-center">
+                  Pagina {safePage} de {totalPages}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={safePage >= totalPages}
+                >
+                  Proxima <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+            </div>
           )}
         </Card>
       </main>

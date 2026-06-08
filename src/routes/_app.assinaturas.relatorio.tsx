@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
  getSignatureReport,
@@ -27,6 +27,8 @@ import {
  XCircle,
  Percent,
  Timer,
+ ChevronLeft,
+ ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -53,6 +55,8 @@ const STATUS_OPTS: Array<{ value: string; label: string }> = [
  { value: "canceled", label: "Cancelado" },
  { value: "error", label: "Erro" },
 ];
+
+const RELATORIO_PAGE_SIZE = 25;
 
 const STATUS_LABELS: Record<string, string> = {
  draft: "Rascunho",
@@ -82,6 +86,8 @@ function RelatorioPage() {
  const [to, setTo] = useState(todayISO());
  const [status, setStatus] = useState("all");
  const [obraFilter, setObraFilter] = useState("");
+ const [page, setPage] = useState(1);
+ const [printAllRows, setPrintAllRows] = useState(false);
 
  const fromIso = useMemo(() => new Date(`${from}T00:00:00`).toISOString(), [from]);
  const toIso = useMemo(() => new Date(`${to}T23:59:59`).toISOString(), [to]);
@@ -104,6 +110,19 @@ function RelatorioPage() {
  [data],
  );
 
+ useEffect(() => {
+ setPage(1);
+ }, [from, to, status, obraFilter]);
+
+ const rows = data?.rows ?? [];
+ const totalPages = Math.max(1, Math.ceil(rows.length / RELATORIO_PAGE_SIZE));
+ const currentPage = Math.min(page, totalPages);
+ const paginatedRows = rows.slice(
+ (currentPage - 1) * RELATORIO_PAGE_SIZE,
+ currentPage * RELATORIO_PAGE_SIZE,
+ );
+ const visibleRows = printAllRows ? rows : paginatedRows;
+
  const setQuickRange = (days: number) => {
  setFrom(daysAgoISO(days));
  setTo(todayISO());
@@ -118,7 +137,13 @@ function RelatorioPage() {
  toast.success(`${data.rows.length} linhas exportadas`);
  };
 
- const printReport = () => window.print();
+ const printReport = () => {
+ setPrintAllRows(true);
+ window.setTimeout(() => {
+ window.print();
+ window.setTimeout(() => setPrintAllRows(false), 0);
+ }, 0);
+ };
 
  return (
  <div className="space-y-5 p-4 lg:p-6 print:p-0">
@@ -280,7 +305,7 @@ function RelatorioPage() {
  <tbody>
  {data.rows.length === 0 ? (
  <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Nenhum registro no período.</td></tr>
- ) : data.rows.map((r) => (
+ ) : visibleRows.map((r) => (
  <tr key={r.id} className="border-t hover:bg-accent/30">
  <td className="p-2 max-w-[260px] truncate">{r.document_name}</td>
  <td className="p-2 text-xs text-muted-foreground">{r.document_folder}</td>
@@ -294,9 +319,62 @@ function RelatorioPage() {
  </tbody>
  </table>
  </div>
+ <PaginationFooter
+ page={currentPage}
+ totalPages={totalPages}
+ totalItems={data.rows.length}
+ pageSize={RELATORIO_PAGE_SIZE}
+ onPageChange={setPage}
+ />
  </Card>
  </>
  )}
+ </div>
+ );
+}
+
+function PaginationFooter({
+ page,
+ totalPages,
+ totalItems,
+ pageSize,
+ onPageChange,
+}: {
+ page: number;
+ totalPages: number;
+ totalItems: number;
+ pageSize: number;
+ onPageChange: (page: number) => void;
+}) {
+ if (totalItems <= pageSize) return null;
+ const start = (page - 1) * pageSize + 1;
+ const end = Math.min(page * pageSize, totalItems);
+ return (
+ <div className="flex items-center justify-between gap-3 border-t px-3 py-2 text-xs text-muted-foreground print:hidden">
+ <span>
+ {start}-{end} de {totalItems}
+ </span>
+ <div className="flex items-center gap-2">
+ <Button
+ type="button"
+ variant="outline"
+ size="sm"
+ onClick={() => onPageChange(Math.max(1, page - 1))}
+ disabled={page <= 1}
+ >
+ <ChevronLeft className="h-4 w-4" />
+ </Button>
+ <span>Pagina {page} de {totalPages}</span>
+ <Button
+ type="button"
+ variant="outline"
+ size="sm"
+ onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+ disabled={page >= totalPages}
+ >
+ <ChevronRight className="h-4 w-4" />
+ </Button>
+ </div>
  </div>
  );
 }

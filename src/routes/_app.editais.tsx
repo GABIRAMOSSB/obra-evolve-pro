@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   Sparkles, Plus, FileText, Upload, Trash2, RefreshCw, ExternalLink,
-  CheckCircle2, XCircle, MinusCircle, Clock, Search, Database,
+  CheckCircle2, XCircle, MinusCircle, Clock, Search, Database, ChevronLeft, ChevronRight,
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,6 +51,8 @@ const CATEGORIA_LABEL: Record<string, string> = {
   outros: "Outros",
 };
 
+const EDITAIS_PAGE_SIZE = 10;
+
 const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   novo: { label: "Novo", cls: "bg-muted text-muted-foreground" },
   processando: { label: "Processando IA", cls: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30" },
@@ -74,11 +76,30 @@ function EditaisPage() {
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const [pagina, setPagina] = useState(1);
 
   const { data: editais, isLoading } = useQuery({
     queryKey: ["editais"],
     queryFn: () => listFn({ data: undefined as never }),
   });
+
+  const filteredEditais = useMemo(() => {
+    const termo = q.trim().toLowerCase();
+    return (editais ?? []).filter((e) =>
+      !termo ||
+      e.titulo.toLowerCase().includes(termo) ||
+      (e.orgao ?? "").toLowerCase().includes(termo) ||
+      (e.numero_edital ?? "").toLowerCase().includes(termo) ||
+      (e.objeto ?? "").toLowerCase().includes(termo),
+    );
+  }, [editais, q]);
+  const totalPaginas = Math.max(1, Math.ceil(filteredEditais.length / EDITAIS_PAGE_SIZE));
+  const paginaAtual = Math.min(pagina, totalPaginas);
+  const paginatedEditais = filteredEditais.slice(
+    (paginaAtual - 1) * EDITAIS_PAGE_SIZE,
+    paginaAtual * EDITAIS_PAGE_SIZE,
+  );
 
   const delMut = useMutation({
     mutationFn: async (id: string) => deleteFn({ data: { id } }),
@@ -119,17 +140,26 @@ function EditaisPage() {
       <div className="grid lg:grid-cols-[1fr,1.4fr] gap-4">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Editais ({editais?.length ?? 0})</CardTitle>
+            <CardTitle className="text-base">Editais ({filteredEditais.length})</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-3">
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={q}
+                onChange={(e) => { setQ(e.target.value); setPagina(1); }}
+                placeholder="Buscar edital, orgao ou objeto..."
+                className="pl-9"
+              />
+            </div>
             {isLoading ? (
               <div className="text-sm text-muted-foreground py-8 text-center">Carregando…</div>
-            ) : (editais ?? []).length === 0 ? (
+            ) : filteredEditais.length === 0 ? (
               <div className="text-sm text-muted-foreground py-8 text-center">
                 Nenhum edital. Crie um manualmente ou importe do Radar PNCP.
               </div>
             ) : (
-              (editais ?? []).map((e) => {
+              paginatedEditais.map((e) => {
                 const st = STATUS_LABEL[e.status] ?? STATUS_LABEL.novo;
                 return (
                   <button
@@ -156,6 +186,19 @@ function EditaisPage() {
                   </button>
                 );
               })
+            )}
+            {filteredEditais.length > 0 && (
+              <div className="pt-2 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
+                <span>Pagina {paginaAtual} de {totalPaginas}</span>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="outline" disabled={paginaAtual <= 1} onClick={() => setPagina((p) => Math.max(1, p - 1))} className="gap-1">
+                    <ChevronLeft className="w-3.5 h-3.5" /> Anterior
+                  </Button>
+                  <Button size="sm" variant="outline" disabled={paginaAtual >= totalPaginas} onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))} className="gap-1">
+                    Proxima <ChevronRight className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>

@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { RefreshCcw, TrendingUp, Plus, Trash2, Download } from "lucide-react";
+import { RefreshCcw, TrendingUp, Plus, Trash2, Download, Search, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,17 @@ export const Route = createFileRoute("/_app/indices")({
   component: IndicesPage,
 });
 
+const INDICES_PAGE_SIZE = 25;
+
+type IndiceRow = {
+  id: string;
+  indice: string;
+  mes_referencia: string;
+  valor_percentual: number | string;
+  fonte: string | null;
+  created_at: string;
+};
+
 const pct = (n: number | string | null | undefined) =>
   `${Number(n ?? 0).toFixed(4)}%`;
 
@@ -45,6 +56,8 @@ function IndicesPage() {
   const qc = useQueryClient();
 
   const [filtroIndice, setFiltroIndice] = useState<string>("");
+  const [q, setQ] = useState("");
+  const [pagina, setPagina] = useState(1);
   const [syncIndice, setSyncIndice] = useState<string>("IPCA");
   const [manualOpen, setManualOpen] = useState(false);
 
@@ -92,7 +105,19 @@ function IndicesPage() {
   });
 
   const resumo = data?.resumo ?? [];
-  const rows = data?.rows ?? [];
+  const rows = (data?.rows ?? []) as IndiceRow[];
+  const filteredRows = useMemo(() => {
+    const termo = q.trim().toLowerCase();
+    return rows.filter((r) =>
+      !termo ||
+      r.indice.toLowerCase().includes(termo) ||
+      r.mes_referencia.toLowerCase().includes(termo) ||
+      (r.fonte ?? "").toLowerCase().includes(termo),
+    );
+  }, [rows, q]);
+  const totalPaginas = Math.max(1, Math.ceil(filteredRows.length / INDICES_PAGE_SIZE));
+  const paginaAtual = Math.min(pagina, totalPaginas);
+  const paginatedRows = filteredRows.slice((paginaAtual - 1) * INDICES_PAGE_SIZE, paginaAtual * INDICES_PAGE_SIZE);
 
   return (
     <div className="space-y-6 p-6 max-w-7xl mx-auto">
@@ -179,8 +204,12 @@ function IndicesPage() {
         <CardHeader>
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <CardTitle>Série histórica</CardTitle>
-            <div className="flex items-center gap-2">
-              <Select value={filtroIndice || "all"} onValueChange={(v) => setFiltroIndice(v === "all" ? "" : v)}>
+            <div className="flex flex-col md:flex-row items-center gap-2">
+              <div className="relative w-full md:w-64">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input value={q} onChange={(e) => { setQ(e.target.value); setPagina(1); }} placeholder="Buscar serie..." className="pl-9" />
+              </div>
+              <Select value={filtroIndice || "all"} onValueChange={(v) => { setFiltroIndice(v === "all" ? "" : v); setPagina(1); }}>
                 <SelectTrigger className="w-44">
                   <SelectValue placeholder="Todos os índices" />
                 </SelectTrigger>
@@ -197,7 +226,7 @@ function IndicesPage() {
         <CardContent>
           {isLoading ? (
             <div className="text-sm text-muted-foreground py-8 text-center">Carregando…</div>
-          ) : rows.length === 0 ? (
+          ) : filteredRows.length === 0 ? (
             <div className="text-sm text-muted-foreground py-8 text-center">
               Nenhum registro. Use “Sincronizar todos” para importar das fontes oficiais.
             </div>
@@ -214,7 +243,7 @@ function IndicesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(rows as Array<{ id: string; indice: string; mes_referencia: string; valor_percentual: number | string; fonte: string | null }>).map((r) => (
+                  {(paginatedRows as Array<{ id: string; indice: string; mes_referencia: string; valor_percentual: number | string; fonte: string | null }>).map((r) => (
                     <tr key={r.id} className="border-t hover:bg-muted/20">
                       <td className="p-2 font-medium">{r.indice}</td>
                       <td className="p-2">{fmtMes(r.mes_referencia as string)}</td>
@@ -236,6 +265,19 @@ function IndicesPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+          {filteredRows.length > 0 && (
+            <div className="pt-3 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+              <span>{filteredRows.length} registros - Pagina {paginaAtual} de {totalPaginas}</span>
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" disabled={paginaAtual <= 1} onClick={() => setPagina((p) => Math.max(1, p - 1))} className="gap-1">
+                  <ChevronLeft className="w-3.5 h-3.5" /> Anterior
+                </Button>
+                <Button size="sm" variant="outline" disabled={paginaAtual >= totalPaginas} onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))} className="gap-1">
+                  Proxima <ChevronRight className="w-3.5 h-3.5" />
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

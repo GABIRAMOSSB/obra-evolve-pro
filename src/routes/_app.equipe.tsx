@@ -16,11 +16,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, Copy, Trash2, UserPlus, LogOut, Shield, Users, MessageCircle, Mail } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Copy, Trash2, UserPlus, LogOut, Shield, Users, MessageCircle, Mail } from "lucide-react";
 
 export const Route = createFileRoute("/_app/equipe")({
   component: EquipePage,
 });
+
+const EQUIPE_PAGE_SIZE = 10;
+const INVITES_PAGE_SIZE = 5;
 
 type Role = "admin" | "editor" | "member";
 
@@ -51,9 +54,11 @@ function EquipePage() {
   const [newRole, setNewRole] = useState<Role>("member");
   const [editingName, setEditingName] = useState(false);
   const [companyName, setCompanyName] = useState("");
+  const [membersPage, setMembersPage] = useState(1);
+  const [invitesPage, setInvitesPage] = useState(1);
 
   useEffect(() => {
-    if (!authLoading && !user) navigate({ to: "/login" });
+    if (!authLoading && !user) navigate({ to: "/login", search: { redirect: undefined } });
   }, [authLoading, user, navigate]);
 
   useEffect(() => {
@@ -113,6 +118,18 @@ function EquipePage() {
   const isAdmin = company.role === "admin";
   const adminCount = members.filter((m) => m.role === "admin").length;
   const isLastAdmin = isAdmin && adminCount === 1;
+  const membersTotalPages = Math.max(1, Math.ceil(members.length / EQUIPE_PAGE_SIZE));
+  const safeMembersPage = Math.min(membersPage, membersTotalPages);
+  const paginatedMembers = members.slice(
+    (safeMembersPage - 1) * EQUIPE_PAGE_SIZE,
+    safeMembersPage * EQUIPE_PAGE_SIZE,
+  );
+  const invitesTotalPages = Math.max(1, Math.ceil(invites.length / INVITES_PAGE_SIZE));
+  const safeInvitesPage = Math.min(invitesPage, invitesTotalPages);
+  const paginatedInvites = invites.slice(
+    (safeInvitesPage - 1) * INVITES_PAGE_SIZE,
+    safeInvitesPage * INVITES_PAGE_SIZE,
+  );
 
   async function saveName() {
     if (!company || !companyName.trim()) return;
@@ -282,7 +299,7 @@ function EquipePage() {
             <h2 className="font-semibold">Membros ({members.length})</h2>
           </div>
           <div className="divide-y">
-            {members.map((m) => (
+            {paginatedMembers.map((m) => (
               <div key={m.user_id} className="py-3 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-xs font-bold">
@@ -324,6 +341,20 @@ function EquipePage() {
               </div>
             ))}
           </div>
+          {members.length > EQUIPE_PAGE_SIZE && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t pt-3 text-sm text-muted-foreground">
+              <span>Mostrando {paginatedMembers.length} de {members.length} membros</span>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setMembersPage((p) => Math.max(1, p - 1))} disabled={safeMembersPage === 1}>
+                  <ChevronLeft className="w-4 h-4 mr-1" /> Anterior
+                </Button>
+                <span className="min-w-20 text-center">Pagina {safeMembersPage} de {membersTotalPages}</span>
+                <Button variant="outline" size="sm" onClick={() => setMembersPage((p) => Math.min(membersTotalPages, p + 1))} disabled={safeMembersPage >= membersTotalPages}>
+                  Proxima <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
         </Card>
 
         {isAdmin && (
@@ -355,7 +386,7 @@ function EquipePage() {
             {invites.length > 0 && (
               <div className="border-t pt-4 space-y-3">
                 <div className="text-xs uppercase text-muted-foreground">Convites pendentes</div>
-                {invites.map((i) => (
+                {paginatedInvites.map((i) => (
                   <div key={i.id} className="border rounded-md p-3 space-y-3 bg-muted/30">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
@@ -384,6 +415,20 @@ function EquipePage() {
                     </div>
                   </div>
                 ))}
+                {invites.length > INVITES_PAGE_SIZE && (
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-1 text-sm text-muted-foreground">
+                    <span>Mostrando {paginatedInvites.length} de {invites.length} convites</span>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setInvitesPage((p) => Math.max(1, p - 1))} disabled={safeInvitesPage === 1}>
+                        <ChevronLeft className="w-4 h-4 mr-1" /> Anterior
+                      </Button>
+                      <span className="min-w-20 text-center">Pagina {safeInvitesPage} de {invitesTotalPages}</span>
+                      <Button variant="outline" size="sm" onClick={() => setInvitesPage((p) => Math.min(invitesTotalPages, p + 1))} disabled={safeInvitesPage >= invitesTotalPages}>
+                        Proxima <ChevronRight className="w-4 h-4 ml-1" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </Card>

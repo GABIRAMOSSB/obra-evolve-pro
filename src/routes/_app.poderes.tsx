@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, ShieldCheck, ShieldOff, Edit, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, ShieldCheck, ShieldOff, Edit, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,8 @@ import {
 export const Route = createFileRoute("/_app/poderes")({
   component: PoderesPage,
 });
+
+const PODERES_PAGE_SIZE = 20;
 
 const TIPO_SIGNATARIO = [
   { v: "socio", l: "Sócio" },
@@ -109,6 +111,20 @@ function PoderesPage() {
   const signatarios = data?.signatarios ?? [];
   const procuracoes = data?.procuracoes ?? [];
   const sigMap = new Map(signatarios.map((s) => [s.id, s]));
+  const [procPage, setProcPage] = useState(1);
+  const [sigPage, setSigPage] = useState(1);
+  const procTotalPages = Math.max(1, Math.ceil(procuracoes.length / PODERES_PAGE_SIZE));
+  const safeProcPage = Math.min(procPage, procTotalPages);
+  const paginatedProcuracoes = procuracoes.slice(
+    (safeProcPage - 1) * PODERES_PAGE_SIZE,
+    safeProcPage * PODERES_PAGE_SIZE,
+  );
+  const sigTotalPages = Math.max(1, Math.ceil(signatarios.length / PODERES_PAGE_SIZE));
+  const safeSigPage = Math.min(sigPage, sigTotalPages);
+  const paginatedSignatarios = signatarios.slice(
+    (safeSigPage - 1) * PODERES_PAGE_SIZE,
+    safeSigPage * PODERES_PAGE_SIZE,
+  );
 
   // ---- Signatário ----
   const [openSig, setOpenSig] = useState(false);
@@ -339,7 +355,7 @@ function PoderesPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {procuracoes.map((p) => {
+                      {paginatedProcuracoes.map((p) => {
                         const sig = sigMap.get(p.signatario_id);
                         const escopos = Object.entries(p.escopo ?? {})
                           .filter(([, v]) => v)
@@ -410,6 +426,20 @@ function PoderesPage() {
                       })}
                     </tbody>
                   </table>
+                </div>
+              )}
+              {procuracoes.length > PODERES_PAGE_SIZE && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t pt-3 mt-3 text-sm text-muted-foreground">
+                  <span>Mostrando {paginatedProcuracoes.length} de {procuracoes.length} procuracoes</span>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setProcPage((p) => Math.max(1, p - 1))} disabled={safeProcPage === 1}>
+                      <ChevronLeft className="w-4 h-4 mr-1" /> Anterior
+                    </Button>
+                    <span className="min-w-20 text-center">Pagina {safeProcPage} de {procTotalPages}</span>
+                    <Button variant="outline" size="sm" onClick={() => setProcPage((p) => Math.min(procTotalPages, p + 1))} disabled={safeProcPage >= procTotalPages}>
+                      Proxima <ChevronRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -502,7 +532,7 @@ function PoderesPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {signatarios.map((s) => (
+                      {paginatedSignatarios.map((s) => (
                         <tr key={s.id} className="border-b last:border-b-0 hover:bg-muted/40">
                           <td className="py-2 px-2">
                             <div className="font-medium">{s.nome}</div>
@@ -548,6 +578,20 @@ function PoderesPage() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+              {signatarios.length > PODERES_PAGE_SIZE && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t pt-3 mt-3 text-sm text-muted-foreground">
+                  <span>Mostrando {paginatedSignatarios.length} de {signatarios.length} signatarios</span>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setSigPage((p) => Math.max(1, p - 1))} disabled={safeSigPage === 1}>
+                      <ChevronLeft className="w-4 h-4 mr-1" /> Anterior
+                    </Button>
+                    <span className="min-w-20 text-center">Pagina {safeSigPage} de {sigTotalPages}</span>
+                    <Button variant="outline" size="sm" onClick={() => setSigPage((p) => Math.min(sigTotalPages, p + 1))} disabled={safeSigPage >= sigTotalPages}>
+                      Proxima <ChevronRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>

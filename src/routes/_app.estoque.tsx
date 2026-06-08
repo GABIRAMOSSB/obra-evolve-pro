@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
 } from "@/components/ui/dialog";
-import { ArrowLeft, ArrowDownToLine, ArrowUpFromLine, Package, RefreshCw, FileDown } from "lucide-react";
+import { ArrowLeft, ArrowDownToLine, ArrowUpFromLine, Package, RefreshCw, FileDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import type { BudgetRow, ProjectData } from "@/lib/types";
 
@@ -40,6 +40,8 @@ type Nota = { id: string; numero: string; emitente_nome: string | null; data_emi
 type NotaItemResumo = { id: string; nota_fiscal_id: string; insumo_id: string | null };
 type NotaElegivel = Nota & { itens_vinculados: number };
 
+const ESTOQUE_PAGE_SIZE = 25;
+
 function fmt(n: number) {
   return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -61,6 +63,8 @@ function EstoquePage() {
   const [obras, setObras] = useState<{ id: string; nome: string; rows: BudgetRow[] }[]>([]);
   const [filtroObra, setFiltroObra] = useState<string>("todas");
   const [filtroBusca, setFiltroBusca] = useState("");
+  const [paginaSaldos, setPaginaSaldos] = useState(1);
+  const [paginaMovimentos, setPaginaMovimentos] = useState(1);
   const [loading, setLoading] = useState(false);
 
   // dialogs
@@ -168,6 +172,22 @@ function EstoquePage() {
       })
       .sort((a, b) => (insumoMap[a.insumo_id]?.descricao ?? "").localeCompare(insumoMap[b.insumo_id]?.descricao ?? ""));
   }, [movimentos, filtroObra, filtroBusca, insumoMap]);
+
+  const movimentosFiltrados = useMemo(() => {
+    return movimentos
+      .filter(m => filtroObra === "todas" ? true : m.obra_id === filtroObra)
+      .filter(m => {
+        if (!filtroBusca) return true;
+        const ins = insumoMap[m.insumo_id];
+        return `${ins?.codigo ?? ""} ${ins?.descricao ?? ""} ${m.item_descricao ?? ""}`.toLowerCase().includes(filtroBusca.toLowerCase());
+      });
+  }, [movimentos, filtroObra, filtroBusca, insumoMap]);
+  const totalPaginasSaldos = Math.max(1, Math.ceil(saldos.length / ESTOQUE_PAGE_SIZE));
+  const paginaAtualSaldos = Math.min(paginaSaldos, totalPaginasSaldos);
+  const saldosPaginados = saldos.slice((paginaAtualSaldos - 1) * ESTOQUE_PAGE_SIZE, paginaAtualSaldos * ESTOQUE_PAGE_SIZE);
+  const totalPaginasMovimentos = Math.max(1, Math.ceil(movimentosFiltrados.length / ESTOQUE_PAGE_SIZE));
+  const paginaAtualMovimentos = Math.min(paginaMovimentos, totalPaginasMovimentos);
+  const movimentosPaginados = movimentosFiltrados.slice((paginaAtualMovimentos - 1) * ESTOQUE_PAGE_SIZE, paginaAtualMovimentos * ESTOQUE_PAGE_SIZE);
 
   const totalEstoque = useMemo(() => {
     return saldos.reduce((acc, s) => {
@@ -492,7 +512,7 @@ function EstoquePage() {
           </div>
           <div className="w-full sm:flex-1 sm:min-w-[14rem]">
             <Label className="text-xs">Obra</Label>
-            <Select value={filtroObra} onValueChange={setFiltroObra}>
+            <Select value={filtroObra} onValueChange={(v) => { setFiltroObra(v); setPaginaSaldos(1); setPaginaMovimentos(1); }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todas">Todas as obras</SelectItem>
@@ -502,7 +522,7 @@ function EstoquePage() {
           </div>
         </Card>
 
-        <Tabs value={tab} onValueChange={setTab}>
+        <Tabs value={tab} onValueChange={(v) => { setTab(v); setPaginaSaldos(1); setPaginaMovimentos(1); }}>
           <TabsList>
             <TabsTrigger value="saldos">Saldos atuais</TabsTrigger>
             <TabsTrigger value="movimentos">Movimentos</TabsTrigger>
@@ -528,7 +548,7 @@ function EstoquePage() {
                     {saldos.length === 0 && (
                       <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">Nenhum movimento de estoque registrado.</td></tr>
                     )}
-                    {saldos.map(s => {
+                    {saldosPaginados.map(s => {
                       const ins = insumoMap[s.insumo_id];
                       const vm = s.entrada_qtd > 0 ? s.entrada_valor / s.entrada_qtd : 0;
                       return (
@@ -549,6 +569,19 @@ function EstoquePage() {
                   </tbody>
                 </table>
               </div>
+              {saldos.length > 0 && (
+                <div className="px-4 py-3 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+                  <span>{saldos.length} saldos - Pagina {paginaAtualSaldos} de {totalPaginasSaldos}</span>
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" variant="outline" disabled={paginaAtualSaldos <= 1} onClick={() => setPaginaSaldos((p) => Math.max(1, p - 1))} className="gap-1">
+                      <ChevronLeft className="w-3.5 h-3.5" /> Anterior
+                    </Button>
+                    <Button size="sm" variant="outline" disabled={paginaAtualSaldos >= totalPaginasSaldos} onClick={() => setPaginaSaldos((p) => Math.min(totalPaginasSaldos, p + 1))} className="gap-1">
+                      Proxima <ChevronRight className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </Card>
           </TabsContent>
 
@@ -569,14 +602,7 @@ function EstoquePage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {movimentos
-                      .filter(m => filtroObra === "todas" ? true : m.obra_id === filtroObra)
-                      .filter(m => {
-                        if (!filtroBusca) return true;
-                        const ins = insumoMap[m.insumo_id];
-                        return `${ins?.codigo ?? ""} ${ins?.descricao ?? ""} ${m.item_descricao ?? ""}`.toLowerCase().includes(filtroBusca.toLowerCase());
-                      })
-                      .map(m => {
+                    {movimentosPaginados.map(m => {
                         const ins = insumoMap[m.insumo_id];
                         const obraNome = obras.find(o => o.id === m.obra_id)?.nome ?? (m.obra_id ?? "—");
                         return (
@@ -596,12 +622,25 @@ function EstoquePage() {
                           </tr>
                         );
                       })}
-                    {movimentos.length === 0 && (
+                    {movimentosFiltrados.length === 0 && (
                       <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">Sem movimentos.</td></tr>
                     )}
                   </tbody>
                 </table>
               </div>
+              {movimentosFiltrados.length > 0 && (
+                <div className="px-4 py-3 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+                  <span>{movimentosFiltrados.length} movimentos - Pagina {paginaAtualMovimentos} de {totalPaginasMovimentos}</span>
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" variant="outline" disabled={paginaAtualMovimentos <= 1} onClick={() => setPaginaMovimentos((p) => Math.max(1, p - 1))} className="gap-1">
+                      <ChevronLeft className="w-3.5 h-3.5" /> Anterior
+                    </Button>
+                    <Button size="sm" variant="outline" disabled={paginaAtualMovimentos >= totalPaginasMovimentos} onClick={() => setPaginaMovimentos((p) => Math.min(totalPaginasMovimentos, p + 1))} className="gap-1">
+                      Proxima <ChevronRight className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </Card>
           </TabsContent>
         </Tabs>

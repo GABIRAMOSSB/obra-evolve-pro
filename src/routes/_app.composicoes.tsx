@@ -22,7 +22,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { ArrowLeft, Plus, Pencil, Trash2, Copy } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Pencil, Trash2, Copy } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/composicoes")({
@@ -57,6 +57,8 @@ function fmtMoney(v: number) {
   return (v ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+const COMPOSICOES_PAGE_SIZE = 25;
+
 function ComposicoesPage() {
   const { user, loading: authLoading } = useAuth();
   const { company, loading: companyLoading } = useCompany();
@@ -65,13 +67,14 @@ function ComposicoesPage() {
   const [lista, setLista] = useState<Composicao[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState("");
+  const [page, setPage] = useState(1);
 
   const [editing, setEditing] = useState<Composicao | null>(null);
   const [form, setForm] = useState({ codigo: "", descricao: "", unidade: "UN", observacoes: "" });
   const [insumos, setInsumos] = useState<InsumoLinha[]>([]);
 
   useEffect(() => {
-    if (!authLoading && !user) navigate({ to: "/login" });
+    if (!authLoading && !user) navigate({ to: "/login", search: { redirect: undefined } });
   }, [authLoading, user, navigate]);
 
   const load = useCallback(async () => {
@@ -224,6 +227,12 @@ function ComposicoesPage() {
   const filtradas = lista.filter(
     (c) => !filtro || c.codigo.toLowerCase().includes(filtro.toLowerCase()) || c.descricao.toLowerCase().includes(filtro.toLowerCase()),
   );
+  const totalPages = Math.max(1, Math.ceil(filtradas.length / COMPOSICOES_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const composicoesPaginadas = filtradas.slice(
+    (safePage - 1) * COMPOSICOES_PAGE_SIZE,
+    safePage * COMPOSICOES_PAGE_SIZE,
+  );
 
   if (authLoading || companyLoading) return <div className="p-8">Carregando...</div>;
 
@@ -243,7 +252,14 @@ function ComposicoesPage() {
 
       <main className="container mx-auto p-4 space-y-4">
         <div className="flex gap-2">
-          <Input placeholder="Buscar por código ou descrição..." value={filtro} onChange={(e) => setFiltro(e.target.value)} />
+          <Input
+            placeholder="Buscar por codigo ou descricao..."
+            value={filtro}
+            onChange={(e) => {
+              setFiltro(e.target.value);
+              setPage(1);
+            }}
+          />
         </div>
 
         <Card className="p-0 overflow-hidden">
@@ -263,7 +279,7 @@ function ComposicoesPage() {
               ) : filtradas.length === 0 ? (
                 <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Nenhuma composição cadastrada</TableCell></TableRow>
               ) : (
-                filtradas.map((c) => (
+                composicoesPaginadas.map((c) => (
                   <TableRow key={c.id}>
                     <TableCell className="font-mono text-xs">{c.codigo}</TableCell>
                     <TableCell>{c.descricao}</TableCell>
@@ -281,6 +297,20 @@ function ComposicoesPage() {
               )}
             </TableBody>
           </Table>
+          {filtradas.length > COMPOSICOES_PAGE_SIZE && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t px-4 py-3 text-sm text-muted-foreground">
+              <span>Mostrando {composicoesPaginadas.length} de {filtradas.length} composicoes</span>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={safePage === 1}>
+                  <ChevronLeft className="w-4 h-4 mr-1" /> Anterior
+                </Button>
+                <span className="min-w-20 text-center">Pagina {safePage} de {totalPages}</span>
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages}>
+                  Proxima <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
         </Card>
       </main>
 

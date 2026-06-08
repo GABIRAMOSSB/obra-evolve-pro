@@ -38,11 +38,13 @@ import {
   Plus,
   Trash2,
   ChevronLeft,
+  ChevronRight,
   Loader2,
   Sparkles,
   Save,
   Copy,
   Settings2,
+  Search,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -59,6 +61,8 @@ const STATUS_LABEL: Record<PropostaStatus, string> = {
   perdida: "Perdida",
   ganha: "Ganha",
 };
+const PROPOSTAS_PAGE_SIZE = 25;
+
 const STATUS_VARIANT: Record<PropostaStatus, "default" | "secondary" | "outline" | "destructive"> = {
   rascunho: "outline",
   em_revisao: "secondary",
@@ -85,6 +89,9 @@ function PropostasPage() {
 function PropostaList({ onOpen }: { onOpen: (id: string) => void }) {
   const list = useServerFn(listPropostas);
   const remove = useServerFn(deleteProposta);
+  const [q, setQ] = useState("");
+  const [status, setStatus] = useState<string>("todos");
+  const [pagina, setPagina] = useState(1);
   const qc = useQueryClient();
 
   const { data, isLoading } = useQuery({
@@ -101,7 +108,23 @@ function PropostaList({ onOpen }: { onOpen: (id: string) => void }) {
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : String(e)),
   });
 
-  const rows = data ?? [];
+  const rows = useMemo(() => {
+    const termo = q.trim().toLowerCase();
+    return (data ?? []).filter((p) => {
+      const matchesStatus = status === "todos" || p.status === status;
+      const matchesTermo =
+        !termo ||
+        p.titulo.toLowerCase().includes(termo) ||
+        (p.edital_titulo ?? "").toLowerCase().includes(termo);
+      return matchesStatus && matchesTermo;
+    });
+  }, [data, q, status]);
+  const totalPaginas = Math.max(1, Math.ceil(rows.length / PROPOSTAS_PAGE_SIZE));
+  const paginaAtual = Math.min(pagina, totalPaginas);
+  const paginatedRows = rows.slice(
+    (paginaAtual - 1) * PROPOSTAS_PAGE_SIZE,
+    paginaAtual * PROPOSTAS_PAGE_SIZE,
+  );
 
   return (
     <div className="p-6 space-y-6">
@@ -114,6 +137,27 @@ function PropostaList({ onOpen }: { onOpen: (id: string) => void }) {
         </div>
         <NovaPropostaDialog />
       </div>
+
+      <Card className="p-3 flex flex-col md:flex-row gap-3 md:items-center">
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={q}
+            onChange={(e) => { setQ(e.target.value); setPagina(1); }}
+            placeholder="Buscar proposta ou edital..."
+            className="pl-9"
+          />
+        </div>
+        <Select value={status} onValueChange={(v) => { setStatus(v); setPagina(1); }}>
+          <SelectTrigger className="w-full md:w-[190px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos os status</SelectItem>
+            {Object.entries(STATUS_LABEL).map(([value, label]) => (
+              <SelectItem key={value} value={value}>{label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Card>
 
       <Card className="overflow-hidden">
         {isLoading ? (
@@ -136,7 +180,7 @@ function PropostaList({ onOpen }: { onOpen: (id: string) => void }) {
               </tr>
             </thead>
             <tbody>
-              {rows.map((p) => (
+              {paginatedRows.map((p) => (
                 <tr
                   key={p.id}
                   className="border-t hover:bg-muted/30 cursor-pointer"
@@ -186,6 +230,19 @@ function PropostaList({ onOpen }: { onOpen: (id: string) => void }) {
               ))}
             </tbody>
           </table>
+        )}
+        {rows.length > 0 && (
+          <div className="px-4 py-3 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+            <span>{rows.length} propostas - Pagina {paginaAtual} de {totalPaginas}</span>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" disabled={paginaAtual <= 1} onClick={() => setPagina((p) => Math.max(1, p - 1))} className="gap-1">
+                <ChevronLeft className="w-3.5 h-3.5" /> Anterior
+              </Button>
+              <Button size="sm" variant="outline" disabled={paginaAtual >= totalPaginas} onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))} className="gap-1">
+                Proxima <ChevronRight className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </div>
         )}
       </Card>
     </div>
