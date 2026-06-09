@@ -20,6 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Radar, Loader2, ExternalLink, Plus, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+import { RadarPanel } from "@/components/pncp/RadarPanel";
 
 export const Route = createFileRoute("/_app/oportunidades")({
   component: OportunidadesPage,
@@ -71,9 +72,11 @@ function OportunidadesPage() {
         <TabsList>
           <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
           <TabsTrigger value="buscar">Buscar no PNCP</TabsTrigger>
+          <TabsTrigger value="radar">Radar (automático)</TabsTrigger>
         </TabsList>
         <TabsContent value="pipeline"><PipelinePanel /></TabsContent>
         <TabsContent value="buscar"><BuscaPanel /></TabsContent>
+        <TabsContent value="radar"><RadarPanel /></TabsContent>
       </Tabs>
     </div>
   );
