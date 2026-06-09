@@ -47,6 +47,7 @@ import { Route as AppAssinaturasRouteImport } from './routes/_app.assinaturas'
 import { Route as AppAditivosRouteImport } from './routes/_app.aditivos'
 import { Route as ApiPublicZapsignWebhookRouteImport } from './routes/api.public.zapsign-webhook'
 import { Route as ApiPublicZapsignRemindersRouteImport } from './routes/api.public.zapsign-reminders'
+import { Route as ApiPublicPncpRadarCronRouteImport } from './routes/api.public.pncp-radar-cron'
 import { Route as ApiPublicComplianceScheduledRouteImport } from './routes/api.public.compliance-scheduled'
 import { Route as AppPropostasIdRouteImport } from './routes/_app.propostas.$id'
 import { Route as AppInsumosImportarRouteImport } from './routes/_app.insumos.importar'
@@ -246,6 +247,11 @@ const ApiPublicZapsignRemindersRoute =
     path: '/api/public/zapsign-reminders',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicPncpRadarCronRoute = ApiPublicPncpRadarCronRouteImport.update({
+  id: '/api/public/pncp-radar-cron',
+  path: '/api/public/pncp-radar-cron',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicComplianceScheduledRoute =
   ApiPublicComplianceScheduledRouteImport.update({
     id: '/api/public/compliance-scheduled',
@@ -320,6 +326,7 @@ export interface FileRoutesByFullPath {
   '/insumos/importar': typeof AppInsumosImportarRoute
   '/propostas/$id': typeof AppPropostasIdRoute
   '/api/public/compliance-scheduled': typeof ApiPublicComplianceScheduledRoute
+  '/api/public/pncp-radar-cron': typeof ApiPublicPncpRadarCronRoute
   '/api/public/zapsign-reminders': typeof ApiPublicZapsignRemindersRoute
   '/api/public/zapsign-webhook': typeof ApiPublicZapsignWebhookRoute
   '/configuracoes/zapsign/testes': typeof AppConfiguracoesZapsignTestesRoute
@@ -365,6 +372,7 @@ export interface FileRoutesByTo {
   '/insumos/importar': typeof AppInsumosImportarRoute
   '/propostas/$id': typeof AppPropostasIdRoute
   '/api/public/compliance-scheduled': typeof ApiPublicComplianceScheduledRoute
+  '/api/public/pncp-radar-cron': typeof ApiPublicPncpRadarCronRoute
   '/api/public/zapsign-reminders': typeof ApiPublicZapsignRemindersRoute
   '/api/public/zapsign-webhook': typeof ApiPublicZapsignWebhookRoute
   '/configuracoes/zapsign/testes': typeof AppConfiguracoesZapsignTestesRoute
@@ -412,6 +420,7 @@ export interface FileRoutesById {
   '/_app/insumos/importar': typeof AppInsumosImportarRoute
   '/_app/propostas/$id': typeof AppPropostasIdRoute
   '/api/public/compliance-scheduled': typeof ApiPublicComplianceScheduledRoute
+  '/api/public/pncp-radar-cron': typeof ApiPublicPncpRadarCronRoute
   '/api/public/zapsign-reminders': typeof ApiPublicZapsignRemindersRoute
   '/api/public/zapsign-webhook': typeof ApiPublicZapsignWebhookRoute
   '/_app/configuracoes/zapsign/testes': typeof AppConfiguracoesZapsignTestesRoute
@@ -459,6 +468,7 @@ export interface FileRouteTypes {
     | '/insumos/importar'
     | '/propostas/$id'
     | '/api/public/compliance-scheduled'
+    | '/api/public/pncp-radar-cron'
     | '/api/public/zapsign-reminders'
     | '/api/public/zapsign-webhook'
     | '/configuracoes/zapsign/testes'
@@ -504,6 +514,7 @@ export interface FileRouteTypes {
     | '/insumos/importar'
     | '/propostas/$id'
     | '/api/public/compliance-scheduled'
+    | '/api/public/pncp-radar-cron'
     | '/api/public/zapsign-reminders'
     | '/api/public/zapsign-webhook'
     | '/configuracoes/zapsign/testes'
@@ -550,6 +561,7 @@ export interface FileRouteTypes {
     | '/_app/insumos/importar'
     | '/_app/propostas/$id'
     | '/api/public/compliance-scheduled'
+    | '/api/public/pncp-radar-cron'
     | '/api/public/zapsign-reminders'
     | '/api/public/zapsign-webhook'
     | '/_app/configuracoes/zapsign/testes'
@@ -561,6 +573,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   InviteTokenRoute: typeof InviteTokenRoute
   ApiPublicComplianceScheduledRoute: typeof ApiPublicComplianceScheduledRoute
+  ApiPublicPncpRadarCronRoute: typeof ApiPublicPncpRadarCronRoute
   ApiPublicZapsignRemindersRoute: typeof ApiPublicZapsignRemindersRoute
   ApiPublicZapsignWebhookRoute: typeof ApiPublicZapsignWebhookRoute
 }
@@ -833,6 +846,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicZapsignRemindersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/pncp-radar-cron': {
+      id: '/api/public/pncp-radar-cron'
+      path: '/api/public/pncp-radar-cron'
+      fullPath: '/api/public/pncp-radar-cron'
+      preLoaderRoute: typeof ApiPublicPncpRadarCronRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/compliance-scheduled': {
       id: '/api/public/compliance-scheduled'
       path: '/api/public/compliance-scheduled'
@@ -1008,19 +1028,10 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   InviteTokenRoute: InviteTokenRoute,
   ApiPublicComplianceScheduledRoute: ApiPublicComplianceScheduledRoute,
+  ApiPublicPncpRadarCronRoute: ApiPublicPncpRadarCronRoute,
   ApiPublicZapsignRemindersRoute: ApiPublicZapsignRemindersRoute,
   ApiPublicZapsignWebhookRoute: ApiPublicZapsignWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
