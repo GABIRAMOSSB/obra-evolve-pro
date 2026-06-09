@@ -78,13 +78,13 @@ export async function getDiaryPhotoUrls(
     console.error("getDiaryPhotoUrls", error);
     return new Map();
   }
-  return new Map(
-    (data ?? [])
-      .filter((item): item is { path: string; signedUrl: string } =>
-        Boolean(item.path && item.signedUrl),
-      )
-      .map((item) => [item.path, item.signedUrl]),
-  );
+  const urls = new Map<string, string>();
+  for (const item of data ?? []) {
+    if (item.path && item.signedUrl) {
+      urls.set(item.path, item.signedUrl);
+    }
+  }
+  return urls;
 }
 export async function deleteDiaryPhoto(path: string) {
   await supabase.storage.from(BUCKET).remove([path]);
