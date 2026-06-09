@@ -1,7 +1,12 @@
 export const GOOGLE_REDIRECT_STORAGE_KEY = "obra-google-redirect";
 
 export function normalizeRedirect(value?: string | null) {
-  return value && value.startsWith("/") ? value : undefined;
+  if (!value || !value.startsWith("/")) return undefined;
+
+  const path = value.split(/[?#]/, 1)[0];
+  if (path === "/login" || path === "/reset-password") return undefined;
+
+  return value;
 }
 
 export function getStoredRedirect() {

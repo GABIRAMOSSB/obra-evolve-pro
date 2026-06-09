@@ -1,4 +1,5 @@
 import { createFileRoute, Navigate, Outlet, useRouterState } from "@tanstack/react-router";
+import { useRef } from "react";
 import { AppTopbar } from "@/components/AppTopbar";
 import { useAuth } from "@/hooks/use-auth";
 import { useSignatureNotifications } from "@/hooks/use-signature-notifications";
@@ -10,10 +11,14 @@ export const Route = createFileRoute("/_app")({
 function AppLayout() {
   const { user, loading } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname + s.location.searchStr });
+  const redirectPathRef = useRef("/");
+  if (!pathname.startsWith("/login")) {
+    redirectPathRef.current = pathname;
+  }
   useSignatureNotifications();
 
   if (!loading && !user) {
-    return <Navigate to="/login" search={{ redirect: pathname }} replace />;
+    return <Navigate to="/login" search={{ redirect: redirectPathRef.current }} replace />;
   }
 
   if (loading || !user) {
