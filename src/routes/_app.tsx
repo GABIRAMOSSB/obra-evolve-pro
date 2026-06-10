@@ -1,6 +1,6 @@
 import { createFileRoute, Navigate, Outlet, useRouterState } from "@tanstack/react-router";
 import { useRef } from "react";
-import { AppTopbar } from "@/components/AppTopbar";
+import { AppSidebar } from "@/components/AppSidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { useSignatureNotifications } from "@/hooks/use-signature-notifications";
 
@@ -30,11 +30,11 @@ function AppLayout() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <AppTopbar />
-      <div className="flex-1 min-w-0 flex flex-col">
+    <div className="min-h-screen flex w-full bg-background">
+      <AppSidebar />
+      <main className="flex-1 min-w-0 flex flex-col">
         <Outlet />
-      </div>
+      </main>
     </div>
   );
 }
