@@ -116,9 +116,10 @@ export const Route = createFileRoute("/api/public/compliance-scheduled")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const apiKey = request.headers.get("apikey") ?? "";
-        const expected = process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY ?? "";
-        if (!apiKey || apiKey !== expected) {
+        const provided =
+          request.headers.get("x-cron-secret") ?? request.headers.get("apikey") ?? "";
+        const expected = process.env.CRON_SECRET ?? "";
+        if (!expected || !provided || provided !== expected) {
           return new Response("Unauthorized", { status: 401 });
         }
 
