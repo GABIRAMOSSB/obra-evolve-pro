@@ -2,12 +2,12 @@
  * Fase 7 — Detalhe de proposta: itens, readequação, carta proposta.
  */
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
-  ArrowLeft, FileText, Plus, Trash2, Sparkles, Copy, GitBranch, RefreshCcw,
+  ArrowLeft, FileText, Plus, Trash2, Sparkles, Copy, GitBranch, RefreshCcw, Search, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import {
   getPropostaDetail, updatePropostaHeader,
@@ -29,6 +29,8 @@ export const Route = createFileRoute("/_app/propostas/$id")({ component: Propost
 
 const brl = (v: number | null | undefined) =>
   v == null ? "—" : new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(v));
+
+const PROPOSTA_ITENS_PAGE_SIZE = 25;
 
 function PropostaDetailPage() {
   const { id } = Route.useParams();
@@ -105,6 +107,24 @@ function ItensTab({ propostaId }: { propostaId: string }) {
   const [open, setOpen] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [editing, setEditing] = useState<any | null>(null);
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
+
+  const filteredItens = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    if (!term) return itens;
+    return itens.filter((it) =>
+      (it.codigo ?? "").toLowerCase().includes(term) ||
+      it.descricao.toLowerCase().includes(term) ||
+      (it.unidade ?? "").toLowerCase().includes(term),
+    );
+  }, [itens, q]);
+  const totalPages = Math.max(1, Math.ceil(filteredItens.length / PROPOSTA_ITENS_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedItens = filteredItens.slice(
+    (safePage - 1) * PROPOSTA_ITENS_PAGE_SIZE,
+    safePage * PROPOSTA_ITENS_PAGE_SIZE,
+  );
 
   const save = useMutation({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -134,7 +154,21 @@ function ItensTab({ propostaId }: { propostaId: string }) {
           <Plus className="w-4 h-4 mr-1" /> Novo item
         </Button>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="relative w-full sm:max-w-sm">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={q}
+              onChange={(e) => { setQ(e.target.value); setPage(1); }}
+              placeholder="Buscar codigo, descricao ou unidade..."
+              className="pl-9"
+            />
+          </div>
+          <span className="text-xs text-muted-foreground">
+            {filteredItens.length} item(ns) de {itens.length}
+          </span>
+        </div>
         <Table>
           <TableHeader>
             <TableRow>
@@ -149,12 +183,12 @@ function ItensTab({ propostaId }: { propostaId: string }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {itens.length === 0 && (
+            {filteredItens.length === 0 && (
               <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhum item.</TableCell></TableRow>
             )}
-            {itens.map((it, idx) => (
+            {paginatedItens.map((it, idx) => (
               <TableRow key={it.id} className="cursor-pointer" onClick={() => { setEditing(it); setOpen(true); }}>
-                <TableCell>{idx + 1}</TableCell>
+                <TableCell>{(safePage - 1) * PROPOSTA_ITENS_PAGE_SIZE + idx + 1}</TableCell>
                 <TableCell>{it.codigo ?? "—"}</TableCell>
                 <TableCell className="max-w-md truncate">{it.descricao}</TableCell>
                 <TableCell>{it.unidade ?? "—"}</TableCell>
@@ -170,6 +204,19 @@ function ItensTab({ propostaId }: { propostaId: string }) {
             ))}
           </TableBody>
         </Table>
+        {filteredItens.length > PROPOSTA_ITENS_PAGE_SIZE && (
+          <div className="pt-3 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+            <span>Pagina {safePage} de {totalPages}</span>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" disabled={safePage <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="gap-1">
+                <ChevronLeft className="w-3.5 h-3.5" /> Anterior
+              </Button>
+              <Button size="sm" variant="outline" disabled={safePage >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} className="gap-1">
+                Proxima <ChevronRight className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </div>
+        )}
       </CardContent>
 
       <ItemDialog
