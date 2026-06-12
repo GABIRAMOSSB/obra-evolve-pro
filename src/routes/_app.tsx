@@ -1,6 +1,7 @@
 import { createFileRoute, Navigate, Outlet, useRouterState } from "@tanstack/react-router";
 import { useRef } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
+import { AppTopbar } from "@/components/AppTopbar";
 import { useAuth } from "@/hooks/use-auth";
 import { useSignatureNotifications } from "@/hooks/use-signature-notifications";
 
@@ -23,16 +24,21 @@ function AppLayout() {
 
   if (loading || !user) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-sm text-muted-foreground">Carregando...</div>
+      <div className="min-h-screen app-canvas flex items-center justify-center">
+        <div className="glass-card shadow-card rounded-xl px-5 py-4 text-sm text-muted-foreground">
+          Carregando...
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex w-full bg-background">
+    <div className="min-h-screen flex w-full app-canvas">
       <AppSidebar />
       <main className="flex-1 min-w-0 flex flex-col">
+        <div className="lg:hidden">
+          <AppTopbar />
+        </div>
         <Outlet />
       </main>
     </div>

@@ -42,17 +42,17 @@ export function AppTopbar() {
   const isAdmin = company?.role === "admin" || company?.role === "editor";
 
   return (
-    <header className="sticky top-0 z-40 bg-gradient-sidebar text-sidebar-foreground border-b border-sidebar-border/40 shadow-sm">
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary-glow/50 to-transparent pointer-events-none" />
-      <div className="flex items-center gap-3 px-4 h-14">
+    <header className="sticky top-0 z-40 bg-gradient-sidebar text-sidebar-foreground border-b border-sidebar-border/60 shadow-[0_16px_40px_-34px_oklch(0.19_0.01_230_/_0.7)]">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary-glow/60 to-transparent pointer-events-none" />
+      <div className="flex items-center gap-3 px-4 h-[60px]">
         {/* Brand */}
         <Link to="/" className="flex items-center gap-2.5 shrink-0 pr-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center shadow-glow">
+          <div className="w-8 h-8 rounded-md bg-gradient-primary flex items-center justify-center shadow-glow ring-1 ring-white/10">
             <HardHat className="w-4 h-4 text-primary-foreground" />
           </div>
           <div className="hidden sm:block min-w-0">
             <div className="font-display font-bold text-[13px] leading-tight tracking-tight">SOLV Gestão</div>
-            <div className="text-[9px] uppercase tracking-[0.18em] text-sidebar-foreground/50 truncate max-w-[140px]">{companyName}</div>
+            <div className="text-[9px] uppercase tracking-[0.18em] text-primary-glow/75 truncate max-w-[140px]">{companyName || "controle executivo"}</div>
           </div>
         </Link>
 
@@ -78,7 +78,7 @@ export function AppTopbar() {
             variant="ghost"
             size="icon"
             onClick={() => { void signOut(); }}
-            className="h-8 w-8 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/30"
+          className="h-8 w-8 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-white/[0.06]"
             title="Sair"
           >
             <LogOut className="w-3.5 h-3.5" />
@@ -105,10 +105,10 @@ function NavItem({
   return (
     <Link
       to={to}
-      className={`group relative flex items-center gap-1 px-2 h-9 rounded-lg text-[11px] font-medium whitespace-nowrap transition-all duration-200 ${
+      className={`group relative flex items-center gap-1 px-2.5 h-9 rounded-md text-[11px] font-medium whitespace-nowrap transition-all duration-200 ${
         active
-          ? "bg-sidebar-accent/40 text-sidebar-foreground"
-          : "text-sidebar-foreground/65 hover:text-sidebar-foreground hover:bg-sidebar-accent/20"
+          ? "bg-white/[0.075] text-sidebar-foreground"
+          : "text-sidebar-foreground/65 hover:text-sidebar-foreground hover:bg-white/[0.045]"
       }`}
 
     >
@@ -119,7 +119,7 @@ function NavItem({
       />
       <span>{label}</span>
       {active && (
-        <span className="absolute left-2 right-2 -bottom-px h-[2px] rounded-full bg-gradient-to-r from-primary-glow to-primary shadow-[0_0_10px_oklch(0.65_0.22_285_/_0.6)]" />
+        <span className="absolute left-2 right-2 -bottom-px h-[2px] rounded-full bg-gradient-to-r from-primary-glow to-primary shadow-[0_0_10px_oklch(0.79_0.11_152_/_0.55)]" />
       )}
     </Link>
   );

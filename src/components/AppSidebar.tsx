@@ -99,22 +99,29 @@ export function AppSidebar() {
   const [openId, setOpenId] = useState<string | null>(activeSection ?? "licitacoes");
 
   return (
-    <aside className="hidden lg:flex flex-col w-[240px] shrink-0 bg-gradient-sidebar text-sidebar-foreground sticky top-0 h-screen border-r border-sidebar-border/40 relative overflow-hidden">
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary-glow/50 to-transparent" />
-      <div className="absolute -top-32 -left-20 w-64 h-64 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 -right-20 w-64 h-64 rounded-full bg-primary-glow/15 blur-3xl pointer-events-none" />
+    <aside className="hidden lg:flex flex-col w-[264px] shrink-0 bg-gradient-sidebar text-sidebar-foreground sticky top-0 h-screen border-r border-sidebar-border/60 relative overflow-hidden shadow-[18px_0_48px_-38px_oklch(0.19_0.01_230_/_0.55)]">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary-glow/60 to-transparent" />
+      <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(90deg,oklch(1_0_0_/_0.035)_1px,transparent_1px),linear-gradient(180deg,oklch(1_0_0_/_0.025)_1px,transparent_1px)] bg-[size:28px_28px]" />
 
-      <div className="relative px-5 pt-6 pb-4 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
+      <div className="relative px-5 pt-5 pb-4 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-lg bg-gradient-primary flex items-center justify-center shadow-glow ring-1 ring-white/10">
           <HardHat className="w-5 h-5 text-primary-foreground" />
         </div>
         <div className="min-w-0">
           <div className="font-display font-bold text-[15px] leading-tight tracking-tight">SOLV Gestão</div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/50 truncate">{companyName}</div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-primary-glow/75 truncate">{companyName || "controle executivo"}</div>
         </div>
       </div>
 
-      <div className="relative px-3 mt-2 flex-1 overflow-y-auto pb-4">
+      <div className="relative mx-3 mb-2 rounded-lg border border-sidebar-border/50 bg-sidebar-accent/20 px-3 py-2">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[10px] uppercase tracking-[0.16em] text-sidebar-foreground/50">Workspace</span>
+          <span className="h-1.5 w-1.5 rounded-full bg-primary-glow shadow-[0_0_10px_oklch(0.79_0.11_152_/_0.7)]" />
+        </div>
+        <div className="mt-1 text-xs font-medium truncate">{companyName || "Empresa ativa"}</div>
+      </div>
+
+      <div className="relative px-3 mt-1 flex-1 overflow-y-auto pb-4">
         <SidebarLink to="/" icon={BarChart3} label="Visão geral" exact pathname={pathname} />
 
         <div className="mt-3 space-y-0.5">
@@ -128,7 +135,7 @@ export function AppSidebar() {
                 <button
                   type="button"
                   onClick={() => setOpenId(isOpen ? null : section.id)}
-                  className={`w-full group flex items-center gap-3 px-3 py-2 rounded-lg text-[11px] font-semibold uppercase tracking-[0.14em] transition-all ${
+                  className={`w-full group flex items-center gap-3 px-3 py-2 rounded-md text-[10px] font-semibold uppercase tracking-[0.16em] transition-all ${
                     hasActive
                       ? "text-sidebar-foreground"
                       : "text-sidebar-foreground/55 hover:text-sidebar-foreground/85"
@@ -194,14 +201,14 @@ function SidebarLink({
   return (
     <Link
       to={to}
-      className={`group relative flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200 ${
+      className={`group relative flex items-center gap-3 px-3 py-2 rounded-md text-[13px] font-medium transition-all duration-200 ${
         active
-          ? "bg-sidebar-accent/40 text-sidebar-foreground shadow-[inset_0_1px_0_oklch(1_0_0_/_0.06)]"
-          : "text-sidebar-foreground/65 hover:text-sidebar-foreground hover:bg-sidebar-accent/20"
+          ? "bg-white/[0.075] text-sidebar-foreground shadow-[inset_0_1px_0_oklch(1_0_0_/_0.08),0_8px_22px_-18px_oklch(0.79_0.11_152_/_0.65)]"
+          : "text-sidebar-foreground/64 hover:text-sidebar-foreground hover:bg-white/[0.045]"
       }`}
     >
       {active && (
-        <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-gradient-to-b from-primary-glow to-primary shadow-[0_0_12px_oklch(0.65_0.22_285_/_0.6)]" />
+        <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-gradient-to-b from-primary-glow to-primary shadow-[0_0_12px_oklch(0.79_0.11_152_/_0.55)]" />
       )}
       <Icon
         className={`w-4 h-4 shrink-0 transition-colors ${
