@@ -21,7 +21,7 @@ import {
  SelectTrigger,
  SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Plus, Pencil, Trash2, FolderTree, Sparkles, ChevronRight, ChevronDown } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, FolderTree, Sparkles, ChevronRight, ChevronDown, Search, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useCentrosCusto, type CentroCusto, type CentroCustoNode, type CentroCustoTipo } from "@/hooks/use-centros-custo";
 
@@ -75,6 +75,36 @@ const EMPTY_FORM: FormState = {
  ativo: true,
 };
 
+const CENTROS_PAGE_SIZE = 20;
+
+function matchesCentro(node: CentroCustoNode, term: string) {
+ return (
+ node.nome.toLowerCase().includes(term) ||
+ (node.codigo ?? "").toLowerCase().includes(term) ||
+ (node.descricao ?? "").toLowerCase().includes(term) ||
+ node.tipo.toLowerCase().includes(term)
+ );
+}
+
+function filterCentroTree(nodes: CentroCustoNode[], term: string): CentroCustoNode[] {
+ if (!term) return nodes;
+ return nodes.flatMap((node) => {
+ const children = filterCentroTree(node.children, term);
+ if (matchesCentro(node, term) || children.length > 0) {
+ return [{ ...node, children }];
+ }
+ return [];
+ });
+}
+
+function collectCentroIds(nodes: CentroCustoNode[], ids = new Set<string>()) {
+ for (const node of nodes) {
+ ids.add(node.id);
+ collectCentroIds(node.children, ids);
+ }
+ return ids;
+}
+
 function CentrosCustoPage() {
  const { user, loading: authLoading } = useAuth();
  const { company, loading: companyLoading } = useCompany();
@@ -88,6 +118,8 @@ function CentrosCustoPage() {
  const [form, setForm] = useState<FormState>(EMPTY_FORM);
  const [saving, setSaving] = useState(false);
  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+ const [q, setQ] = useState("");
+ const [pagina, setPagina] = useState(1);
 
  useEffect(() => {
  if (!authLoading && !user) navigate({ to: "/login", search: { redirect: undefined } });
@@ -104,6 +136,21 @@ function CentrosCustoPage() {
  const parentOptions = useMemo(
  () => items.filter((i) => !i.parent_id),
  [items],
+ );
+
+ const filteredTree = useMemo(
+ () => filterCentroTree(tree, q.trim().toLowerCase()),
+ [tree, q],
+ );
+ const totalPaginas = Math.max(1, Math.ceil(filteredTree.length / CENTROS_PAGE_SIZE));
+ const paginaAtual = Math.min(pagina, totalPaginas);
+ const paginatedTree = filteredTree.slice(
+ (paginaAtual - 1) * CENTROS_PAGE_SIZE,
+ paginaAtual * CENTROS_PAGE_SIZE,
+ );
+ const renderedExpanded = useMemo(
+ () => (q.trim() ? collectCentroIds(filteredTree) : expanded),
+ [expanded, filteredTree, q],
  );
 
  const openCreate = (parent?: CentroCusto) => {
@@ -192,6 +239,10 @@ function CentrosCustoPage() {
  });
  };
 
+ useEffect(() => {
+ setPagina(1);
+ }, [q]);
+
  if (authLoading || companyLoading) {
  return <div className="p-6 text-muted-foreground">Carregando…</div>;
  }
@@ -230,7 +281,21 @@ function CentrosCustoPage() {
  )}
  </div>
 
- <Card className="p-4">
+ <Card className="p-4 space-y-4">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+ <div className="relative w-full sm:max-w-sm">
+ <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+ <Input
+ value={q}
+ onChange={(e) => setQ(e.target.value)}
+ placeholder="Buscar centro, codigo ou tipo..."
+ className="pl-9"
+ />
+ </div>
+ <span className="text-xs text-muted-foreground">
+ {filteredTree.length} grupo(s) raiz de {tree.length}
+ </span>
+ </div>
  {loading ? (
  <p className="text-sm text-muted-foreground p-6 text-center">Carregando…</p>
  ) : tree.length === 0 ? (
@@ -240,14 +305,22 @@ function CentrosCustoPage() {
  Nenhum centro de custo cadastrado. Clique em "Carregar estrutura padrão" para começar.
  </p>
  </div>
+ ) : filteredTree.length === 0 ? (
+ <div className="text-center p-10 space-y-3">
+ <Search className="w-10 h-10 mx-auto text-muted-foreground/50" />
+ <p className="text-muted-foreground">
+ Nenhum centro de custo encontrado para a busca.
+ </p>
+ </div>
  ) : (
+ <>
  <ul className="space-y-1">
- {tree.map((node) => (
+ {paginatedTree.map((node) => (
  <CentroNode
  key={node.id}
  node={node}
  level={0}
- expanded={expanded}
+ expanded={renderedExpanded}
  onToggle={toggle}
  onEdit={openEdit}
  onRemove={remove}
@@ -257,6 +330,20 @@ function CentrosCustoPage() {
  />
  ))}
  </ul>
+ {filteredTree.length > CENTROS_PAGE_SIZE && (
+ <div className="pt-3 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+ <span>Pagina {paginaAtual} de {totalPaginas}</span>
+ <div className="flex items-center gap-2">
+ <Button size="sm" variant="outline" disabled={paginaAtual <= 1} onClick={() => setPagina((p) => Math.max(1, p - 1))} className="gap-1">
+ <ChevronLeft className="w-3.5 h-3.5" /> Anterior
+ </Button>
+ <Button size="sm" variant="outline" disabled={paginaAtual >= totalPaginas} onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))} className="gap-1">
+ Proxima <ChevronRight className="w-3.5 h-3.5" />
+ </Button>
+ </div>
+ </div>
+ )}
+ </>
  )}
  </Card>
 
