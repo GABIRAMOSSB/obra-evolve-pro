@@ -12,4 +12,19 @@ export default defineConfig({
   tanstackStart: {
     server: { entry: "server" },
   },
+  vite: {
+    optimizeDeps: {
+      // Pre-bundle deps that Vite was discovering mid-session, which caused
+      // "optimized dependencies changed. reloading" and broke the virtual
+      // client entry ("Failed to fetch dynamically imported module").
+      include: [
+        "@tanstack/router-core",
+        "@tanstack/router-core/ssr/client",
+        "@tanstack/router-core/ssr/server",
+        "@tanstack/history",
+        "h3-v2",
+        "seroval",
+      ],
+    },
+  },
 });
