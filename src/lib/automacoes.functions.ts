@@ -27,7 +27,7 @@ const COUNT_TABLES: Array<{ key: CountKey; table: string }> = [
   { key: "contratos", table: "contratos" },
   { key: "rdo", table: "rdo_entries" },
   { key: "notas", table: "nfe_notas" },
-  { key: "certidoes", table: "compliance_certificates" },
+  { key: "certidoes", table: "company_certificates" },
 ];
 
 async function resolveCompanyId(supabase: AnySupabase, userId: string): Promise<string> {
@@ -69,7 +69,181 @@ export type AutomationSnapshot = {
     reason: string;
     route: string;
   }>;
+  alerts: AutomationAlert[];
 };
+
+export type AutomationAlert = {
+  id: string;
+  severity: "critica" | "alta" | "media" | "baixa";
+  area: "licitacoes" | "obra" | "financeiro" | "governanca" | "contratos";
+  title: string;
+  description: string;
+  route: string;
+  action: string;
+};
+
+async function safeSelect<T>(
+  supabase: AnySupabase,
+  table: string,
+  select: string,
+  companyId: string,
+  build?: (query: AnySupabase) => AnySupabase,
+): Promise<T[]> {
+  let q = supabase.from(table).select(select).eq("company_id", companyId);
+  if (build) q = build(q);
+  const { data, error } = await q;
+  if (error) return [];
+  return (data ?? []) as T[];
+}
+
+function daysUntil(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const target = new Date(value);
+  if (Number.isNaN(target.getTime())) return null;
+  const today = new Date();
+  target.setHours(0, 0, 0, 0);
+  today.setHours(0, 0, 0, 0);
+  return Math.ceil((target.getTime() - today.getTime()) / 86_400_000);
+}
+
+async function buildAutomationAlerts(supabase: AnySupabase, companyId: string): Promise<AutomationAlert[]> {
+  const alerts: AutomationAlert[] = [];
+  const nowIso = new Date().toISOString();
+  const in30 = new Date(Date.now() + 30 * 86_400_000).toISOString();
+  const last3Days = new Date(Date.now() - 3 * 86_400_000).toISOString();
+
+  const propostas = await safeSelect<{ id: string; titulo: string; status: string; updated_at: string }>(
+    supabase,
+    "propostas",
+    "id, titulo, status, updated_at",
+    companyId,
+    (q) => q.in("status", ["rascunho", "em_revisao"]).order("updated_at", { ascending: true }).limit(5),
+  );
+  for (const proposta of propostas) {
+    alerts.push({
+      id: `proposta-${proposta.id}`,
+      severity: proposta.status === "rascunho" ? "alta" : "media",
+      area: "licitacoes",
+      title: `Proposta em ${proposta.status === "rascunho" ? "rascunho" : "revisao"}`,
+      description: proposta.titulo,
+      route: "/propostas",
+      action: "Abrir proposta",
+    });
+  }
+
+  const assinaturas = await safeSelect<{
+    id: string;
+    document_name: string;
+    status: string;
+    expiration_date: string | null;
+  }>(
+    supabase,
+    "signature_requests",
+    "id, document_name, status, expiration_date",
+    companyId,
+    (q) =>
+      q
+        .not("status", "in", "(signed,canceled,refused,expired)")
+        .or(`expiration_date.is.null,expiration_date.lte.${in30}`)
+        .order("expiration_date", { ascending: true, nullsFirst: false })
+        .limit(5),
+  );
+  for (const assinatura of assinaturas) {
+    const days = daysUntil(assinatura.expiration_date);
+    alerts.push({
+      id: `assinatura-${assinatura.id}`,
+      severity: days != null && days <= 3 ? "critica" : "alta",
+      area: "contratos",
+      title: days == null ? "Assinatura sem vencimento definido" : `Assinatura vence em ${days} dia(s)`,
+      description: assinatura.document_name,
+      route: "/assinaturas",
+      action: "Acompanhar assinatura",
+    });
+  }
+
+  const certidoes = await safeSelect<{
+    id: string;
+    status: string | null;
+    expiration_date: string | null;
+    certificate_types?: { short_name?: string | null; name?: string | null } | null;
+  }>(
+    supabase,
+    "company_certificates",
+    "id, status, expiration_date, certificate_types(short_name, name)",
+    companyId,
+    (q) =>
+      q
+        .or(`status.in.(expired,expiring_soon),expiration_date.lte.${in30}`)
+        .order("expiration_date", { ascending: true, nullsFirst: false })
+        .limit(5),
+  );
+  for (const cert of certidoes) {
+    const days = daysUntil(cert.expiration_date);
+    const name = cert.certificate_types?.short_name ?? cert.certificate_types?.name ?? "Certidao";
+    alerts.push({
+      id: `certidao-${cert.id}`,
+      severity: cert.status === "expired" || (days != null && days < 0) ? "critica" : "alta",
+      area: "governanca",
+      title: days == null ? "Certidao pendente" : days < 0 ? "Certidao vencida" : `Certidao vence em ${days} dia(s)`,
+      description: name,
+      route: "/compliance",
+      action: "Ver compliance",
+    });
+  }
+
+  const oportunidades = await safeSelect<{
+    id: string;
+    objeto: string | null;
+    situacao: string;
+    data_encerramento_proposta: string | null;
+  }>(
+    supabase,
+    "oportunidades",
+    "id, objeto, situacao, data_encerramento_proposta",
+    companyId,
+    (q) =>
+      q
+        .in("situacao", ["triagem", "analise", "preparando_proposta"])
+        .gte("data_encerramento_proposta", nowIso)
+        .lte("data_encerramento_proposta", in30)
+        .order("data_encerramento_proposta", { ascending: true })
+        .limit(5),
+  );
+  for (const oportunidade of oportunidades) {
+    const days = daysUntil(oportunidade.data_encerramento_proposta);
+    alerts.push({
+      id: `oportunidade-${oportunidade.id}`,
+      severity: days != null && days <= 5 ? "critica" : "alta",
+      area: "licitacoes",
+      title: `Prazo de proposta em ${days ?? "?"} dia(s)`,
+      description: oportunidade.objeto ?? "Oportunidade PNCP",
+      route: "/oportunidades",
+      action: "Priorizar edital",
+    });
+  }
+
+  const rdos = await safeSelect<{ id: string; data: string | null; titulo: string | null; created_at: string }>(
+    supabase,
+    "rdo_entries",
+    "id, data, titulo, created_at",
+    companyId,
+    (q) => q.gte("created_at", last3Days).order("created_at", { ascending: false }).limit(3),
+  );
+  if (rdos.length === 0) {
+    alerts.push({
+      id: "rdo-recente",
+      severity: "media",
+      area: "obra",
+      title: "Nenhum RDO recente encontrado",
+      description: "Acompanhe diarios e evidencias para manter historico operacional atualizado.",
+      route: "/rdo",
+      action: "Criar RDO",
+    });
+  }
+
+  const severityOrder = { critica: 0, alta: 1, media: 2, baixa: 3 };
+  return alerts.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]).slice(0, 12);
+}
 
 export const getAutomationSnapshot = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -83,6 +257,7 @@ export const getAutomationSnapshot = createServerFn({ method: "GET" })
     const counts = Object.fromEntries(results) as Record<CountKey, number | null>;
 
     const recommendations: AutomationSnapshot["recommendations"] = [];
+    const alerts = await buildAutomationAlerts(supabase, companyId);
     if ((counts.oportunidades ?? 0) === 0) {
       recommendations.push({
         id: "radar-pncp",
@@ -141,6 +316,7 @@ export const getAutomationSnapshot = createServerFn({ method: "GET" })
         cronSecret: Boolean(process.env.CRON_SECRET),
       },
       recommendations,
+      alerts,
     };
   });
 

@@ -28,6 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   generateAutomationPlan,
   getAutomationSnapshot,
+  type AutomationAlert,
   type AutomationSnapshot,
 } from "@/lib/automacoes.functions";
 
@@ -271,6 +272,7 @@ function AutomacoesPage() {
               </div>
             )}
             <SnapshotPanel snapshot={snapshotQ.data} loading={snapshotQ.isLoading} />
+            <AlertPanel alerts={snapshotQ.data?.alerts ?? []} />
             <div className="mt-5 space-y-2">
               {(snapshotQ.data?.recommendations.map((item) => item.reason) ?? [
                 "Conectar assistente de IA por modulo, com contexto da empresa e permissao por usuario.",
@@ -485,6 +487,48 @@ function SnapshotPanel({ snapshot, loading }: { snapshot?: AutomationSnapshot; l
   );
 }
 
+function AlertPanel({ alerts }: { alerts: AutomationAlert[] }) {
+  const visible = alerts.slice(0, 6);
+  return (
+    <div className="mt-5">
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <div>
+          <h3 className="font-display font-bold">Alertas inteligentes</h3>
+          <p className="text-xs text-muted-foreground">Prioridades calculadas a partir dos dados operacionais.</p>
+        </div>
+        <Badge variant="outline">{visible.length} alerta(s)</Badge>
+      </div>
+      {visible.length === 0 ? (
+        <div className="rounded-md border border-border/70 bg-background/60 px-3 py-4 text-sm text-muted-foreground">
+          Nenhum alerta critico encontrado agora.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          {visible.map((alert) => (
+            <Link key={alert.id} to={alert.route}>
+              <div className="h-full rounded-md border border-border/70 bg-background/70 p-3 transition-all hover:border-primary/40 hover:bg-primary/5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className={severityClass(alert.severity)}>
+                        {alert.severity}
+                      </Badge>
+                      <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{alert.area}</span>
+                    </div>
+                    <h4 className="mt-2 text-sm font-semibold leading-tight">{alert.title}</h4>
+                    <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{alert.description}</p>
+                  </div>
+                  <span className="text-xs font-semibold text-primary shrink-0">{alert.action}</span>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CountTile({ label, value }: { label: string; value?: number | null }) {
   return (
     <div className="rounded-md border border-border/70 bg-background/70 px-3 py-3">
@@ -492,6 +536,13 @@ function CountTile({ label, value }: { label: string; value?: number | null }) {
       <div className="mt-2 text-2xl font-bold">{value == null ? "-" : value}</div>
     </div>
   );
+}
+
+function severityClass(severity: AutomationAlert["severity"]): string {
+  if (severity === "critica") return "border-destructive/40 bg-destructive/10 text-destructive";
+  if (severity === "alta") return "border-amber-500/40 bg-amber-500/10 text-amber-600";
+  if (severity === "media") return "border-primary/30 bg-primary/10 text-primary";
+  return "border-border bg-muted text-muted-foreground";
 }
 
 function formatDateTime(value: string): string {
