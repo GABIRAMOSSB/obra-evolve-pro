@@ -773,7 +773,7 @@ export const listCertificates = createServerFn({ method: "GET" })
     const companyId = await resolveCompanyId(supabase, context.userId);
     const { data } = await supabase
       .from("company_certificates")
-      .select("*, certificate_types(*)")
+      .select("*, certificate_types(*), current_version:certificate_versions!company_certificates_current_version_id_fkey(storage_path)")
       .eq("company_id", companyId);
     const rows = data ?? [];
     rows.sort((a, b) => {
