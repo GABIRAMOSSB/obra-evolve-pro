@@ -435,24 +435,41 @@ export function ObraApp() {
  if (!activeObra) {
  return (
  <>
- <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-6">
- <Card className="max-w-xl w-full p-10 text-center space-y-6 shadow-elevated animate-slide-up relative overflow-hidden">
- <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
- <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-primary text-primary-foreground flex items-center justify-center shadow-glow">
- <HardHat className="w-8 h-8" />
+ <div className="min-h-screen app-canvas flex items-center justify-center p-4 sm:p-6">
+ <Card className="glass-card max-w-2xl w-full p-0 text-left shadow-elevated animate-slide-up relative overflow-hidden">
+ <div className="border-b border-border/60 px-5 sm:px-7 py-6 bg-card/70">
+ <div className="flex items-start justify-between gap-4">
+ <div className="min-w-0">
+ <div className="inline-flex items-center gap-2 rounded-md border border-primary/25 bg-primary/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
+ <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+ Central operacional
+ </div>
+ <div className="hidden sm:flex float-right ml-4 mb-2 w-14 h-14 rounded-lg bg-gradient-primary text-primary-foreground items-center justify-center shadow-glow shrink-0">
+ <HardHat className="w-7 h-7" />
  </div>
  <div>
- <h1 className="text-3xl font-bold font-display tracking-tight">
+ <h1 className="mt-4 font-display text-3xl sm:text-4xl font-bold tracking-tight leading-tight">
  Acompanhamento de <span className="text-gradient-primary">Obras</span>
  </h1>
- <p className="text-muted-foreground mt-3">
+ <p className="mt-2 text-sm text-muted-foreground">
  <span className="font-semibold text-foreground">{company.name}</span> — importe sua primeira planilha orçamentária para começar.
  </p>
  </div>
- <div className="space-y-2 text-left">
- <Label className="text-xs font-medium">Modelo da planilha</Label>
+ </div>
+ </div>
+ <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-2">
+ {["Excel", "BM", "RDO", "Nuvem"].map((item) => (
+ <div key={item} className="rounded-md border border-border/70 bg-background/70 px-3 py-2 text-center text-xs font-semibold text-foreground shadow-sm">
+ {item}
+ </div>
+ ))}
+ </div>
+ </div>
+ <div className="px-5 sm:px-7 py-6 space-y-5">
+ <div className="space-y-2">
+ <Label className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Modelo da planilha</Label>
  <Select value={uploadModel} onValueChange={(v) => setUploadModel(v as import("@/lib/excel").ForcedModel)}>
- <SelectTrigger className="h-9 w-full">
+ <SelectTrigger className="h-10 w-full bg-background/80">
  <SelectValue />
  </SelectTrigger>
  <SelectContent>
@@ -472,7 +489,7 @@ export function ObraApp() {
  e.target.value = "";
  }}
  />
- <Button asChild size="lg" className="w-full">
+ <Button asChild size="lg" className="w-full h-11">
  <span>
  <Upload className="mr-2 w-4 h-4" />
  Importar planilha Excel
@@ -483,10 +500,10 @@ export function ObraApp() {
  Seus dados ficam sincronizados na nuvem e visíveis para toda a sua equipe.
  </p>
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
- <Button variant="outline" onClick={checkLocalMigration}>
+ <Button variant="outline" className="h-10 bg-background/60" onClick={checkLocalMigration}>
  <CloudUpload className="mr-2 w-4 h-4" /> Migrar local
  </Button>
- <Button asChild variant="outline">
+ <Button asChild variant="outline" className="h-10 bg-background/60">
  <Link to="/equipe"><Users className="mr-2 w-4 h-4" /> Equipe</Link>
  </Button>
  </div>
@@ -495,6 +512,7 @@ export function ObraApp() {
  <Button variant="ghost" size="sm" onClick={handleSignOut}>
  <LogOut className="w-3.5 h-3.5 mr-1" /> Sair
  </Button>
+ </div>
  </div>
  </Card>
  </div>
@@ -1060,7 +1078,7 @@ function Dashboard({
  )}
 
  {/* Top bar enxuta (glass) */}
- <header className="sticky top-0 z-30 border-b border-border/60 bg-background/75 backdrop-blur-xl">
+ <header className="sticky top-0 z-30 border-b border-border/60 bg-card/80 backdrop-blur-xl shadow-sm">
  <div className="px-3 sm:px-4 lg:px-6 min-h-14 py-2 flex items-center gap-2 flex-wrap">
  {/* Selector de obra mobile-only brand */}
  <div className="lg:hidden w-9 h-9 rounded-lg bg-gradient-primary flex items-center justify-center shadow-glow shrink-0">
@@ -1180,10 +1198,11 @@ function Dashboard({
  </header>
 
  {/* Hero strip — nome da obra */}
- <div className="relative border-b border-border/60 bg-gradient-hero overflow-hidden">
- <div className="absolute inset-0 opacity-[0.035] pointer-events-none"
- style={{ backgroundImage: "linear-gradient(var(--foreground) 1px, transparent 1px), linear-gradient(90deg, var(--foreground) 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
- <div className="relative px-4 sm:px-6 py-6">
+ <div className="relative border-b border-border/60 bg-card/70 overflow-hidden">
+ <div className="absolute inset-0 opacity-[0.045] pointer-events-none"
+ style={{ backgroundImage: "linear-gradient(var(--foreground) 1px, transparent 1px), linear-gradient(90deg, var(--foreground) 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
+ <div className="relative px-4 sm:px-6 py-5 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+ <div className="min-w-0">
  <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground mb-1.5">
  <span>Obra ativa</span>
  <span className="text-border">/</span>
@@ -1193,6 +1212,21 @@ function Dashboard({
  {data.nome}
  </h1>
  <p className="text-xs text-muted-foreground mt-1 truncate">{data.fileName}</p>
+ </div>
+ <div className="grid grid-cols-2 sm:flex gap-2 text-xs">
+ <div className="rounded-md border border-border/70 bg-background/75 px-3 py-2 shadow-sm">
+ <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">BM</div>
+ <div className="font-semibold text-foreground">{resumoBM.codigoBM}</div>
+ </div>
+ <div className="rounded-md border border-border/70 bg-background/75 px-3 py-2 shadow-sm">
+ <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Periodo</div>
+ <div className="font-semibold text-foreground">{resumoBM.periodoLabel || "Aberto"}</div>
+ </div>
+ <div className="rounded-md border border-success/25 bg-success/10 px-3 py-2 shadow-sm">
+ <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Status</div>
+ <div className="font-semibold text-success">{saving ? "Sincronizando" : "Sincronizado"}</div>
+ </div>
+ </div>
  </div>
  </div>
 
@@ -1583,17 +1617,17 @@ function SummaryCard({
  : icon === "percent" ? CheckCircle2
  : Building2;
  return (
- <Card className="p-4 border-border shadow-[var(--shadow-card)] hover:shadow-md transition-shadow">
+ <Card className="glass-card p-4 border-border/70 shadow-[var(--shadow-card)] hover:shadow-md transition-all duration-200">
  <div className="flex items-start gap-3">
- <div className={`w-9 h-9 rounded-md flex items-center justify-center shrink-0 ${iconBg}`}>
+ <div className={`w-10 h-10 rounded-md flex items-center justify-center shrink-0 ring-1 ring-border/50 ${iconBg}`}>
  <Icon className="w-4 h-4" />
  </div>
  <div className="min-w-0 flex-1">
- <div className="text-[11px] text-muted-foreground font-medium leading-tight">{label}</div>
- <div className={`text-xl font-bold mt-1 leading-tight truncate ${toneClass}`}>{value}</div>
+ <div className="text-[10px] uppercase tracking-[0.11em] text-muted-foreground font-semibold leading-tight">{label}</div>
+ <div className={`text-xl font-bold mt-2 leading-tight truncate ${toneClass}`}>{value}</div>
  {typeof progress === "number" && (
- <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
- <div className="h-full bg-success transition-all" style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} />
+ <div className="mt-3 h-1.5 rounded-full bg-muted overflow-hidden">
+ <div className="h-full bg-primary transition-all" style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} />
  </div>
  )}
  </div>
