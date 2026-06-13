@@ -43,6 +43,7 @@ import { Route as AppComparativoComposicaoRouteImport } from './routes/_app.comp
 import { Route as AppCentrosCustoRouteImport } from './routes/_app.centros-custo'
 import { Route as AppBibliotecaRouteImport } from './routes/_app.biblioteca'
 import { Route as AppBackupRouteImport } from './routes/_app.backup'
+import { Route as AppAutomacoesRouteImport } from './routes/_app.automacoes'
 import { Route as AppAssinaturasRouteImport } from './routes/_app.assinaturas'
 import { Route as AppAditivosRouteImport } from './routes/_app.aditivos'
 import { Route as ApiPublicZapsignWebhookRouteImport } from './routes/api.public.zapsign-webhook'
@@ -226,6 +227,11 @@ const AppBackupRoute = AppBackupRouteImport.update({
   path: '/backup',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAutomacoesRoute = AppAutomacoesRouteImport.update({
+  id: '/automacoes',
+  path: '/automacoes',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAssinaturasRoute = AppAssinaturasRouteImport.update({
   id: '/assinaturas',
   path: '/assinaturas',
@@ -291,6 +297,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/aditivos': typeof AppAditivosRoute
   '/assinaturas': typeof AppAssinaturasRouteWithChildren
+  '/automacoes': typeof AppAutomacoesRoute
   '/backup': typeof AppBackupRoute
   '/biblioteca': typeof AppBibliotecaRoute
   '/centros-custo': typeof AppCentrosCustoRoute
@@ -336,6 +343,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/aditivos': typeof AppAditivosRoute
   '/assinaturas': typeof AppAssinaturasRouteWithChildren
+  '/automacoes': typeof AppAutomacoesRoute
   '/backup': typeof AppBackupRoute
   '/biblioteca': typeof AppBibliotecaRoute
   '/centros-custo': typeof AppCentrosCustoRoute
@@ -384,6 +392,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/_app/aditivos': typeof AppAditivosRoute
   '/_app/assinaturas': typeof AppAssinaturasRouteWithChildren
+  '/_app/automacoes': typeof AppAutomacoesRoute
   '/_app/backup': typeof AppBackupRoute
   '/_app/biblioteca': typeof AppBibliotecaRoute
   '/_app/centros-custo': typeof AppCentrosCustoRoute
@@ -433,6 +442,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/aditivos'
     | '/assinaturas'
+    | '/automacoes'
     | '/backup'
     | '/biblioteca'
     | '/centros-custo'
@@ -478,6 +488,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/aditivos'
     | '/assinaturas'
+    | '/automacoes'
     | '/backup'
     | '/biblioteca'
     | '/centros-custo'
@@ -525,6 +536,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/_app/aditivos'
     | '/_app/assinaturas'
+    | '/_app/automacoes'
     | '/_app/backup'
     | '/_app/biblioteca'
     | '/_app/centros-custo'
@@ -818,6 +830,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppBackupRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/automacoes': {
+      id: '/_app/automacoes'
+      path: '/automacoes'
+      fullPath: '/automacoes'
+      preLoaderRoute: typeof AppAutomacoesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/assinaturas': {
       id: '/_app/assinaturas'
       path: '/assinaturas'
@@ -951,6 +970,7 @@ const AppConfiguracoesZapsignRouteWithChildren =
 interface AppRouteChildren {
   AppAditivosRoute: typeof AppAditivosRoute
   AppAssinaturasRoute: typeof AppAssinaturasRouteWithChildren
+  AppAutomacoesRoute: typeof AppAutomacoesRoute
   AppBackupRoute: typeof AppBackupRoute
   AppBibliotecaRoute: typeof AppBibliotecaRoute
   AppCentrosCustoRoute: typeof AppCentrosCustoRoute
@@ -987,6 +1007,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppAditivosRoute: AppAditivosRoute,
   AppAssinaturasRoute: AppAssinaturasRouteWithChildren,
+  AppAutomacoesRoute: AppAutomacoesRoute,
   AppBackupRoute: AppBackupRoute,
   AppBibliotecaRoute: AppBibliotecaRoute,
   AppCentrosCustoRoute: AppCentrosCustoRoute,

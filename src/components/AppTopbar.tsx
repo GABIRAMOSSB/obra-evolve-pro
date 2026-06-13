@@ -1,11 +1,12 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { BarChart3, FileText, Package, HardHat, Wrench, Users, Database, LogOut, PenTool, Settings, Building2, Radar, Sparkles, BookOpen, FileSignature, Wallet, ShieldCheck, ClipboardList, FilePlus2, TrendingUp, NotebookPen } from "lucide-react";
+import { BarChart3, FileText, Package, HardHat, Wrench, Users, Database, LogOut, PenTool, Settings, Building2, Radar, Sparkles, BookOpen, FileSignature, Wallet, ShieldCheck, ClipboardList, FilePlus2, TrendingUp, NotebookPen, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useCompany } from "@/hooks/use-company";
 
 const NAV_ITEMS: { to: string; icon: typeof HardHat; label: string; exact?: boolean }[] = [
   { to: "/", icon: BarChart3, label: "Visão", exact: true },
+  { to: "/automacoes", icon: Bot, label: "IA" },
   { to: "/obras", icon: Building2, label: "Obras" },
   { to: "/oportunidades", icon: Radar, label: "Radar PNCP" },
   { to: "/editais", icon: Sparkles, label: "Editais IA" },

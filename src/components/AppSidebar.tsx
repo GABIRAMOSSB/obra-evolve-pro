@@ -5,7 +5,7 @@ import {
   Calculator, FolderTree, PenTool, ShieldCheck, Building2, Radar, Library,
   FileSignature, FileEdit, Wallet, ClipboardList, NotebookPen, FilePlus2,
   TrendingUp, LineChart, Calendar, KeyRound, FolderKanban, Globe2,
-  ChevronDown, Gavel, Hammer, Briefcase, Landmark, Boxes, ShieldAlert, Settings2,
+  ChevronDown, Gavel, Hammer, Briefcase, Landmark, Boxes, ShieldAlert, Settings2, Bot,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -18,6 +18,7 @@ const SECTIONS: NavSection[] = [
   {
     id: "licitacoes", label: "Licitações", icon: Gavel,
     items: [
+      { to: "/automacoes", icon: Bot, label: "IA e Automacoes" },
       { to: "/oportunidades", icon: Radar, label: "Radar PNCP" },
       { to: "/editais", icon: FileText, label: "Editais (IA)" },
       { to: "/propostas", icon: FileEdit, label: "Propostas (IA)" },
