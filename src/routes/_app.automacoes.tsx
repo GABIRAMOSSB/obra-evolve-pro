@@ -291,12 +291,43 @@ function AutomacoesPage() {
 
         <TabsContent value="apis">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <ApiCard title="Supabase" status="Base, Auth, Storage e Realtime" connected={snapshotQ.data?.integrations.supabase} />
-            <ApiCard title="PNCP" status="Busca e radar de oportunidades" connected />
-            <ApiCard title="ZapSign" status="Assinaturas, templates e webhooks" connected={snapshotQ.data?.integrations.zapsignWebhook} />
-            <ApiCard title="InfoSimples" status="Certidoes e compliance regulatorio" connected={snapshotQ.data?.integrations.infosimples} />
-            <ApiCard title="IA generativa" status="Lovable AI Gateway para analises e planos" connected={snapshotQ.data?.integrations.lovableAi} />
-            <ApiCard title="Rotinas agendadas" status="CRON_SECRET para automacoes recorrentes" connected={snapshotQ.data?.integrations.cronSecret} />
+            <ApiCard
+              title="Supabase"
+              status="Base, Auth, Storage e Realtime"
+              connected={snapshotQ.data?.integrations.supabase}
+              env="SUPABASE_URL + SUPABASE_PUBLISHABLE_KEY"
+            />
+            <ApiCard title="PNCP" status="Busca publica de oportunidades" connected env="API publica sem token" />
+            <ApiCard
+              title="ZapSign API"
+              status="Assinaturas digitais, templates e envio"
+              connected={snapshotQ.data?.integrations.zapsignApi}
+              env="ZAPSIGN_API_TOKEN"
+            />
+            <ApiCard
+              title="ZapSign Webhook"
+              status="Eventos de assinatura recebidos com segredo"
+              connected={snapshotQ.data?.integrations.zapsignWebhook}
+              env="ZAPSIGN_WEBHOOK_SECRET"
+            />
+            <ApiCard
+              title="InfoSimples"
+              status="Certidoes e compliance regulatorio"
+              connected={snapshotQ.data?.integrations.infosimples}
+              env="INFOSIMPLES_TOKEN"
+            />
+            <ApiCard
+              title="IA generativa"
+              status="Lovable AI Gateway para analises e planos"
+              connected={snapshotQ.data?.integrations.lovableAi}
+              env="LOVABLE_API_KEY"
+            />
+            <ApiCard
+              title="Rotinas agendadas"
+              status="Cron protegido para automacoes recorrentes"
+              connected={snapshotQ.data?.integrations.cronSecret}
+              env="CRON_SECRET"
+            />
           </div>
           <Card className="glass-card mt-4 p-5 border-border/70">
             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
@@ -410,7 +441,7 @@ function Insight({ title, value, tone }: { title: string; value: string; tone: "
   );
 }
 
-function ApiCard({ title, status, connected }: { title: string; status: string; connected?: boolean }) {
+function ApiCard({ title, status, connected, env }: { title: string; status: string; connected?: boolean; env: string }) {
   return (
     <Card className="glass-card p-4 border-border/70">
       <div className="flex items-start justify-between gap-3">
@@ -424,7 +455,7 @@ function ApiCard({ title, status, connected }: { title: string; status: string; 
       </div>
       <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
         {connected ? <CheckCircle2 className="w-3.5 h-3.5 text-primary" /> : <BellRing className="w-3.5 h-3.5" />}
-        <span>{connected ? "Disponivel no app" : "Requer variavel segura no servidor"}</span>
+        <span>{connected ? "Disponivel no app" : `Configurar ${env} nos Secrets`}</span>
       </div>
     </Card>
   );

@@ -59,7 +59,9 @@ export type AutomationSnapshot = {
     supabase: boolean;
     lovableAi: boolean;
     infosimples: boolean;
+    zapsignApi: boolean;
     zapsignWebhook: boolean;
+    zapsignBaseUrl: boolean;
     cronSecret: boolean;
   };
   recommendations: Array<{
@@ -312,7 +314,9 @@ export const getAutomationSnapshot = createServerFn({ method: "GET" })
         supabase: Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_PUBLISHABLE_KEY),
         lovableAi: Boolean(process.env.LOVABLE_API_KEY),
         infosimples: Boolean(process.env.INFOSIMPLES_TOKEN),
+        zapsignApi: Boolean(process.env.ZAPSIGN_API_TOKEN),
         zapsignWebhook: Boolean(process.env.ZAPSIGN_WEBHOOK_SECRET),
+        zapsignBaseUrl: Boolean(process.env.ZAPSIGN_API_BASE_URL),
         cronSecret: Boolean(process.env.CRON_SECRET),
       },
       recommendations,
