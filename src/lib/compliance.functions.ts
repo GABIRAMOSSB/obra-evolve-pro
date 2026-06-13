@@ -626,16 +626,20 @@ export const getSignedCertificateUrl = createServerFn({ method: "POST" })
 
     const { data: version } = await supabaseAdmin
       .from("certificate_versions")
-      .select("storage_path, company_certificate_id, company_certificates!inner(company_id)")
+      .select("storage_path, company_certificate_id")
       .eq("id", data.version_id)
-      .single();
+      .maybeSingle();
 
-    if (
-      !version ||
-      (version as unknown as { company_certificates: { company_id: string } })
-        .company_certificates.company_id !== companyId
-    ) {
-      throw new Error("Versão não encontrada ou sem permissão.");
+    if (!version) throw new Error("Versão não encontrada.");
+
+    const { data: cert } = await supabaseAdmin
+      .from("company_certificates")
+      .select("company_id")
+      .eq("id", version.company_certificate_id)
+      .maybeSingle();
+
+    if (!cert || cert.company_id !== companyId) {
+      throw new Error("Sem permissão para acessar esta versão.");
     }
     if (!version.storage_path) throw new Error("Esta versão não possui arquivo armazenado.");
 
