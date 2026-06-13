@@ -109,7 +109,10 @@ export function AppSidebar() {
           <HardHat className="w-5 h-5 text-primary-foreground" />
         </div>
         <div className="min-w-0">
-          <div className="font-display font-bold text-[15px] leading-tight tracking-tight">SOLV Gestão</div>
+          <div className="font-display font-bold text-[15px] leading-[0.95] tracking-tight">
+            <span className="block">SOLV</span>
+            <span className="block text-primary-glow">Gestão</span>
+          </div>
           <div className="text-[10px] uppercase tracking-[0.18em] text-primary-glow/75 truncate">{companyName || "controle executivo"}</div>
         </div>
       </div>

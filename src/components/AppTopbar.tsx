@@ -52,7 +52,10 @@ export function AppTopbar() {
             <HardHat className="w-4 h-4 text-primary-foreground" />
           </div>
           <div className="hidden sm:block min-w-0">
-            <div className="font-display font-bold text-[13px] leading-tight tracking-tight">SOLV Gestão</div>
+            <div className="font-display font-bold text-[13px] leading-[0.95] tracking-tight">
+              <span className="block">SOLV</span>
+              <span className="block text-primary-glow">Gestão</span>
+            </div>
             <div className="text-[9px] uppercase tracking-[0.18em] text-primary-glow/75 truncate max-w-[140px]">{companyName || "controle executivo"}</div>
           </div>
         </Link>
