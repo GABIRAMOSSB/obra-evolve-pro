@@ -584,7 +584,7 @@ function CertList({
                     <Button size="sm" variant="outline" onClick={() => setUploadFor(c)}>
                       <Upload className="w-3.5 h-3.5" />
                     </Button>
-                    {c.current_version_id && (
+                    {c.current_version_id && (c as any).current_version?.storage_path && (
                       <Button size="sm" variant="outline" onClick={async () => {
                         try {
                           const r = await getSigned({ data: { version_id: c.current_version_id! } });
