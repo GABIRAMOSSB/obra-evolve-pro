@@ -100,11 +100,11 @@ export function AppSidebar() {
   const [openId, setOpenId] = useState<string | null>(activeSection ?? "licitacoes");
 
   return (
-    <aside className="hidden lg:flex flex-col w-[264px] shrink-0 bg-gradient-sidebar text-sidebar-foreground sticky top-0 h-screen border-r border-sidebar-border/60 relative overflow-hidden shadow-[18px_0_48px_-38px_oklch(0.19_0.01_230_/_0.55)]">
+    <aside className="hidden lg:flex flex-col w-[244px] shrink-0 bg-gradient-sidebar text-sidebar-foreground sticky top-0 h-screen border-r border-sidebar-border/60 relative overflow-hidden shadow-[18px_0_48px_-38px_oklch(0.19_0.01_230_/_0.55)]">
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary-glow/60 to-transparent" />
       <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(90deg,oklch(1_0_0_/_0.035)_1px,transparent_1px),linear-gradient(180deg,oklch(1_0_0_/_0.025)_1px,transparent_1px)] bg-[size:28px_28px]" />
 
-      <div className="relative px-5 pt-5 pb-4 flex items-center gap-3">
+      <div className="relative px-4 pt-4 pb-3 flex items-center gap-3">
         <div className="w-10 h-10 rounded-lg bg-gradient-primary flex items-center justify-center shadow-glow ring-1 ring-white/10">
           <HardHat className="w-5 h-5 text-primary-foreground" />
         </div>
@@ -139,7 +139,7 @@ export function AppSidebar() {
                 <button
                   type="button"
                   onClick={() => setOpenId(isOpen ? null : section.id)}
-                  className={`w-full group flex items-center gap-3 px-3 py-2 rounded-md text-[10px] font-semibold uppercase tracking-[0.16em] transition-all ${
+                  className={`w-full group flex items-center gap-3 px-3 py-1.5 rounded-md text-[10px] font-semibold uppercase tracking-[0.16em] transition-all ${
                     hasActive
                       ? "text-sidebar-foreground"
                       : "text-sidebar-foreground/55 hover:text-sidebar-foreground/85"
@@ -205,7 +205,7 @@ function SidebarLink({
   return (
     <Link
       to={to}
-      className={`group relative flex items-center gap-3 px-3 py-2 rounded-md text-[13px] font-medium transition-all duration-200 ${
+      className={`group relative flex items-center gap-3 px-3 py-1.5 rounded-md text-[12px] font-medium transition-all duration-200 ${
         active
           ? "bg-white/[0.075] text-sidebar-foreground shadow-[inset_0_1px_0_oklch(1_0_0_/_0.08),0_8px_22px_-18px_oklch(0.79_0.11_152_/_0.65)]"
           : "text-sidebar-foreground/64 hover:text-sidebar-foreground hover:bg-white/[0.045]"

@@ -434,6 +434,24 @@ export function ObraApp() {
 
  if (!activeObra) {
  return (
+ <EmptyWorkspace
+ companyName={company.name}
+ role={company.role}
+ email={user?.email ?? ""}
+ uploadModel={uploadModel}
+ onUploadModelChange={setUploadModel}
+ onFile={handleFile}
+ onCheckLocalMigration={checkLocalMigration}
+ onSignOut={handleSignOut}
+ preview={preview}
+ onCancelPreview={() => setPreview(null)}
+ onConfirmImport={confirmImport}
+ />
+ );
+ }
+
+ if (!activeObra) {
+ return (
  <>
  <div className="min-h-screen app-canvas flex items-center justify-center p-4 sm:p-6">
  <Card className="glass-card max-w-2xl w-full p-0 text-left shadow-elevated animate-slide-up relative overflow-hidden">
@@ -551,6 +569,158 @@ export function ObraApp() {
  onCancel={() => setPreview(null)}
  onConfirm={confirmImport}
  />
+ </>
+ );
+}
+
+function EmptyWorkspace({
+ companyName,
+ role,
+ email,
+ uploadModel,
+ onUploadModelChange,
+ onFile,
+ onCheckLocalMigration,
+ onSignOut,
+ preview,
+ onCancelPreview,
+ onConfirmImport,
+}: {
+ companyName: string;
+ role: string;
+ email: string;
+ uploadModel: import("@/lib/excel").ForcedModel;
+ onUploadModelChange: (m: import("@/lib/excel").ForcedModel) => void;
+ onFile: (file: File) => void;
+ onCheckLocalMigration: () => void;
+ onSignOut: () => void;
+ preview: { result: ParseResult; fileName: string; elapsedMs?: number } | null;
+ onCancelPreview: () => void;
+ onConfirmImport: () => void;
+}) {
+ return (
+ <>
+ <div className="min-h-screen app-canvas p-3 sm:p-5 lg:p-7">
+ <div className="mx-auto grid min-h-[calc(100vh-56px)] w-full max-w-7xl grid-cols-1 xl:grid-cols-[minmax(0,1.2fr)_420px] gap-4">
+ <section className="solv-cockpit rounded-lg animate-slide-up">
+ <div className="relative z-10 flex h-full flex-col justify-between p-5 sm:p-7 lg:p-9">
+ <div>
+ <div className="inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/[0.06] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-glow">
+ <span className="h-1.5 w-1.5 rounded-full bg-primary-glow shadow-[0_0_16px_var(--primary-glow)]" />
+ Central executiva SOLV
+ </div>
+ <div className="mt-8 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_220px] gap-6 lg:items-end">
+ <div>
+ <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold leading-[0.92] tracking-tight">
+ Controle de obra com cara de sala de comando.
+ </h1>
+ <p className="mt-5 max-w-2xl text-sm sm:text-base leading-relaxed text-white/68">
+ <span className="font-semibold text-white">{companyName}</span> entra com a planilha, e o app organiza BM, RDO, evolucao fisica, documentos e equipe em uma unica operacao visual.
+ </p>
+ </div>
+ <div className="grid grid-cols-2 gap-2">
+ {[
+ ["01", "Importar"],
+ ["02", "Medir"],
+ ["03", "Evidenciar"],
+ ["04", "Exportar"],
+ ].map(([step, label]) => (
+ <div key={step} className="rounded-md border border-white/10 bg-white/[0.055] p-3">
+ <div className="font-mono text-lg font-bold text-primary-glow">{step}</div>
+ <div className="mt-1 text-[11px] uppercase tracking-[0.14em] text-white/52">{label}</div>
+ </div>
+ ))}
+ </div>
+ </div>
+ </div>
+ <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-2">
+ <div className="rounded-md border border-white/10 bg-white/[0.055] px-4 py-3">
+ <div className="text-[10px] uppercase tracking-[0.14em] text-white/45">Motor</div>
+ <div className="mt-1 text-sm font-semibold">Excel para BM e PDF</div>
+ </div>
+ <div className="rounded-md border border-white/10 bg-white/[0.055] px-4 py-3">
+ <div className="text-[10px] uppercase tracking-[0.14em] text-white/45">Nuvem</div>
+ <div className="mt-1 text-sm font-semibold">Equipe sincronizada</div>
+ </div>
+ <div className="rounded-md border border-white/10 bg-white/[0.055] px-4 py-3">
+ <div className="text-[10px] uppercase tracking-[0.14em] text-white/45">Ritmo</div>
+ <div className="mt-1 text-sm font-semibold">Obra pronta em minutos</div>
+ </div>
+ </div>
+ </div>
+ </section>
+
+ <Card className="solv-panel rounded-lg p-4 sm:p-5 self-stretch animate-slide-up">
+ <div className="flex items-start justify-between gap-4">
+ <div>
+ <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Primeira acao</div>
+ <h2 className="mt-2 font-display text-2xl font-bold leading-tight">Subir planilha orcamentaria</h2>
+ </div>
+ <div className="w-11 h-11 rounded-lg bg-gradient-primary text-primary-foreground flex items-center justify-center shadow-glow shrink-0">
+ <Upload className="w-5 h-5" />
+ </div>
+ </div>
+ <div className="mt-5 space-y-4">
+ <div className="space-y-2">
+ <Label className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Modelo da planilha</Label>
+ <Select value={uploadModel} onValueChange={(v) => onUploadModelChange(v as import("@/lib/excel").ForcedModel)}>
+ <SelectTrigger className="h-11 w-full bg-background/80">
+ <SelectValue />
+ </SelectTrigger>
+ <SelectContent>
+ <SelectItem value="auto">Detectar automaticamente</SelectItem>
+ <SelectItem value="modelo_antigo">Modelo antigo Solv</SelectItem>
+ <SelectItem value="modelo_orcamento_sintetico">Orcamento Sintetico</SelectItem>
+ </SelectContent>
+ </Select>
+ </div>
+ <label className="block">
+ <input
+ type="file"
+ accept=".xlsx,.xls"
+ className="hidden"
+ onChange={(e) => {
+ if (e.target.files?.[0]) onFile(e.target.files[0]);
+ e.target.value = "";
+ }}
+ />
+ <Button asChild size="lg" className="w-full h-12">
+ <span>
+ <Upload className="mr-2 w-4 h-4" />
+ Importar Excel
+ </span>
+ </Button>
+ </label>
+ <div className="grid grid-cols-2 gap-2">
+ <Button variant="outline" className="h-10 bg-background/60" onClick={onCheckLocalMigration}>
+ <CloudUpload className="mr-2 w-4 h-4" /> Migrar
+ </Button>
+ <Button asChild variant="outline" className="h-10 bg-background/60">
+ <Link to="/equipe"><Users className="mr-2 w-4 h-4" /> Equipe</Link>
+ </Button>
+ </div>
+ <div className="rounded-md border border-border/70 bg-background/70 p-3">
+ <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Pipeline automatico</div>
+ <div className="mt-3 space-y-2">
+ {["Detecta estrutura", "Cria obra", "Prepara medicao", "Sincroniza equipe"].map((item) => (
+ <div key={item} className="flex items-center gap-2 text-sm">
+ <CheckCircle2 className="w-4 h-4 text-primary" />
+ <span>{item}</span>
+ </div>
+ ))}
+ </div>
+ </div>
+ <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/60 pt-4">
+ <span className="truncate">{email} - {role === "admin" ? "Admin" : role === "editor" ? "Editor" : "Membro"}</span>
+ <Button variant="ghost" size="sm" onClick={onSignOut}>
+ <LogOut className="w-3.5 h-3.5 mr-1" /> Sair
+ </Button>
+ </div>
+ </div>
+ </Card>
+ </div>
+ </div>
+ <ImportPreviewDialog preview={preview} onCancel={onCancelPreview} onConfirm={onConfirmImport} />
  </>
  );
 }
@@ -1197,8 +1367,57 @@ function Dashboard({
  </div>
  </header>
 
+ <div className="px-3 sm:px-4 lg:px-6 xl:px-8 pt-4">
+ <section className="solv-cockpit rounded-lg">
+ <div className="relative z-10 grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_420px] gap-4 p-4 sm:p-5">
+ <div className="min-w-0">
+ <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-white/52">
+ <span className="text-primary-glow">Obra ativa</span>
+ <span>/</span>
+ <span>{resumoBM.codigoBM}</span>
+ <span>/</span>
+ <span>{resumoBM.periodoLabel || "Periodo aberto"}</span>
+ </div>
+ <h1 className="mt-3 font-display text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-[0.96] text-white">
+ {data.nome}
+ </h1>
+ <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-white/58">
+ <span className="max-w-full truncate">{data.fileName}</span>
+ <span className="hidden sm:inline text-white/24">|</span>
+ <span>{data.rows.length} linhas de orçamento</span>
+ <span className="hidden sm:inline text-white/24">|</span>
+ <span>{data.diaries.length} RDOs</span>
+ </div>
+ </div>
+ <div className="grid grid-cols-3 gap-2">
+ <div className="rounded-md border border-white/10 bg-white/[0.055] px-3 py-3">
+ <div className="text-[10px] uppercase tracking-[0.14em] text-white/45">BM</div>
+ <div className="mt-1 font-mono text-sm font-bold text-primary-glow">{resumoBM.codigoBM}</div>
+ </div>
+ <div className="rounded-md border border-white/10 bg-white/[0.055] px-3 py-3">
+ <div className="text-[10px] uppercase tracking-[0.14em] text-white/45">Executado</div>
+ <div className="mt-1 text-sm font-bold text-white">{fmtNum(resumoBM.percentualAcumulado)}%</div>
+ </div>
+ <div className="rounded-md border border-success/25 bg-success/15 px-3 py-3">
+ <div className="text-[10px] uppercase tracking-[0.14em] text-white/45">Nuvem</div>
+ <div className="mt-1 text-sm font-bold text-success">{saving ? "Sync" : "Ok"}</div>
+ </div>
+ <div className="col-span-3 rounded-md border border-white/10 bg-white/[0.055] px-3 py-2">
+ <div className="flex items-center justify-between gap-3 text-xs">
+ <span className="text-white/52">Progresso financeiro acumulado</span>
+ <span className="font-semibold text-primary-glow">{fmtBRL(resumoBM.valorAcumulado)}</span>
+ </div>
+ <div className="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden">
+ <div className="h-full bg-gradient-to-r from-primary to-primary-glow" style={{ width: `${Math.min(100, Math.max(0, resumoBM.percentualAcumulado))}%` }} />
+ </div>
+ </div>
+ </div>
+ </div>
+ </section>
+ </div>
+
  {/* Hero strip — nome da obra */}
- <div className="relative border-b border-border/60 bg-card/70 overflow-hidden">
+ <div className="hidden">
  <div className="absolute inset-0 opacity-[0.045] pointer-events-none"
  style={{ backgroundImage: "linear-gradient(var(--foreground) 1px, transparent 1px), linear-gradient(90deg, var(--foreground) 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
  <div className="relative px-4 sm:px-6 py-5 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
@@ -1230,7 +1449,7 @@ function Dashboard({
  </div>
  </div>
 
- <main className="flex-1 w-full px-3 sm:px-4 lg:px-6 xl:px-8 py-6 space-y-5">
+ <main className="flex-1 w-full px-3 sm:px-4 lg:px-6 xl:px-8 py-4 space-y-4">
  {/* 5 Cards de resumo */}
  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
  <SummaryCard label="Valor total da obra" value={fmtBRL(resumoBM.valorTotalObra)} icon="total" />
@@ -1617,16 +1836,17 @@ function SummaryCard({
  : icon === "percent" ? CheckCircle2
  : Building2;
  return (
- <Card className="glass-card p-4 border-border/70 shadow-[var(--shadow-card)] hover:shadow-md transition-all duration-200">
+ <Card className="solv-metric group relative overflow-hidden p-3.5 border-border/70 hover:shadow-md transition-all duration-200">
+ <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-primary/55 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
  <div className="flex items-start gap-3">
- <div className={`w-10 h-10 rounded-md flex items-center justify-center shrink-0 ring-1 ring-border/50 ${iconBg}`}>
+ <div className={`w-9 h-9 rounded-md flex items-center justify-center shrink-0 ring-1 ring-border/50 ${iconBg}`}>
  <Icon className="w-4 h-4" />
  </div>
  <div className="min-w-0 flex-1">
  <div className="text-[10px] uppercase tracking-[0.11em] text-muted-foreground font-semibold leading-tight">{label}</div>
- <div className={`text-xl font-bold mt-2 leading-tight truncate ${toneClass}`}>{value}</div>
+ <div className={`text-lg xl:text-xl font-bold mt-1.5 leading-tight truncate ${toneClass}`}>{value}</div>
  {typeof progress === "number" && (
- <div className="mt-3 h-1.5 rounded-full bg-muted overflow-hidden">
+ <div className="mt-2.5 h-1.5 rounded-full bg-muted overflow-hidden">
  <div className="h-full bg-primary transition-all" style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} />
  </div>
  )}

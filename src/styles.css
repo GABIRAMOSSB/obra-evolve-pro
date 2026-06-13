@@ -261,6 +261,50 @@
     border: 1px solid color-mix(in oklab, var(--color-border) 60%, transparent);
   }
 
+  .solv-cockpit {
+    position: relative;
+    overflow: hidden;
+    background:
+      linear-gradient(135deg, oklch(0.16 0.004 60 / 0.98), oklch(0.24 0.012 70 / 0.96)),
+      radial-gradient(circle at 82% 18%, oklch(0.80 0.05 78 / 0.28), transparent 28%);
+    color: oklch(0.97 0.004 75);
+    box-shadow: var(--shadow-elevated);
+  }
+
+  .solv-cockpit::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(110deg, transparent 0 54%, oklch(0.80 0.05 78 / 0.16) 54.2% 54.8%, transparent 55%),
+      linear-gradient(90deg, oklch(1 0 0 / 0.045) 1px, transparent 1px),
+      linear-gradient(180deg, oklch(1 0 0 / 0.035) 1px, transparent 1px);
+    background-size: auto, 34px 34px, 34px 34px;
+  }
+
+  .solv-cockpit::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--primary-glow), var(--primary), transparent);
+  }
+
+  .solv-panel {
+    background:
+      linear-gradient(180deg, color-mix(in oklab, var(--color-card) 88%, transparent), color-mix(in oklab, var(--color-card) 74%, transparent));
+    border: 1px solid color-mix(in oklab, var(--color-border) 70%, transparent);
+    box-shadow: var(--shadow-card);
+  }
+
+  .solv-metric {
+    background:
+      linear-gradient(180deg, color-mix(in oklab, var(--color-card) 92%, transparent), color-mix(in oklab, var(--color-card) 78%, transparent)),
+      linear-gradient(90deg, oklch(0.67 0.045 70 / 0.08), transparent);
+    border: 1px solid color-mix(in oklab, var(--color-border) 72%, transparent);
+  }
+
   /* Hover de elevação suave */
   .hover-lift {
     transition: transform var(--transition-base), box-shadow var(--transition-base);
