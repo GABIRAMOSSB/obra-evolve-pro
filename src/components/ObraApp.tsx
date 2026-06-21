@@ -1564,6 +1564,7 @@ function Dashboard({
  </TabsList>
 
  <TabsContent value="atividades" className="space-y-4">
+ <AnaliseGerencialPanel data={data} />
  <Card className="p-4">
  <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
  <div>
