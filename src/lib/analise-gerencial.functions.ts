@@ -285,3 +285,131 @@ export const getAnaliseGerencial = createServerFn({ method: "GET" })
       historico,
     };
   });
+
+// --- Combinada: sincroniza obra + atividades e retorna análise --------------
+const ensureSchema = z.object({
+  legacyObraId: z.string().min(1),
+  obraInfo: z.object({
+    nome: z.string().default("Obra"),
+    codigo: z.string().nullable().optional(),
+    data_inicio: z.string().nullable().optional(),
+    data_fim_prevista: z.string().nullable().optional(),
+    valor_contratado: z.number().nullable().optional(),
+    cliente: z.string().nullable().optional(),
+    cidade: z.string().nullable().optional(),
+    uf: z.string().nullable().optional(),
+  }),
+  rows: z.array(rowSchema).max(5000),
+});
+
+export const ensureAnalise = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => ensureSchema.parse(d))
+  .handler(async ({ data, context }): Promise<{ obraId: string; analise: AnaliseGerencialPayload; atividades: Array<{ id: string; item_codigo: string }> }> => {
+    const { supabase, userId } = context;
+    const companyId = await resolveCompany(supabase, userId);
+
+    // 1) upsert obra por (company_id, legacy_obra_id)
+    const { data: existingObra } = await supabase
+      .from("obras")
+      .select("id, data_inicio, data_fim_prevista, valor_contratado")
+      .eq("company_id", companyId)
+      .eq("legacy_obra_id", data.legacyObraId)
+      .maybeSingle();
+
+    let obraId: string;
+    if (existingObra?.id) {
+      obraId = existingObra.id;
+      // Atualiza apenas se vier valor novo (não sobrescreve com null)
+      const patch: Record<string, unknown> = {};
+      if (data.obraInfo.data_inicio) patch.data_inicio = data.obraInfo.data_inicio;
+      if (data.obraInfo.data_fim_prevista) patch.data_fim_prevista = data.obraInfo.data_fim_prevista;
+      if (data.obraInfo.valor_contratado != null) patch.valor_contratado = data.obraInfo.valor_contratado;
+      if (data.obraInfo.nome) patch.nome = data.obraInfo.nome;
+      if (Object.keys(patch).length) {
+        await supabase.from("obras").update(patch).eq("id", obraId);
+      }
+    } else {
+      const { data: created, error: cErr } = await supabase
+        .from("obras")
+        .insert({
+          company_id: companyId,
+          legacy_obra_id: data.legacyObraId,
+          nome: data.obraInfo.nome,
+          codigo: data.obraInfo.codigo ?? null,
+          cliente: data.obraInfo.cliente ?? null,
+          cidade: data.obraInfo.cidade ?? null,
+          uf: data.obraInfo.uf ?? null,
+          data_inicio: data.obraInfo.data_inicio ?? null,
+          data_fim_prevista: data.obraInfo.data_fim_prevista ?? null,
+          valor_contratado: data.obraInfo.valor_contratado ?? null,
+          origem: "workspace_sync",
+          status: "ativa",
+          created_by: userId,
+          metadata: {},
+        })
+        .select("id")
+        .single();
+      if (cErr) throw new Error(cErr.message);
+      obraId = created.id;
+    }
+
+    // 2) upsert atividades — preserva campos manuais
+    if (data.rows.length > 0) {
+      // Lê o que já existe para não sobrescrever percentuais/datas/status já editados
+      const { data: existentes } = await supabase
+        .from("obra_atividades")
+        .select("item_codigo")
+        .eq("obra_id", obraId);
+      const existSet = new Set((existentes ?? []).map((r: { item_codigo: string }) => r.item_codigo));
+
+      // Novas: insert completo. Existentes: update apenas campos descritivos.
+      const novas = data.rows.filter((r) => !existSet.has(r.item_codigo)).map((r) => ({
+        company_id: companyId,
+        obra_id: obraId,
+        item_codigo: r.item_codigo,
+        etapa: r.etapa ?? null,
+        descricao: r.descricao || r.item_codigo,
+        unidade: r.unidade ?? null,
+        quantidade: r.quantidade,
+        peso: r.peso,
+        valor: r.valor,
+        is_group: r.is_group,
+        ordem: r.ordem,
+        created_by: userId,
+      }));
+      if (novas.length) {
+        const { error: insErr } = await supabase.from("obra_atividades").insert(novas);
+        if (insErr) throw new Error(insErr.message);
+      }
+      // Updates apenas de metadados (valor, peso, quantidade, descrição, ordem)
+      for (const r of data.rows) {
+        if (!existSet.has(r.item_codigo)) continue;
+        await supabase
+          .from("obra_atividades")
+          .update({
+            descricao: r.descricao || r.item_codigo,
+            etapa: r.etapa ?? null,
+            unidade: r.unidade ?? null,
+            quantidade: r.quantidade,
+            peso: r.peso,
+            valor: r.valor,
+            is_group: r.is_group,
+            ordem: r.ordem,
+          })
+          .eq("obra_id", obraId)
+          .eq("item_codigo", r.item_codigo);
+      }
+    }
+
+    // 3) lista de ids para o frontend usar nas edições inline
+    const { data: lista } = await supabase
+      .from("obra_atividades")
+      .select("id, item_codigo")
+      .eq("obra_id", obraId);
+
+    // 4) calcula análise reaproveitando a fn pública
+    const analiseRes = await getAnaliseGerencial({ data: { obraId } });
+
+    return { obraId, analise: analiseRes, atividades: lista ?? [] };
+  });
