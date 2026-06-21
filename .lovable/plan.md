@@ -1,130 +1,95 @@
-# Status atual + Plano de correção do menu lateral
+## Objetivo
 
-## 1. O que já foi implementado do prompt SOLV Gestão
+Transformar a aba **Atividades** (em `src/components/ObraApp.tsx`, dentro de `/obras`) numa ferramenta gerencial: indicadores, diagnóstico automático, atividades críticas, ações, tendência histórica e PDF — recalculados automaticamente a cada mudança.
 
-Mapeando as fases do prompt contra o código atual (`src/routes/`, `src/lib/*.functions.ts`, migrations Supabase):
+## Mudança arquitetural necessária
 
-### ✅ Fase 0 — Auditoria
-Mapeamento inicial feito em sessões anteriores (plan.md).
+Hoje as atividades (`BudgetRow`) vivem em `localStorage` (`Workspace.obras[].rows`). Para ter cálculo no backend, histórico persistido e atualização em tempo real entre usuários da mesma empresa, vou:
 
-### ✅ Fase 1 — Fundação
-`companies`, `company_members`, `user_workspaces`, RLS, auditoria (`audit_logs_v2`), buckets privados.
+1. Criar tabelas no Lovable Cloud espelhando as atividades da obra ativa **com os campos novos** exigidos pela análise gerencial.
+2. Adicionar uma camada de sincronização da planilha local → banco (na primeira abertura da obra após o deploy, e a cada edição) sem quebrar fluxo atual.
+3. Mover os cálculos para server functions; o frontend só renderiza.
 
-### ✅ Fase 2 — Documentos e CNDs (parcial)
-- `compliance.functions.ts`, `compliance-scope.functions.ts`, `company_certificates`, `certificate_types`, `certificate_versions`, `certificate_checks`, `compliance_alerts` + rota `/compliance`.
-- Falta: consulta automática via API pública oficial (hoje upload + validação manual/scoped).
+## Fase 1 — Banco (migração)
 
-### ✅ Fase 3 — Radar PNCP (parcial)
-- `oportunidades.functions.ts`, `oportunidades`, `oportunidade_filtros`, `oportunidade_pipeline_eventos` + rota `/oportunidades`.
-- Falta: coleta automática agendada da API PNCP, score com termos negativos, detecção de retificações.
+**Tabelas novas (todas com `company_id`, RLS por empresa, GRANTs):**
 
-### ✅ Fase 4 — IA para Editais
-- `editais.functions.ts` com extração JSON, OCR fallback, checklist, RAG (pgvector + `edital_chunks`, `match_edital_chunks`), Q&A com citação de página.
-- Falta: auto-indexação pós-extração, monitoramento contínuo de retificações com diff de hash.
+- `obra_atividades` — uma linha por atividade da obra
+  - `obra_id`, `item_codigo`, `etapa`, `descricao`
+  - `valor`, `peso`, `quantidade`, `unidade`
+  - `percentual_concluido` (0–100)
+  - `status` (`nao_iniciada` | `em_andamento` | `concluida` | `paralisada`)
+  - `data_prevista_inicio`, `data_prevista_fim`, `data_real_inicio`, `data_real_fim`
+  - `responsavel_id` (nullable → `equipe_membros`/`funcionarios` ou texto livre)
+  - `prioridade` (`baixa` | `media` | `alta` | `critica`)
+  - `impedimento` (texto), `bloqueia_atividades` (uuid[]), `observacoes`
+- `obra_atividade_eventos` — log de cada alteração relevante (para auditoria + tendência fina)
+- `obra_analise_snapshots` — snapshot diário por obra (avanço, prazo consumido, desvio, ritmo, fator, risco, nº críticas, valor executado) para comparativo D-1 / D-7 / medição anterior
 
-### ⚠️ Fase 5 — Declarações e Assinaturas (parcial)
-- ZapSign integrado (`zapsign*.functions.ts`, templates, webhook, dashboard, lembretes, relatório) + rota `/assinaturas`.
-- Falta: módulo formal de **Declarações Licitatórias**, **Signatários**, **Matriz de Poderes** e **Procurações** (hoje signatários vivem só dentro do ZapSign, sem matriz de poderes).
+**Trigger:** `AFTER INSERT/UPDATE/DELETE` em `obra_atividades` chama função que (a) registra evento, (b) faz upsert no snapshot **do dia** para a obra.
 
-### ✅ Fase 6 — Biblioteca Técnica
-- Tabela `biblioteca_documentos`, bucket `biblioteca-tecnica`, rota `/biblioteca` com abas RT, Atestados, CATs, ARTs.
-- Falta: OCR/IA para extrair dados dos PDFs (F6.1) e módulo de **Sugestão de Atestados** comparando com edital.
+## Fase 2 — Server functions (`src/lib/analise-gerencial.functions.ts`)
 
-### ✅ Fase 7 — Proposta Comercial
-- `propostas`, `proposta_itens`, `proposta_readequacao_residuos`, `cartas_proposta`, `recalc_proposta_totals`.
-- `propostas.functions.ts` + `propostas-itens.functions.ts` + rotas `/propostas` e `/propostas/$id` (abas Itens, Readequação, Carta, Config).
-- Falta: arredondamento controlado com distribuição de resíduo, exportação XLSX/PDF, simulador de upload por portal.
+Todas com `requireSupabaseAuth`:
 
-### ❌ Fase 8 — Cronograma físico-financeiro
-Não iniciada. Sem tabelas `cronograma*`, sem Curva S, sem previsto×realizado dedicado ao cronograma (existe `/realizado` mas para outro contexto).
+- `sincronizarAtividades({obraId, rows})` — recebe BudgetRow do localStorage e faz upsert idempotente em `obra_atividades` (chave: `obra_id + item_codigo`). Roda 1x ao abrir a obra.
+- `atualizarAtividade({id, patch})` — edição pontual (% concluído, status, datas, responsável, prioridade, impedimento).
+- `getAnaliseGerencial({obraId})` — retorna **tudo num único payload**:
+  - indicadores: `avanco`, `prazo_consumido`, `desvio`, `dias_decorridos`, `dias_restantes`, `ritmo_atual`, `ritmo_necessario`, `fator_aceleracao`, `saldo_executar`, `data_projetada`
+  - classificação de risco + faixa
+  - lista de atividades críticas (com motivo + ação sugerida)
+  - até 5 ações recomendadas
+  - plano de recuperação (se risco alto/crítico)
+  - diagnóstico em texto
+  - confiabilidade (peso financeiro / peso físico / média simples)
+  - tendência D-1, D-7 e vs. medição anterior (a partir de `obra_analise_snapshots` + `medicoes`)
+- `getHistoricoAnalise({obraId, dias})` — série temporal para o gráfico de evolução.
 
-### ❌ Fase 9 — Templates e Dossiês
-Não iniciada.
+Toda a lógica de cálculo (avanço ponderado, ritmo, projeção, classificação) fica em `src/lib/analise-gerencial.server.ts` para ser testável.
 
-### ❌ Fase 10 — Perfis de Portal / Simulador / Protocolos
-Não iniciada.
+## Fase 3 — UI dentro da aba Atividades
 
-### ⚠️ Fase 11 — Índices Econômicos (parcial)
-- Tabela `indices_economicos` + `indices.functions.ts` + **rota `/indices` existe mas NÃO está no menu**.
-- Falta: conectores IBGE SIDRA / BCB SGS / FGV, job automático mensal, snapshot+hash.
+Em `ObraApp.tsx`, na `TabsContent value="atividades"`, adicionar acima da tabela existente uma seção **Análise Gerencial da Obra** colapsável (aberta por padrão):
 
-### ⚠️ Fase 12 — Reajustes (parcial)
-- Tabela `reajustes_contratuais` + `reajustes.functions.ts` + **rota `/reajustes` existe mas NÃO está no menu**.
-- Falta: extração de cláusula via IA, base elegível considerando BMs, ofício editável, apostilamento, integração com BM futuro.
+1. **Cards** (grid responsivo): risco + faixa, avanço, prazo consumido, desvio, dias restantes, saldo, ritmo atual, ritmo necessário, fator de aceleração, data projetada, nº atividades críticas.
+2. **Diagnóstico** (parágrafo gerado server-side).
+3. **3 gráficos** (recharts, já no projeto): Prazo×Execução (barras), Ritmo atual×necessário (barras), Evolução 30 dias (linha dupla avanço+risco).
+4. **Tabela de atividades críticas** (ordenada por impacto financeiro + atraso) com coluna "ação recomendada".
+5. **Ações recomendadas** (lista de cards com prioridade colorida).
+6. **Plano de recuperação** (só se risco alto/crítico): metas 7/15/30 dias.
+7. **Tendência**: badges D-1 / D-7 / medição anterior.
+8. **Botão** "Atualizar análise agora" (invalida a query).
+9. **Botão** "Gerar relatório gerencial" (PDF).
 
-### ⚠️ Outros módulos já existentes mas **OCULTOS NO MENU**
-- `/aditivos` (Aditivos Contratuais — `aditivos.functions.ts`, tabela `aditivos_contratuais`)
-- `/medicoes` (BMs — `medicoes.functions.ts`)
-- `/rdo` (RDO — `rdo.functions.ts`, `rdo_*`)
-- `/indices` (Índices Econômicos)
-- `/reajustes` (Reajustes Contratuais)
-- `/assinaturas/relatorio` (sub-rota de assinaturas)
-- `/configuracoes/zapsign/testes` (sub-rota de config)
+**Edição inline das atividades** (na tabela existente): adicionar colunas para % concluído, status, datas previstas, responsável, prioridade, impedimento — cada alteração chama `atualizarAtividade` e invalida `getAnaliseGerencial`.
 
-## 2. Problema do menu
+**Reatividade:** TanStack Query com `queryKey: ['analise-gerencial', obraId]`. Cada `atualizarAtividade` faz `invalidateQueries`. Realtime channel em `obra_atividades` filtrado por `obra_id` para refletir mudanças de outros usuários.
 
-O `AppSidebar.tsx` lista 24 itens, mas o projeto tem **32 rotas `_app.*`**. Itens críticos do escopo SOLV (Medições, RDO, Aditivos, Índices, Reajustes) não aparecem, então o usuário acha que não foram implementados.
+## Fase 4 — PDF (`src/lib/analise-gerencial-pdf.ts`)
 
-Também faltam separadores coerentes com a nomenclatura do prompt ("Licitações", "Execução de Obra", "Contratos", "Indexadores").
+Usar `pdf-lib` ou `jspdf` (verificar o que já está no projeto). Layout em uma server function que monta o PDF a partir do mesmo payload do `getAnaliseGerencial`: capa, leitura executiva, prazo×execução, ritmo, projeção, atividades críticas, fatores risco/recuperação, metas, plano, decisão.
 
-## 3. Plano de correção do menu (apenas frontend — `src/components/AppSidebar.tsx`)
+## Fase 5 — Cron de snapshot diário
 
-Reorganizar em grupos alinhados ao prompt, incluindo TODAS as rotas implementadas:
+`pg_cron` 1×/dia (03:00) chama `/api/public/hooks/snapshot-analise` que itera obras ativas e grava snapshot — garante histórico mesmo em dias sem edição.
 
-```text
-LICITAÇÕES
-  Visão geral            /
-  Radar PNCP             /oportunidades
-  Editais (IA)           /editais
-  Propostas (IA)         /propostas
-  Biblioteca Técnica     /biblioteca
+## Detalhes técnicos importantes
 
-EXECUÇÃO DE OBRA
-  Obras                  /obras
-  Medições (BM)          /medicoes        ← novo no menu
-  RDO                    /rdo             ← novo no menu
-  Previsto × Realizado   /realizado
-  Comparativo Composição /comparativo-composicao
+- **Confiabilidade do avanço**: regra "valor → peso → média simples", retornada no payload e exibida com badge quando reduzida.
+- **Sem mock**: se faltar `data_inicio` ou `prazo_contratual` da obra (campos `obras.data_inicio_obra`, `obras.prazo_contratual_dias` — verificar no schema atual), o painel mostra "Dados insuficientes — preencha em Configurações da Obra" e ainda assim renderiza o que for possível.
+- **Sem alteração automática de atividades**: nunca o sistema marca % ou status — só calcula.
+- **Recálculo**: snapshot é upsert do dia (não sobrescreve dias anteriores).
 
-CONTRATOS
-  Contratos              /contratos
-  Aditivos               /aditivos        ← novo no menu
-  Reajustes              /reajustes       ← novo no menu
-  Índices Econômicos     /indices         ← novo no menu
-  Assinaturas            /assinaturas
+## Ordem de execução (1 turno por fase)
 
-FINANCEIRO
-  Financeiro de Obra     /financeiro
-  Notas Fiscais          /notas-fiscais
-  Estoque                /estoque
+1. Migração (tabelas + RLS + triggers + cron).
+2. Server functions (cálculos + sync + atualização).
+3. UI: cards + diagnóstico + edição inline (sem gráficos/PDF).
+4. Gráficos + tabela críticas + ações + plano + tendência.
+5. PDF.
 
-RECURSOS
-  Mão de obra            /mao-de-obra
-  Equipamentos           /equipamentos
-  Insumos                /insumos
-  Composições            /composicoes
-  Centros de Custo       /centros-custo
+## Pontos que preciso confirmar antes de codar
 
-GOVERNANÇA
-  Central de Certidões   /compliance
-
-ADMINISTRAÇÃO
-  Equipe                 /equipe
-  Parâmetros Financeiros /parametros-financeiros
-  Backup                 /backup
-  Config. ZapSign        /configuracoes/zapsign
-```
-
-Mudanças puramente visuais/estruturais — sem tocar em rotas, lógica ou banco. Adiciona scroll já existente, ícones novos para BM/RDO/Aditivos/Reajustes/Índices via `lucide-react` (`ClipboardList`, `NotebookPen`, `FilePlus2`, `TrendingUp`, `LineChart`).
-
-## 4. Próximo passo de implementação (após menu)
-
-Sequência sugerida do prompt original, em ordem:
-
-1. **F8 — Cronograma físico-financeiro + Curva S** (puxa itens da proposta readequada já existente).
-2. **F4.4 — Auto-indexação RAG** (gatilho após extração de PDF).
-3. **F12.x — Completar Reajustes** (cláusula via IA, base elegível, ofício).
-4. **F5.x — Declarações / Signatários / Matriz de Poderes / Procurações**.
-5. **F9 — Templates e Dossiês**.
-
-Qual confirma para eu seguir? Posso implementar primeiro a **correção do menu** (mudança pequena e segura) e em seguida a **F8 — Cronograma**.
+- A obra hoje tem `data_inicio_obra` e `prazo_contratual_dias` em `ProjectData.info` (localStorage). Devo (a) **também migrar `ObraInfo` para tabela `obras`** se já não estiver, ou (b) ler do localStorage no momento da sync? Recomendo (a) — campos já existem em `obras` (verificar nomes exatos).
+- Os "responsáveis" devem vir de `equipe_membros`/`funcionarios` (FK) ou aceitar texto livre? Recomendo: FK opcional + fallback texto.
+- "Bloqueia atividades posteriores" (critério de criticidade): adiciono campo `bloqueia_atividades uuid[]` agora ou deixo para uma fase futura? Recomendo deixar campo no schema mas sem UI nesta entrega.
