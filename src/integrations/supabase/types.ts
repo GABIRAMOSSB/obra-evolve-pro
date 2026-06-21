@@ -3496,6 +3496,250 @@ export type Database = {
           },
         ]
       }
+      obra_analise_snapshots: {
+        Row: {
+          avanco: number
+          company_id: string
+          confiabilidade: string
+          created_at: string
+          data_projetada: string | null
+          data_snapshot: string
+          desvio: number | null
+          fator_aceleracao: number | null
+          id: string
+          num_criticas: number
+          obra_id: string
+          payload: Json
+          prazo_consumido: number | null
+          risco: Database["public"]["Enums"]["analise_risco"]
+          ritmo_atual: number | null
+          ritmo_necessario: number | null
+          saldo_executar: number | null
+          updated_at: string
+          valor_executado: number | null
+        }
+        Insert: {
+          avanco?: number
+          company_id: string
+          confiabilidade?: string
+          created_at?: string
+          data_projetada?: string | null
+          data_snapshot?: string
+          desvio?: number | null
+          fator_aceleracao?: number | null
+          id?: string
+          num_criticas?: number
+          obra_id: string
+          payload?: Json
+          prazo_consumido?: number | null
+          risco?: Database["public"]["Enums"]["analise_risco"]
+          ritmo_atual?: number | null
+          ritmo_necessario?: number | null
+          saldo_executar?: number | null
+          updated_at?: string
+          valor_executado?: number | null
+        }
+        Update: {
+          avanco?: number
+          company_id?: string
+          confiabilidade?: string
+          created_at?: string
+          data_projetada?: string | null
+          data_snapshot?: string
+          desvio?: number | null
+          fator_aceleracao?: number | null
+          id?: string
+          num_criticas?: number
+          obra_id?: string
+          payload?: Json
+          prazo_consumido?: number | null
+          risco?: Database["public"]["Enums"]["analise_risco"]
+          ritmo_atual?: number | null
+          ritmo_necessario?: number | null
+          saldo_executar?: number | null
+          updated_at?: string
+          valor_executado?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obra_analise_snapshots_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obra_analise_snapshots_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      obra_atividade_eventos: {
+        Row: {
+          atividade_id: string | null
+          autor_id: string | null
+          company_id: string
+          created_at: string
+          id: string
+          obra_id: string
+          payload: Json
+          tipo: string
+        }
+        Insert: {
+          atividade_id?: string | null
+          autor_id?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          obra_id: string
+          payload?: Json
+          tipo: string
+        }
+        Update: {
+          atividade_id?: string | null
+          autor_id?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          obra_id?: string
+          payload?: Json
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obra_atividade_eventos_atividade_id_fkey"
+            columns: ["atividade_id"]
+            isOneToOne: false
+            referencedRelation: "obra_atividades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obra_atividade_eventos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obra_atividade_eventos_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      obra_atividades: {
+        Row: {
+          bloqueia_atividades: string[] | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          data_prevista_fim: string | null
+          data_prevista_inicio: string | null
+          data_real_fim: string | null
+          data_real_inicio: string | null
+          descricao: string
+          etapa: string | null
+          id: string
+          impedimento: string | null
+          is_group: boolean
+          item_codigo: string
+          metadata: Json
+          obra_id: string
+          observacoes: string | null
+          ordem: number | null
+          percentual_concluido: number
+          peso: number | null
+          prioridade: Database["public"]["Enums"]["atividade_prioridade"]
+          quantidade: number | null
+          responsavel_id: string | null
+          responsavel_nome: string | null
+          status: Database["public"]["Enums"]["atividade_status"]
+          unidade: string | null
+          updated_at: string
+          valor: number | null
+        }
+        Insert: {
+          bloqueia_atividades?: string[] | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          data_prevista_fim?: string | null
+          data_prevista_inicio?: string | null
+          data_real_fim?: string | null
+          data_real_inicio?: string | null
+          descricao: string
+          etapa?: string | null
+          id?: string
+          impedimento?: string | null
+          is_group?: boolean
+          item_codigo: string
+          metadata?: Json
+          obra_id: string
+          observacoes?: string | null
+          ordem?: number | null
+          percentual_concluido?: number
+          peso?: number | null
+          prioridade?: Database["public"]["Enums"]["atividade_prioridade"]
+          quantidade?: number | null
+          responsavel_id?: string | null
+          responsavel_nome?: string | null
+          status?: Database["public"]["Enums"]["atividade_status"]
+          unidade?: string | null
+          updated_at?: string
+          valor?: number | null
+        }
+        Update: {
+          bloqueia_atividades?: string[] | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          data_prevista_fim?: string | null
+          data_prevista_inicio?: string | null
+          data_real_fim?: string | null
+          data_real_inicio?: string | null
+          descricao?: string
+          etapa?: string | null
+          id?: string
+          impedimento?: string | null
+          is_group?: boolean
+          item_codigo?: string
+          metadata?: Json
+          obra_id?: string
+          observacoes?: string | null
+          ordem?: number | null
+          percentual_concluido?: number
+          peso?: number | null
+          prioridade?: Database["public"]["Enums"]["atividade_prioridade"]
+          quantidade?: number | null
+          responsavel_id?: string | null
+          responsavel_nome?: string | null
+          status?: Database["public"]["Enums"]["atividade_status"]
+          unidade?: string | null
+          updated_at?: string
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obra_atividades_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obra_atividades_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       obras: {
         Row: {
           cidade: string | null
@@ -5581,6 +5825,13 @@ export type Database = {
       show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
+      analise_risco: "baixo" | "moderado" | "alto" | "critico"
+      atividade_prioridade: "baixa" | "media" | "alta" | "critica"
+      atividade_status:
+        | "nao_iniciada"
+        | "em_andamento"
+        | "concluida"
+        | "paralisada"
       centro_custo_tipo:
         | "administracao"
         | "mao_obra"
@@ -5717,6 +5968,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      analise_risco: ["baixo", "moderado", "alto", "critico"],
+      atividade_prioridade: ["baixa", "media", "alta", "critica"],
+      atividade_status: [
+        "nao_iniciada",
+        "em_andamento",
+        "concluida",
+        "paralisada",
+      ],
       centro_custo_tipo: [
         "administracao",
         "mao_obra",
