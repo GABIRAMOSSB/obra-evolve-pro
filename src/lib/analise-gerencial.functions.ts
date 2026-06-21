@@ -327,7 +327,7 @@ export const ensureAnalise = createServerFn({ method: "POST" })
       if (data.obraInfo.valor_contratado != null) patch.valor_contratado = data.obraInfo.valor_contratado;
       if (data.obraInfo.nome) patch.nome = data.obraInfo.nome;
       if (Object.keys(patch).length) {
-        await supabase.from("obras").update(patch).eq("id", obraId);
+        await (supabase as AnySupabase).from("obras").update(patch).eq("id", obraId);
       }
     } else {
       const { data: created, error: cErr } = await supabase
