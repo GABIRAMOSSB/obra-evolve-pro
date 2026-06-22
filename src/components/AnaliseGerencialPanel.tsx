@@ -243,24 +243,34 @@ export function AnaliseGerencialPanel({ data }: { data: ProjectData }) {
           {/* Diagnóstico */}
           <div className="rounded-md border bg-muted/30 p-4 text-sm leading-relaxed">{a.diagnostico}</div>
 
-          {/* Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            <KpiCard label="Risco atual" value={a.risco.nivel.toUpperCase()} hint={`Faixa estimada ${a.risco.faixa_min}%–${a.risco.faixa_max}%`} variant={a.risco.nivel} />
-            <KpiCard label="Avanço da obra" value={fmtPct(a.indicadores.avanco)} hint={`Método: ${a.metodo_avanco}`} icon={<TrendingUp className="w-4 h-4" />} />
-            <KpiCard label="Prazo consumido" value={fmtPct(a.indicadores.prazo_consumido)} icon={<Calendar className="w-4 h-4" />} />
-            <KpiCard
-              label="Desvio"
-              value={a.indicadores.desvio !== null ? `${a.indicadores.desvio >= 0 ? "+" : ""}${a.indicadores.desvio.toFixed(2)} p.p.` : "—"}
-              icon={(a.indicadores.desvio ?? 0) >= 0 ? <TrendingUp className="w-4 h-4 text-emerald-500" /> : <TrendingDown className="w-4 h-4 text-rose-500" />}
-            />
-            <KpiCard label="Dias restantes" value={a.indicadores.dias_restantes != null ? String(a.indicadores.dias_restantes) : "—"} hint={a.indicadores.dias_atraso > 0 ? `${a.indicadores.dias_atraso} dia(s) de atraso` : undefined} />
-            <KpiCard label="Saldo a executar" value={fmtBRL(a.indicadores.saldo_executar)} />
-            <KpiCard label="Ritmo atual" value={fmtNum(a.indicadores.ritmo_atual, 3) + " %/dia"} />
-            <KpiCard label="Ritmo necessário" value={fmtNum(a.indicadores.ritmo_necessario, 3) + " %/dia"} />
-            <KpiCard label="Fator de aceleração" value={fmtNum(a.indicadores.fator_aceleracao, 2) + "×"} variant={(a.indicadores.fator_aceleracao ?? 0) > 1.6 ? "alto" : undefined} />
-            <KpiCard label="Data projetada" value={fmtDataBR(a.indicadores.data_projetada)} hint={a.indicadores.dias_atraso_projetado != null && a.indicadores.dias_atraso_projetado < 0 ? `${-a.indicadores.dias_atraso_projetado} dia(s) de atraso projetado` : undefined} icon={<Target className="w-4 h-4" />} />
-            <KpiCard label="Atividades críticas" value={String(a.criticas.length)} variant={a.criticas.length > 3 ? "alto" : undefined} icon={<AlertTriangle className="w-4 h-4" />} />
-            <KpiCard label="Meta semanal" value={a.indicadores.meta_semanal != null ? fmtBRL(a.indicadores.meta_semanal) : "—"} />
+          {/* Indicadores agrupados */}
+          <div className="space-y-4">
+            <KpiGroup title="Situação geral" accent="primary">
+              <KpiCard label="Risco atual" value={a.risco.nivel.toUpperCase()} hint={`Faixa estimada ${a.risco.faixa_min}%–${a.risco.faixa_max}%`} variant={a.risco.nivel} icon={<AlertTriangle className="w-4 h-4" />} />
+              <KpiCard label="Avanço da obra" value={fmtPct(a.indicadores.avanco)} hint={`Método: ${a.metodo_avanco}`} icon={<TrendingUp className="w-4 h-4" />} />
+              <KpiCard
+                label="Desvio"
+                value={a.indicadores.desvio !== null ? `${a.indicadores.desvio >= 0 ? "+" : ""}${a.indicadores.desvio.toFixed(2)} p.p.` : "—"}
+                hint={(a.indicadores.desvio ?? 0) >= 0 ? "Acima do planejado" : "Abaixo do planejado"}
+                icon={(a.indicadores.desvio ?? 0) >= 0 ? <TrendingUp className="w-4 h-4 text-emerald-500" /> : <TrendingDown className="w-4 h-4 text-rose-500" />}
+                variant={(a.indicadores.desvio ?? 0) <= -15 ? "critico" : (a.indicadores.desvio ?? 0) < -5 ? "alto" : undefined}
+              />
+              <KpiCard label="Atividades críticas" value={String(a.criticas.length)} hint={a.criticas.length > 0 ? "Exigem atenção imediata" : "Nenhuma frente crítica"} variant={a.criticas.length > 3 ? "alto" : undefined} icon={<AlertTriangle className="w-4 h-4" />} />
+            </KpiGroup>
+
+            <KpiGroup title="Prazo & financeiro">
+              <KpiCard label="Prazo consumido" value={fmtPct(a.indicadores.prazo_consumido)} icon={<Calendar className="w-4 h-4" />} />
+              <KpiCard label="Dias restantes" value={a.indicadores.dias_restantes != null ? String(a.indicadores.dias_restantes) : "—"} hint={a.indicadores.dias_atraso > 0 ? `${a.indicadores.dias_atraso} dia(s) de atraso` : "No prazo"} icon={<Calendar className="w-4 h-4" />} />
+              <KpiCard label="Saldo a executar" value={fmtBRL(a.indicadores.saldo_executar)} hint="Valor restante" />
+              <KpiCard label="Meta semanal" value={a.indicadores.meta_semanal != null ? fmtBRL(a.indicadores.meta_semanal) : "—"} hint="Produção mínima por semana" />
+            </KpiGroup>
+
+            <KpiGroup title="Ritmo & projeção">
+              <KpiCard label="Ritmo atual" value={fmtNum(a.indicadores.ritmo_atual, 3) + " %/dia"} icon={<TrendingUp className="w-4 h-4" />} />
+              <KpiCard label="Ritmo necessário" value={fmtNum(a.indicadores.ritmo_necessario, 3) + " %/dia"} icon={<Target className="w-4 h-4" />} />
+              <KpiCard label="Fator de aceleração" value={fmtNum(a.indicadores.fator_aceleracao, 2) + "×"} hint={(a.indicadores.fator_aceleracao ?? 0) > 1.6 ? "Aceleração crítica" : (a.indicadores.fator_aceleracao ?? 0) > 1 ? "Acima do ritmo atual" : "Dentro do ritmo"} variant={(a.indicadores.fator_aceleracao ?? 0) > 1.6 ? "alto" : undefined} />
+              <KpiCard label="Data projetada" value={fmtDataBR(a.indicadores.data_projetada)} hint={a.indicadores.dias_atraso_projetado != null && a.indicadores.dias_atraso_projetado < 0 ? `${-a.indicadores.dias_atraso_projetado} dia(s) de atraso projetado` : "Dentro do prazo"} icon={<Target className="w-4 h-4" />} variant={a.indicadores.dias_atraso_projetado != null && a.indicadores.dias_atraso_projetado < -30 ? "alto" : undefined} />
+            </KpiGroup>
           </div>
 
           {/* Gráficos */}
