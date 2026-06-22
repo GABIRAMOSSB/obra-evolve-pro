@@ -354,36 +354,45 @@ export const ensureAnalise = createServerFn({ method: "POST" })
       obraId = created.id;
     }
 
-    // 2) upsert atividades — preserva campos manuais
+    // 2) sincroniza atividades — idempotente, sem duplicar (upsert por obra_id,item_codigo)
     if (data.rows.length > 0) {
-      // Lê o que já existe para não sobrescrever percentuais/datas/status já editados
+      // dedupe por item_codigo dentro do mesmo payload (mantém a última ocorrência)
+      const dedup = new Map<string, (typeof data.rows)[number]>();
+      for (const r of data.rows) dedup.set(r.item_codigo, r);
+
       const { data: existentes } = await supabase
         .from("obra_atividades")
         .select("item_codigo")
         .eq("obra_id", obraId);
       const existSet = new Set((existentes ?? []).map((r: { item_codigo: string }) => r.item_codigo));
 
-      // Novas: insert completo. Existentes: update apenas campos descritivos.
-      const novas = data.rows.filter((r) => !existSet.has(r.item_codigo)).map((r) => ({
-        company_id: companyId,
-        obra_id: obraId,
-        item_codigo: r.item_codigo,
-        etapa: r.etapa ?? null,
-        descricao: r.descricao || r.item_codigo,
-        unidade: r.unidade ?? null,
-        quantidade: r.quantidade,
-        peso: r.peso,
-        valor: r.valor,
-        is_group: r.is_group,
-        ordem: r.ordem,
-        created_by: userId,
-      }));
+      // Novas: usa UPSERT (não INSERT) para ser idempotente — evita erro de
+      // unicidade quando o payload traz duplicatas ou quando há corrida entre
+      // chamadas simultâneas. ignoreDuplicates preserva os campos manuais.
+      const novas = Array.from(dedup.values())
+        .filter((r) => !existSet.has(r.item_codigo))
+        .map((r) => ({
+          company_id: companyId,
+          obra_id: obraId,
+          item_codigo: r.item_codigo,
+          etapa: r.etapa ?? null,
+          descricao: r.descricao || r.item_codigo,
+          unidade: r.unidade ?? null,
+          quantidade: r.quantidade,
+          peso: r.peso,
+          valor: r.valor,
+          is_group: r.is_group,
+          ordem: r.ordem,
+          created_by: userId,
+        }));
       if (novas.length) {
-        const { error: insErr } = await supabase.from("obra_atividades").insert(novas);
-        if (insErr) throw new Error(insErr.message);
+        const { error: insErr } = await supabase
+          .from("obra_atividades")
+          .upsert(novas, { onConflict: "obra_id,item_codigo", ignoreDuplicates: true });
+        if (insErr) throw new Error(`Falha ao sincronizar atividades: ${insErr.message}`);
       }
-      // Updates apenas de metadados (valor, peso, quantidade, descrição, ordem)
-      for (const r of data.rows) {
+      // Atualiza só metadados das já existentes (preserva percentual/status/datas/responsável)
+      for (const r of dedup.values()) {
         if (!existSet.has(r.item_codigo)) continue;
         await supabase
           .from("obra_atividades")
