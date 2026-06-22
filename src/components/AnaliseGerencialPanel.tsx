@@ -487,6 +487,19 @@ function KpiCard({
   );
 }
 
+function KpiGroup({ title, accent, children }: { title: string; accent?: "primary"; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-2">
+        <span className={`h-1.5 w-1.5 rounded-full ${accent === "primary" ? "bg-primary" : "bg-muted-foreground/40"}`} />
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</span>
+        <div className="flex-1 h-px bg-border" />
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">{children}</div>
+    </div>
+  );
+}
+
 function PlanoList({ title, items }: { title: string; items: string[] }) {
   return (
     <div className="mt-3">
