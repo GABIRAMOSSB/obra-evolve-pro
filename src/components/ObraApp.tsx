@@ -1792,6 +1792,10 @@ function Dashboard({
  </TabsContent>
 
 
+ <TabsContent value="analise" className="space-y-4">
+ <AnaliseGerencialV2 legacyObraId={data.id} />
+ </TabsContent>
+
  <TabsContent value="diario">
  <DiaryPanel obraId={data.id} companyId={companyId} diaries={data.diaries} onUpdate={updateDiary} onRemove={removeDiary} />
  </TabsContent>
