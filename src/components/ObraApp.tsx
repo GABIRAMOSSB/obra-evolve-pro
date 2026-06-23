@@ -67,6 +67,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 const DocumentsTab = lazy(() => import("@/components/DocumentsTab"));
 import { AnaliseGerencialPanel } from "@/components/AnaliseGerencialPanel";
+import { AnaliseGerencialV2 } from "@/components/AnaliseGerencialV2";
 import { MeasurementClosure } from "@/components/MeasurementClosure";
 import {
  LogOut,
@@ -1558,6 +1559,7 @@ function Dashboard({
  <Tabs value={activeTab} onValueChange={setActiveTab}>
  <TabsList>
  <TabsTrigger value="atividades">Atividades</TabsTrigger>
+ <TabsTrigger value="analise">Análise Gerencial</TabsTrigger>
  <TabsTrigger value="diario">
  Diário de obra ({data.diaries.length})
  </TabsTrigger>
@@ -1789,6 +1791,10 @@ function Dashboard({
  <SignatureBlock info={info} municipio={info.municipio} />
  </TabsContent>
 
+
+ <TabsContent value="analise" className="space-y-4">
+ <AnaliseGerencialV2 legacyObraId={data.id} />
+ </TabsContent>
 
  <TabsContent value="diario">
  <DiaryPanel obraId={data.id} companyId={companyId} diaries={data.diaries} onUpdate={updateDiary} onRemove={removeDiary} />
