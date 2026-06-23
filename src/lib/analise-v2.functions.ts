@@ -71,9 +71,9 @@ export const getAnaliseV2 = createServerFn({ method: "POST" })
     if (snapRes.error) throw new Error(snapRes.error.message);
 
     const analise = calcularAnaliseV2(
-      obraRow as ObraRaw,
-      (ativRes.data ?? []) as AtividadeRaw[],
-      (snapRes.data ?? []) as SnapshotRaw[],
+      obraRow as unknown as ObraRaw,
+      (ativRes.data ?? []) as unknown as AtividadeRaw[],
+      (snapRes.data ?? []) as unknown as SnapshotRaw[],
     );
 
     // Snapshot diário — upsert por (obra_id, data_snapshot). Nunca toca obra_atividades.
