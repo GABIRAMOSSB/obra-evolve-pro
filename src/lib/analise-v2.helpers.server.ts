@@ -23,6 +23,9 @@ export async function loadEvolutionsMap(
   companyId: string,
   legacyObraId: string,
 ): Promise<Map<string, EvolInfo>> {
+  // O mapa é indexado tanto pela chave hierárquica `row.item` (ex.: "1.1.0.0.2")
+  // quanto pelo `row.codigo` SINAPI (ex.: "97888"), porque obra_atividades guarda
+  // `item_codigo = row.codigo` enquanto evolutions são chaveadas por `row.item`.
   const map = new Map<string, EvolInfo>();
   try {
     const { data: ws } = await supabase
@@ -32,10 +35,16 @@ export async function loadEvolutionsMap(
       .maybeSingle();
     const obras = (ws?.workspace?.obras ?? []) as Array<{
       id?: string;
+      rows?: Array<{ item?: string; codigo?: string }>;
       evolutions?: Record<string, { measurements?: Array<{ quantExec?: number; dataExec?: string; closed?: boolean }> }>;
     }>;
     const obra = obras.find((o) => String(o?.id) === legacyObraId);
     const evolutions = obra?.evolutions ?? {};
+    // mapa item-hierárquico -> codigo SINAPI
+    const itemToCodigo = new Map<string, string>();
+    for (const r of obra?.rows ?? []) {
+      if (r?.item && r?.codigo) itemToCodigo.set(String(r.item), String(r.codigo));
+    }
     for (const [item, ev] of Object.entries(evolutions)) {
       const meas = ev?.measurements ?? [];
       if (!meas.length) continue;
@@ -50,7 +59,10 @@ export async function loadEvolutionsMap(
           if (!dMax || d > dMax) dMax = d;
         }
       }
-      map.set(String(item), { somaQtd: soma, dataInicio: dMin, dataFim: dMax });
+      const info: EvolInfo = { somaQtd: soma, dataInicio: dMin, dataFim: dMax };
+      map.set(String(item), info);
+      const cod = itemToCodigo.get(String(item));
+      if (cod) map.set(cod, info);
     }
   } catch {
     // degrada silenciosamente
