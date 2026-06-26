@@ -70,9 +70,28 @@ export const getAnaliseV2 = createServerFn({ method: "POST" })
     if (ativRes.error) throw new Error(ativRes.error.message);
     if (snapRes.error) throw new Error(snapRes.error.message);
 
+    // Carrega evoluções/medições reais do workspace legado para sobrescrever
+    // o percentual_concluido (que não é mantido em obra_atividades). READ-ONLY.
+    const evolMap = await loadEvolutionsMap(supabase, companyId, data.legacyObraId);
+
+    const atividadesMerged = ((ativRes.data ?? []) as Array<Record<string, unknown>>).map((a) => {
+      const ev = evolMap.get(String(a.item_codigo));
+      if (!ev) return a as unknown as AtividadeRaw;
+      const qtd = Number(a.quantidade) || 0;
+      const percent = qtd > 0 ? Math.min(100, (ev.somaQtd / qtd) * 100) : Number(a.percentual_concluido) || 0;
+      const status = percent >= 99.999 ? "concluida" : percent > 0 ? "em_andamento" : (a.status ?? "nao_iniciada");
+      return {
+        ...a,
+        percentual_concluido: +percent.toFixed(2),
+        status,
+        data_real_inicio: a.data_real_inicio ?? ev.dataInicio ?? null,
+        data_real_fim: a.data_real_fim ?? (percent >= 99.999 ? ev.dataFim : null),
+      } as unknown as AtividadeRaw;
+    });
+
     const analise = calcularAnaliseV2(
       obraRow as unknown as ObraRaw,
-      (ativRes.data ?? []) as unknown as AtividadeRaw[],
+      atividadesMerged,
       (snapRes.data ?? []) as unknown as SnapshotRaw[],
     );
 
