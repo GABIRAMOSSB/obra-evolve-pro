@@ -113,7 +113,7 @@ export const getAnaliseV2 = createServerFn({ method: "POST" })
     // o percentual_concluido (que não é mantido em obra_atividades). READ-ONLY.
     const evolMap = await loadEvolutionsMap(supabase, companyId, data.legacyObraId);
 
-    const atividadesMerged = ((ativRes.data ?? []) as Array<Record<string, unknown>>).map((a) => {
+    const atividadesMerged = ((ativRes.data ?? []) as unknown as Array<Record<string, unknown>>).map((a) => {
       const ev = evolMap.get(String(a.item_codigo));
       if (!ev) return a as unknown as AtividadeRaw;
       const qtd = Number(a.quantidade) || 0;
