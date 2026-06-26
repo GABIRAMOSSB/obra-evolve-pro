@@ -24,6 +24,45 @@ async function resolveCompany(supabase: AnySupabase, userId: string): Promise<st
   return data.company_id as string;
 }
 
+type EvolInfo = { somaQtd: number; dataInicio: string | null; dataFim: string | null };
+
+async function loadEvolutionsMap(
+  supabase: AnySupabase,
+  companyId: string,
+  legacyObraId: string,
+): Promise<Map<string, EvolInfo>> {
+  const map = new Map<string, EvolInfo>();
+  try {
+    const { data: ws } = await supabase
+      .from("company_workspaces")
+      .select("workspace")
+      .eq("company_id", companyId)
+      .maybeSingle();
+    const obras = (ws?.workspace?.obras ?? []) as Array<{ id?: string; evolutions?: Record<string, { measurements?: Array<{ quantExec?: number; dataExec?: string; closed?: boolean }> }> }>;
+    const obra = obras.find((o) => String(o?.id) === legacyObraId);
+    const evolutions = obra?.evolutions ?? {};
+    for (const [item, ev] of Object.entries(evolutions)) {
+      const meas = ev?.measurements ?? [];
+      if (!meas.length) continue;
+      let soma = 0;
+      let dMin: string | null = null;
+      let dMax: string | null = null;
+      for (const m of meas) {
+        soma += Number(m?.quantExec) || 0;
+        const d = m?.dataExec ?? null;
+        if (d) {
+          if (!dMin || d < dMin) dMin = d;
+          if (!dMax || d > dMax) dMax = d;
+        }
+      }
+      map.set(String(item), { somaQtd: soma, dataInicio: dMin, dataFim: dMax });
+    }
+  } catch {
+    // ignora — apenas degrada para o que houver em obra_atividades
+  }
+  return map;
+}
+
 const schema = z.object({
   legacyObraId: z.string().min(1),
 });
