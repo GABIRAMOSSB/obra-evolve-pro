@@ -8,9 +8,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { calcularAnaliseV2, type AtividadeRaw, type ObraRaw, type SnapshotRaw } from "./analise-v2.engine";
+import { resolveCompany, loadEvolutionsMap } from "./analise-v2.helpers.server";
 
-import { calcularAnaliseV2, type AtividadeRaw, type ObraRaw, type SnapshotRaw } from "./analise-v2.engine";
-import { resolveCompany, loadEvolutionsMap, type EvolInfo } from "./analise-v2.helpers.server";
 
 
 const schema = z.object({
