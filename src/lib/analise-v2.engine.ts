@@ -131,10 +131,18 @@ function normEtapa(s: string | null | undefined): string {
 // ---------- DTO ----------
 export type AnaliseV2 = ReturnType<typeof calcularAnaliseV2>;
 
+export type FinanceirosRaw = {
+  valor_aditivos: number;        // soma de aditivos vigentes positivos
+  valor_supressoes: number;      // soma de aditivos vigentes negativos (sempre positiva aqui)
+  valor_medido: number;          // soma de medicoes aprovadas/pagas
+  valor_pago: number;            // soma de medicoes status=paga
+};
+
 export function calcularAnaliseV2(
   obra: ObraRaw,
   atividadesRaw: AtividadeRaw[],
   snapshots: SnapshotRaw[],
+  financeiros?: FinanceirosRaw,
 ) {
   const hoje = new Date(isoToday() + "T00:00:00Z");
   const ativ = atividadesRaw.filter((a) => !a.is_group);
