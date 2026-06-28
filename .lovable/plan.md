@@ -1,80 +1,79 @@
-# Análise Gerencial da Obra — nova aba
+# Análise Gerencial V2 — Refatoração completa
 
-Vou criar uma **nova aba "Análise Gerencial"** ao lado da aba *Atividades* dentro da página da obra. O painel existente (`AnaliseGerencialPanel`) continua no código mas deixa de ser exibido — a nova aba o substitui visualmente e implementa os 21 blocos pedidos, lendo **somente** de `obra_atividades` (sem inserts, sem mudar schema dessa tabela).
+Trabalho exclusivamente sobre a tela existente (`AnaliseGerencialV2`), sem criar tela paralela, sem duplicar componentes. Primeiro corrijo regras de negócio e cálculos no engine/server; depois reorganizo o front em abas com identidade SOLV.
 
-## Arquitetura
+## Arquivos afetados (sem novas telas)
 
 ```text
-ObraApp
- ├── Tab "Atividades"           (existente, intocado)
- └── Tab "Análise Gerencial"    (NOVO)
-        └── <AnaliseGerencialV2 obraId=... />
-              ├── lê obra + obra_atividades (idempotente, só SELECT)
-              ├── chama engine puro analise-gerencial-v2.ts
-              └── renderiza 21 seções
+src/lib/analise-v2.engine.ts          (reescrita do engine: SPI, riscos 4D, cenários, prontidão, financeiro)
+src/lib/analise-v2.helpers.server.ts  (carrega aditivos, medições, faturamento, dependências, baseline)
+src/lib/analise-v2.functions.ts       (orquestra; usa atividade_id como chave; cobertura de dados)
+src/components/AnaliseGerencialV2.tsx (reorganiza em 6 abas + cabeçalho + 6 KPIs + Curva S + lateral)
+src/components/analise/*              (subcomponentes da MESMA tela — KpiCard, CurvaS, Tooltips, MemoriaCalculo, AbaExecutivo, AbaPrazo, AbaFinanceiro, AbaAtividades, AbaRecuperacao, AbaQualidade)
+src/lib/analise-gerencial-pdf.ts      (atualiza export usando o novo DTO)
+supabase/migrations/<ts>_analise_v2.sql (tabelas: obra_atividade_dependencias, obra_decisoes, obra_acoes; colunas em obra_atividades: codigo_interno, prontidao_checklist; cron snapshot diário)
 ```
 
-Engine 100% puro em `src/lib/analise-gerencial-v2.ts` (sem I/O, testável). Snapshot diário gravado em `obra_analise_snapshots` (tabela já existe) via upsert por `(obra_id, data_referencia)` — **só leitura** de `obra_atividades`.
+Sem mexer em outras áreas, exportações ou permissões existentes.
 
-## Blocos implementados
+## FASE 1 — Correções críticas (sem mudar UI ainda)
 
-**Topo (KPIs grandes):** pontuação de risco 0–100 com barra, badge confiabilidade, diagnóstico estruturado em 5 parágrafos (situação / causa / consequência / recuperação / decisão).
+1. **Bug prontidão sempre verdadeira** — remover `prioridade !== "baixa" || true` no engine; substituir por matriz real de 11 critérios (projeto, material comprado/entregue, equipe, equipamento, frente, predecessora, responsável, segurança, doc, data confirmada).
+2. **Identificação por `atividade_id`** — toda chave de evolução, snapshot, dependência e merge passa a usar o UUID `obra_atividades.id`. `loadEvolutionsMap` indexa por UUID via `(obra_id, item_hierarquico)`; SINAPI deixa de ser chave.
+3. **Migration**: adiciona `codigo_interno text`, `item_hierarquico text`, `prontidao jsonb`, `baseline_inicio date`, `baseline_fim date`, `predecessoras jsonb` em `obra_atividades` (nullable, idempotente). Cria `obra_atividade_dependencias`, `obra_decisoes`, `obra_acoes` com GRANT + RLS por `has_company_role`.
+4. **Conferência do valor contratado** — engine carrega `obras.valor_contratado`, soma `aditivos_contratuais` (aprovados, supressões negativas), calcula `valor_vigente`, soma `obra_atividades.valor`, expõe diferença, % cobertura, contadores (sem valor, sem peso, sem planejamento).
+5. **Separação de avanços** — DTO passa a expor: `avanco_fisico`, `avanco_fisico_ponderado`, `avanco_financeiro_estimado`, `valor_agregado_producao`, `valor_medido` (de `medicoes`), `valor_faturado` (de `notas_fiscais`), `valor_recebido` (de `notas_fiscais.status='paga'`). Nunca misturados.
+6. **Confiança dos dados** — score 0–100 ponderando cobertura de valor, peso, datas planejadas, responsável, snapshots, predecessoras. Exibido em todo cartão.
 
-**1. Indicadores principais** — prazo consumido, avanço ponderado (financeiro→físico→média), desvio p.p. com classificação, IDP com frase "a cada 1% de prazo, entregou X%".
+Quando cobertura < 100%: bloquear avanço ponderado por valor, mostrar **"Dados insuficientes para cálculo"** + lista de pendências. Nunca esconder ausência.
 
-**2. Ritmo** — médio acumulado, 7d, 15d (deriva de `data_real_fim` / snapshots), necessário, fator de aceleração com frase automática.
+## FASE 2 — Planejamento real (linha de base e SPI)
 
-**3. Projeção** — 2 cenários (acumulado e últimos 14d), datas projetadas, atraso, comparação tendência (melhorando/piorando).
+7. **Baseline planejada** por atividade — usa `data_prevista_inicio/fim` (já existe) + `peso`/`valor`.
+8. **Avanço planejado acumulado** até `data_referencia` — curva S planejada por integração diária.
+9. **SPI real** = `avanco_realizado / avanco_planejado`, faixas: ≥1,00 ok / 0,95–0,99 atenção / 0,85–0,94 atraso / <0,85 crítico. Trata zero ("não previsto para iniciar"). O índice antigo (linear) permanece como **"Índice linear simplificado"**, nunca chamado de SPI.
+10. **Análise por etapa** — cada etapa comparada ao próprio início/fim/avanço planejado; situação enum: não_prevista | pronta | em_andamento | atenção | atrasada | bloqueada | concluída | concluída_com_atraso.
+11. **Dependências editáveis** — tabela `obra_atividade_dependencias` (predecessora_id, sucessora_id, tipo TI/II/TT/IT, defasagem_dias, percentual_minimo, obrigatoria, observacao). Regras genéricas viram apenas sugestão inicial.
 
-**4. Atividades críticas** — índice de impacto ponderado (valor 30%, atraso 25%, % pendente 15%, prioridade 10%, impedimento 10%, sem responsável 5%, proximidade prazo 5%), classificação crítica/alta/média/baixa, tabela ordenada.
+## FASE 3 — Gestão (riscos, decisões, cenários)
 
-**5. Exposição financeira** — não iniciadas, atrasadas, críticas, % com 0%, % concentrado nas 5 maiores, textos automáticos.
+12. **Risco em 4 dimensões** — cada uma 0–100 + risco consolidado + confiança. Termo "Índice de risco: X/100" e nunca "% de chance".
+    - Prazo: SPI, desvio, projeção, atividades de maior impacto, folgas.
+    - Operacional: ritmo 14d, prontidão, materiais/equipes/equipamentos, bloqueios.
+    - Financeiro: medido vs faturado vs recebido, custo realizado/comprometido/concluir, margem, fluxo.
+    - Gerencial: decisões pendentes, sem responsável, pendências docs, atrasos aprovação.
+13. **"Atividades de maior impacto gerencial"** (renomear; só vira "crítica" quando folga ≤ 0). Score pondera valor pendente, atraso, % restante, dependências, bloqueios, impacto medição/prazo, falta material/equipe/decisão/projeto, sem responsável.
+14. **Decisões prioritárias** (top 5) e **Plano de ação** persistidos em `obra_decisoes` / `obra_acoes` com CRUD básico (registrar, marcar resolvido, evidência).
+15. **Cenários** (5): inercial 14/28d, plano atual, recuperação viável, recuperação necessária, conservador. Cada um com data projetada, atraso, ritmo, equipe, custo, viabilidade.
+16. **Projeções operacionais** baseadas em séries de snapshots e medições.
 
-**6. Por etapa** — agrupa por campo `etapa`, situação (concluída/no prazo/atenção/atrasada/bloqueada/não iniciada).
+## FASE 4 — Front (mesma tela, redesenhada)
 
-**7. Dependências/bloqueios** — inferidas por regras fixas de etapa (cobertura→acabamentos, instalações→drywall, drywall→pintura, esquadrias→vedação, PPCI→entrega). Indicadores: nº bloqueadas, valor bloqueado.
+Identidade SOLV: navy primário, cartões brancos, raio 12–16px, sombra discreta, vermelho só crítico, laranja atenção, verde positivo, azul info. Tipografia 13–28px.
 
-**8. Prontidão das frentes** — checklist por atividade (responsável, prazo, predecessoras, impedimento, data programada) → índice 0–100%.
+17. **Cabeçalho executivo** — obra, município, contrato, data-base, última atualização, responsável, confiança, situação, risco consolidado, botões: Atualizar / PDF / Excel.
+18. **6 KPIs**: Avanço planejado | Avanço realizado | Desvio | SPI | Data projetada | Valor disponível p/ medição. Cada um com comparação, explicação, ícone, cor de situação, tooltip com fórmula.
+19. **Curva S** (Recharts) — planejado / realizado / projeção / data atual / data contratual / data projetada / faixa recuperação. Filtros: 30d/60d/obra/etapa, físico/financeiro. Tooltip rico.
+20. **6 abas**: Executivo | Prazo e Produção | Financeiro | Atividades e Bloqueios | Plano de Recuperação | Qualidade dos Dados.
+21. **Painel lateral sticky** (desktop) — 3 maiores riscos, 3 decisões urgentes, 3 frentes sem prontidão, potencial próxima medição, última atualização, próximo prazo. Vira seção empilhada no mobile.
+22. **Padrão visual SOLV** aplicado consistentemente; sem hardcode de cor, tudo via tokens em `src/styles.css`.
 
-**9. Produtividade recente** — 7d vs semana anterior vs 15d vs meta. Alerta após 2 semanas <75%.
+Tooltips em todo indicador + botão **"Ver memória de cálculo"** (dialog com valores, fórmula, resultado, alertas, dados ausentes).
 
-**10. Metas de recuperação** — 7d / 15d / 30d / meio do prazo / -15d / final, com % esperado, valor, diferença vs realizado.
+## FASE 5 — Snapshots automáticos
 
-**11. Três cenários** — ritmo atual / +30% / ritmo necessário; condições, não promessas.
+Cron diário (`src/routes/api.public.analise-snapshot-cron.ts` + pg_cron) — upsert por `(obra_id, data_snapshot)` para todas as obras ativas. Aba Qualidade mostra: dias registrados, dias sem registro, última atualização, último lançamento, confiabilidade da série.
 
-**12. Pontuação de risco 0–100** — pesos exatos (25/20/20/15/10/10) e breakdown dos fatores.
+## FASE 6 — Validação
 
-**13. Confiabilidade** — alta/média/baixa + lista de dados faltantes ("18 sem responsável, 12 sem prazo...").
-
-**14. Diagnóstico estruturado** — 5 parágrafos.
-
-**15. Decisões agora** — até 7 cards com problema/impacto/decisão/responsável/prazo/resultado.
-
-**16. Plano de ação** — tabela com prioridade/ação/atividade/responsável/prazo/impacto/status. "Responsável não definido" gera ação automática.
-
-**17. Tendência** — comparação hoje vs ontem vs 7d vs análise anterior, lida de `obra_analise_snapshots`. Snapshot é gravado a cada cálculo (upsert na chave `obra_id+data_referencia` → idempotente).
-
-**18. Alertas inteligentes** — gerados em memória a partir das regras; deduplicação por hash do conteúdo comparando com snapshot anterior.
-
-**19. Botão "Gerar relatório gerencial"** — PDF expandido reutilizando `analise-gerencial-pdf.ts`, com todos os blocos acima.
-
-**20. Idempotência** — engine **só lê** `obra_atividades`. Snapshot vai para `obra_analise_snapshots` via upsert. Zero inserts em `obra_atividades`. Constraint `obra_atividades_obra_id_item_codigo_key` permanece.
-
-**21. Texto-resultado** — frases compostas automaticamente a partir dos números (ex: "Existem N atividades atrasadas, que representam R$ X e Y% do contrato. Z delas bloqueiam outras W...").
-
-## Detalhes técnicos
-
-- **Novo arquivo `src/lib/analise-gerencial-v2.ts`** — engine puro, exporta `calcularAnaliseV2(obra, atividades, snapshotsAnteriores)` retornando todos os 21 blocos como DTO.
-- **Novo arquivo `src/lib/analise-gerencial-v2.functions.ts`** — `createServerFn` com `requireSupabaseAuth`: SELECT em `obras` + `obra_atividades` + últimos 30 snapshots; chama engine; faz upsert do snapshot do dia; retorna DTO.
-- **Novo componente `src/components/AnaliseGerencialV2.tsx`** — renderiza os 21 blocos, usa `useQuery` para invalidação automática quando atividades mudam.
-- **Edição em `src/components/ObraApp.tsx`** — adiciona `<TabsTrigger value="analise-v2">` ao lado de Atividades e o `<TabsContent>` correspondente. Painel antigo (`AnaliseGerencialPanel`) sai da UI mas o arquivo permanece (pode ser removido depois).
-- **Sem migration nova** — `obra_analise_snapshots` já existe; campo `payload` jsonb guarda DTO completo.
-- **PDF** — extensão de `analise-gerencial-pdf.ts` (mesmo arquivo) com nova função `gerarRelatorioGerencialV2(dto)`.
-- **Auto-recálculo** — toda mutação que toca `obra_atividades` invalida a query key `["analise-v2", obraId]`.
+Build TS, testes manuais: obra sem planejamento, obra sem histórico, SINAPI duplicado, divisão por zero, datas nulas, desktop/tablet/mobile. PDF/Excel continuam funcionando com novo DTO.
 
 ## O que NÃO faço
 
-- Não mexo no schema de `obra_atividades`, não removo constraint, não faço INSERT lá.
-- Não removo o `AnaliseGerencialPanel` antigo neste passo (fica órfão no código; removo depois se você confirmar).
-- Não adiciono campo de dependências cadastrável agora — dependências são inferidas por regras de etapa. Se quiser depois um cadastro manual, faço em fase 2.
-- Sem cron diário automático nesta entrega — o snapshot é gravado quando o usuário abre a aba ou clica em recalcular. Se quiser cron 1x/dia por obra ativa, adiciono em fase 2.
+- Sem nova rota / tela paralela.
+- Sem alterar Atividades, Medições, RDO, Compliance.
+- Sem mocks. Quando faltar dado: estado vazio explícito.
+- Não removo `AnaliseGerencialPanel` antigo nesta entrega.
+- Riscos jamais como probabilidade estatística.
+
+Por ser muito grande, vou **entregar em PRs sequenciais nesta mesma tela**, na ordem das fases acima — começando pela Fase 1 assim que você aprovar. Confirma para eu iniciar?

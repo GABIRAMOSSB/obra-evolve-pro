@@ -35,8 +35,8 @@ export const getAnaliseV2 = createServerFn({ method: "POST" })
       return { initialized: false as const };
     }
 
-    // READ-ONLY: atividades + snapshots
-    const [ativRes, snapRes] = await Promise.all([
+    // READ-ONLY: atividades + snapshots + aditivos + medições
+    const [ativRes, snapRes, contratoRes, medRes] = await Promise.all([
       supabase
         .from("obra_atividades")
         .select(
@@ -54,9 +54,46 @@ export const getAnaliseV2 = createServerFn({ method: "POST" })
         .eq("obra_id", obraRow.id)
         .order("data_snapshot", { ascending: false })
         .limit(60),
+      supabase
+        .from("contratos")
+        .select("id")
+        .eq("company_id", companyId)
+        .eq("obra_id", obraRow.id)
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("medicoes")
+        .select("valor_executado, status")
+        .eq("company_id", companyId)
+        .eq("obra_id", obraRow.id),
     ]);
     if (ativRes.error) throw new Error(ativRes.error.message);
     if (snapRes.error) throw new Error(snapRes.error.message);
+
+    // aditivos do contrato (se houver contrato vinculado à obra)
+    let valor_aditivos = 0;
+    let valor_supressoes = 0;
+    if (contratoRes?.data?.id) {
+      const { data: adit } = await supabase
+        .from("aditivos_contratuais")
+        .select("tipo, valor_delta, status")
+        .eq("company_id", companyId)
+        .eq("contrato_id", contratoRes.data.id)
+        .eq("status", "vigente");
+      for (const a of adit ?? []) {
+        const v = Number((a as { valor_delta: number }).valor_delta) || 0;
+        if (v >= 0) valor_aditivos += v;
+        else valor_supressoes += Math.abs(v);
+      }
+    }
+
+    let valor_medido = 0;
+    let valor_pago = 0;
+    for (const m of (medRes.data ?? []) as Array<{ valor_executado: number; status: string }>) {
+      const v = Number(m.valor_executado) || 0;
+      if (m.status === "aprovada" || m.status === "paga") valor_medido += v;
+      if (m.status === "paga") valor_pago += v;
+    }
 
     // Carrega evoluções/medições reais do workspace legado para sobrescrever
     // o percentual_concluido (que não é mantido em obra_atividades). READ-ONLY.
@@ -81,6 +118,7 @@ export const getAnaliseV2 = createServerFn({ method: "POST" })
       obraRow as unknown as ObraRaw,
       atividadesMerged,
       (snapRes.data ?? []) as unknown as SnapshotRaw[],
+      { valor_aditivos, valor_supressoes, valor_medido, valor_pago },
     );
 
     // Snapshot diário — upsert por (obra_id, data_snapshot). Nunca toca obra_atividades.

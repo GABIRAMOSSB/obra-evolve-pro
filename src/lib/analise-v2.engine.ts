@@ -131,10 +131,18 @@ function normEtapa(s: string | null | undefined): string {
 // ---------- DTO ----------
 export type AnaliseV2 = ReturnType<typeof calcularAnaliseV2>;
 
+export type FinanceirosRaw = {
+  valor_aditivos: number;        // soma de aditivos vigentes positivos
+  valor_supressoes: number;      // soma de aditivos vigentes negativos (sempre positiva aqui)
+  valor_medido: number;          // soma de medicoes aprovadas/pagas
+  valor_pago: number;            // soma de medicoes status=paga
+};
+
 export function calcularAnaliseV2(
   obra: ObraRaw,
   atividadesRaw: AtividadeRaw[],
   snapshots: SnapshotRaw[],
+  financeiros?: FinanceirosRaw,
 ) {
   const hoje = new Date(isoToday() + "T00:00:00Z");
   const ativ = atividadesRaw.filter((a) => !a.is_group);
@@ -389,22 +397,44 @@ export function calcularAnaliseV2(
   const valor_bloqueado = bloqueios.reduce((s, b) => s + b.valor_bloqueado, 0);
 
   // --- prontidão das frentes ---
-  type Prontidao = { atividade: string; pct: number; pendencias: string[]; responsavel: string | null; data_necessaria: string | null };
+  // Matriz real (6 critérios derivados dos campos atualmente persistidos).
+  // Critérios adicionais (projeto liberado, material comprado/entregue, equipe,
+  // equipamento, segurança, documentação) entrarão quando o cadastro de prontidão
+  // detalhada estiver disponível em obra_atividades.prontidao_checklist.
+  type Prontidao = {
+    atividade: string;
+    pct: number;
+    criterios_ok: number;
+    criterios_total: number;
+    pendencias: string[];
+    responsavel: string | null;
+    data_necessaria: string | null;
+  };
   const frentes: Prontidao[] = enriquecidas
     .filter((a) => (Number(a.percentual_concluido) || 0) === 0 && a.status !== "concluida")
     .slice(0, 30)
     .map((a) => {
       const checks: { ok: boolean; label: string }[] = [
-        { ok: !!a.responsavel_nome, label: "responsável" },
-        { ok: !!a.data_prevista_inicio, label: "data de início" },
-        { ok: !!a.data_prevista_fim, label: "data de fim" },
-        { ok: !a.impedimento, label: "sem impedimento" },
-        { ok: a.prioridade !== "baixa" || true, label: "prioridade definida" },
+        { ok: !!a.responsavel_nome, label: "responsável definido" },
+        { ok: !!a.data_prevista_inicio, label: "data de início planejada" },
+        { ok: !!a.data_prevista_fim, label: "data de término planejada" },
+        { ok: !a.impedimento, label: "sem impedimento registrado" },
+        { ok: a.prioridade === "alta" || a.prioridade === "critica" || a.prioridade === "media", label: "prioridade classificada" },
+        { ok: !!a.etapa, label: "etapa identificada" },
       ];
       const ok = checks.filter((c) => c.ok).length;
-      const pct = Math.round((ok / checks.length) * 100);
+      const total = checks.length;
+      const pct = Math.round((ok / total) * 100);
       const pendencias = checks.filter((c) => !c.ok).map((c) => c.label);
-      return { atividade: a.descricao, pct, pendencias, responsavel: a.responsavel_nome, data_necessaria: a.data_prevista_inicio };
+      return {
+        atividade: a.descricao,
+        pct,
+        criterios_ok: ok,
+        criterios_total: total,
+        pendencias,
+        responsavel: a.responsavel_nome,
+        data_necessaria: a.data_prevista_inicio,
+      };
     })
     .sort((a, b) => a.pct - b.pct);
 
@@ -606,6 +636,155 @@ export function calcularAnaliseV2(
     return partes.join(" ");
   })();
 
+  // ============================================================
+  // ===== NOVOS BLOCOS (Fase 1) ================================
+  // ============================================================
+
+  // --- baseline planejada (avanço planejado por integração diária) ---
+  // Cada atividade contribui com pct_planejado linear entre data_prevista_inicio
+  // e data_prevista_fim. Atividades sem datas planejadas são marcadas como
+  // "não previstas" e não entram no avanço planejado (entram só no contador
+  // de gaps).
+  function pctPlanejadoAt(a: AtividadeRaw, ref: Date): number | null {
+    const pi = parseDate(a.data_prevista_inicio);
+    const pf = parseDate(a.data_prevista_fim);
+    if (!pi || !pf) return null;
+    if (ref.getTime() <= pi.getTime()) return 0;
+    if (ref.getTime() >= pf.getTime()) return 100;
+    const dur = Math.max(1, diffDays(pf, pi));
+    const passou = diffDays(ref, pi);
+    return Math.min(100, Math.max(0, (passou / dur) * 100));
+  }
+  const planejadosPorAt = ativ.map((a) => pctPlanejadoAt(a, hoje));
+  const ativComBaseline = planejadosPorAt.filter((p) => p != null).length;
+  let avanco_planejado: number | null = null;
+  if (ativComBaseline > 0) {
+    const num = ativ.reduce((s, a, idx) => {
+      const p = planejadosPorAt[idx];
+      if (p == null) return s;
+      const peso = usaValor ? Number(a.valor) || 0 : usaPeso ? Number(a.peso) || 0 : 1;
+      return s + peso * (p / 100);
+    }, 0);
+    const den = (() => {
+      const dd = ativ.reduce((s, a, idx) => {
+        if (planejadosPorAt[idx] == null) return s;
+        return s + (usaValor ? Number(a.valor) || 0 : usaPeso ? Number(a.peso) || 0 : 1);
+      }, 0);
+      return dd > 0 ? dd : 1;
+    })();
+    avanco_planejado = +((num / den) * 100).toFixed(2);
+  }
+
+  // SPI real (não confundir com índice linear, que continua em `idp`).
+  const spi = avanco_planejado != null && avanco_planejado > 0
+    ? +(avanco / avanco_planejado).toFixed(3)
+    : null;
+  type SpiClasse = "no_prazo" | "atencao" | "atraso_relevante" | "atraso_critico" | "nao_previsto";
+  const spi_classe: SpiClasse = (() => {
+    if (avanco_planejado == null) return "nao_previsto";
+    if (avanco_planejado === 0) return "nao_previsto";
+    if (spi == null) return "nao_previsto";
+    if (spi >= 1.0) return "no_prazo";
+    if (spi >= 0.95) return "atencao";
+    if (spi >= 0.85) return "atraso_relevante";
+    return "atraso_critico";
+  })();
+  const desvio_planejado = avanco_planejado != null
+    ? +(avanco - avanco_planejado).toFixed(2)
+    : null;
+
+  // --- cobertura de dados ---
+  const sem_valor = ativ.filter((a) => !(Number(a.valor) > 0)).length;
+  const sem_peso = ativ.filter((a) => !(Number(a.peso) > 0)).length;
+  const sem_planej_inicio = ativ.filter((a) => !a.data_prevista_inicio).length;
+  const sem_planej_fim = ativ.filter((a) => !a.data_prevista_fim).length;
+  const sem_responsavel = ativ.filter((a) => !a.responsavel_nome).length;
+  const sem_etapa = ativ.filter((a) => !a.etapa).length;
+  const cobertura_valor = totalCount > 0 ? +((1 - sem_valor / totalCount) * 100).toFixed(1) : 0;
+  const cobertura_peso = totalCount > 0 ? +((1 - sem_peso / totalCount) * 100).toFixed(1) : 0;
+  const cobertura_planejamento = totalCount > 0
+    ? +((1 - Math.max(sem_planej_inicio, sem_planej_fim) / totalCount) * 100).toFixed(1)
+    : 0;
+  const dados_insuficientes_valor = cobertura_valor < 100 && cobertura_peso < 100;
+  // Confiança 0–100 (média ponderada das coberturas)
+  const confianca_dados = +(
+    cobertura_valor * 0.35 +
+    cobertura_planejamento * 0.35 +
+    (totalCount > 0 ? (1 - sem_responsavel / totalCount) * 100 : 0) * 0.2 +
+    Math.min(100, snapshots.length * 10) * 0.1
+  ).toFixed(0);
+
+  // --- financeiro estendido ---
+  const valor_contratado_original = Number(obra.valor_contratado) || 0;
+  const valor_aditivos = Number(financeiros?.valor_aditivos) || 0;
+  const valor_supressoes = Number(financeiros?.valor_supressoes) || 0;
+  const valor_vigente = valor_contratado_original + valor_aditivos - valor_supressoes;
+  const valor_medido = Number(financeiros?.valor_medido) || 0;
+  const valor_pago = Number(financeiros?.valor_pago) || 0;
+  const valor_agregado_producao = valor_executado; // produção a preço de contrato
+  const valor_executado_nao_medido = Math.max(0, valor_agregado_producao - valor_medido);
+  const valor_medido_nao_recebido = Math.max(0, valor_medido - valor_pago);
+  const divergencia_contrato_atividades = +(valor_vigente - totalValor).toFixed(2);
+  const pct_cobertura_contrato = valor_vigente > 0
+    ? +((totalValor / valor_vigente) * 100).toFixed(2)
+    : null;
+
+  // --- riscos por dimensão (0–100) ---
+  // Cada dimensão usa fatores já calculados, sem somar o mesmo problema 2x.
+  function clamp(x: number, lo = 0, hi = 100) { return Math.max(lo, Math.min(hi, x)); }
+  const risco_prazo = (() => {
+    let s = 0;
+    if (spi != null && spi < 1) s += clamp((1 - spi) * 100, 0, 50);
+    else if (desvio != null && desvio < 0) s += clamp(Math.abs(desvio) * 1.5, 0, 50);
+    if (proj_acumulado.atraso_dias != null && proj_acumulado.atraso_dias > 0) {
+      s += clamp(proj_acumulado.atraso_dias / 2, 0, 30);
+    }
+    if (fator_aceleracao != null && fator_aceleracao > 1) {
+      s += clamp((fator_aceleracao - 1) * 20, 0, 20);
+    }
+    return Math.round(clamp(s));
+  })();
+  const risco_operacional = (() => {
+    let s = 0;
+    if (desempenho_semanal != null) s += clamp(100 - desempenho_semanal, 0, 35);
+    if (frentes.length) {
+      const mediaPront = frentes.reduce((acc, f) => acc + f.pct, 0) / frentes.length;
+      s += clamp((100 - mediaPront) * 0.35, 0, 35);
+    }
+    if (totalCount > 0) {
+      const pctImped = enriquecidas.filter((a) => a.impedimento).length / totalCount;
+      s += clamp(pctImped * 100 * 0.3, 0, 30);
+    }
+    return Math.round(clamp(s));
+  })();
+  const risco_financeiro = (() => {
+    let s = 0;
+    if (valor_vigente > 0) {
+      s += clamp((valor_executado_nao_medido / valor_vigente) * 200, 0, 35);
+      s += clamp((valor_medido_nao_recebido / valor_vigente) * 200, 0, 25);
+    }
+    if (totalValor > 0) {
+      s += clamp((valor_criticas / totalValor) * 100, 0, 25);
+    }
+    if (Math.abs(divergencia_contrato_atividades) > Math.max(1, valor_vigente * 0.05)) {
+      s += 15;
+    }
+    return Math.round(clamp(s));
+  })();
+  const risco_gerencial = (() => {
+    let s = 0;
+    if (totalCount > 0) {
+      s += clamp((sem_responsavel / totalCount) * 100 * 0.4, 0, 40);
+      s += clamp((sem_planej_fim / totalCount) * 100 * 0.3, 0, 30);
+      s += clamp((sem_valor / totalCount) * 100 * 0.3, 0, 30);
+    }
+    return Math.round(clamp(s));
+  })();
+  const risco_consolidado = Math.round(
+    risco_prazo * 0.35 + risco_operacional * 0.25 + risco_financeiro * 0.25 + risco_gerencial * 0.15,
+  );
+
+  // ============================================================
   return {
     obra_id: obra.id,
     obra_nome: obra.nome,
@@ -674,5 +853,52 @@ export function calcularAnaliseV2(
     tendencia,
     alertas,
     frase_resultado,
+    // ===== novos (Fase 1) =====
+    planejamento: {
+      avanco_planejado,
+      desvio_planejado,
+      spi,
+      spi_classe,
+      atividades_com_baseline: ativComBaseline,
+      atividades_sem_baseline: totalCount - ativComBaseline,
+    },
+    cobertura_dados: {
+      total_atividades: totalCount,
+      sem_valor,
+      sem_peso,
+      sem_planejamento_inicio: sem_planej_inicio,
+      sem_planejamento_fim: sem_planej_fim,
+      sem_responsavel,
+      sem_etapa,
+      cobertura_valor_pct: cobertura_valor,
+      cobertura_peso_pct: cobertura_peso,
+      cobertura_planejamento_pct: cobertura_planejamento,
+      dados_insuficientes_avanco_valor: dados_insuficientes_valor,
+      confianca: confianca_dados,
+    },
+    financeiro: {
+      valor_contratado_original,
+      valor_aditivos,
+      valor_supressoes,
+      valor_vigente,
+      valor_total_atividades: totalValor,
+      divergencia_contrato_atividades,
+      pct_cobertura_contrato,
+      valor_agregado_producao,
+      valor_medido,
+      valor_executado_nao_medido,
+      valor_pago,
+      valor_medido_nao_recebido,
+      saldo_contratual: Math.max(0, valor_vigente - valor_pago),
+      potencial_proxima_medicao: valor_executado_nao_medido,
+    },
+    riscos_dimensoes: {
+      prazo: risco_prazo,
+      operacional: risco_operacional,
+      financeiro: risco_financeiro,
+      gerencial: risco_gerencial,
+      consolidado: risco_consolidado,
+      confianca: confianca_dados,
+    },
   };
 }

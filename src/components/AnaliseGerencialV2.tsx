@@ -1,9 +1,9 @@
 /**
- * Painel V2 da Análise Gerencial da Obra.
+ * Painel Análise Gerencial — V2 (refatorado: 6 abas + identidade SOLV).
  *
- * Lê exclusivamente de obra_atividades (read-only). Renderiza os 21 blocos
- * de indicadores e atualiza automaticamente quando as atividades mudam
- * (via realtime + invalidação de query).
+ * Lê somente de obra_atividades + obra_analise_snapshots + medicoes + aditivos.
+ * Inclui novos cálculos: avanço planejado (baseline), SPI real, riscos 4D,
+ * financeiro estendido e cobertura/qualidade de dados.
  */
 import { useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -14,9 +14,12 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Activity, AlertTriangle, TrendingUp, TrendingDown, Loader2, RefreshCw,
-  Target, Calendar, ShieldAlert, Layers, Link2, CheckCircle2,
+  Target, Calendar, ShieldAlert, Layers, Link2, CheckCircle2, Info,
+  Wallet, BarChart3, Database, Briefcase,
 } from "lucide-react";
 
 const fmtBRL = (v: number | null | undefined) =>
@@ -53,28 +56,84 @@ const SITUACAO_ETAPA: Record<string, string> = {
   nao_iniciada: "bg-slate-500/15 text-slate-700",
 };
 
-function Section({ icon: Icon, title, subtitle, children }: { icon: React.ComponentType<{ className?: string }>; title: string; subtitle?: string; children: React.ReactNode }) {
+const SPI_CLASSE_LABEL: Record<string, { label: string; tone: "ok" | "warn" | "bad" | "neutro" }> = {
+  no_prazo: { label: "Dentro/acima do planejado", tone: "ok" },
+  atencao: { label: "Atenção", tone: "warn" },
+  atraso_relevante: { label: "Atraso relevante", tone: "bad" },
+  atraso_critico: { label: "Atraso crítico", tone: "bad" },
+  nao_previsto: { label: "Sem baseline planejada", tone: "neutro" },
+};
+
+function Section({ icon: Icon, title, subtitle, children, action }: { icon: React.ComponentType<{ className?: string }>; title: string; subtitle?: string; children: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <Card className="p-4 space-y-3">
-      <div className="flex items-start gap-2 border-b pb-2">
-        <Icon className="w-4 h-4 mt-1 text-primary" />
-        <div className="flex-1">
-          <div className="font-semibold text-sm">{title}</div>
-          {subtitle && <div className="text-xs text-muted-foreground">{subtitle}</div>}
+    <Card className="p-5 space-y-4 rounded-2xl border-border/60 shadow-sm">
+      <div className="flex items-start gap-3 border-b pb-3">
+        <div className="rounded-lg bg-primary/10 p-2"><Icon className="w-4 h-4 text-primary" /></div>
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-base">{title}</div>
+          {subtitle && <div className="text-xs text-muted-foreground mt-0.5">{subtitle}</div>}
         </div>
+        {action}
       </div>
       {children}
     </Card>
   );
 }
 
-function Kpi({ label, value, hint, tone }: { label: string; value: string; hint?: string; tone?: "ok" | "warn" | "bad" }) {
-  const toneCls = tone === "bad" ? "text-rose-600" : tone === "warn" ? "text-amber-600" : tone === "ok" ? "text-emerald-600" : "";
+function Kpi({ label, value, hint, tone, tooltip }: { label: string; value: string; hint?: string; tone?: "ok" | "warn" | "bad" | "neutro"; tooltip?: string }) {
+  const toneCls = tone === "bad" ? "text-rose-600"
+    : tone === "warn" ? "text-amber-600"
+    : tone === "ok" ? "text-emerald-600"
+    : tone === "neutro" ? "text-slate-600"
+    : "";
   return (
-    <div className="rounded-md border bg-card/40 p-3">
-      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className={`text-lg font-semibold mt-1 ${toneCls}`}>{value}</div>
-      {hint && <div className="text-[11px] text-muted-foreground mt-1 leading-snug">{hint}</div>}
+    <div className="rounded-xl border bg-card p-3.5 space-y-1.5">
+      <div className="flex items-center gap-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+        {label}
+        {tooltip && (
+          <TooltipProvider><Tooltip>
+            <TooltipTrigger asChild><Info className="w-3 h-3 opacity-60 cursor-help" /></TooltipTrigger>
+            <TooltipContent className="max-w-xs text-xs leading-snug">{tooltip}</TooltipContent>
+          </Tooltip></TooltipProvider>
+        )}
+      </div>
+      <div className={`text-2xl font-semibold tabular-nums ${toneCls}`}>{value}</div>
+      {hint && <div className="text-[11px] text-muted-foreground leading-snug">{hint}</div>}
+    </div>
+  );
+}
+
+function HeroKpi({ label, value, hint, tone, tooltip, sub }: { label: string; value: string; hint?: string; tone?: "ok" | "warn" | "bad" | "neutro"; tooltip?: string; sub?: string }) {
+  const toneBar = tone === "bad" ? "bg-rose-500"
+    : tone === "warn" ? "bg-amber-500"
+    : tone === "ok" ? "bg-emerald-500"
+    : "bg-primary";
+  return (
+    <Card className="p-4 rounded-2xl border-border/60 shadow-sm relative overflow-hidden">
+      <div className={`absolute left-0 top-0 bottom-0 w-1 ${toneBar}`} />
+      <div className="pl-2 space-y-1">
+        <div className="flex items-center gap-1 text-[11px] uppercase tracking-wide text-muted-foreground font-medium">
+          {label}
+          {tooltip && (
+            <TooltipProvider><Tooltip>
+              <TooltipTrigger asChild><Info className="w-3 h-3 opacity-60 cursor-help" /></TooltipTrigger>
+              <TooltipContent className="max-w-xs text-xs leading-snug">{tooltip}</TooltipContent>
+            </Tooltip></TooltipProvider>
+          )}
+        </div>
+        <div className="text-[26px] font-bold tabular-nums leading-tight">{value}</div>
+        {sub && <div className="text-xs font-medium text-foreground/80">{sub}</div>}
+        {hint && <div className="text-[11px] text-muted-foreground leading-snug">{hint}</div>}
+      </div>
+    </Card>
+  );
+}
+
+function Insuficiente({ msg }: { msg?: string }) {
+  return (
+    <div className="rounded-md border border-dashed border-amber-400/50 bg-amber-50/40 dark:bg-amber-950/10 p-3 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2">
+      <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+      <span>{msg ?? "Dados insuficientes para cálculo."}</span>
     </div>
   );
 }
@@ -107,14 +166,14 @@ export function AnaliseGerencialV2({ legacyObraId }: { legacyObraId: string }) {
 
   if (q.isLoading) {
     return (
-      <Card className="p-6 flex items-center gap-2 text-muted-foreground">
+      <Card className="p-6 flex items-center gap-2 text-muted-foreground rounded-2xl">
         <Loader2 className="w-4 h-4 animate-spin" /> Calculando análise gerencial…
       </Card>
     );
   }
   if (q.error) {
     return (
-      <Card className="p-6 text-sm text-rose-600">
+      <Card className="p-6 text-sm text-rose-600 rounded-2xl">
         Erro: {(q.error as Error).message}
         <Button size="sm" variant="outline" className="ml-3" onClick={() => q.refetch()}>Tentar novamente</Button>
       </Card>
@@ -122,7 +181,7 @@ export function AnaliseGerencialV2({ legacyObraId }: { legacyObraId: string }) {
   }
   if (!q.data || !q.data.initialized) {
     return (
-      <Card className="p-6 text-sm text-muted-foreground">
+      <Card className="p-6 text-sm text-muted-foreground rounded-2xl">
         Esta obra ainda não está sincronizada com o banco gerencial. Abra a aba <strong>Atividades</strong> uma vez para inicializar e volte aqui.
       </Card>
     );
@@ -131,381 +190,565 @@ export function AnaliseGerencialV2({ legacyObraId }: { legacyObraId: string }) {
   const a = q.data.analise;
   const i = a.indicadores;
   const r = a.ritmo;
+  const plan = a.planejamento;
+  const fin = a.financeiro;
+  const cov = a.cobertura_dados;
+  const dim = a.riscos_dimensoes;
   const score = a.risco.score;
 
+  // tones derivados
+  const desvioTone: "ok" | "warn" | "bad" | "neutro" =
+    plan.desvio_planejado == null ? "neutro"
+      : plan.desvio_planejado < -10 ? "bad"
+      : plan.desvio_planejado < -3 ? "warn"
+      : "ok";
+  const spiClasse = SPI_CLASSE_LABEL[plan.spi_classe];
+
   return (
-    <div className="space-y-4">
-      {/* CABEÇALHO + RISCO + DIAGNÓSTICO */}
-      <Card className="p-4 space-y-3 border-primary/30">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+    <div className="space-y-5">
+      {/* ===================== CABEÇALHO EXECUTIVO ===================== */}
+      <Card className="p-5 rounded-2xl border-border/60 shadow-sm bg-gradient-to-br from-primary/[0.04] to-transparent">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="space-y-2 min-w-0">
+            <div className="flex items-center gap-2">
+              <Briefcase className="w-5 h-5 text-primary" />
+              <h2 className="text-xl font-bold tracking-tight">{a.obra_nome}</h2>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <Badge variant="outline" className={`uppercase ${RISCO[a.risco.nivel]}`}>
+                Risco {a.risco.nivel.replace("_", " ")} · {score.toFixed(0)}/100
+              </Badge>
+              <Badge variant="outline">Confiança dos dados: {cov.confianca}%</Badge>
+              <Badge variant="outline">Método de avanço: {a.metodo_avanco}</Badge>
+              <span className="text-muted-foreground">·</span>
+              <span className="text-muted-foreground">Data-base: <strong className="text-foreground">{fmtDt(a.data_referencia)}</strong></span>
+            </div>
+          </div>
           <div className="flex items-center gap-2">
-            <Activity className="w-5 h-5 text-primary" />
-            <h2 className="text-base font-semibold">Análise Gerencial — {a.obra_nome}</h2>
-            <Badge variant="outline" className={`uppercase text-xs ${RISCO[a.risco.nivel]}`}>
-              Risco {a.risco.nivel.replace("_", " ")} · {score.toFixed(0)}/100
-            </Badge>
-            <Badge variant="outline" className="text-xs">Confiabilidade {a.confiabilidade}</Badge>
-            <Badge variant="outline" className="text-xs">Método: {a.metodo_avanco}</Badge>
-          </div>
-          <Button size="sm" variant="outline" onClick={() => q.refetch()}>
-            <RefreshCw className="w-3 h-3 mr-1" /> Recalcular
-          </Button>
-        </div>
-        <Progress value={score} className="h-2" />
-        <div className="grid md:grid-cols-5 gap-3 text-sm">
-          <div className="md:col-span-2 space-y-2">
-            <div><span className="font-semibold">Situação: </span>{a.diagnostico.situacao}</div>
-            <div><span className="font-semibold">Causa principal: </span>{a.diagnostico.causa}</div>
-          </div>
-          <div className="md:col-span-3 space-y-2">
-            <div><span className="font-semibold">Consequência: </span>{a.diagnostico.consequencia}</div>
-            <div><span className="font-semibold">Recuperação: </span>{a.diagnostico.recuperacao}</div>
-            <div><span className="font-semibold">Decisão: </span>{a.diagnostico.decisao}</div>
+            <Button size="sm" variant="outline" onClick={() => q.refetch()}>
+              <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Recalcular
+            </Button>
           </div>
         </div>
-        {a.frase_resultado && (
-          <div className="text-sm rounded-md bg-primary/5 border border-primary/20 p-3 leading-relaxed">
-            {a.frase_resultado}
+
+        {/* Diagnóstico em texto */}
+        <div className="mt-4 grid md:grid-cols-2 gap-3 text-sm">
+          <div className="rounded-xl border bg-card p-3 space-y-1.5">
+            <div><span className="font-semibold text-foreground">Situação: </span><span className="text-muted-foreground">{a.diagnostico.situacao}</span></div>
+            <div><span className="font-semibold text-foreground">Causa principal: </span><span className="text-muted-foreground">{a.diagnostico.causa}</span></div>
+            <div><span className="font-semibold text-foreground">Consequência: </span><span className="text-muted-foreground">{a.diagnostico.consequencia}</span></div>
           </div>
-        )}
+          <div className="rounded-xl border bg-card p-3 space-y-1.5">
+            <div><span className="font-semibold text-foreground">Recuperação: </span><span className="text-muted-foreground">{a.diagnostico.recuperacao}</span></div>
+            <div><span className="font-semibold text-foreground">Decisão recomendada: </span><span className="text-muted-foreground">{a.diagnostico.decisao}</span></div>
+          </div>
+        </div>
       </Card>
 
-      {/* 1. INDICADORES PRINCIPAIS */}
-      <Section icon={Target} title="Indicadores principais" subtitle="Prazo, avanço e desempenho">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Kpi label="Prazo consumido" value={fmtPct(i.prazo_consumido)} hint={`${i.dias_decorridos ?? "—"} / ${i.prazo_total ?? "—"} dias · restam ${i.dias_restantes ?? "—"}`} />
-          <Kpi label="Avanço ponderado" value={fmtPct(i.avanco)} hint={`Executado ${fmtBRL(i.valor_executado)} de ${fmtBRL(i.valor_total)}`} />
-          <Kpi label="Desvio" value={i.desvio != null ? `${i.desvio > 0 ? "+" : ""}${i.desvio.toFixed(2)} p.p.` : "—"} hint={i.desvio_classe ?? undefined} tone={i.desvio != null && i.desvio < -10 ? "bad" : i.desvio != null && i.desvio < -5 ? "warn" : "ok"} />
-          <Kpi label="Índice de desempenho" value={fmtNum(i.idp, 2)} hint={i.idp != null ? `A cada 1% de prazo, ${(i.idp * 100).toFixed(0)}% de avanço` : undefined} tone={i.idp != null && i.idp < 0.75 ? "bad" : i.idp != null && i.idp < 0.9 ? "warn" : "ok"} />
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Kpi label="Data contratual" value={fmtDt(i.data_fim_prevista)} />
-          <Kpi label="Valor contratado" value={fmtBRL(i.valor_total)} />
-          <Kpi label="Saldo a executar" value={fmtBRL(i.saldo_executar)} />
-          <Kpi label="Início" value={fmtDt(i.data_inicio)} />
-        </div>
-      </Section>
+      {/* ===================== 6 CARTÕES PRINCIPAIS ===================== */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+        <HeroKpi
+          label="Avanço planejado"
+          value={plan.avanco_planejado != null ? fmtPct(plan.avanco_planejado, 1) : "—"}
+          hint={plan.atividades_com_baseline > 0
+            ? `${plan.atividades_com_baseline} atividade(s) com baseline`
+            : "Sem datas planejadas cadastradas"}
+          tooltip="Avanço esperado até hoje pela curva planejada. Integra linearmente entre data prevista de início e fim de cada atividade, ponderado por valor (ou peso, se não houver valor)."
+        />
+        <HeroKpi
+          label="Avanço realizado"
+          value={fmtPct(i.avanco, 1)}
+          hint={`${fmtBRL(i.valor_executado)} de ${fmtBRL(i.valor_total)}`}
+          tooltip="Avanço ponderado pelo valor (ou peso) considerando o percentual real de cada atividade. Soma(percentual × valor) / Soma(valor)."
+        />
+        <HeroKpi
+          label="Desvio do plano"
+          value={plan.desvio_planejado != null
+            ? `${plan.desvio_planejado > 0 ? "+" : ""}${plan.desvio_planejado.toFixed(2)} p.p.`
+            : "—"}
+          sub={plan.desvio_planejado == null ? "Sem baseline" : undefined}
+          hint={plan.desvio_planejado != null
+            ? "Realizado − Planejado (em pontos percentuais)"
+            : "Cadastre datas previstas nas atividades para calcular."}
+          tone={desvioTone}
+          tooltip="Diferença em pontos percentuais entre o avanço realizado e o avanço planejado até hoje."
+        />
+        <HeroKpi
+          label="SPI (Schedule Performance)"
+          value={plan.spi != null ? plan.spi.toFixed(2) : "—"}
+          sub={spiClasse.label}
+          hint={plan.spi != null
+            ? "Realizado / Planejado. Ideal ≥ 1,00"
+            : "Sem baseline para cálculo"}
+          tone={spiClasse.tone}
+          tooltip="Schedule Performance Index. ≥1,00 dentro do prazo; 0,95–0,99 atenção; 0,85–0,94 atraso relevante; <0,85 crítico."
+        />
+        <HeroKpi
+          label="Data projetada de conclusão"
+          value={fmtDt(a.projecao.acumulado.data)}
+          sub={a.projecao.acumulado.atraso_dias != null
+            ? (a.projecao.acumulado.atraso_dias > 0
+                ? `+${a.projecao.acumulado.atraso_dias}d`
+                : `${a.projecao.acumulado.atraso_dias}d`)
+            : undefined}
+          hint={`Contratual: ${fmtDt(i.data_fim_prevista)}`}
+          tone={a.projecao.acumulado.atraso_dias != null && a.projecao.acumulado.atraso_dias > 30 ? "bad"
+            : a.projecao.acumulado.atraso_dias != null && a.projecao.acumulado.atraso_dias > 0 ? "warn"
+            : "ok"}
+          tooltip="Projeção pelo ritmo acumulado da obra (avanço total ÷ dias decorridos)."
+        />
+        <HeroKpi
+          label="Disponível para medição"
+          value={fmtBRL(fin.potencial_proxima_medicao)}
+          hint={`Medido: ${fmtBRL(fin.valor_medido)} · Produção: ${fmtBRL(fin.valor_agregado_producao)}`}
+          tone={fin.potencial_proxima_medicao > 0 ? "ok" : "neutro"}
+          tooltip="Produção a preço de contrato ainda não levada a medição. Fórmula: valor agregado − valor já medido."
+        />
+      </div>
 
-      {/* 2. RITMO */}
-      <Section icon={TrendingUp} title="Ritmo de produção" subtitle={r.frase ?? "Comparação realizado x necessário"}>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Kpi label="Ritmo acumulado" value={fmtNum(r.acumulado, 3) + " %/dia"} />
-          <Kpi label="Últimos 7 dias" value={r.ultimos_7d != null ? `${r.ultimos_7d.toFixed(3)} %/dia` : "—"} />
-          <Kpi label="Últimos 15 dias" value={r.ultimos_15d != null ? `${r.ultimos_15d.toFixed(3)} %/dia` : "—"} />
-          <Kpi label="Necessário" value={r.necessario != null ? `${r.necessario.toFixed(3)} %/dia` : "—"} hint={r.producao_financ_dia != null ? `${fmtBRL(r.producao_financ_dia)}/dia` : undefined} />
-          <Kpi label="Fator de aceleração" value={r.fator_aceleracao != null ? `${r.fator_aceleracao.toFixed(2)}x` : "—"} hint={r.fator_classe} tone={r.fator_aceleracao != null && r.fator_aceleracao > 1.6 ? "bad" : r.fator_aceleracao != null && r.fator_aceleracao > 1.3 ? "warn" : "ok"} />
-          <Kpi label="Meta semanal (%)" value={fmtPct(r.meta_semanal_pct, 2)} />
-          <Kpi label="Meta semanal (R$)" value={fmtBRL(r.meta_semanal_valor)} />
-          <Kpi label="Desempenho semana atual" value={a.produtividade.desempenho_semanal != null ? `${a.produtividade.desempenho_semanal.toFixed(0)}%` : "—"} tone={a.produtividade.desempenho_semanal != null && a.produtividade.desempenho_semanal < 75 ? "bad" : "ok"} />
-        </div>
-      </Section>
-
-      {/* 3. PROJEÇÃO */}
-      <Section icon={Calendar} title="Projeção de conclusão" subtitle={`Tendência recente: ${a.projecao.tendencia_recente === "melhor" ? "melhor que a média" : a.projecao.tendencia_recente === "pior" ? "pior que a média histórica" : "estável"}`}>
-        <div className="grid md:grid-cols-2 gap-3">
-          <div className="rounded-md border p-3 space-y-1">
-            <div className="text-xs uppercase text-muted-foreground">Cenário pelo ritmo acumulado</div>
-            <div className="text-sm">Conclusão projetada: <strong>{fmtDt(a.projecao.acumulado.data)}</strong></div>
-            <div className="text-sm">Atraso projetado: <strong>{a.projecao.acumulado.atraso_dias ?? "—"} dias</strong></div>
-            <div className="text-sm">% no vencimento: <strong>{fmtPct(a.projecao.acumulado.pct_no_vencimento)}</strong></div>
+      {/* Alerta global de cobertura */}
+      {cov.dados_insuficientes_avanco_valor && (
+        <Card className="p-3 rounded-xl border-amber-400/50 bg-amber-50/40 dark:bg-amber-950/10 text-amber-800 dark:text-amber-300 text-sm flex items-start gap-2">
+          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+          <div>
+            <strong>Avanço com confiança parcial.</strong>{" "}
+            {cov.sem_valor} de {cov.total_atividades} atividade(s) sem valor cadastrado
+            ({fmtPct(cov.cobertura_valor_pct, 1)} de cobertura). O avanço ponderado por valor só é totalmente confiável com 100% das atividades cobertas.
           </div>
-          <div className="rounded-md border p-3 space-y-1">
-            <div className="text-xs uppercase text-muted-foreground">Cenário pelo ritmo recente (7–14d)</div>
-            <div className="text-sm">Conclusão projetada: <strong>{fmtDt(a.projecao.recente.data)}</strong></div>
-            <div className="text-sm">Atraso projetado: <strong>{a.projecao.recente.atraso_dias ?? "—"} dias</strong></div>
-            <div className="text-sm">% no vencimento: <strong>{fmtPct(a.projecao.recente.pct_no_vencimento)}</strong></div>
-          </div>
-        </div>
-      </Section>
-
-      {/* 4. ATIVIDADES CRÍTICAS */}
-      <Section icon={AlertTriangle} title={`Atividades críticas (${a.criticas.length})`} subtitle="Ordenadas por índice de impacto">
-        <div className="overflow-auto max-h-[420px] rounded-md border">
-          <table className="w-full text-xs">
-            <thead className="bg-muted/40 sticky top-0">
-              <tr className="text-left">
-                <th className="p-2">Atividade</th>
-                <th className="p-2">Etapa</th>
-                <th className="p-2 text-right">Valor pend.</th>
-                <th className="p-2 text-right">%</th>
-                <th className="p-2 text-right">Atraso</th>
-                <th className="p-2">Responsável</th>
-                <th className="p-2">Impacto</th>
-                <th className="p-2">Ação recomendada</th>
-              </tr>
-            </thead>
-            <tbody>
-              {a.criticas.map((c) => (
-                <tr key={c.id} className="border-t">
-                  <td className="p-2">{c.descricao}</td>
-                  <td className="p-2">{c.etapa ?? "—"}</td>
-                  <td className="p-2 text-right">{fmtBRL(c.valor_pendente)}</td>
-                  <td className="p-2 text-right">{fmtPct(c.percentual_concluido, 0)}</td>
-                  <td className="p-2 text-right">{c.dias_atraso ? `${c.dias_atraso}d` : "—"}</td>
-                  <td className="p-2">{c.responsavel_nome ?? <span className="text-rose-600">não definido</span>}</td>
-                  <td className="p-2"><Badge variant="outline" className={`text-[10px] ${IMPACTO[c.impact_nivel]}`}>{c.impact_nivel} · {c.impact_score.toFixed(0)}</Badge></td>
-                  <td className="p-2 text-muted-foreground">{c.acao_recomendada}</td>
-                </tr>
-              ))}
-              {a.criticas.length === 0 && (
-                <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">Nenhuma atividade crítica identificada.</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Section>
-
-      {/* 5. EXPOSIÇÃO FINANCEIRA */}
-      <Section icon={ShieldAlert} title="Exposição financeira" subtitle="Onde o dinheiro está parado">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <Kpi label="Não iniciadas" value={fmtBRL(a.exposicao.valor_nao_iniciadas)} />
-          <Kpi label="Atrasadas" value={fmtBRL(a.exposicao.valor_atrasadas)} />
-          <Kpi label="Críticas" value={fmtBRL(a.exposicao.valor_criticas)} tone="bad" />
-          <Kpi label="% contrato com 0%" value={fmtPct(a.exposicao.pct_contrato_zero)} />
-          <Kpi label="% top 5 pendentes" value={fmtPct(a.exposicao.pct_top5)} />
-        </div>
-        {a.exposicao.top5.length > 0 && (
-          <div className="text-xs text-muted-foreground">
-            As 5 maiores pendentes: {a.exposicao.top5.map((t) => `${t.descricao} (${fmtBRL(t.valor_pendente)})`).join(" · ")}
-          </div>
-        )}
-      </Section>
-
-      {/* 6. POR ETAPA */}
-      <Section icon={Layers} title="Análise por etapa">
-        <div className="overflow-auto rounded-md border">
-          <table className="w-full text-xs">
-            <thead className="bg-muted/40">
-              <tr className="text-left">
-                <th className="p-2">Etapa</th>
-                <th className="p-2 text-right">Valor</th>
-                <th className="p-2 text-right">Avanço</th>
-                <th className="p-2 text-right">Saldo</th>
-                <th className="p-2 text-right">Ativ.</th>
-                <th className="p-2 text-right">Atrasadas</th>
-                <th className="p-2 text-right">Críticas</th>
-                <th className="p-2">Responsável</th>
-                <th className="p-2">Situação</th>
-              </tr>
-            </thead>
-            <tbody>
-              {a.etapas.map((e) => (
-                <tr key={e.etapa} className="border-t">
-                  <td className="p-2 font-medium">{e.etapa}</td>
-                  <td className="p-2 text-right">{fmtBRL(e.valor)}</td>
-                  <td className="p-2 text-right">{fmtPct(e.avanco, 1)}</td>
-                  <td className="p-2 text-right">{fmtBRL(e.saldo)}</td>
-                  <td className="p-2 text-right">{e.qtd}</td>
-                  <td className="p-2 text-right">{e.atrasadas}</td>
-                  <td className="p-2 text-right">{e.criticas}</td>
-                  <td className="p-2">{e.responsavel ?? "—"}</td>
-                  <td className="p-2"><Badge variant="outline" className={`text-[10px] ${SITUACAO_ETAPA[e.situacao]}`}>{e.situacao.replace("_", " ")}</Badge></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Section>
-
-      {/* 7. DEPENDÊNCIAS E BLOQUEIOS */}
-      <Section icon={Link2} title={`Bloqueios identificados (${a.bloqueios.length})`} subtitle={`${a.num_bloqueadas} atividade(s) bloqueada(s) · ${fmtBRL(a.valor_bloqueado)} em risco`}>
-        {a.bloqueios.length === 0 ? (
-          <div className="text-sm text-muted-foreground">Nenhum bloqueio entre etapas detectado.</div>
-        ) : (
-          <div className="space-y-2">
-            {a.bloqueios.map((b, idx) => (
-              <div key={idx} className="rounded-md border p-3 text-sm flex flex-wrap gap-x-4 gap-y-1">
-                <span><strong>{b.bloqueadora}</strong> bloqueia <em>{b.bloqueadas.join(", ")}</em></span>
-                <span>Valor em risco: <strong>{fmtBRL(b.valor_bloqueado)}</strong></span>
-                <span>Atraso: {b.dias_bloqueio}d</span>
-                <span>Responsável: {b.responsavel ?? "não definido"}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </Section>
-
-      {/* 8. PRONTIDÃO DAS FRENTES */}
-      {a.frentes.length > 0 && (
-        <Section icon={CheckCircle2} title="Prontidão das frentes">
-          <div className="overflow-auto max-h-[300px] rounded-md border">
-            <table className="w-full text-xs">
-              <thead className="bg-muted/40 sticky top-0">
-                <tr className="text-left">
-                  <th className="p-2">Atividade</th>
-                  <th className="p-2 text-right">Prontidão</th>
-                  <th className="p-2">Pendências</th>
-                  <th className="p-2">Responsável</th>
-                  <th className="p-2">Início previsto</th>
-                </tr>
-              </thead>
-              <tbody>
-                {a.frentes.slice(0, 15).map((f, idx) => (
-                  <tr key={idx} className="border-t">
-                    <td className="p-2">{f.atividade}</td>
-                    <td className="p-2 text-right">
-                      <Badge variant="outline" className={`text-[10px] ${f.pct < 50 ? IMPACTO.critica : f.pct < 75 ? IMPACTO.alta : f.pct < 100 ? IMPACTO.media : IMPACTO.baixa}`}>
-                        {f.pct}%
-                      </Badge>
-                    </td>
-                    <td className="p-2 text-muted-foreground">{f.pendencias.join(", ") || "—"}</td>
-                    <td className="p-2">{f.responsavel ?? <span className="text-rose-600">não definido</span>}</td>
-                    <td className="p-2">{fmtDt(f.data_necessaria)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Section>
+        </Card>
       )}
 
-      {/* 10. METAS DE RECUPERAÇÃO */}
-      <Section icon={Target} title="Metas de recuperação">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {a.metas.map((m) => (
-            <div key={m.rotulo} className="rounded-md border p-3">
-              <div className="text-xs text-muted-foreground">{m.rotulo} · {fmtDt(m.data)}</div>
-              <div className="text-sm font-semibold mt-1">{fmtPct(m.pct_esperado)}</div>
-              <div className="text-xs text-muted-foreground">{fmtBRL(m.valor_esperado)}</div>
+      {/* ===================== ABAS ===================== */}
+      <Tabs defaultValue="exec" className="w-full">
+        <TabsList className="w-full justify-start overflow-x-auto rounded-xl">
+          <TabsTrigger value="exec">Executivo</TabsTrigger>
+          <TabsTrigger value="prazo">Prazo & Produção</TabsTrigger>
+          <TabsTrigger value="fin">Financeiro</TabsTrigger>
+          <TabsTrigger value="ativ">Atividades & Bloqueios</TabsTrigger>
+          <TabsTrigger value="recup">Plano de Recuperação</TabsTrigger>
+          <TabsTrigger value="qual">Qualidade dos Dados</TabsTrigger>
+        </TabsList>
+
+        {/* ====== EXECUTIVO ====== */}
+        <TabsContent value="exec" className="space-y-5 mt-5">
+          <Section icon={ShieldAlert} title="Riscos por dimensão" subtitle="Pontuação 0–100 por dimensão (não é probabilidade estatística)">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <Kpi label="Prazo" value={`${dim.prazo}/100`} tone={dim.prazo >= 70 ? "bad" : dim.prazo >= 40 ? "warn" : "ok"} tooltip="SPI, desvio, projeção, fator de aceleração." />
+              <Kpi label="Operacional" value={`${dim.operacional}/100`} tone={dim.operacional >= 70 ? "bad" : dim.operacional >= 40 ? "warn" : "ok"} tooltip="Ritmo recente, prontidão das frentes, impedimentos." />
+              <Kpi label="Financeiro" value={`${dim.financeiro}/100`} tone={dim.financeiro >= 70 ? "bad" : dim.financeiro >= 40 ? "warn" : "ok"} tooltip="Executado não medido, medido não recebido, exposição em críticas." />
+              <Kpi label="Gerencial" value={`${dim.gerencial}/100`} tone={dim.gerencial >= 70 ? "bad" : dim.gerencial >= 40 ? "warn" : "ok"} tooltip="Atividades sem responsável, sem planejamento ou sem valor." />
+              <Kpi label="Consolidado" value={`${dim.consolidado}/100`} tone={dim.consolidado >= 70 ? "bad" : dim.consolidado >= 40 ? "warn" : "ok"} tooltip="Média ponderada das 4 dimensões. Faixa gerencial estimada, não estatística." />
             </div>
-          ))}
-        </div>
-      </Section>
+            <div className="text-[11px] text-muted-foreground italic">Faixa gerencial estimada, não estatística — útil para priorização, não para previsão probabilística.</div>
+          </Section>
 
-      {/* 11. CENÁRIOS */}
-      <Section icon={TrendingDown} title="Cenários gerenciais">
-        <div className="grid md:grid-cols-3 gap-3 text-sm">
-          <div className="rounded-md border p-3 space-y-1">
-            <div className="font-semibold">1 — Ritmo atual</div>
-            <div>Data: {fmtDt(a.cenarios.atual.data)}</div>
-            <div>Atraso: {a.cenarios.atual.atraso_dias ?? "—"}d</div>
-            <div>% no vencimento: {fmtPct(a.cenarios.atual.pct_no_vencimento)}</div>
-          </div>
-          <div className="rounded-md border p-3 space-y-1">
-            <div className="font-semibold">2 — Reforço de 30%</div>
-            <div>Data: {fmtDt(a.cenarios.reforco_30.data)}</div>
-            <div>Atraso: {a.cenarios.reforco_30.atraso_dias ?? "—"}d</div>
-            <div className="text-xs text-muted-foreground">{a.cenarios.reforco_30.observacao}</div>
-          </div>
-          <div className="rounded-md border p-3 space-y-1">
-            <div className="font-semibold">3 — Ritmo necessário</div>
-            <div>Meta diária: {a.cenarios.necessario.meta_diaria != null ? `${a.cenarios.necessario.meta_diaria.toFixed(3)} %/dia` : "—"}</div>
-            <div>Meta semanal: {fmtPct(a.cenarios.necessario.meta_semanal)}</div>
-            <div>Fator: {a.cenarios.necessario.fator_aceleracao != null ? `${a.cenarios.necessario.fator_aceleracao.toFixed(2)}x` : "—"}</div>
-            <div className="text-xs text-muted-foreground">{a.cenarios.necessario.observacao}</div>
-          </div>
-        </div>
-      </Section>
+          {a.frase_resultado && (
+            <Card className="p-4 rounded-2xl border-primary/30 bg-primary/[0.04] text-sm leading-relaxed">
+              {a.frase_resultado}
+            </Card>
+          )}
 
-      {/* 12. PONTUAÇÃO DO RISCO */}
-      <Section icon={ShieldAlert} title={`Pontuação de risco: ${score.toFixed(0)}/100`} subtitle={`Nível: ${a.risco.nivel.replace("_", " ")}`}>
-        <div className="space-y-1">
-          {a.risco.fatores.map((f) => (
-            <div key={f.fator} className="flex items-center gap-2 text-xs">
-              <div className="w-48 shrink-0">{f.fator}</div>
-              <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-                <div className="h-full bg-primary" style={{ width: `${(f.contrib / f.peso) * 100}%` }} />
-              </div>
-              <div className="w-24 text-right tabular-nums">{f.contrib.toFixed(1)} / {f.peso}</div>
-            </div>
-          ))}
-        </div>
-      </Section>
-
-      {/* 13. CONFIABILIDADE */}
-      {a.gaps_dados.length > 0 && (
-        <Section icon={AlertTriangle} title={`Confiabilidade: ${a.confiabilidade}`} subtitle="Dados ausentes que reduzem a precisão">
-          <ul className="text-sm list-disc list-inside text-muted-foreground">
-            {a.gaps_dados.map((g) => (
-              <li key={g.campo}>{g.campo}: <strong>{g.qtd}</strong></li>
-            ))}
-          </ul>
-        </Section>
-      )}
-
-      {/* 15. DECISÕES NECESSÁRIAS AGORA */}
-      {a.decisoes.length > 0 && (
-        <Section icon={AlertTriangle} title={`Decisões necessárias agora (${a.decisoes.length})`}>
-          <div className="grid md:grid-cols-2 gap-3">
-            {a.decisoes.map((d, idx) => (
-              <div key={idx} className="rounded-md border p-3 space-y-1 text-sm bg-rose-500/5 border-rose-500/20">
-                <div><strong>Problema:</strong> {d.problema}</div>
-                <div><strong>Impacto:</strong> {d.impacto}</div>
-                <div><strong>Decisão:</strong> {d.decisao}</div>
-                <div className="text-xs text-muted-foreground">Responsável: {d.responsavel} · Prazo: {d.prazo}</div>
-                <div className="text-xs text-muted-foreground">Esperado: {d.resultado_esperado}</div>
-              </div>
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {/* 16. PLANO DE AÇÃO */}
-      {a.plano_acao.length > 0 && (
-        <Section icon={Target} title="Plano de ação">
-          <div className="overflow-auto max-h-[420px] rounded-md border">
-            <table className="w-full text-xs">
-              <thead className="bg-muted/40 sticky top-0">
-                <tr className="text-left">
-                  <th className="p-2">Prioridade</th>
-                  <th className="p-2">Ação</th>
-                  <th className="p-2">Atividade</th>
-                  <th className="p-2">Responsável</th>
-                  <th className="p-2">Prazo</th>
-                  <th className="p-2">Impacto</th>
-                  <th className="p-2">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {a.plano_acao.map((p, idx) => (
-                  <tr key={idx} className="border-t">
-                    <td className="p-2"><Badge variant="outline" className={`text-[10px] ${IMPACTO[p.prioridade]}`}>{p.prioridade}</Badge></td>
-                    <td className="p-2">{p.acao}</td>
-                    <td className="p-2">{p.atividade}</td>
-                    <td className="p-2">{p.responsavel}</td>
-                    <td className="p-2">{fmtDt(p.prazo)}</td>
-                    <td className="p-2 text-muted-foreground">{p.impacto}</td>
-                    <td className="p-2">{p.status}</td>
-                  </tr>
+          {a.decisoes.length > 0 && (
+            <Section icon={AlertTriangle} title="O que precisa ser decidido hoje" subtitle={`${a.decisoes.length} decisão(ões) prioritária(s)`}>
+              <div className="grid md:grid-cols-2 gap-3">
+                {a.decisoes.slice(0, 5).map((d, idx) => (
+                  <div key={idx} className="rounded-xl border p-3 space-y-1.5 text-sm bg-rose-500/[0.04] border-rose-500/30">
+                    <div><strong>Problema:</strong> {d.problema}</div>
+                    <div><strong>Impacto:</strong> <span className="text-muted-foreground">{d.impacto}</span></div>
+                    <div><strong>Ação:</strong> {d.decisao}</div>
+                    <div className="text-xs text-muted-foreground">Responsável: {d.responsavel} · Prazo: {d.prazo}</div>
+                    <div className="text-xs text-muted-foreground">Esperado: {d.resultado_esperado}</div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        </Section>
-      )}
-
-      {/* 17. TENDÊNCIA */}
-      <Section icon={TrendingUp} title="Tendência e evolução">
-        <div className="grid md:grid-cols-3 gap-3 text-sm">
-          {(["ontem", "sete_dias", "analise_anterior"] as const).map((k) => {
-            const t = a.tendencia[k];
-            if (!t) return <div key={k} className="rounded-md border p-3 text-muted-foreground text-xs">Sem snapshot para comparação ({k.replace("_", " ")}).</div>;
-            return (
-              <div key={k} className="rounded-md border p-3 space-y-1">
-                <div className="font-semibold text-xs uppercase text-muted-foreground">{t.referencia}</div>
-                <div>Δ avanço: <strong>{t.delta_avanco > 0 ? "+" : ""}{t.delta_avanco.toFixed(2)} p.p.</strong></div>
-                <div>Risco anterior: {t.risco_anterior}</div>
-                <div>Δ críticas: {t.delta_criticas > 0 ? "+" : ""}{t.delta_criticas}</div>
-                {t.delta_fator != null && <div>Δ fator aceleração: {t.delta_fator > 0 ? "+" : ""}{t.delta_fator.toFixed(2)}</div>}
               </div>
-            );
-          })}
-        </div>
-      </Section>
+            </Section>
+          )}
 
-      {/* 18. ALERTAS */}
-      {a.alertas.length > 0 && (
-        <Section icon={AlertTriangle} title={`Alertas inteligentes (${a.alertas.length})`}>
-          <ul className="space-y-1 text-sm">
-            {a.alertas.map((al, idx) => (
-              <li key={idx} className="flex items-start gap-2">
-                <Badge variant="outline" className={`text-[10px] ${al.severidade === "alta" ? IMPACTO.critica : IMPACTO.media}`}>{al.severidade}</Badge>
-                <span>{al.mensagem}</span>
-              </li>
-            ))}
-          </ul>
-        </Section>
-      )}
+          {a.alertas.length > 0 && (
+            <Section icon={AlertTriangle} title={`Alertas inteligentes (${a.alertas.length})`}>
+              <ul className="space-y-1.5 text-sm">
+                {a.alertas.map((al, idx) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <Badge variant="outline" className={`text-[10px] ${al.severidade === "alta" ? IMPACTO.critica : IMPACTO.media}`}>{al.severidade}</Badge>
+                    <span>{al.mensagem}</span>
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          )}
+        </TabsContent>
+
+        {/* ====== PRAZO & PRODUÇÃO ====== */}
+        <TabsContent value="prazo" className="space-y-5 mt-5">
+          <Section icon={Target} title="Planejado × realizado" subtitle="SPI real + índice linear complementar">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Kpi label="Avanço planejado" value={plan.avanco_planejado != null ? fmtPct(plan.avanco_planejado, 1) : "—"} hint={plan.atividades_sem_baseline > 0 ? `${plan.atividades_sem_baseline} sem datas previstas` : undefined} />
+              <Kpi label="Avanço realizado" value={fmtPct(i.avanco, 1)} />
+              <Kpi label="SPI" value={plan.spi != null ? plan.spi.toFixed(2) : "—"} hint={spiClasse.label} tone={spiClasse.tone} tooltip="Realizado ÷ Planejado." />
+              <Kpi label="Índice linear simplificado" value={fmtNum(i.idp, 2)} hint="Realizado ÷ prazo consumido — indicador complementar." tooltip="Não confundir com SPI: usa apenas o tempo decorrido, ignorando a baseline." />
+            </div>
+            {plan.avanco_planejado == null && (
+              <Insuficiente msg="Sem datas previstas cadastradas nas atividades. Adicione data prevista de início e fim para calcular SPI e desvio do plano." />
+            )}
+          </Section>
+
+          <Section icon={TrendingUp} title="Ritmo de produção" subtitle={r.frase ?? "Comparação realizado x necessário"}>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Kpi label="Acumulado" value={fmtNum(r.acumulado, 3) + " %/dia"} />
+              <Kpi label="Últimos 7 dias" value={r.ultimos_7d != null ? `${r.ultimos_7d.toFixed(3)} %/dia` : "—"} />
+              <Kpi label="Últimos 15 dias" value={r.ultimos_15d != null ? `${r.ultimos_15d.toFixed(3)} %/dia` : "—"} />
+              <Kpi label="Necessário" value={r.necessario != null ? `${r.necessario.toFixed(3)} %/dia` : "—"} hint={r.producao_financ_dia != null ? `${fmtBRL(r.producao_financ_dia)}/dia` : undefined} />
+              <Kpi label="Fator de aceleração" value={r.fator_aceleracao != null ? `${r.fator_aceleracao.toFixed(2)}x` : "—"} hint={r.fator_classe ?? undefined} tone={r.fator_aceleracao != null && r.fator_aceleracao > 1.6 ? "bad" : r.fator_aceleracao != null && r.fator_aceleracao > 1.3 ? "warn" : "ok"} />
+              <Kpi label="Meta semanal (%)" value={fmtPct(r.meta_semanal_pct, 2)} />
+              <Kpi label="Meta semanal (R$)" value={fmtBRL(r.meta_semanal_valor)} />
+              <Kpi label="Desempenho semana" value={a.produtividade.desempenho_semanal != null ? `${a.produtividade.desempenho_semanal.toFixed(0)}%` : "—"} tone={a.produtividade.desempenho_semanal != null && a.produtividade.desempenho_semanal < 75 ? "bad" : "ok"} />
+            </div>
+          </Section>
+
+          <Section icon={Calendar} title="Projeção de conclusão" subtitle={`Tendência recente: ${a.projecao.tendencia_recente === "melhor" ? "melhor que a média" : a.projecao.tendencia_recente === "pior" ? "pior que a média histórica" : "estável"}`}>
+            <div className="grid md:grid-cols-2 gap-3">
+              <div className="rounded-xl border p-3 space-y-1">
+                <div className="text-xs uppercase text-muted-foreground">Cenário pelo ritmo acumulado</div>
+                <div className="text-sm">Conclusão: <strong>{fmtDt(a.projecao.acumulado.data)}</strong></div>
+                <div className="text-sm">Atraso: <strong>{a.projecao.acumulado.atraso_dias ?? "—"} dias</strong></div>
+                <div className="text-sm">% no vencimento: <strong>{fmtPct(a.projecao.acumulado.pct_no_vencimento)}</strong></div>
+              </div>
+              <div className="rounded-xl border p-3 space-y-1">
+                <div className="text-xs uppercase text-muted-foreground">Cenário pelo ritmo recente (7–14d)</div>
+                <div className="text-sm">Conclusão: <strong>{fmtDt(a.projecao.recente.data)}</strong></div>
+                <div className="text-sm">Atraso: <strong>{a.projecao.recente.atraso_dias ?? "—"} dias</strong></div>
+                <div className="text-sm">% no vencimento: <strong>{fmtPct(a.projecao.recente.pct_no_vencimento)}</strong></div>
+              </div>
+            </div>
+          </Section>
+
+          <Section icon={Layers} title="Análise por etapa">
+            <div className="overflow-auto rounded-xl border">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/40">
+                  <tr className="text-left">
+                    <th className="p-2">Etapa</th>
+                    <th className="p-2 text-right">Valor</th>
+                    <th className="p-2 text-right">Avanço</th>
+                    <th className="p-2 text-right">Saldo</th>
+                    <th className="p-2 text-right">Ativ.</th>
+                    <th className="p-2 text-right">Atrasadas</th>
+                    <th className="p-2 text-right">Críticas</th>
+                    <th className="p-2">Responsável</th>
+                    <th className="p-2">Situação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {a.etapas.map((e) => (
+                    <tr key={e.etapa} className="border-t">
+                      <td className="p-2 font-medium">{e.etapa}</td>
+                      <td className="p-2 text-right">{fmtBRL(e.valor)}</td>
+                      <td className="p-2 text-right">{fmtPct(e.avanco, 1)}</td>
+                      <td className="p-2 text-right">{fmtBRL(e.saldo)}</td>
+                      <td className="p-2 text-right">{e.qtd}</td>
+                      <td className="p-2 text-right">{e.atrasadas}</td>
+                      <td className="p-2 text-right">{e.criticas}</td>
+                      <td className="p-2">{e.responsavel ?? "—"}</td>
+                      <td className="p-2"><Badge variant="outline" className={`text-[10px] ${SITUACAO_ETAPA[e.situacao]}`}>{e.situacao.replace("_", " ")}</Badge></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Section>
+        </TabsContent>
+
+        {/* ====== FINANCEIRO ====== */}
+        <TabsContent value="fin" className="space-y-5 mt-5">
+          <Section icon={Wallet} title="Contrato" subtitle="Original, aditivos, supressões e vigência">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Kpi label="Valor original" value={fmtBRL(fin.valor_contratado_original)} />
+              <Kpi label="Aditivos vigentes" value={fmtBRL(fin.valor_aditivos)} tone={fin.valor_aditivos > 0 ? "warn" : "neutro"} />
+              <Kpi label="Supressões vigentes" value={fmtBRL(fin.valor_supressoes)} tone={fin.valor_supressoes > 0 ? "warn" : "neutro"} />
+              <Kpi label="Vigente" value={fmtBRL(fin.valor_vigente)} tooltip="Original + aditivos − supressões." />
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <Kpi
+                label="Soma das atividades"
+                value={fmtBRL(fin.valor_total_atividades)}
+                hint={fin.pct_cobertura_contrato != null ? `${fmtPct(fin.pct_cobertura_contrato, 1)} do contrato vigente` : undefined}
+              />
+              <Kpi
+                label="Divergência contrato × atividades"
+                value={fmtBRL(fin.divergencia_contrato_atividades)}
+                tone={fin.valor_vigente > 0 && Math.abs(fin.divergencia_contrato_atividades) > fin.valor_vigente * 0.05 ? "bad" : "neutro"}
+                tooltip="Vigente − soma dos valores das atividades. Diferenças >5% indicam itens não cadastrados."
+              />
+              <Kpi label="Saldo contratual" value={fmtBRL(fin.saldo_contratual)} hint="Vigente − pago" />
+            </div>
+          </Section>
+
+          <Section icon={BarChart3} title="Produção e medição">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <Kpi label="Valor agregado (produção)" value={fmtBRL(fin.valor_agregado_producao)} tooltip="Produção física a preço de contrato." />
+              <Kpi label="Valor medido" value={fmtBRL(fin.valor_medido)} hint="Medições aprovadas ou pagas" />
+              <Kpi label="Valor pago/recebido" value={fmtBRL(fin.valor_pago)} hint="Medições com status 'paga'" />
+              <Kpi label="Executado não medido" value={fmtBRL(fin.valor_executado_nao_medido)} tone={fin.valor_executado_nao_medido > 0 ? "warn" : "ok"} tooltip="Produção − Medido. Indica o potencial da próxima medição." />
+              <Kpi label="Medido não recebido" value={fmtBRL(fin.valor_medido_nao_recebido)} tone={fin.valor_medido_nao_recebido > 0 ? "warn" : "ok"} tooltip="Medido − Pago. Atenção ao fluxo de caixa." />
+              <Kpi label="Potencial próxima medição" value={fmtBRL(fin.potencial_proxima_medicao)} tone="ok" />
+            </div>
+            {fin.valor_medido === 0 && fin.valor_pago === 0 && (
+              <Insuficiente msg="Não há medições cadastradas em Contratos → Medições. Os valores medido/faturado/recebido aparecerão após o registro das medições do contrato vinculado a esta obra." />
+            )}
+          </Section>
+
+          <Section icon={ShieldAlert} title="Exposição financeira" subtitle="Onde o dinheiro está parado">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <Kpi label="Não iniciadas" value={fmtBRL(a.exposicao.valor_nao_iniciadas)} />
+              <Kpi label="Atrasadas" value={fmtBRL(a.exposicao.valor_atrasadas)} />
+              <Kpi label="Em maior impacto" value={fmtBRL(a.exposicao.valor_criticas)} tone="bad" />
+              <Kpi label="% contrato em 0%" value={fmtPct(a.exposicao.pct_contrato_zero)} />
+              <Kpi label="% top 5 pendentes" value={fmtPct(a.exposicao.pct_top5)} />
+            </div>
+            {a.exposicao.top5.length > 0 && (
+              <div className="text-xs text-muted-foreground">
+                As 5 maiores pendentes: {a.exposicao.top5.map((t) => `${t.descricao} (${fmtBRL(t.valor_pendente)})`).join(" · ")}
+              </div>
+            )}
+          </Section>
+        </TabsContent>
+
+        {/* ====== ATIVIDADES & BLOQUEIOS ====== */}
+        <TabsContent value="ativ" className="space-y-5 mt-5">
+          <Section icon={AlertTriangle} title={`Atividades de maior impacto gerencial (${a.criticas.length})`} subtitle="Ordenadas por índice de impacto. Não representa caminho crítico real — para isso é necessário cadastro de dependências e folgas.">
+            <div className="overflow-auto max-h-[420px] rounded-xl border">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/40 sticky top-0">
+                  <tr className="text-left">
+                    <th className="p-2">Atividade</th>
+                    <th className="p-2">Etapa</th>
+                    <th className="p-2 text-right">Valor pend.</th>
+                    <th className="p-2 text-right">%</th>
+                    <th className="p-2 text-right">Atraso</th>
+                    <th className="p-2">Responsável</th>
+                    <th className="p-2">Impacto</th>
+                    <th className="p-2">Ação recomendada</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {a.criticas.map((c) => (
+                    <tr key={c.id} className="border-t">
+                      <td className="p-2">{c.descricao}</td>
+                      <td className="p-2">{c.etapa ?? "—"}</td>
+                      <td className="p-2 text-right">{fmtBRL(c.valor_pendente)}</td>
+                      <td className="p-2 text-right">{fmtPct(c.percentual_concluido, 0)}</td>
+                      <td className="p-2 text-right">{c.dias_atraso ? `${c.dias_atraso}d` : "—"}</td>
+                      <td className="p-2">{c.responsavel_nome ?? <span className="text-rose-600">não definido</span>}</td>
+                      <td className="p-2"><Badge variant="outline" className={`text-[10px] ${IMPACTO[c.impact_nivel]}`}>{c.impact_nivel} · {c.impact_score.toFixed(0)}</Badge></td>
+                      <td className="p-2 text-muted-foreground">{c.acao_recomendada}</td>
+                    </tr>
+                  ))}
+                  {a.criticas.length === 0 && (
+                    <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">Nenhuma atividade com impacto gerencial relevante.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Section>
+
+          <Section icon={Link2} title={`Bloqueios identificados (${a.bloqueios.length})`} subtitle={`${a.num_bloqueadas} atividade(s) bloqueada(s) · ${fmtBRL(a.valor_bloqueado)} em risco`}>
+            {a.bloqueios.length === 0 ? (
+              <div className="text-sm text-muted-foreground">Nenhum bloqueio entre etapas detectado.</div>
+            ) : (
+              <div className="space-y-2">
+                {a.bloqueios.map((b, idx) => (
+                  <div key={idx} className="rounded-xl border p-3 text-sm flex flex-wrap gap-x-4 gap-y-1">
+                    <span><strong>{b.bloqueadora}</strong> bloqueia <em>{b.bloqueadas.join(", ")}</em></span>
+                    <span>Valor em risco: <strong>{fmtBRL(b.valor_bloqueado)}</strong></span>
+                    <span>Atraso: {b.dias_bloqueio}d</span>
+                    <span>Responsável: {b.responsavel ?? "não definido"}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Section>
+
+          {a.frentes.length > 0 && (
+            <Section icon={CheckCircle2} title="Prontidão das frentes" subtitle="Critérios atendidos por frente (responsável, datas, impedimentos, etapa, prioridade)">
+              <div className="overflow-auto max-h-[300px] rounded-xl border">
+                <table className="w-full text-xs">
+                  <thead className="bg-muted/40 sticky top-0">
+                    <tr className="text-left">
+                      <th className="p-2">Atividade</th>
+                      <th className="p-2 text-right">Prontidão</th>
+                      <th className="p-2">Pendências</th>
+                      <th className="p-2">Responsável</th>
+                      <th className="p-2">Início previsto</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {a.frentes.slice(0, 15).map((f, idx) => (
+                      <tr key={idx} className="border-t">
+                        <td className="p-2">{f.atividade}</td>
+                        <td className="p-2 text-right">
+                          <Badge variant="outline" className={`text-[10px] ${f.pct < 50 ? IMPACTO.critica : f.pct < 75 ? IMPACTO.alta : f.pct < 100 ? IMPACTO.media : IMPACTO.baixa}`}>
+                            {f.criterios_ok}/{f.criterios_total} · {f.pct}%
+                          </Badge>
+                        </td>
+                        <td className="p-2 text-muted-foreground">{f.pendencias.join(", ") || "—"}</td>
+                        <td className="p-2">{f.responsavel ?? <span className="text-rose-600">não definido</span>}</td>
+                        <td className="p-2">{fmtDt(f.data_necessaria)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Section>
+          )}
+        </TabsContent>
+
+        {/* ====== RECUPERAÇÃO ====== */}
+        <TabsContent value="recup" className="space-y-5 mt-5">
+          <Section icon={Target} title="Metas de recuperação">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {a.metas.map((m) => (
+                <div key={m.rotulo} className="rounded-xl border p-3">
+                  <div className="text-xs text-muted-foreground">{m.rotulo} · {fmtDt(m.data)}</div>
+                  <div className="text-base font-semibold mt-1">{fmtPct(m.pct_esperado)}</div>
+                  <div className="text-xs text-muted-foreground">{fmtBRL(m.valor_esperado)}</div>
+                </div>
+              ))}
+            </div>
+          </Section>
+
+          <Section icon={TrendingDown} title="Cenários gerenciais">
+            <div className="grid md:grid-cols-3 gap-3 text-sm">
+              <div className="rounded-xl border p-3 space-y-1">
+                <div className="font-semibold">1 — Inercial (ritmo atual)</div>
+                <div>Data: <strong>{fmtDt(a.cenarios.atual.data)}</strong></div>
+                <div>Atraso: {a.cenarios.atual.atraso_dias ?? "—"}d</div>
+                <div>% no vencimento: {fmtPct(a.cenarios.atual.pct_no_vencimento)}</div>
+              </div>
+              <div className="rounded-xl border p-3 space-y-1">
+                <div className="font-semibold">2 — Recuperação viável (+30%)</div>
+                <div>Data: <strong>{fmtDt(a.cenarios.reforco_30.data)}</strong></div>
+                <div>Atraso: {a.cenarios.reforco_30.atraso_dias ?? "—"}d</div>
+                <div className="text-xs text-muted-foreground">{a.cenarios.reforco_30.observacao}</div>
+              </div>
+              <div className="rounded-xl border p-3 space-y-1">
+                <div className="font-semibold">3 — Recuperação necessária</div>
+                <div>Meta diária: <strong>{a.cenarios.necessario.meta_diaria != null ? `${a.cenarios.necessario.meta_diaria.toFixed(3)} %/dia` : "—"}</strong></div>
+                <div>Meta semanal: {fmtPct(a.cenarios.necessario.meta_semanal)}</div>
+                <div>Fator: {a.cenarios.necessario.fator_aceleracao != null ? `${a.cenarios.necessario.fator_aceleracao.toFixed(2)}x` : "—"}</div>
+                <div className="text-xs text-muted-foreground">{a.cenarios.necessario.observacao}</div>
+              </div>
+            </div>
+          </Section>
+
+          {a.plano_acao.length > 0 && (
+            <Section icon={Target} title="Plano de ação">
+              <div className="overflow-auto max-h-[420px] rounded-xl border">
+                <table className="w-full text-xs">
+                  <thead className="bg-muted/40 sticky top-0">
+                    <tr className="text-left">
+                      <th className="p-2">Prioridade</th>
+                      <th className="p-2">Ação</th>
+                      <th className="p-2">Atividade</th>
+                      <th className="p-2">Responsável</th>
+                      <th className="p-2">Prazo</th>
+                      <th className="p-2">Impacto</th>
+                      <th className="p-2">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {a.plano_acao.map((p, idx) => (
+                      <tr key={idx} className="border-t">
+                        <td className="p-2"><Badge variant="outline" className={`text-[10px] ${IMPACTO[p.prioridade]}`}>{p.prioridade}</Badge></td>
+                        <td className="p-2">{p.acao}</td>
+                        <td className="p-2">{p.atividade}</td>
+                        <td className="p-2">{p.responsavel}</td>
+                        <td className="p-2">{fmtDt(p.prazo)}</td>
+                        <td className="p-2 text-muted-foreground">{p.impacto}</td>
+                        <td className="p-2">{p.status}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Section>
+          )}
+
+          <Section icon={TrendingUp} title="Tendência e evolução">
+            <div className="grid md:grid-cols-3 gap-3 text-sm">
+              {(["ontem", "sete_dias", "analise_anterior"] as const).map((k) => {
+                const t = a.tendencia[k];
+                if (!t) return <div key={k} className="rounded-xl border p-3 text-muted-foreground text-xs">Sem snapshot para comparação ({k.replace("_", " ")}).</div>;
+                return (
+                  <div key={k} className="rounded-xl border p-3 space-y-1">
+                    <div className="font-semibold text-xs uppercase text-muted-foreground">{t.referencia}</div>
+                    <div>Δ avanço: <strong>{t.delta_avanco > 0 ? "+" : ""}{t.delta_avanco.toFixed(2)} p.p.</strong></div>
+                    <div>Risco anterior: {t.risco_anterior}</div>
+                    <div>Δ críticas: {t.delta_criticas > 0 ? "+" : ""}{t.delta_criticas}</div>
+                    {t.delta_fator != null && <div>Δ fator aceleração: {t.delta_fator > 0 ? "+" : ""}{t.delta_fator.toFixed(2)}</div>}
+                  </div>
+                );
+              })}
+            </div>
+          </Section>
+        </TabsContent>
+
+        {/* ====== QUALIDADE DOS DADOS ====== */}
+        <TabsContent value="qual" className="space-y-5 mt-5">
+          <Section icon={Database} title="Cobertura dos dados" subtitle={`Confiança geral: ${cov.confianca}%`}>
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="w-48 text-xs text-muted-foreground">Cobertura por valor</div>
+                <Progress value={cov.cobertura_valor_pct} className="h-2 flex-1" />
+                <div className="w-20 text-right text-sm tabular-nums">{fmtPct(cov.cobertura_valor_pct, 1)}</div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-48 text-xs text-muted-foreground">Cobertura por peso</div>
+                <Progress value={cov.cobertura_peso_pct} className="h-2 flex-1" />
+                <div className="w-20 text-right text-sm tabular-nums">{fmtPct(cov.cobertura_peso_pct, 1)}</div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-48 text-xs text-muted-foreground">Cobertura de planejamento</div>
+                <Progress value={cov.cobertura_planejamento_pct} className="h-2 flex-1" />
+                <div className="w-20 text-right text-sm tabular-nums">{fmtPct(cov.cobertura_planejamento_pct, 1)}</div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
+              <Kpi label="Sem valor" value={String(cov.sem_valor)} tone={cov.sem_valor > 0 ? "warn" : "ok"} />
+              <Kpi label="Sem peso" value={String(cov.sem_peso)} tone={cov.sem_peso > 0 ? "neutro" : "ok"} />
+              <Kpi label="Sem data de início" value={String(cov.sem_planejamento_inicio)} tone={cov.sem_planejamento_inicio > 0 ? "warn" : "ok"} />
+              <Kpi label="Sem data de fim" value={String(cov.sem_planejamento_fim)} tone={cov.sem_planejamento_fim > 0 ? "warn" : "ok"} />
+              <Kpi label="Sem responsável" value={String(cov.sem_responsavel)} tone={cov.sem_responsavel > 0 ? "warn" : "ok"} />
+              <Kpi label="Sem etapa" value={String(cov.sem_etapa)} tone={cov.sem_etapa > 0 ? "warn" : "ok"} />
+              <Kpi label="Total de atividades" value={String(cov.total_atividades)} />
+              <Kpi label="Divergência contrato × atividades" value={fmtBRL(fin.divergencia_contrato_atividades)} tone={fin.valor_vigente > 0 && Math.abs(fin.divergencia_contrato_atividades) > fin.valor_vigente * 0.05 ? "bad" : "neutro"} />
+            </div>
+          </Section>
+
+          {a.gaps_dados.length > 0 && (
+            <Section icon={AlertTriangle} title={`Inconsistências detectadas (${a.gaps_dados.length})`} subtitle={`Confiabilidade qualitativa: ${a.confiabilidade}`}>
+              <ul className="text-sm list-disc list-inside text-muted-foreground space-y-1">
+                {a.gaps_dados.map((g) => (
+                  <li key={g.campo}>{g.campo}: <strong>{g.qtd}</strong></li>
+                ))}
+              </ul>
+            </Section>
+          )}
+
+          <Section icon={ShieldAlert} title="Pontuação consolidada de risco" subtitle="Decomposição dos fatores agregados (legado)">
+            <div className="space-y-1">
+              {a.risco.fatores.map((f) => (
+                <div key={f.fator} className="flex items-center gap-2 text-xs">
+                  <div className="w-48 shrink-0">{f.fator}</div>
+                  <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full bg-primary" style={{ width: `${(f.contrib / f.peso) * 100}%` }} />
+                  </div>
+                  <div className="w-24 text-right tabular-nums">{f.contrib.toFixed(1)} / {f.peso}</div>
+                </div>
+              ))}
+            </div>
+          </Section>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
