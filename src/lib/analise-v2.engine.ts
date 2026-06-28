@@ -389,22 +389,44 @@ export function calcularAnaliseV2(
   const valor_bloqueado = bloqueios.reduce((s, b) => s + b.valor_bloqueado, 0);
 
   // --- prontidão das frentes ---
-  type Prontidao = { atividade: string; pct: number; pendencias: string[]; responsavel: string | null; data_necessaria: string | null };
+  // Matriz real (6 critérios derivados dos campos atualmente persistidos).
+  // Critérios adicionais (projeto liberado, material comprado/entregue, equipe,
+  // equipamento, segurança, documentação) entrarão quando o cadastro de prontidão
+  // detalhada estiver disponível em obra_atividades.prontidao_checklist.
+  type Prontidao = {
+    atividade: string;
+    pct: number;
+    criterios_ok: number;
+    criterios_total: number;
+    pendencias: string[];
+    responsavel: string | null;
+    data_necessaria: string | null;
+  };
   const frentes: Prontidao[] = enriquecidas
     .filter((a) => (Number(a.percentual_concluido) || 0) === 0 && a.status !== "concluida")
     .slice(0, 30)
     .map((a) => {
       const checks: { ok: boolean; label: string }[] = [
-        { ok: !!a.responsavel_nome, label: "responsável" },
-        { ok: !!a.data_prevista_inicio, label: "data de início" },
-        { ok: !!a.data_prevista_fim, label: "data de fim" },
-        { ok: !a.impedimento, label: "sem impedimento" },
-        { ok: a.prioridade !== "baixa" || true, label: "prioridade definida" },
+        { ok: !!a.responsavel_nome, label: "responsável definido" },
+        { ok: !!a.data_prevista_inicio, label: "data de início planejada" },
+        { ok: !!a.data_prevista_fim, label: "data de término planejada" },
+        { ok: !a.impedimento, label: "sem impedimento registrado" },
+        { ok: a.prioridade === "alta" || a.prioridade === "critica" || a.prioridade === "media", label: "prioridade classificada" },
+        { ok: !!a.etapa, label: "etapa identificada" },
       ];
       const ok = checks.filter((c) => c.ok).length;
-      const pct = Math.round((ok / checks.length) * 100);
+      const total = checks.length;
+      const pct = Math.round((ok / total) * 100);
       const pendencias = checks.filter((c) => !c.ok).map((c) => c.label);
-      return { atividade: a.descricao, pct, pendencias, responsavel: a.responsavel_nome, data_necessaria: a.data_prevista_inicio };
+      return {
+        atividade: a.descricao,
+        pct,
+        criterios_ok: ok,
+        criterios_total: total,
+        pendencias,
+        responsavel: a.responsavel_nome,
+        data_necessaria: a.data_prevista_inicio,
+      };
     })
     .sort((a, b) => a.pct - b.pct);
 
