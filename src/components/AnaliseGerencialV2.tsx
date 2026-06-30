@@ -803,3 +803,190 @@ export function AnaliseGerencialV2({ legacyObraId }: { legacyObraId: string }) {
     </div>
   );
 }
+
+// ============================================================
+// Editor de dependências entre atividades (Fase 2)
+// ============================================================
+type DepRow = {
+  id: string;
+  predecessora_id: string;
+  sucessora_id: string;
+  tipo: "TI" | "II" | "TT" | "IT";
+  defasagem_dias: number;
+  percentual_minimo: number;
+};
+
+function DependenciasEditor({
+  obraId,
+  atividades,
+  resumo,
+  onChange,
+}: {
+  obraId: string;
+  atividades: { id: string; descricao: string }[];
+  resumo: {
+    total: number;
+    ativas_bloqueando: number;
+    bloqueios: { predecessora: string; sucessora: string; tipo: string; pct_predecessora: number; pct_minimo: number; bloqueando: boolean }[];
+  };
+  onChange: () => void;
+}) {
+  const list = useServerFn(listDependencias);
+  const upsert = useServerFn(upsertDependencia);
+  const del = useServerFn(deleteDependencia);
+  const qc = useQueryClient();
+  const key = useMemo(() => ["analise-v2-deps", obraId], [obraId]);
+
+  const q = useQuery({
+    queryKey: key,
+    queryFn: () => list({ data: { obraId } }),
+    staleTime: 30_000,
+  });
+
+  const [pred, setPred] = useState<string>("");
+  const [suc, setSuc] = useState<string>("");
+  const [tipo, setTipo] = useState<DepRow["tipo"]>("TI");
+  const [defasagem, setDefasagem] = useState<number>(0);
+  const [pctMin, setPctMin] = useState<number>(100);
+
+  const mAdd = useMutation({
+    mutationFn: () => upsert({
+      data: { obraId, predecessora_id: pred, sucessora_id: suc, tipo, defasagem_dias: defasagem, percentual_minimo: pctMin },
+    }),
+    onSuccess: () => {
+      setPred(""); setSuc(""); setTipo("TI"); setDefasagem(0); setPctMin(100);
+      qc.invalidateQueries({ queryKey: key });
+      onChange();
+    },
+  });
+  const mDel = useMutation({
+    mutationFn: (id: string) => del({ data: { id } }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: key }); onChange(); },
+  });
+
+  const ativMap = useMemo(() => new Map(atividades.map((a) => [a.id, a.descricao])), [atividades]);
+  const rows: DepRow[] = (q.data?.rows ?? []) as DepRow[];
+
+  return (
+    <Card className="p-5 space-y-4 rounded-2xl border-border/60 shadow-sm">
+      <div className="flex items-start gap-3 border-b pb-3">
+        <div className="rounded-lg bg-primary/10 p-2"><Link2 className="w-4 h-4 text-primary" /></div>
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-base">Dependências editáveis</div>
+          <div className="text-xs text-muted-foreground mt-0.5">
+            {resumo.total} dependência(s) cadastrada(s) · {resumo.ativas_bloqueando} bloqueio(s) ativo(s)
+          </div>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-12 gap-2 items-end">
+        <div className="md:col-span-4 space-y-1">
+          <div className="text-[11px] uppercase text-muted-foreground">Predecessora</div>
+          <Select value={pred} onValueChange={setPred}>
+            <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Selecione…" /></SelectTrigger>
+            <SelectContent className="max-h-72">
+              {atividades.map((a) => (
+                <SelectItem key={a.id} value={a.id} className="text-xs">{a.descricao}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="md:col-span-4 space-y-1">
+          <div className="text-[11px] uppercase text-muted-foreground">Sucessora</div>
+          <Select value={suc} onValueChange={setSuc}>
+            <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Selecione…" /></SelectTrigger>
+            <SelectContent className="max-h-72">
+              {atividades.map((a) => (
+                <SelectItem key={a.id} value={a.id} className="text-xs">{a.descricao}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="md:col-span-1 space-y-1">
+          <div className="text-[11px] uppercase text-muted-foreground">Tipo</div>
+          <Select value={tipo} onValueChange={(v) => setTipo(v as DepRow["tipo"])}>
+            <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="TI">TI</SelectItem>
+              <SelectItem value="II">II</SelectItem>
+              <SelectItem value="TT">TT</SelectItem>
+              <SelectItem value="IT">IT</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="md:col-span-1 space-y-1">
+          <div className="text-[11px] uppercase text-muted-foreground">Lag (d)</div>
+          <Input type="number" value={defasagem} onChange={(e) => setDefasagem(Number(e.target.value) || 0)} className="h-9 text-xs" />
+        </div>
+        <div className="md:col-span-1 space-y-1">
+          <div className="text-[11px] uppercase text-muted-foreground">% mín.</div>
+          <Input type="number" min={0} max={100} value={pctMin} onChange={(e) => setPctMin(Number(e.target.value) || 0)} className="h-9 text-xs" />
+        </div>
+        <div className="md:col-span-1">
+          <Button
+            size="sm"
+            className="w-full"
+            disabled={!pred || !suc || pred === suc || mAdd.isPending}
+            onClick={() => mAdd.mutate()}
+          >
+            <Plus className="w-3.5 h-3.5 mr-1" /> Add
+          </Button>
+        </div>
+      </div>
+      {mAdd.error && <div className="text-xs text-rose-600">{(mAdd.error as Error).message}</div>}
+
+      {q.isLoading ? (
+        <div className="text-xs text-muted-foreground flex items-center gap-2"><Loader2 className="w-3 h-3 animate-spin" />Carregando dependências…</div>
+      ) : rows.length === 0 ? (
+        <div className="text-xs text-muted-foreground">Nenhuma dependência cadastrada. Use o formulário acima para ligar uma predecessora a uma sucessora.</div>
+      ) : (
+        <div className="overflow-auto rounded-xl border max-h-[320px]">
+          <table className="w-full text-xs">
+            <thead className="bg-muted/40 sticky top-0">
+              <tr className="text-left">
+                <th className="p-2">Predecessora</th>
+                <th className="p-2">Sucessora</th>
+                <th className="p-2">Tipo</th>
+                <th className="p-2 text-right">Lag</th>
+                <th className="p-2 text-right">% mín.</th>
+                <th className="p-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((d) => (
+                <tr key={d.id} className="border-t">
+                  <td className="p-2">{ativMap.get(d.predecessora_id) ?? <span className="text-muted-foreground">—</span>}</td>
+                  <td className="p-2">{ativMap.get(d.sucessora_id) ?? <span className="text-muted-foreground">—</span>}</td>
+                  <td className="p-2">{d.tipo}</td>
+                  <td className="p-2 text-right">{d.defasagem_dias}d</td>
+                  <td className="p-2 text-right">{d.percentual_minimo}%</td>
+                  <td className="p-2 text-right">
+                    <Button size="sm" variant="ghost" onClick={() => mDel.mutate(d.id)} disabled={mDel.isPending}>
+                      <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {resumo.bloqueios.length > 0 && (
+        <div className="space-y-1.5">
+          <div className="text-xs font-semibold uppercase text-muted-foreground">Bloqueios derivados das dependências</div>
+          {resumo.bloqueios.slice(0, 8).map((b, i) => (
+            <div key={i} className={`rounded-md border p-2 text-xs flex items-center gap-2 ${b.bloqueando ? "border-rose-300 bg-rose-50/40 dark:bg-rose-950/10" : "bg-muted/30"}`}>
+              <Badge variant="outline" className="text-[10px]">{b.tipo}</Badge>
+              <span><strong>{b.predecessora}</strong> → {b.sucessora}</span>
+              <span className="text-muted-foreground ml-auto">
+                {b.pct_predecessora.toFixed(0)}% de {b.pct_minimo.toFixed(0)}% requeridos
+              </span>
+              {b.bloqueando && <Badge className="bg-rose-600 text-[10px]">bloqueando</Badge>}
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
