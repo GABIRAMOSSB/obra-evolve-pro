@@ -417,7 +417,10 @@ export function AnaliseGerencialV2({ legacyObraId }: { legacyObraId: string }) {
                       tickFormatter={(v: number) => `${v}%`}
                     />
                     <RTooltip
-                      formatter={(v: number | null) => v == null ? "—" : `${v.toFixed(2)}%`}
+                      formatter={(v) => {
+                        const n = typeof v === "number" ? v : Number(v);
+                        return Number.isFinite(n) ? `${n.toFixed(2)}%` : "—";
+                      }}
                       labelFormatter={(l: string) => fmtDt(l)}
                       contentStyle={{ fontSize: 12, borderRadius: 8 }}
                     />
