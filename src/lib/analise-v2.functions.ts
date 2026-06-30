@@ -36,13 +36,13 @@ export const getAnaliseV2 = createServerFn({ method: "POST" })
     }
 
     // READ-ONLY: atividades + snapshots + aditivos + medições
-    const [ativRes, snapRes, contratoRes, medRes] = await Promise.all([
+    const [ativRes, snapRes, contratoRes, medRes, depRes] = await Promise.all([
       supabase
         .from("obra_atividades")
         .select(
           "id, item_codigo, descricao, etapa, valor, peso, quantidade, percentual_concluido, status, " +
           "data_prevista_inicio, data_prevista_fim, data_real_inicio, data_real_fim, responsavel_nome, " +
-          "prioridade, impedimento, is_group",
+          "prioridade, impedimento, is_group, baseline_inicio, baseline_fim, prontidao",
         )
         .eq("company_id", companyId)
         .eq("obra_id", obraRow.id)
@@ -64,6 +64,11 @@ export const getAnaliseV2 = createServerFn({ method: "POST" })
       supabase
         .from("medicoes")
         .select("valor_executado, status")
+        .eq("company_id", companyId)
+        .eq("obra_id", obraRow.id),
+      supabase
+        .from("obra_atividade_dependencias")
+        .select("id, predecessora_id, sucessora_id, tipo, defasagem_dias, percentual_minimo")
         .eq("company_id", companyId)
         .eq("obra_id", obraRow.id),
     ]);
