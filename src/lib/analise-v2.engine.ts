@@ -23,6 +23,19 @@ export type AtividadeRaw = {
   prioridade: "baixa" | "media" | "alta" | "critica";
   impedimento: string | null;
   is_group: boolean | null;
+  // Fase 2 — baseline planejada editável
+  baseline_inicio?: string | null;
+  baseline_fim?: string | null;
+  prontidao?: number | null;
+};
+
+export type DependenciaRaw = {
+  id: string;
+  predecessora_id: string;
+  sucessora_id: string;
+  tipo: "TI" | "II" | "TT" | "IT";
+  defasagem_dias: number;
+  percentual_minimo: number;
 };
 
 export type ObraRaw = {
