@@ -156,6 +156,7 @@ export function calcularAnaliseV2(
   atividadesRaw: AtividadeRaw[],
   snapshots: SnapshotRaw[],
   financeiros?: FinanceirosRaw,
+  dependencias?: DependenciaRaw[],
 ) {
   const hoje = new Date(isoToday() + "T00:00:00Z");
   const ativ = atividadesRaw.filter((a) => !a.is_group);
