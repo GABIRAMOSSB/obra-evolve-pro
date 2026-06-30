@@ -399,6 +399,39 @@ export function AnaliseGerencialV2({ legacyObraId }: { legacyObraId: string }) {
             )}
           </Section>
 
+          {plan.curva_s && plan.curva_s.length > 1 && (
+            <Section icon={BarChart3} title="Curva S — planejado × realizado" subtitle="Avanço acumulado ao longo do tempo. A linha vermelha marca a data de hoje.">
+              <div className="h-72 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={plan.curva_s} margin={{ top: 10, right: 16, left: 0, bottom: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" />
+                    <XAxis
+                      dataKey="data"
+                      tick={{ fontSize: 11 }}
+                      tickFormatter={(v: string) => v.slice(5)}
+                      minTickGap={28}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 11 }}
+                      domain={[0, 100]}
+                      tickFormatter={(v: number) => `${v}%`}
+                    />
+                    <RTooltip
+                      formatter={(v: number | null) => v == null ? "—" : `${v.toFixed(2)}%`}
+                      labelFormatter={(l: string) => fmtDt(l)}
+                      contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <ReferenceLine x={a.data_referencia} stroke="hsl(var(--destructive))" strokeDasharray="4 4" label={{ value: "hoje", fontSize: 10, fill: "hsl(var(--destructive))" }} />
+                    <Line type="monotone" dataKey="planejado" name="Planejado" stroke="hsl(var(--muted-foreground))" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+                    <Line type="monotone" dataKey="realizado" name="Realizado" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={false} connectNulls />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </Section>
+          )}
+
+
           <Section icon={TrendingUp} title="Ritmo de produção" subtitle={r.frase ?? "Comparação realizado x necessário"}>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <Kpi label="Acumulado" value={fmtNum(r.acumulado, 3) + " %/dia"} />
