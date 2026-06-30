@@ -988,6 +988,13 @@ export function calcularAnaliseV2(
       spi_classe,
       atividades_com_baseline: ativComBaseline,
       atividades_sem_baseline: totalCount - ativComBaseline,
+      curva_s: serie_curva_s,
+    },
+    dependencias: {
+      total: dependencias?.length ?? 0,
+      bloqueios: bloqueios_dep,
+      ativas_bloqueando: bloqueios_dep.filter((b) => b.bloqueando).length,
+      prontidao_por_atividade: Object.fromEntries(prontidao_por_at),
     },
     cobertura_dados: {
       total_atividades: totalCount,
