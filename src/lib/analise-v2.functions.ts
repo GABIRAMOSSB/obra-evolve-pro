@@ -124,6 +124,7 @@ export const getAnaliseV2 = createServerFn({ method: "POST" })
       atividadesMerged,
       (snapRes.data ?? []) as unknown as SnapshotRaw[],
       { valor_aditivos, valor_supressoes, valor_medido, valor_pago },
+      (depRes.data ?? []) as unknown as DependenciaRaw[],
     );
 
     // Snapshot diário — upsert por (obra_id, data_snapshot). Nunca toca obra_atividades.
