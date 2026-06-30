@@ -5,10 +5,11 @@
  * Inclui novos cálculos: avanço planejado (baseline), SPI real, riscos 4D,
  * financeiro estendido e cobertura/qualidade de dados.
  */
-import { useEffect, useMemo } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getAnaliseV2 } from "@/lib/analise-v2.functions";
+import { listDependencias, upsertDependencia, deleteDependencia } from "@/lib/analise-v2-deps.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,10 +17,16 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
+  Tooltip as RTooltip, Legend, ReferenceLine,
+} from "recharts";
 import {
   Activity, AlertTriangle, TrendingUp, TrendingDown, Loader2, RefreshCw,
   Target, Calendar, ShieldAlert, Layers, Link2, CheckCircle2, Info,
-  Wallet, BarChart3, Database, Briefcase,
+  Wallet, BarChart3, Database, Briefcase, Plus, Trash2,
 } from "lucide-react";
 
 const fmtBRL = (v: number | null | undefined) =>
@@ -392,6 +399,42 @@ export function AnaliseGerencialV2({ legacyObraId }: { legacyObraId: string }) {
             )}
           </Section>
 
+          {plan.curva_s && plan.curva_s.length > 1 && (
+            <Section icon={BarChart3} title="Curva S — planejado × realizado" subtitle="Avanço acumulado ao longo do tempo. A linha vermelha marca a data de hoje.">
+              <div className="h-72 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={plan.curva_s} margin={{ top: 10, right: 16, left: 0, bottom: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" />
+                    <XAxis
+                      dataKey="data"
+                      tick={{ fontSize: 11 }}
+                      tickFormatter={(v: string) => v.slice(5)}
+                      minTickGap={28}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 11 }}
+                      domain={[0, 100]}
+                      tickFormatter={(v: number) => `${v}%`}
+                    />
+                    <RTooltip
+                      formatter={(v) => {
+                        const n = typeof v === "number" ? v : Number(v);
+                        return Number.isFinite(n) ? `${n.toFixed(2)}%` : "—";
+                      }}
+                      labelFormatter={(l: string) => fmtDt(l)}
+                      contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <ReferenceLine x={a.data_referencia} stroke="hsl(var(--destructive))" strokeDasharray="4 4" label={{ value: "hoje", fontSize: 10, fill: "hsl(var(--destructive))" }} />
+                    <Line type="monotone" dataKey="planejado" name="Planejado" stroke="hsl(var(--muted-foreground))" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+                    <Line type="monotone" dataKey="realizado" name="Realizado" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={false} connectNulls />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </Section>
+          )}
+
+
           <Section icon={TrendingUp} title="Ritmo de produção" subtitle={r.frase ?? "Comparação realizado x necessário"}>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <Kpi label="Acumulado" value={fmtNum(r.acumulado, 3) + " %/dia"} />
@@ -600,7 +643,15 @@ export function AnaliseGerencialV2({ legacyObraId }: { legacyObraId: string }) {
               </div>
             </Section>
           )}
+
+          <DependenciasEditor
+            obraId={a.obra_id}
+            atividades={a.atividades.map((x) => ({ id: x.id, descricao: x.descricao }))}
+            resumo={a.dependencias}
+            onChange={() => q.refetch()}
+          />
         </TabsContent>
+
 
         {/* ====== RECUPERAÇÃO ====== */}
         <TabsContent value="recup" className="space-y-5 mt-5">
@@ -750,5 +801,192 @@ export function AnaliseGerencialV2({ legacyObraId }: { legacyObraId: string }) {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+// ============================================================
+// Editor de dependências entre atividades (Fase 2)
+// ============================================================
+type DepRow = {
+  id: string;
+  predecessora_id: string;
+  sucessora_id: string;
+  tipo: "TI" | "II" | "TT" | "IT";
+  defasagem_dias: number;
+  percentual_minimo: number;
+};
+
+function DependenciasEditor({
+  obraId,
+  atividades,
+  resumo,
+  onChange,
+}: {
+  obraId: string;
+  atividades: { id: string; descricao: string }[];
+  resumo: {
+    total: number;
+    ativas_bloqueando: number;
+    bloqueios: { predecessora: string; sucessora: string; tipo: string; pct_predecessora: number; pct_minimo: number; bloqueando: boolean }[];
+  };
+  onChange: () => void;
+}) {
+  const list = useServerFn(listDependencias);
+  const upsert = useServerFn(upsertDependencia);
+  const del = useServerFn(deleteDependencia);
+  const qc = useQueryClient();
+  const key = useMemo(() => ["analise-v2-deps", obraId], [obraId]);
+
+  const q = useQuery({
+    queryKey: key,
+    queryFn: () => list({ data: { obraId } }),
+    staleTime: 30_000,
+  });
+
+  const [pred, setPred] = useState<string>("");
+  const [suc, setSuc] = useState<string>("");
+  const [tipo, setTipo] = useState<DepRow["tipo"]>("TI");
+  const [defasagem, setDefasagem] = useState<number>(0);
+  const [pctMin, setPctMin] = useState<number>(100);
+
+  const mAdd = useMutation({
+    mutationFn: () => upsert({
+      data: { obraId, predecessora_id: pred, sucessora_id: suc, tipo, defasagem_dias: defasagem, percentual_minimo: pctMin },
+    }),
+    onSuccess: () => {
+      setPred(""); setSuc(""); setTipo("TI"); setDefasagem(0); setPctMin(100);
+      qc.invalidateQueries({ queryKey: key });
+      onChange();
+    },
+  });
+  const mDel = useMutation({
+    mutationFn: (id: string) => del({ data: { id } }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: key }); onChange(); },
+  });
+
+  const ativMap = useMemo(() => new Map(atividades.map((a) => [a.id, a.descricao])), [atividades]);
+  const rows: DepRow[] = (q.data?.rows ?? []) as DepRow[];
+
+  return (
+    <Card className="p-5 space-y-4 rounded-2xl border-border/60 shadow-sm">
+      <div className="flex items-start gap-3 border-b pb-3">
+        <div className="rounded-lg bg-primary/10 p-2"><Link2 className="w-4 h-4 text-primary" /></div>
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-base">Dependências editáveis</div>
+          <div className="text-xs text-muted-foreground mt-0.5">
+            {resumo.total} dependência(s) cadastrada(s) · {resumo.ativas_bloqueando} bloqueio(s) ativo(s)
+          </div>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-12 gap-2 items-end">
+        <div className="md:col-span-4 space-y-1">
+          <div className="text-[11px] uppercase text-muted-foreground">Predecessora</div>
+          <Select value={pred} onValueChange={setPred}>
+            <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Selecione…" /></SelectTrigger>
+            <SelectContent className="max-h-72">
+              {atividades.map((a) => (
+                <SelectItem key={a.id} value={a.id} className="text-xs">{a.descricao}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="md:col-span-4 space-y-1">
+          <div className="text-[11px] uppercase text-muted-foreground">Sucessora</div>
+          <Select value={suc} onValueChange={setSuc}>
+            <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Selecione…" /></SelectTrigger>
+            <SelectContent className="max-h-72">
+              {atividades.map((a) => (
+                <SelectItem key={a.id} value={a.id} className="text-xs">{a.descricao}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="md:col-span-1 space-y-1">
+          <div className="text-[11px] uppercase text-muted-foreground">Tipo</div>
+          <Select value={tipo} onValueChange={(v) => setTipo(v as DepRow["tipo"])}>
+            <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="TI">TI</SelectItem>
+              <SelectItem value="II">II</SelectItem>
+              <SelectItem value="TT">TT</SelectItem>
+              <SelectItem value="IT">IT</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="md:col-span-1 space-y-1">
+          <div className="text-[11px] uppercase text-muted-foreground">Lag (d)</div>
+          <Input type="number" value={defasagem} onChange={(e) => setDefasagem(Number(e.target.value) || 0)} className="h-9 text-xs" />
+        </div>
+        <div className="md:col-span-1 space-y-1">
+          <div className="text-[11px] uppercase text-muted-foreground">% mín.</div>
+          <Input type="number" min={0} max={100} value={pctMin} onChange={(e) => setPctMin(Number(e.target.value) || 0)} className="h-9 text-xs" />
+        </div>
+        <div className="md:col-span-1">
+          <Button
+            size="sm"
+            className="w-full"
+            disabled={!pred || !suc || pred === suc || mAdd.isPending}
+            onClick={() => mAdd.mutate()}
+          >
+            <Plus className="w-3.5 h-3.5 mr-1" /> Add
+          </Button>
+        </div>
+      </div>
+      {mAdd.error && <div className="text-xs text-rose-600">{(mAdd.error as Error).message}</div>}
+
+      {q.isLoading ? (
+        <div className="text-xs text-muted-foreground flex items-center gap-2"><Loader2 className="w-3 h-3 animate-spin" />Carregando dependências…</div>
+      ) : rows.length === 0 ? (
+        <div className="text-xs text-muted-foreground">Nenhuma dependência cadastrada. Use o formulário acima para ligar uma predecessora a uma sucessora.</div>
+      ) : (
+        <div className="overflow-auto rounded-xl border max-h-[320px]">
+          <table className="w-full text-xs">
+            <thead className="bg-muted/40 sticky top-0">
+              <tr className="text-left">
+                <th className="p-2">Predecessora</th>
+                <th className="p-2">Sucessora</th>
+                <th className="p-2">Tipo</th>
+                <th className="p-2 text-right">Lag</th>
+                <th className="p-2 text-right">% mín.</th>
+                <th className="p-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((d) => (
+                <tr key={d.id} className="border-t">
+                  <td className="p-2">{ativMap.get(d.predecessora_id) ?? <span className="text-muted-foreground">—</span>}</td>
+                  <td className="p-2">{ativMap.get(d.sucessora_id) ?? <span className="text-muted-foreground">—</span>}</td>
+                  <td className="p-2">{d.tipo}</td>
+                  <td className="p-2 text-right">{d.defasagem_dias}d</td>
+                  <td className="p-2 text-right">{d.percentual_minimo}%</td>
+                  <td className="p-2 text-right">
+                    <Button size="sm" variant="ghost" onClick={() => mDel.mutate(d.id)} disabled={mDel.isPending}>
+                      <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {resumo.bloqueios.length > 0 && (
+        <div className="space-y-1.5">
+          <div className="text-xs font-semibold uppercase text-muted-foreground">Bloqueios derivados das dependências</div>
+          {resumo.bloqueios.slice(0, 8).map((b, i) => (
+            <div key={i} className={`rounded-md border p-2 text-xs flex items-center gap-2 ${b.bloqueando ? "border-rose-300 bg-rose-50/40 dark:bg-rose-950/10" : "bg-muted/30"}`}>
+              <Badge variant="outline" className="text-[10px]">{b.tipo}</Badge>
+              <span><strong>{b.predecessora}</strong> → {b.sucessora}</span>
+              <span className="text-muted-foreground ml-auto">
+                {b.pct_predecessora.toFixed(0)}% de {b.pct_minimo.toFixed(0)}% requeridos
+              </span>
+              {b.bloqueando && <Badge className="bg-rose-600 text-[10px]">bloqueando</Badge>}
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
   );
 }

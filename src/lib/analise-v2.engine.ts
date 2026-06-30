@@ -23,6 +23,19 @@ export type AtividadeRaw = {
   prioridade: "baixa" | "media" | "alta" | "critica";
   impedimento: string | null;
   is_group: boolean | null;
+  // Fase 2 — baseline planejada editável
+  baseline_inicio?: string | null;
+  baseline_fim?: string | null;
+  prontidao?: number | null;
+};
+
+export type DependenciaRaw = {
+  id: string;
+  predecessora_id: string;
+  sucessora_id: string;
+  tipo: "TI" | "II" | "TT" | "IT";
+  defasagem_dias: number;
+  percentual_minimo: number;
 };
 
 export type ObraRaw = {
@@ -143,6 +156,7 @@ export function calcularAnaliseV2(
   atividadesRaw: AtividadeRaw[],
   snapshots: SnapshotRaw[],
   financeiros?: FinanceirosRaw,
+  dependencias?: DependenciaRaw[],
 ) {
   const hoje = new Date(isoToday() + "T00:00:00Z");
   const ativ = atividadesRaw.filter((a) => !a.is_group);
@@ -646,8 +660,9 @@ export function calcularAnaliseV2(
   // "não previstas" e não entram no avanço planejado (entram só no contador
   // de gaps).
   function pctPlanejadoAt(a: AtividadeRaw, ref: Date): number | null {
-    const pi = parseDate(a.data_prevista_inicio);
-    const pf = parseDate(a.data_prevista_fim);
+    // Prioriza baseline_inicio/baseline_fim, cai para datas previstas.
+    const pi = parseDate(a.baseline_inicio ?? a.data_prevista_inicio);
+    const pf = parseDate(a.baseline_fim ?? a.data_prevista_fim);
     if (!pi || !pf) return null;
     if (ref.getTime() <= pi.getTime()) return 0;
     if (ref.getTime() >= pf.getTime()) return 100;
@@ -692,6 +707,118 @@ export function calcularAnaliseV2(
   const desvio_planejado = avanco_planejado != null
     ? +(avanco - avanco_planejado).toFixed(2)
     : null;
+
+  // --- Curva S (série planejado x realizado) ---
+  // Range: do menor baseline_inicio/planejado até o maior baseline_fim/planejado
+  // ou data_fim contratual; passo diário se <= 180 dias, senão semanal.
+  type SeriePonto = { data: string; planejado: number; realizado: number | null };
+  const serie_curva_s: SeriePonto[] = (() => {
+    const inicios: Date[] = [];
+    const fins: Date[] = [];
+    for (const a of ativ) {
+      const pi = parseDate(a.baseline_inicio ?? a.data_prevista_inicio);
+      const pf = parseDate(a.baseline_fim ?? a.data_prevista_fim);
+      if (pi) inicios.push(pi);
+      if (pf) fins.push(pf);
+    }
+    if (di) inicios.push(di);
+    if (df) fins.push(df);
+    if (!inicios.length || !fins.length) return [];
+    const start = new Date(Math.min(...inicios.map((d) => d.getTime())));
+    const end = new Date(Math.max(...fins.map((d) => d.getTime())));
+    const totalDias = Math.max(1, diffDays(end, start));
+    const step = totalDias <= 180 ? 1 : totalDias <= 720 ? 7 : 14;
+
+    // Mapa snapshot.data → avanco
+    const snapMap = new Map<string, number>();
+    for (const s of snapsOrdenados) snapMap.set(s.data_snapshot, Number(s.avanco) || 0);
+    const datasSnap = snapsOrdenados.map((s) => s.data_snapshot);
+
+    function planejadoEm(ref: Date): number {
+      let num = 0;
+      let den = 0;
+      for (const a of ativ) {
+        const p = pctPlanejadoAt(a, ref);
+        if (p == null) continue;
+        const peso = usaValor ? Number(a.valor) || 0 : usaPeso ? Number(a.peso) || 0 : 1;
+        num += peso * (p / 100);
+        den += peso;
+      }
+      return den > 0 ? +((num / den) * 100).toFixed(2) : 0;
+    }
+    function realizadoEm(refIso: string): number | null {
+      if (refIso > isoToday()) return null;
+      if (snapMap.has(refIso)) return snapMap.get(refIso)!;
+      // último snapshot <= refIso
+      let acc: number | null = null;
+      for (const ds of datasSnap) {
+        if (ds <= refIso) acc = snapMap.get(ds) ?? acc;
+        else break;
+      }
+      // se passou a data e ainda não há snapshot, usa 0 (ou avanco atual se hoje)
+      if (acc == null && refIso === isoToday()) return +avanco.toFixed(2);
+      return acc;
+    }
+    const out: SeriePonto[] = [];
+    for (let t = start.getTime(); t <= end.getTime(); t += step * DAY) {
+      const d = new Date(t);
+      const iso = fmtISO(d);
+      out.push({ data: iso, planejado: planejadoEm(d), realizado: realizadoEm(iso) });
+    }
+    // garante ponto "hoje"
+    const hojeIso = isoToday();
+    if (!out.find((p) => p.data === hojeIso) && hojeIso >= fmtISO(start) && hojeIso <= fmtISO(end)) {
+      out.push({ data: hojeIso, planejado: planejadoEm(hoje), realizado: +avanco.toFixed(2) });
+      out.sort((a, b) => a.data.localeCompare(b.data));
+    }
+    return out;
+  })();
+
+  // --- Dependências explícitas (Fase 2) ---
+  // Quando há registros em obra_atividade_dependencias, sobrescrevem a heurística
+  // por etapa (ETAPA_DEPS). Produz lista de bloqueios e mapa de prontidão.
+  type BloqueioDep = {
+    predecessora: string;
+    sucessora: string;
+    tipo: string;
+    pct_predecessora: number;
+    pct_minimo: number;
+    bloqueando: boolean;
+  };
+  const bloqueios_dep: BloqueioDep[] = [];
+  const prontidao_por_at = new Map<string, number>();
+  if (dependencias && dependencias.length) {
+    const ativMap = new Map(ativ.map((a) => [a.id, a]));
+    // agrupa por sucessora
+    const porSucessora = new Map<string, DependenciaRaw[]>();
+    for (const d of dependencias) {
+      if (!porSucessora.has(d.sucessora_id)) porSucessora.set(d.sucessora_id, []);
+      porSucessora.get(d.sucessora_id)!.push(d);
+    }
+    for (const [sucId, lista] of porSucessora) {
+      const suc = ativMap.get(sucId);
+      if (!suc) continue;
+      let prontidao = 100;
+      for (const dep of lista) {
+        const pred = ativMap.get(dep.predecessora_id);
+        if (!pred) continue;
+        const pct = Number(pred.percentual_concluido) || 0;
+        const min = Number(dep.percentual_minimo) || 100;
+        const ok = pct >= min;
+        if (!ok) prontidao = Math.min(prontidao, Math.round((pct / min) * 100));
+        bloqueios_dep.push({
+          predecessora: pred.descricao,
+          sucessora: suc.descricao,
+          tipo: dep.tipo,
+          pct_predecessora: pct,
+          pct_minimo: min,
+          bloqueando: !ok && (Number(suc.percentual_concluido) || 0) < 100,
+        });
+      }
+      prontidao_por_at.set(sucId, prontidao);
+    }
+  }
+
 
   // --- cobertura de dados ---
   const sem_valor = ativ.filter((a) => !(Number(a.valor) > 0)).length;
@@ -861,6 +988,13 @@ export function calcularAnaliseV2(
       spi_classe,
       atividades_com_baseline: ativComBaseline,
       atividades_sem_baseline: totalCount - ativComBaseline,
+      curva_s: serie_curva_s,
+    },
+    dependencias: {
+      total: dependencias?.length ?? 0,
+      bloqueios: bloqueios_dep,
+      ativas_bloqueando: bloqueios_dep.filter((b) => b.bloqueando).length,
+      prontidao_por_atividade: Object.fromEntries(prontidao_por_at),
     },
     cobertura_dados: {
       total_atividades: totalCount,

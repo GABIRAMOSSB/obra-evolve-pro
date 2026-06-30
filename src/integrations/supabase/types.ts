@@ -3577,6 +3577,83 @@ export type Database = {
           },
         ]
       }
+      obra_atividade_dependencias: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          defasagem_dias: number
+          id: string
+          obra_id: string
+          obrigatoria: boolean
+          observacao: string | null
+          percentual_minimo: number
+          predecessora_id: string
+          sucessora_id: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          defasagem_dias?: number
+          id?: string
+          obra_id: string
+          obrigatoria?: boolean
+          observacao?: string | null
+          percentual_minimo?: number
+          predecessora_id: string
+          sucessora_id: string
+          tipo?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          defasagem_dias?: number
+          id?: string
+          obra_id?: string
+          obrigatoria?: boolean
+          observacao?: string | null
+          percentual_minimo?: number
+          predecessora_id?: string
+          sucessora_id?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obra_atividade_dependencias_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obra_atividade_dependencias_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obra_atividade_dependencias_predecessora_id_fkey"
+            columns: ["predecessora_id"]
+            isOneToOne: false
+            referencedRelation: "obra_atividades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obra_atividade_dependencias_sucessora_id_fkey"
+            columns: ["sucessora_id"]
+            isOneToOne: false
+            referencedRelation: "obra_atividades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       obra_atividade_eventos: {
         Row: {
           atividade_id: string | null
@@ -3634,7 +3711,10 @@ export type Database = {
       }
       obra_atividades: {
         Row: {
+          baseline_fim: string | null
+          baseline_inicio: string | null
           bloqueia_atividades: string[] | null
+          codigo_interno: string | null
           company_id: string
           created_at: string
           created_by: string | null
@@ -3648,13 +3728,16 @@ export type Database = {
           impedimento: string | null
           is_group: boolean
           item_codigo: string
+          item_hierarquico: string | null
           metadata: Json
           obra_id: string
           observacoes: string | null
           ordem: number | null
           percentual_concluido: number
           peso: number | null
+          predecessoras: Json | null
           prioridade: Database["public"]["Enums"]["atividade_prioridade"]
+          prontidao: Json | null
           quantidade: number | null
           responsavel_id: string | null
           responsavel_nome: string | null
@@ -3664,7 +3747,10 @@ export type Database = {
           valor: number | null
         }
         Insert: {
+          baseline_fim?: string | null
+          baseline_inicio?: string | null
           bloqueia_atividades?: string[] | null
+          codigo_interno?: string | null
           company_id: string
           created_at?: string
           created_by?: string | null
@@ -3678,13 +3764,16 @@ export type Database = {
           impedimento?: string | null
           is_group?: boolean
           item_codigo: string
+          item_hierarquico?: string | null
           metadata?: Json
           obra_id: string
           observacoes?: string | null
           ordem?: number | null
           percentual_concluido?: number
           peso?: number | null
+          predecessoras?: Json | null
           prioridade?: Database["public"]["Enums"]["atividade_prioridade"]
+          prontidao?: Json | null
           quantidade?: number | null
           responsavel_id?: string | null
           responsavel_nome?: string | null
@@ -3694,7 +3783,10 @@ export type Database = {
           valor?: number | null
         }
         Update: {
+          baseline_fim?: string | null
+          baseline_inicio?: string | null
           bloqueia_atividades?: string[] | null
+          codigo_interno?: string | null
           company_id?: string
           created_at?: string
           created_by?: string | null
@@ -3708,13 +3800,16 @@ export type Database = {
           impedimento?: string | null
           is_group?: boolean
           item_codigo?: string
+          item_hierarquico?: string | null
           metadata?: Json
           obra_id?: string
           observacoes?: string | null
           ordem?: number | null
           percentual_concluido?: number
           peso?: number | null
+          predecessoras?: Json | null
           prioridade?: Database["public"]["Enums"]["atividade_prioridade"]
+          prontidao?: Json | null
           quantidade?: number | null
           responsavel_id?: string | null
           responsavel_nome?: string | null
