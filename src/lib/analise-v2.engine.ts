@@ -660,8 +660,9 @@ export function calcularAnaliseV2(
   // "não previstas" e não entram no avanço planejado (entram só no contador
   // de gaps).
   function pctPlanejadoAt(a: AtividadeRaw, ref: Date): number | null {
-    const pi = parseDate(a.data_prevista_inicio);
-    const pf = parseDate(a.data_prevista_fim);
+    // Prioriza baseline_inicio/baseline_fim, cai para datas previstas.
+    const pi = parseDate(a.baseline_inicio ?? a.data_prevista_inicio);
+    const pf = parseDate(a.baseline_fim ?? a.data_prevista_fim);
     if (!pi || !pf) return null;
     if (ref.getTime() <= pi.getTime()) return 0;
     if (ref.getTime() >= pf.getTime()) return 100;
