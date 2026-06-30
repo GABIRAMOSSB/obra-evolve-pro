@@ -5,10 +5,11 @@
  * Inclui novos cálculos: avanço planejado (baseline), SPI real, riscos 4D,
  * financeiro estendido e cobertura/qualidade de dados.
  */
-import { useEffect, useMemo } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getAnaliseV2 } from "@/lib/analise-v2.functions";
+import { listDependencias, upsertDependencia, deleteDependencia } from "@/lib/analise-v2-deps.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,10 +17,16 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
+  Tooltip as RTooltip, Legend, ReferenceLine,
+} from "recharts";
 import {
   Activity, AlertTriangle, TrendingUp, TrendingDown, Loader2, RefreshCw,
   Target, Calendar, ShieldAlert, Layers, Link2, CheckCircle2, Info,
-  Wallet, BarChart3, Database, Briefcase,
+  Wallet, BarChart3, Database, Briefcase, Plus, Trash2,
 } from "lucide-react";
 
 const fmtBRL = (v: number | null | undefined) =>
