@@ -643,7 +643,15 @@ export function AnaliseGerencialV2({ legacyObraId }: { legacyObraId: string }) {
               </div>
             </Section>
           )}
+
+          <DependenciasEditor
+            obraId={a.obra_id}
+            atividades={a.atividades.map((x) => ({ id: x.id, descricao: x.descricao }))}
+            resumo={a.dependencias}
+            onChange={() => q.refetch()}
+          />
         </TabsContent>
+
 
         {/* ====== RECUPERAÇÃO ====== */}
         <TabsContent value="recup" className="space-y-5 mt-5">
