@@ -483,6 +483,17 @@ function BoletimDetalhePage() {
           </div>
         </div>
 
+        {modo === "executiva" ? (
+          <VisaoExecutivaMedicao
+            medicaoId={id}
+            itens={itens}
+            valorTotalContrato={totais.valor_total_contrato}
+            valorMedicaoAtual={totais.valor_medicao_atual}
+            valorAcumulado={totais.valor_acumulado}
+            percentualExecutado={totais.percentual_executado}
+          />
+        ) : (
+        <>
         {/* ===== FILTROS ===== */}
         <div className={`bg-white rounded-xl shadow-sm px-4 py-3 flex flex-wrap gap-3 items-center print:hidden ${modoOficial ? "hidden" : ""}`}>
           <div className="relative flex-1 min-w-[220px]">
