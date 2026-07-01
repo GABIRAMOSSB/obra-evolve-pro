@@ -302,7 +302,12 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
 
   for (const i of data.itens) {
     const row = ws.getRow(rowNum);
-    row.height = 22;
+    row.height = autosizeRowHeight([
+      { text: sanitizeDescricao(i.descricao), colWidth: 55 },
+      { text: i.item_codigo, colWidth: 12 },
+    ], 22);
+
+
 
     if (i.is_etapa) {
       row.getCell(1).value = i.item_codigo;
