@@ -252,16 +252,49 @@ export function VisaoExecutivaMedicao({
   );
 }
 
-function ExecKpi({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: string; accent?: boolean }) {
+const CATEGORIA_LABEL: Record<string, string> = {
+  financeiro: "Indicadores financeiros",
+  fisico: "Execução física",
+  prazo: "Prazo e ritmo",
+  qualidade: "Qualidade e risco",
+};
+
+function IndicadorCard({ indicador }: { indicador: IndicadorPainel }) {
+  const cores = indicador.tendencia === "positiva"
+    ? { bar: "bg-[#16855B]", ico: <TrendingUp className="w-3 h-3 text-[#16855B]" /> }
+    : indicador.tendencia === "negativa"
+    ? { bar: "bg-[#C83E4D]", ico: <TrendingDown className="w-3 h-3 text-[#C83E4D]" /> }
+    : { bar: "bg-[#C8A66A]", ico: <Minus className="w-3 h-3 text-[#8A6D2E]" /> };
+  const destaque = indicador.destaque;
   return (
-    <div className={`rounded-xl px-4 py-4 shadow-sm ${accent ? "bg-gradient-to-br from-[#C8A66A] to-[#B69354] text-white" : "bg-white"}`}>
-      <div className={`flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-semibold ${accent ? "text-white/90" : "text-[#69717D]"}`}>
-        {icon} {label}
+    <div className={`relative rounded-xl px-4 py-4 shadow-sm overflow-hidden ${destaque ? "bg-gradient-to-br from-[#252A33] to-[#3B4250] text-white" : "bg-white"}`}>
+      <div className={`absolute left-0 top-0 bottom-0 w-1 ${cores.bar}`} />
+      <div className="flex items-center justify-between">
+        <span className={`text-[9px] font-mono font-bold ${destaque ? "text-[#C8A66A]" : "text-[#69717D]"}`}>{indicador.codigo}</span>
+        {cores.ico}
       </div>
-      <div className={`text-2xl font-bold mt-2 tabular-nums ${accent ? "text-white" : "text-[#252A33]"}`}>{value}</div>
+      <div className={`text-[10px] uppercase tracking-widest font-semibold mt-1 ${destaque ? "text-white/80" : "text-[#69717D]"}`}>
+        {indicador.titulo}
+      </div>
+      <div className={`text-lg md:text-xl font-bold mt-1.5 tabular-nums ${destaque ? "text-white" : "text-[#252A33]"}`}>
+        {indicador.valor}
+      </div>
+      <div className={`text-[10px] mt-1.5 leading-snug ${destaque ? "text-white/70" : "text-[#69717D]"}`}>
+        {indicador.descricao}
+      </div>
     </div>
   );
 }
+
+function PainelHeaderStat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div>
+      <div className="text-[9px] uppercase tracking-widest text-white/60 font-bold">{label}</div>
+      <div className={`text-base font-bold tabular-nums ${accent ? "text-[#C8A66A]" : "text-white"}`}>{value}</div>
+    </div>
+  );
+}
+
 
 function ProjItem({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
