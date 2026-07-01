@@ -10,6 +10,10 @@ import {
   getMedicaoDetalhe,
   salvarRascunhoMedicao,
   aprovarMedicao,
+  enviarMedicaoParaConferencia,
+  rejeitarMedicao,
+  solicitarRevisaoMedicao,
+  getBoletimHistorico,
 } from "@/lib/boletim-medicao.functions";
 import {
   fmtMoneyBR,
