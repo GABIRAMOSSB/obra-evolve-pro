@@ -248,6 +248,11 @@ function MedicoesPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/medicoes/$id" params={{ id: m.id }}>
+                    <ExternalLink className="w-3.5 h-3.5 mr-1" /> Abrir
+                  </Link>
+                </Button>
                 <Button variant="ghost" size="icon" onClick={() => { if (confirm("Excluir esta medição?")) mutDel.mutate(m.id); }}>
                   <Trash2 className="w-4 h-4 text-destructive" />
                 </Button>
