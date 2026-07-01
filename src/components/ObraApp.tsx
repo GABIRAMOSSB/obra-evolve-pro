@@ -1566,9 +1566,9 @@ function Dashboard({
  <TabsTrigger value="documentos">Documentos</TabsTrigger>
  </TabsList>
 
- <TabsContent value="atividades" className="space-y-4">
- <AnaliseGerencialPanel data={data} />
- <Card className="p-4">
+  <TabsContent value="atividades" className="space-y-4">
+  <Card className="p-4">
+
  <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
  <div>
  <Label className="text-xs">Etapa</Label>
