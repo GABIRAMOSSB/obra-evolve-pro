@@ -658,7 +658,7 @@ function buildCapaSheet(wb: ExcelJS.Workbook, data: XLSXInput, logoImageId: numb
     ["Fiscal da Obra", data.fiscal?.nome ?? "—"],
   ];
 
-  let r = 16;
+  let r = 19;
   for (const [label, value] of rows) {
     ws.mergeCells(r, 2, r, 3);
     const cl = ws.getCell(r, 2);
