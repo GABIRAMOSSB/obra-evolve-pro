@@ -72,6 +72,29 @@ function fmtDateBR(iso: string | null | undefined): string {
   return isNaN(d.getTime()) ? "" : d.toLocaleDateString("pt-BR");
 }
 
+/**
+ * Calcula altura de linha necessária para que o texto envolvido não fique
+ * escondido. Considera quebras explícitas (\n) e o wrap por largura da coluna.
+ */
+function autosizeRowHeight(
+  texts: Array<{ text: string | null | undefined; colWidth: number }>,
+  minHeight = 18,
+): number {
+  let maxLines = 1;
+  for (const { text, colWidth } of texts) {
+    if (!text) continue;
+    const raw = String(text);
+    const perLine = Math.max(8, Math.floor(colWidth * 1.05));
+    const parts = raw.split(/\r?\n/);
+    let total = 0;
+    for (const p of parts) {
+      total += Math.max(1, Math.ceil(p.length / perLine));
+    }
+    if (total > maxLines) maxLines = total;
+  }
+  return Math.max(minHeight, maxLines * 13 + 8);
+}
+
 export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob> {
   const wb = new ExcelJS.Workbook();
   wb.creator = "SOLV Construtora";
