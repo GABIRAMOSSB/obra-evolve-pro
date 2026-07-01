@@ -298,6 +298,7 @@ export const salvarRascunhoMedicao = createServerFn({ method: "POST" })
         valor_acum_atual: c.valor_acum_atual,
         pct_executado: c.pct_executado,
         status_calc: c.status_calc,
+        justificativa: i.justificativa ?? null,
         ordem: i.ordem ?? idx,
       };
     });
