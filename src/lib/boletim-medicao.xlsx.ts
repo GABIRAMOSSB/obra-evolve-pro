@@ -7,6 +7,18 @@
  */
 import ExcelJS from "exceljs";
 import { normalizeUnidade, sanitizeDescricao } from "./boletim-medicao.calc";
+import solvLogoUrl from "@/assets/solv-logo.png";
+
+/** Carrega o logo SOLV como ArrayBuffer para embed no XLSX. */
+async function loadSolvLogo(): Promise<ArrayBuffer | null> {
+  try {
+    const res = await fetch(solvLogoUrl);
+    if (!res.ok) return null;
+    return await res.arrayBuffer();
+  } catch {
+    return null;
+  }
+}
 
 // Paleta SOLV (ARGB para ExcelJS)
 const C = {
