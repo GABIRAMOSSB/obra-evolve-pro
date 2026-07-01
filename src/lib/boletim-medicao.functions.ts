@@ -181,6 +181,7 @@ export const getMedicaoDetalhe = createServerFn({ method: "GET" })
           qtd_acum_anterior: Number(e.qtd_acum_anterior),
           valor_acum_anterior: Number(e.valor_acum_anterior),
           qtd_periodo: Number(e.qtd_periodo),
+          justificativa: (e.justificativa ?? null) as string | null,
           ordem: e.ordem,
         });
       }
