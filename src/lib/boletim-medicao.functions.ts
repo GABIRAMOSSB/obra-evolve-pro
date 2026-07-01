@@ -348,3 +348,42 @@ export const aprovarMedicao = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/**
+ * Visão Executiva — histórico do contrato para montar Curva S,
+ * projeção de encerramento e ranking de ofensores.
+ */
+export const getVisaoExecutivaMedicao = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as AnySupabase;
+    const { companyId } = await resolveCompany(supabase, context.userId);
+
+    const { data: medicao } = await supabase
+      .from("medicoes")
+      .select("id, contrato_id, numero, numero_bm, data_medicao, periodo_inicio, periodo_fim, valor_acumulado, valor_executado, status")
+      .eq("id", data.id)
+      .eq("company_id", companyId)
+      .maybeSingle();
+    if (!medicao) throw new Error("Medição não encontrada.");
+
+    const { data: historico } = await supabase
+      .from("medicoes")
+      .select("id, numero, numero_bm, data_medicao, periodo_fim, valor_acumulado, valor_executado, percentual_fisico, status")
+      .eq("company_id", companyId)
+      .eq("contrato_id", medicao.contrato_id)
+      .order("numero", { ascending: true });
+
+    const { data: contrato } = await supabase
+      .from("contratos")
+      .select("valor_total, prazo_execucao_dias, data_inicio")
+      .eq("id", medicao.contrato_id)
+      .maybeSingle();
+
+    return {
+      medicao,
+      contrato,
+      historico: historico ?? [],
+    };
+  });
