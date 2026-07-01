@@ -7,6 +7,18 @@
  */
 import ExcelJS from "exceljs";
 import { normalizeUnidade, sanitizeDescricao } from "./boletim-medicao.calc";
+import solvLogoUrl from "@/assets/solv-logo.png";
+
+/** Carrega o logo SOLV como ArrayBuffer para embed no XLSX. */
+async function loadSolvLogo(): Promise<ArrayBuffer | null> {
+  try {
+    const res = await fetch(solvLogoUrl);
+    if (!res.ok) return null;
+    return await res.arrayBuffer();
+  } catch {
+    return null;
+  }
+}
 
 // Paleta SOLV (ARGB para ExcelJS)
 const C = {
@@ -100,10 +112,16 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   wb.creator = "SOLV Construtora";
   wb.created = new Date();
 
+  // Carrega o logo uma única vez para reutilizar entre as abas.
+  const logoBuffer = await loadSolvLogo();
+  const logoImageId = logoBuffer
+    ? wb.addImage({ buffer: logoBuffer as ArrayBuffer, extension: "png" })
+    : null;
+
   // ============================================================
   // ABA 1 — CAPA
   // ============================================================
-  buildCapaSheet(wb, data);
+  buildCapaSheet(wb, data, logoImageId);
 
   // ============================================================
   // ABA 2 — BOLETIM (principal)
@@ -144,33 +162,42 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   ];
 
   // ===== HEADER SOLV (linhas 1-3) =====
+  // Faixa grafite com logo à esquerda + wordmark centralizado
   ws.mergeCells("A1:M1");
   const h1 = ws.getCell("A1");
-  h1.value = "SOLV CONSTRUTORA";
-  h1.font = { name: "Calibri", size: 16, bold: true, color: { argb: C.white } };
+  h1.value = "SOLV CONSTRUTORA  ·  Excelência em construção civil";
+  h1.font = { name: "Calibri", size: 15, bold: true, color: { argb: C.white } };
   h1.fill = fill(C.graphiteDark);
-  h1.alignment = { horizontal: "left", vertical: "middle", indent: 1 };
-  ws.getRow(1).height = 26;
+  h1.alignment = { horizontal: "center", vertical: "middle" };
+  ws.getRow(1).height = 42;
+
+  if (logoImageId !== null) {
+    ws.addImage(logoImageId, {
+      tl: { col: 0.15, row: 0.15 },
+      ext: { width: 90, height: 52 },
+      editAs: "absolute",
+    });
+  }
 
   const bmLabel = data.medicao.numero_bm ?? `BM-${String(data.medicao.numero).padStart(2, "0")}`;
   ws.mergeCells("A2:H2");
   const h2 = ws.getCell("A2");
-  h2.value = "BOLETIM DE MEDIÇÃO";
+  h2.value = "◆  BOLETIM DE MEDIÇÃO";
   h2.font = { name: "Calibri", size: 10, bold: true, color: { argb: C.gold } };
-  h2.fill = fill(C.graphiteDark);
+  h2.fill = fill(C.graphite);
   h2.alignment = { horizontal: "left", vertical: "middle", indent: 1 };
   ws.mergeCells("I2:M2");
   const h2r = ws.getCell("I2");
-  h2r.value = `${bmLabel}  ·  ${fmtDateBR(data.medicao.data_medicao)}`;
+  h2r.value = `${bmLabel}   ◆   ${fmtDateBR(data.medicao.data_medicao)}`;
   h2r.font = { name: "Calibri", size: 10, bold: true, color: { argb: C.white } };
-  h2r.fill = fill(C.graphiteDark);
+  h2r.fill = fill(C.graphite);
   h2r.alignment = { horizontal: "right", vertical: "middle", indent: 1 };
-  ws.getRow(2).height = 18;
+  ws.getRow(2).height = 20;
 
-  // Linha dourada
+  // Linha dourada dupla como divisor decorativo
   ws.mergeCells("A3:M3");
   ws.getCell("A3").fill = fill(C.gold);
-  ws.getRow(3).height = 3;
+  ws.getRow(3).height = 4;
 
   // ===== DADOS CONTRATUAIS (linhas 4-11) =====
   const nomeObra = data.obra?.nome ?? "—";
@@ -513,7 +540,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
 // ===================================================================
 // ABA 1 — CAPA
 // ===================================================================
-function buildCapaSheet(wb: ExcelJS.Workbook, data: XLSXInput) {
+function buildCapaSheet(wb: ExcelJS.Workbook, data: XLSXInput, logoImageId: number | null) {
   const ws = wb.addWorksheet("Capa", {
     views: [{ showGridLines: false }],
     pageSetup: {
@@ -531,33 +558,72 @@ function buildCapaSheet(wb: ExcelJS.Workbook, data: XLSXInput) {
     { width: 4 }, { width: 22 }, { width: 22 }, { width: 22 }, { width: 22 }, { width: 4 },
   ];
 
-  // Faixa grafite topo
-  ws.mergeCells("A1:F3");
+  // ===== FAIXA GRAFITE TOPO (linhas 1-6) — moldura institucional =====
+  ws.mergeCells("A1:F6");
   const top = ws.getCell("A1");
-  top.value = "SOLV CONSTRUTORA";
-  top.font = { name: "Calibri", size: 22, bold: true, color: { argb: C.white } };
-  top.alignment = { horizontal: "center", vertical: "middle" };
   top.fill = fill(C.graphiteDark);
+  top.alignment = { horizontal: "center", vertical: "middle" };
+  ws.getRow(1).height = 22;
+  ws.getRow(2).height = 22;
+  ws.getRow(3).height = 22;
+  ws.getRow(4).height = 22;
+  ws.getRow(5).height = 22;
+  ws.getRow(6).height = 22;
 
-  // Linha dourada
-  ws.mergeCells("A4:F4");
-  ws.getCell("A4").fill = fill(C.gold);
-  ws.getRow(4).height = 4;
+  // Logo centralizado sobre a faixa grafite
+  if (logoImageId !== null) {
+    ws.addImage(logoImageId, {
+      tl: { col: 2.4, row: 0.4 },
+      ext: { width: 140, height: 120 },
+      editAs: "absolute",
+    });
+  } else {
+    // Fallback textual quando o logo não carrega
+    const fb = ws.getCell("A3");
+    fb.value = "SOLV";
+    fb.font = { name: "Calibri", size: 34, bold: true, color: { argb: C.gold } };
+    fb.alignment = { horizontal: "center", vertical: "middle" };
+  }
+
+  // Linha dourada dupla (divisor decorativo)
+  ws.mergeCells("A7:F7");
+  ws.getCell("A7").fill = fill(C.gold);
+  ws.getRow(7).height = 6;
+  ws.mergeCells("A8:F8");
+  ws.getCell("A8").fill = fill(C.graphiteDark);
+  ws.getRow(8).height = 2;
+
+  // Selo institucional
+  ws.mergeCells("A10:F10");
+  const seloTop = ws.getCell("A10");
+  seloTop.value = "◆   DOCUMENTO OFICIAL   ◆";
+  seloTop.font = { name: "Calibri", size: 9, bold: true, color: { argb: C.gold }, italic: true };
+  seloTop.alignment = { horizontal: "center", vertical: "middle" };
+  ws.getRow(10).height = 18;
 
   // Título
-  ws.mergeCells("A6:F6");
-  const t = ws.getCell("A6");
+  ws.mergeCells("A12:F12");
+  const t = ws.getCell("A12");
   t.value = "BOLETIM DE MEDIÇÃO";
-  t.font = { name: "Calibri", size: 18, bold: true, color: { argb: C.graphiteDark } };
+  t.font = { name: "Calibri", size: 22, bold: true, color: { argb: C.graphiteDark } };
   t.alignment = { horizontal: "center", vertical: "middle" };
-  ws.getRow(6).height = 30;
+  ws.getRow(12).height = 36;
 
   const bmLabel = data.medicao.numero_bm ?? `BM-${String(data.medicao.numero).padStart(2, "0")}`;
-  ws.mergeCells("A7:F7");
-  const sub = ws.getCell("A7");
-  sub.value = `${bmLabel}  ·  ${fmtDateBR(data.medicao.data_medicao)}`;
-  sub.font = { name: "Calibri", size: 12, color: { argb: C.gold } };
+  ws.mergeCells("A13:F13");
+  const sub = ws.getCell("A13");
+  sub.value = `${bmLabel}   ◆   ${fmtDateBR(data.medicao.data_medicao)}`;
+  sub.font = { name: "Calibri", size: 13, bold: true, color: { argb: C.gold } };
   sub.alignment = { horizontal: "center", vertical: "middle" };
+  ws.getRow(13).height = 22;
+
+  // Ornamento — três diamantes centrais
+  ws.mergeCells("A14:F14");
+  const orn = ws.getCell("A14");
+  orn.value = "◆   ◆   ◆";
+  orn.font = { name: "Calibri", size: 10, color: { argb: C.gold } };
+  orn.alignment = { horizontal: "center", vertical: "middle" };
+  ws.getRow(14).height = 16;
 
   // Bloco de dados
   const executora = data.company?.razao_social ?? data.company?.nome ?? "SOLV Construtora";
@@ -579,7 +645,7 @@ function buildCapaSheet(wb: ExcelJS.Workbook, data: XLSXInput) {
     ["Fiscal da Obra", data.fiscal?.nome ?? "—"],
   ];
 
-  let r = 10;
+  let r = 16;
   for (const [label, value] of rows) {
     ws.mergeCells(r, 2, r, 3);
     const cl = ws.getCell(r, 2);
@@ -587,23 +653,37 @@ function buildCapaSheet(wb: ExcelJS.Workbook, data: XLSXInput) {
     cl.font = { name: "Calibri", size: 8, bold: true, color: { argb: C.muted } };
     cl.fill = fill(C.silver);
     cl.alignment = { horizontal: "left", vertical: "middle", indent: 1 };
+    cl.border = { left: { style: "medium", color: { argb: C.gold } } };
 
     ws.mergeCells(r, 4, r, 5);
     const cv = ws.getCell(r, 4);
     cv.value = value;
     cv.font = { name: "Calibri", size: 10, bold: true, color: { argb: C.text } };
     cv.alignment = { horizontal: "left", vertical: "middle", indent: 1, wrapText: true };
-    ws.getRow(r).height = autosizeRowHeight([{ text: value, colWidth: 44 }], 20);
+    cv.border = { bottom: { style: "hair", color: { argb: C.muted } } };
+    ws.getRow(r).height = autosizeRowHeight([{ text: value, colWidth: 44 }], 22);
     r++;
   }
 
-  // Rodapé
+  // Divisor dourado antes do rodapé
   r += 2;
+  ws.mergeCells(r, 2, r, 5);
+  ws.getCell(r, 2).fill = fill(C.gold);
+  ws.getRow(r).height = 3;
+  r += 1;
+
+  // Rodapé institucional
   ws.mergeCells(r, 1, r, 6);
   const foot = ws.getCell(r, 1);
   foot.value = "Documento gerado pelo sistema SOLV — valores em Reais (R$).";
   foot.font = { name: "Calibri", size: 8, italic: true, color: { argb: C.muted } };
   foot.alignment = { horizontal: "center", vertical: "middle" };
+  r += 1;
+  ws.mergeCells(r, 1, r, 6);
+  const foot2 = ws.getCell(r, 1);
+  foot2.value = "www.solvconstrutora.com  ·  SOLV Construtora";
+  foot2.font = { name: "Calibri", size: 8, bold: true, color: { argb: C.gold } };
+  foot2.alignment = { horizontal: "center", vertical: "middle" };
 }
 
 // ===================================================================
