@@ -16,7 +16,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ClipboardList, Plus, Trash2, Loader2, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { ClipboardList, Plus, Trash2, Loader2, Search, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/medicoes")({
