@@ -42,7 +42,39 @@ import { ContratoImpactosPanel } from "@/components/ContratoImpactosPanel";
 
 export const Route = createFileRoute("/_app/medicoes_/$id")({
   component: BoletimDetalhePage,
+  errorComponent: MedicaoErrorBoundary,
 });
+
+function MedicaoErrorBoundary({ error, reset }: { error: Error; reset: () => void }) {
+  const msg = error?.message ?? "Não foi possível carregar o boletim.";
+  const notFound = /não encontrada|not.?found/i.test(msg);
+  return (
+    <div className="min-h-[60vh] flex items-center justify-center p-6">
+      <div className="max-w-md w-full bg-white border border-[#E6E1D6] rounded-xl p-8 shadow-sm text-center">
+        <div className="mx-auto w-12 h-12 rounded-full bg-[#FBE0E3] flex items-center justify-center mb-4">
+          <AlertTriangle className="w-6 h-6 text-[#C83E4D]" />
+        </div>
+        <h2 className="text-lg font-bold text-[#252A33] mb-1">
+          {notFound ? "Boletim não encontrado" : "Erro ao carregar boletim"}
+        </h2>
+        <p className="text-sm text-[#69717D] mb-6">
+          {notFound
+            ? "Esse boletim de medição não existe ou foi removido. Verifique o link ou volte para a lista."
+            : msg}
+        </p>
+        <div className="flex gap-2 justify-center">
+          <Button variant="outline" onClick={() => reset()}>Tentar novamente</Button>
+          <Button
+            className="bg-[#785F44] hover:bg-[#5F4A34] text-white"
+            onClick={() => { window.location.href = "/medicoes"; }}
+          >
+            Voltar para lista
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 interface ItemLocal {
   id: string | null;
