@@ -87,6 +87,7 @@ function BoletimDetalhePage() {
   const [initialSig, setInitialSig] = useState<string>("");
   const [q, setQ] = useState("");
   const [somentePeriodo, setSomentePeriodo] = useState(false);
+  const [modoOficial, setModoOficial] = useState(false);
 
   useEffect(() => {
     if (!data) return;
@@ -342,6 +343,22 @@ function BoletimDetalhePage() {
               </span>
             )}
             <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center rounded-full bg-white/10 p-0.5 text-[11px] font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setModoOficial(false)}
+                  className={`px-3 py-1 rounded-full transition ${!modoOficial ? "bg-[#C8A66A] text-[#252A33]" : "text-white/70 hover:text-white"}`}
+                >
+                  Lançamento
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModoOficial(true)}
+                  className={`px-3 py-1 rounded-full transition ${modoOficial ? "bg-[#C8A66A] text-[#252A33]" : "text-white/70 hover:text-white"}`}
+                >
+                  Boletim oficial
+                </button>
+              </div>
               <Button
                 size="sm"
                 variant="outline"
@@ -465,7 +482,7 @@ function BoletimDetalhePage() {
         </div>
 
         {/* ===== FILTROS ===== */}
-        <div className="bg-white rounded-xl shadow-sm px-4 py-3 flex flex-wrap gap-3 items-center print:hidden">
+        <div className={`bg-white rounded-xl shadow-sm px-4 py-3 flex flex-wrap gap-3 items-center print:hidden ${modoOficial ? "hidden" : ""}`}>
           <div className="relative flex-1 min-w-[220px]">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#69717D]" />
             <Input
@@ -554,22 +571,30 @@ function BoletimDetalhePage() {
                       <td className="px-3 py-2 text-right tabular-nums text-[#69717D]">{fmtMoneyBR(it.valor_unitario)}</td>
                       <td className="px-3 py-2 text-right tabular-nums font-semibold">{fmtMoneyBR(c.total_contratual)}</td>
                       <td className="px-2 py-2 text-right tabular-nums text-[#69717D]">{fmtNumberBR(it.qtd_acum_anterior)}</td>
-                      <td className="px-1 py-1 text-right print:hidden">
-                        <Input
-                          value={it.qtd_periodo ? fmtNumberBR(it.qtd_periodo) : ""}
-                          onChange={(e) => updateQtdPeriodo(it.item_codigo, parseBR(e.target.value))}
-                          onKeyDown={handleCellKey}
-                          onPaste={(e) => {
-                            const txt = e.clipboardData.getData("text");
-                            if (handlePasteSequence(it.item_codigo, txt)) e.preventDefault();
-                          }}
-                          data-bm-cell="1"
-                          disabled={readOnly}
-                          placeholder="0,00"
-                          className="h-8 text-right tabular-nums bg-[#FBF5E6] border-transparent focus-visible:border-[#C8A66A] focus-visible:ring-1 focus-visible:ring-[#C8A66A]/40 rounded-md"
-                        />
-                      </td>
-                      <td className="px-2 py-2 text-right tabular-nums hidden print:table-cell">{fmtNumberBR(it.qtd_periodo)}</td>
+                      {modoOficial ? (
+                        <td className="px-2 py-2 text-right tabular-nums font-semibold text-[#8A6D2E]">
+                          {fmtNumberBR(it.qtd_periodo)}
+                        </td>
+                      ) : (
+                        <>
+                          <td className="px-1 py-1 text-right print:hidden">
+                            <Input
+                              value={it.qtd_periodo ? fmtNumberBR(it.qtd_periodo) : ""}
+                              onChange={(e) => updateQtdPeriodo(it.item_codigo, parseBR(e.target.value))}
+                              onKeyDown={handleCellKey}
+                              onPaste={(e) => {
+                                const txt = e.clipboardData.getData("text");
+                                if (handlePasteSequence(it.item_codigo, txt)) e.preventDefault();
+                              }}
+                              data-bm-cell="1"
+                              disabled={readOnly}
+                              placeholder="0,00"
+                              className="h-8 text-right tabular-nums bg-[#FBF5E6] border-transparent focus-visible:border-[#C8A66A] focus-visible:ring-1 focus-visible:ring-[#C8A66A]/40 rounded-md"
+                            />
+                          </td>
+                          <td className="px-2 py-2 text-right tabular-nums hidden print:table-cell">{fmtNumberBR(it.qtd_periodo)}</td>
+                        </>
+                      )}
                       <td className="px-2 py-2 text-right tabular-nums font-semibold">{fmtNumberBR(c.qtd_acum_atual)}</td>
                       <td className="px-2 py-2 text-right tabular-nums text-[#69717D]">{fmtMoneyBR(it.valor_acum_anterior)}</td>
                       <td className="px-2 py-2 text-right tabular-nums">{fmtMoneyBR(c.valor_periodo)}</td>
