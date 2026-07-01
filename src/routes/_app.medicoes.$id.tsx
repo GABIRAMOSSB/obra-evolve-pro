@@ -114,6 +114,9 @@ function BoletimDetalhePage() {
   const [justDialog, setJustDialog] = useState<{ codigo: string; valorTentado: number; saldo: number } | null>(null);
   const [justTexto, setJustTexto] = useState("");
   const [importOpen, setImportOpen] = useState(false);
+  const [workflowDialog, setWorkflowDialog] = useState<null | "enviar" | "aprovar" | "rejeitar" | "revisao">(null);
+  const [workflowTexto, setWorkflowTexto] = useState("");
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   useEffect(() => {
     if (!data) return;
