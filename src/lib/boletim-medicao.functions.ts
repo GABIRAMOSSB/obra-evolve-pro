@@ -536,3 +536,130 @@ export const getVisaoExecutivaMedicao = createServerFn({ method: "GET" })
       historico: historico ?? [],
     };
   });
+
+// ============================================================================
+// FASE G — ANEXOS DO BOLETIM (fotos, memórias de cálculo, ARTs)
+// ============================================================================
+
+const CATEGORIAS_ANEXO = [
+  "foto",
+  "memoria_calculo",
+  "art",
+  "planilha",
+  "documento",
+  "outro",
+] as const;
+
+export const listarAnexosMedicao = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ medicao_id: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as AnySupabase;
+    const { companyId } = await resolveCompany(supabase, context.userId);
+    const { data: rows, error } = await supabase
+      .from("boletim_anexos")
+      .select("id, nome, descricao, categoria, mime_type, tamanho_bytes, storage_path, created_at, created_by")
+      .eq("company_id", companyId)
+      .eq("medicao_id", data.medicao_id)
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return rows ?? [];
+  });
+
+export const registrarAnexoMedicao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({
+      medicao_id: z.string().uuid(),
+      storage_path: z.string().min(3),
+      nome: z.string().min(1).max(240),
+      descricao: z.string().max(1000).optional(),
+      categoria: z.enum(CATEGORIAS_ANEXO).default("documento"),
+      mime_type: z.string().max(160).optional(),
+      tamanho_bytes: z.number().int().nonnegative().optional(),
+    }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as AnySupabase;
+    const { companyId } = await resolveCompany(supabase, context.userId, true);
+    // valida caminho: {company_id}/{medicao_id}/...
+    const prefix = `${companyId}/${data.medicao_id}/`;
+    if (!data.storage_path.startsWith(prefix)) {
+      throw new Error("Caminho de armazenamento inválido para esta medição.");
+    }
+    const { data: med } = await supabase
+      .from("medicoes").select("id, status").eq("id", data.medicao_id).eq("company_id", companyId).maybeSingle();
+    if (!med) throw new Error("Medição não encontrada.");
+    if (med.status === "aprovada" || med.status === "paga") {
+      throw new Error("Medição já aprovada — não é possível anexar novos arquivos.");
+    }
+    const { data: row, error } = await supabase.from("boletim_anexos").insert({
+      company_id: companyId,
+      medicao_id: data.medicao_id,
+      storage_path: data.storage_path,
+      nome: data.nome,
+      descricao: data.descricao ?? null,
+      categoria: data.categoria,
+      mime_type: data.mime_type ?? null,
+      tamanho_bytes: data.tamanho_bytes ?? null,
+      created_by: context.userId,
+    }).select("id").single();
+    if (error) throw new Error(error.message);
+    try {
+      await supabase.from("boletim_audit_logs").insert({
+        company_id: companyId, medicao_id: data.medicao_id,
+        entidade: "anexo", entidade_id: row.id, acao: "create",
+        campo: "anexo", valor_novo: data.nome, ator_id: context.userId,
+      });
+    } catch { /* trilha nunca bloqueia */ }
+    return { ok: true, id: row.id };
+  });
+
+export const removerAnexoMedicao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as AnySupabase;
+    const { companyId } = await resolveCompany(supabase, context.userId, true);
+    const { data: anexo } = await supabase
+      .from("boletim_anexos")
+      .select("id, medicao_id, storage_path, nome")
+      .eq("id", data.id).eq("company_id", companyId).maybeSingle();
+    if (!anexo) throw new Error("Anexo não encontrado.");
+    const { data: med } = await supabase
+      .from("medicoes").select("status").eq("id", anexo.medicao_id).eq("company_id", companyId).maybeSingle();
+    if (med && (med.status === "aprovada" || med.status === "paga")) {
+      throw new Error("Medição já aprovada — anexos não podem ser removidos.");
+    }
+    // remove do storage e do banco
+    await supabase.storage.from("boletim-anexos").remove([anexo.storage_path]);
+    const { error } = await supabase.from("boletim_anexos").delete().eq("id", data.id).eq("company_id", companyId);
+    if (error) throw new Error(error.message);
+    try {
+      await supabase.from("boletim_audit_logs").insert({
+        company_id: companyId, medicao_id: anexo.medicao_id,
+        entidade: "anexo", entidade_id: data.id, acao: "delete",
+        campo: "anexo", valor_anterior: anexo.nome, ator_id: context.userId,
+      });
+    } catch { /* trilha */ }
+    return { ok: true };
+  });
+
+export const getUrlAnexoMedicao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as AnySupabase;
+    const { companyId } = await resolveCompany(supabase, context.userId);
+    const { data: anexo } = await supabase
+      .from("boletim_anexos")
+      .select("storage_path, nome")
+      .eq("id", data.id).eq("company_id", companyId).maybeSingle();
+    if (!anexo) throw new Error("Anexo não encontrado.");
+    const { data: signed, error } = await supabase.storage
+      .from("boletim-anexos")
+      .createSignedUrl(anexo.storage_path, 60 * 10); // 10 min
+    if (error) throw new Error(error.message);
+    return { url: signed.signedUrl, nome: anexo.nome };
+  });
+
