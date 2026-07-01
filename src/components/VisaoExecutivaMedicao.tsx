@@ -49,7 +49,15 @@ export function VisaoExecutivaMedicao({
 
   // Curva S: pontos históricos (aprovados + esta em curso)
   const curva = useMemo(() => {
-    const hist = data?.historico ?? [];
+    const hist = (data?.historico ?? []) as Array<{
+      id: string;
+      numero: number;
+      numero_bm: string | null;
+      data_medicao: string | null;
+      periodo_fim: string | null;
+      valor_acumulado: number | string | null;
+      status: string;
+    }>;
     const pts: Array<{ label: string; acumulado: number; pct: number; data?: string | null }> = [];
     pts.push({ label: "Início", acumulado: 0, pct: 0 });
     for (const h of hist) {
