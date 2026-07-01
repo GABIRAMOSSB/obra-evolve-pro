@@ -160,6 +160,7 @@ export const getMedicaoDetalhe = createServerFn({ method: "GET" })
         qtd_acum_anterior,
         valor_acum_anterior,
         qtd_periodo: Number(existing?.qtd_periodo ?? 0),
+        justificativa: (existing?.justificativa ?? null) as string | null,
         ordem: existing?.ordem ?? a.ordem ?? idx,
       };
     });
