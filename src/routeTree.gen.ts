@@ -51,7 +51,7 @@ import { Route as ApiPublicZapsignRemindersRouteImport } from './routes/api.publ
 import { Route as ApiPublicPncpRadarCronRouteImport } from './routes/api.public.pncp-radar-cron'
 import { Route as ApiPublicComplianceScheduledRouteImport } from './routes/api.public.compliance-scheduled'
 import { Route as AppPropostasIdRouteImport } from './routes/_app.propostas.$id'
-import { Route as AppMedicoesIdRouteImport } from './routes/_app.medicoes.$id'
+import { Route as AppMedicoesIdRouteImport } from './routes/_app.medicoes_.$id'
 import { Route as AppInsumosImportarRouteImport } from './routes/_app.insumos.importar'
 import { Route as AppConfiguracoesZapsignRouteImport } from './routes/_app.configuracoes.zapsign'
 import { Route as AppAssinaturasRelatorioRouteImport } from './routes/_app.assinaturas.relatorio'
@@ -271,9 +271,9 @@ const AppPropostasIdRoute = AppPropostasIdRouteImport.update({
   getParentRoute: () => AppPropostasRoute,
 } as any)
 const AppMedicoesIdRoute = AppMedicoesIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AppMedicoesRoute,
+  id: '/medicoes_/$id',
+  path: '/medicoes/$id',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppInsumosImportarRoute = AppInsumosImportarRouteImport.update({
   id: '/importar',
@@ -322,7 +322,7 @@ export interface FileRoutesByFullPath {
   '/indices': typeof AppIndicesRoute
   '/insumos': typeof AppInsumosRouteWithChildren
   '/mao-de-obra': typeof AppMaoDeObraRoute
-  '/medicoes': typeof AppMedicoesRouteWithChildren
+  '/medicoes': typeof AppMedicoesRoute
   '/notas-fiscais': typeof AppNotasFiscaisRoute
   '/obras': typeof AppObrasRoute
   '/oportunidades': typeof AppOportunidadesRoute
@@ -369,7 +369,7 @@ export interface FileRoutesByTo {
   '/indices': typeof AppIndicesRoute
   '/insumos': typeof AppInsumosRouteWithChildren
   '/mao-de-obra': typeof AppMaoDeObraRoute
-  '/medicoes': typeof AppMedicoesRouteWithChildren
+  '/medicoes': typeof AppMedicoesRoute
   '/notas-fiscais': typeof AppNotasFiscaisRoute
   '/obras': typeof AppObrasRoute
   '/oportunidades': typeof AppOportunidadesRoute
@@ -419,7 +419,7 @@ export interface FileRoutesById {
   '/_app/indices': typeof AppIndicesRoute
   '/_app/insumos': typeof AppInsumosRouteWithChildren
   '/_app/mao-de-obra': typeof AppMaoDeObraRoute
-  '/_app/medicoes': typeof AppMedicoesRouteWithChildren
+  '/_app/medicoes': typeof AppMedicoesRoute
   '/_app/notas-fiscais': typeof AppNotasFiscaisRoute
   '/_app/obras': typeof AppObrasRoute
   '/_app/oportunidades': typeof AppOportunidadesRoute
@@ -435,7 +435,7 @@ export interface FileRoutesById {
   '/_app/assinaturas/relatorio': typeof AppAssinaturasRelatorioRoute
   '/_app/configuracoes/zapsign': typeof AppConfiguracoesZapsignRouteWithChildren
   '/_app/insumos/importar': typeof AppInsumosImportarRoute
-  '/_app/medicoes/$id': typeof AppMedicoesIdRoute
+  '/_app/medicoes_/$id': typeof AppMedicoesIdRoute
   '/_app/propostas/$id': typeof AppPropostasIdRoute
   '/api/public/compliance-scheduled': typeof ApiPublicComplianceScheduledRoute
   '/api/public/pncp-radar-cron': typeof ApiPublicPncpRadarCronRoute
@@ -582,7 +582,7 @@ export interface FileRouteTypes {
     | '/_app/assinaturas/relatorio'
     | '/_app/configuracoes/zapsign'
     | '/_app/insumos/importar'
-    | '/_app/medicoes/$id'
+    | '/_app/medicoes_/$id'
     | '/_app/propostas/$id'
     | '/api/public/compliance-scheduled'
     | '/api/public/pncp-radar-cron'
@@ -898,12 +898,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPropostasIdRouteImport
       parentRoute: typeof AppPropostasRoute
     }
-    '/_app/medicoes/$id': {
-      id: '/_app/medicoes/$id'
-      path: '/$id'
+    '/_app/medicoes_/$id': {
+      id: '/_app/medicoes_/$id'
+      path: '/medicoes/$id'
       fullPath: '/medicoes/$id'
       preLoaderRoute: typeof AppMedicoesIdRouteImport
-      parentRoute: typeof AppMedicoesRoute
+      parentRoute: typeof AppRoute
     }
     '/_app/insumos/importar': {
       id: '/_app/insumos/importar'
@@ -960,18 +960,6 @@ const AppInsumosRouteWithChildren = AppInsumosRoute._addFileChildren(
   AppInsumosRouteChildren,
 )
 
-interface AppMedicoesRouteChildren {
-  AppMedicoesIdRoute: typeof AppMedicoesIdRoute
-}
-
-const AppMedicoesRouteChildren: AppMedicoesRouteChildren = {
-  AppMedicoesIdRoute: AppMedicoesIdRoute,
-}
-
-const AppMedicoesRouteWithChildren = AppMedicoesRoute._addFileChildren(
-  AppMedicoesRouteChildren,
-)
-
 interface AppPropostasRouteChildren {
   AppPropostasIdRoute: typeof AppPropostasIdRoute
 }
@@ -1020,7 +1008,7 @@ interface AppRouteChildren {
   AppIndicesRoute: typeof AppIndicesRoute
   AppInsumosRoute: typeof AppInsumosRouteWithChildren
   AppMaoDeObraRoute: typeof AppMaoDeObraRoute
-  AppMedicoesRoute: typeof AppMedicoesRouteWithChildren
+  AppMedicoesRoute: typeof AppMedicoesRoute
   AppNotasFiscaisRoute: typeof AppNotasFiscaisRoute
   AppObrasRoute: typeof AppObrasRoute
   AppOportunidadesRoute: typeof AppOportunidadesRoute
@@ -1033,6 +1021,7 @@ interface AppRouteChildren {
   AppRealizadoRoute: typeof AppRealizadoRoute
   AppIndexRoute: typeof AppIndexRoute
   AppConfiguracoesZapsignRoute: typeof AppConfiguracoesZapsignRouteWithChildren
+  AppMedicoesIdRoute: typeof AppMedicoesIdRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -1057,7 +1046,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppIndicesRoute: AppIndicesRoute,
   AppInsumosRoute: AppInsumosRouteWithChildren,
   AppMaoDeObraRoute: AppMaoDeObraRoute,
-  AppMedicoesRoute: AppMedicoesRouteWithChildren,
+  AppMedicoesRoute: AppMedicoesRoute,
   AppNotasFiscaisRoute: AppNotasFiscaisRoute,
   AppObrasRoute: AppObrasRoute,
   AppOportunidadesRoute: AppOportunidadesRoute,
@@ -1070,6 +1059,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppRealizadoRoute: AppRealizadoRoute,
   AppIndexRoute: AppIndexRoute,
   AppConfiguracoesZapsignRoute: AppConfiguracoesZapsignRouteWithChildren,
+  AppMedicoesIdRoute: AppMedicoesIdRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
