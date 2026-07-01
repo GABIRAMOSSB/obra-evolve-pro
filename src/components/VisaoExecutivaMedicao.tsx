@@ -43,7 +43,7 @@ export function VisaoExecutivaMedicao({
 
   const saldoContratual = valorTotalContrato - valorAcumulado;
   const numBMsAprovados = useMemo(
-    () => (data?.historico ?? []).filter((h) => h.status === "aprovada").length,
+    () => (data?.historico ?? []).filter((h: { status: string }) => h.status === "aprovada").length,
     [data],
   );
 
