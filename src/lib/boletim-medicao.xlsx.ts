@@ -93,16 +93,19 @@ function fmtDateBR(iso: string | null | undefined): string {
 /**
  * Calcula altura de linha necessária para que o texto envolvido não fique
  * escondido. Considera quebras explícitas (\n) e o wrap por largura da coluna.
+ * Ajustado para Calibri 9–10pt: ~1.7 caracteres por unidade de largura de coluna,
+ * ~15pt de altura por linha visual + folga vertical.
  */
 function autosizeRowHeight(
   texts: Array<{ text: string | null | undefined; colWidth: number }>,
-  minHeight = 18,
+  minHeight = 20,
 ): number {
   let maxLines = 1;
   for (const { text, colWidth } of texts) {
     if (!text) continue;
     const raw = String(text);
-    const perLine = Math.max(8, Math.floor(colWidth * 1.05));
+    // Estimativa conservadora — ~1.7 chars por unidade (mais folga que 1.05)
+    const perLine = Math.max(6, Math.floor(colWidth * 1.7));
     const parts = raw.split(/\r?\n/);
     let total = 0;
     for (const p of parts) {
@@ -110,7 +113,7 @@ function autosizeRowHeight(
     }
     if (total > maxLines) maxLines = total;
   }
-  return Math.max(minHeight, maxLines * 13 + 8);
+  return Math.max(minHeight, maxLines * 15 + 10);
 }
 
 export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob> {
