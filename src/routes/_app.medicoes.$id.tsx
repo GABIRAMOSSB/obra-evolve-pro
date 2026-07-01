@@ -258,13 +258,33 @@ function BoletimDetalhePage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const invalidateAll = () => {
+    qc.invalidateQueries({ queryKey: ["medicao-detalhe", id] });
+    qc.invalidateQueries({ queryKey: ["medicao-historico", id] });
+    qc.invalidateQueries({ queryKey: ["medicoes"] });
+  };
+
+  const mutEnviar = useMutation({
+    mutationFn: () => enviar({ data: { id } }),
+    onSuccess: () => { toast.success("Boletim enviado para conferência"); setWorkflowDialog(null); setWorkflowTexto(""); invalidateAll(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const mutAprovar = useMutation({
-    mutationFn: () => aprovar({ data: { id } }),
-    onSuccess: () => {
-      toast.success("Medição aprovada");
-      qc.invalidateQueries({ queryKey: ["medicao-detalhe", id] });
-      qc.invalidateQueries({ queryKey: ["medicoes"] });
-    },
+    mutationFn: () => aprovar({ data: { id, papel: "aprovador", observacao: workflowTexto.trim() || undefined } }),
+    onSuccess: () => { toast.success("Medição aprovada"); setWorkflowDialog(null); setWorkflowTexto(""); invalidateAll(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const mutRejeitar = useMutation({
+    mutationFn: () => rejeitar({ data: { id, motivo: workflowTexto.trim(), papel: "aprovador" } }),
+    onSuccess: () => { toast.success("Medição rejeitada"); setWorkflowDialog(null); setWorkflowTexto(""); invalidateAll(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const mutRevisao = useMutation({
+    mutationFn: () => solicitarRev({ data: { id, observacao: workflowTexto.trim(), papel: "aprovador" } }),
+    onSuccess: () => { toast.success("Revisão solicitada"); setWorkflowDialog(null); setWorkflowTexto(""); invalidateAll(); },
     onError: (e: Error) => toast.error(e.message),
   });
 
