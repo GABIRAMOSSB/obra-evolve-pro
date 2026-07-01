@@ -6,8 +6,8 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getVisaoExecutivaMedicao } from "@/lib/boletim-medicao.functions";
-import { fmtMoneyBR, fmtPctBR, computeItem, sanitizeDescricao } from "@/lib/boletim-medicao.calc";
-import { Loader2, TrendingUp, AlertTriangle, Target, Calendar } from "lucide-react";
+import { fmtMoneyBR, fmtPctBR, computeItem, sanitizeDescricao, computePainelExecutivo, type IndicadorPainel } from "@/lib/boletim-medicao.calc";
+import { Loader2, TrendingUp, AlertTriangle, Target, Calendar, TrendingDown, Minus, Gauge } from "lucide-react";
 
 interface ItemLike {
   item_codigo: string;
