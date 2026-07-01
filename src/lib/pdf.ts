@@ -198,14 +198,14 @@ export function exportAcompanhamentoXlsx(
       border: ALL_BORDERS,
     });
   }
-  // Metadata rows 3-6: labels bold, values normal
+  // Metadata rows 3-6: labels bold, values normal (paleta SOLV)
   for (let row1 = 3; row1 <= 6; row1++) {
     for (let c = 0; c < 14; c++) {
       const isLabel = c % 3 === 0;
       setStyle(addr(row1, c), styleCell({
         bold: isLabel,
-        color: isLabel ? "475569" : "0F172A",
-        bg: isLabel ? "F1F5F9" : "FFFFFF",
+        color: isLabel ? LABEL_COLOR : VALUE_COLOR,
+        bg: isLabel ? LABEL_BG : "FFFFFF",
         size: 9,
       }));
     }
@@ -217,15 +217,18 @@ export function exportAcompanhamentoXlsx(
       const isLabel = c % 3 === 0;
       const isMoney = !isLabel && (c === 7 || c === 10 || c === 13 || (row1 === 8 && c === 4));
       const isPercent = row1 === 8 && c === 1;
-      let bg = isLabel ? "F1F5F9" : "FFFFFF";
-      let color = isLabel ? "475569" : "0F172A";
-      if (row1 === 7 && c === 10) { bg = "FDEBDC"; color = ORANGE; } // Valor desta medição
-      if (row1 === 7 && c === 13) { bg = "DCFCE7"; color = GREEN; } // Valor acumulado
+      let bg = isLabel ? LABEL_BG : "FFFFFF";
+      let color = isLabel ? LABEL_COLOR : VALUE_COLOR;
+      if (row1 === 7 && c === 7) { bg = SUBGROUP_BG; color = NAVY; }        // Valor total da obra
+      if (row1 === 7 && c === 10) { bg = LIGHT_ORANGE; color = ORANGE; }     // Valor desta medição
+      if (row1 === 7 && c === 13) { bg = LIGHT_GREEN; color = GREEN; }       // Valor acumulado
+      if (row1 === 8 && c === 1) { bg = SUBGROUP_BG; color = NAVY_SOFT; }    // % acumulado
+      if (row1 === 8 && c === 4) { bg = SUBGROUP_BG; color = NAVY; }         // Saldo restante
       setStyle(addr(row1, c), styleCell({
         bold: isLabel || isMoney || isPercent,
         color,
         bg,
-        size: 9,
+        size: 10,
         align: isLabel ? "left" : "right",
         numFmt: isMoney ? "R$ #,##0.00" : isPercent ? "0.0%" : undefined,
       }));
