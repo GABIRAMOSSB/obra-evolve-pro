@@ -351,3 +351,136 @@ export function runConferencia(
     checks,
   };
 }
+
+/* ============================================================
+ * PAINEL EXECUTIVO (Fase D) — 16 indicadores gerenciais
+ * ============================================================ */
+
+export type TendenciaPainel = "positiva" | "neutra" | "negativa";
+
+export interface IndicadorPainel {
+  codigo: string;         // I01..I16
+  titulo: string;
+  valor: string;          // formatado para exibição
+  valorNumerico: number;  // para gráficos/ordenação
+  descricao: string;      // explicação curta
+  categoria: "financeiro" | "fisico" | "prazo" | "qualidade";
+  tendencia: TendenciaPainel;
+  destaque?: boolean;     // KPI principal da categoria
+}
+
+export interface PainelExecutivoResumo {
+  indicadores: IndicadorPainel[];
+  ritmoPorBM: number;               // fração 0..1
+  bmsRestantesEstimados: number | null;
+  aderenciaPlanejado: number;       // p.p. (realizado - planejado)
+  concentracaoTop5: number;         // fração 0..1 do saldo nos top 5
+}
+
+export interface PainelInput {
+  itens: (ItemInput & { justificativa?: string | null })[];
+  totais: TotaisMedicao;
+  numBMsAprovados: number;
+  posicaoBMAtual: number;           // 1 = primeiro BM, 2 = segundo etc.
+  totalBMsProjetados?: number;      // se conhecido; senão estimado
+}
+
+export function computePainelExecutivo(input: PainelInput): PainelExecutivoResumo {
+  const { itens, totais, numBMsAprovados, posicaoBMAtual } = input;
+  const mensuraveis = itens.filter((i) => !i.is_etapa);
+
+  // Ritmo médio por BM: %executado / nº de BMs realizados
+  const bmsFeitos = Math.max(numBMsAprovados + 1, posicaoBMAtual, 1);
+  const ritmoPorBM = totais.percentual_executado / bmsFeitos;
+  const bmsRestantesEstimados =
+    ritmoPorBM > 0 && totais.percentual_executado < 1
+      ? Math.ceil((1 - totais.percentual_executado) / ritmoPorBM)
+      : null;
+
+  // Aderência ao planejado (linear): planejado no ponto atual = posicaoBM / totalBMs
+  const totalBMsProj = input.totalBMsProjetados ?? (bmsRestantesEstimados ? bmsFeitos + bmsRestantesEstimados : bmsFeitos);
+  const planejadoAtual = totalBMsProj > 0 ? posicaoBMAtual / totalBMsProj : 0;
+  const aderenciaPP = (totais.percentual_executado - planejadoAtual) * 100;
+
+  // Contagens de status
+  let concluidos = 0, emAndamento = 0, naoIniciados = 0, extrapolados = 0, excecoes = 0;
+  const saldos: number[] = [];
+  for (const it of mensuraveis) {
+    const c = computeItem(it);
+    if (c.status_calc === "concluida") concluidos++;
+    else if (c.status_calc === "em_andamento") emAndamento++;
+    else if (c.status_calc === "erro") extrapolados++;
+    else naoIniciados++;
+    if (it.justificativa && it.justificativa.trim().length >= 10) excecoes++;
+    if (c.saldo_financeiro > 0.01) saldos.push(c.saldo_financeiro);
+  }
+
+  const totalItens = mensuraveis.length;
+  const totalSaldo = saldos.reduce((s, v) => s + v, 0);
+  const top5 = [...saldos].sort((a, b) => b - a).slice(0, 5).reduce((s, v) => s + v, 0);
+  const concentracaoTop5 = totalSaldo > 0 ? top5 / totalSaldo : 0;
+
+  const ticketMedioPeriodo = totais.itens_medidos > 0 ? totais.valor_medicao_atual / totais.itens_medidos : 0;
+  const pctConcluidos = totalItens > 0 ? concluidos / totalItens : 0;
+  const pctNaoIniciados = totalItens > 0 ? naoIniciados / totalItens : 0;
+
+  const tendAderencia: TendenciaPainel = aderenciaPP >= 0 ? "positiva" : aderenciaPP >= -5 ? "neutra" : "negativa";
+  const tendExtrapolados: TendenciaPainel = extrapolados === 0 ? "positiva" : extrapolados <= 2 ? "neutra" : "negativa";
+  const tendConcentracao: TendenciaPainel = concentracaoTop5 <= 0.5 ? "positiva" : concentracaoTop5 <= 0.75 ? "neutra" : "negativa";
+
+  const indicadores: IndicadorPainel[] = [
+    { codigo: "I01", categoria: "financeiro", destaque: true, titulo: "Valor total contratado",
+      valor: fmtMoneyBR(totais.valor_total_contrato), valorNumerico: totais.valor_total_contrato,
+      descricao: "Somatório contratual de todos os itens mensuráveis.", tendencia: "neutra" },
+    { codigo: "I02", categoria: "financeiro", titulo: "Acumulado executado",
+      valor: fmtMoneyBR(totais.valor_acumulado), valorNumerico: totais.valor_acumulado,
+      descricao: "Valor total já medido, incluindo este boletim.", tendencia: "positiva" },
+    { codigo: "I03", categoria: "financeiro", destaque: true, titulo: "Medição do período",
+      valor: fmtMoneyBR(totais.valor_medicao_atual), valorNumerico: totais.valor_medicao_atual,
+      descricao: "Total financeiro executado exclusivamente neste BM.", tendencia: "positiva" },
+    { codigo: "I04", categoria: "financeiro", titulo: "Saldo contratual",
+      valor: fmtMoneyBR(totais.saldo_contratual), valorNumerico: totais.saldo_contratual,
+      descricao: "Valor ainda a executar até o fim do contrato.", tendencia: totais.saldo_contratual > 0 ? "neutra" : "positiva" },
+    { codigo: "I05", categoria: "fisico", destaque: true, titulo: "% Físico-financeiro",
+      valor: fmtPctBR(totais.percentual_executado, 2), valorNumerico: totais.percentual_executado,
+      descricao: "Percentual acumulado sobre o total contratado.", tendencia: "positiva" },
+    { codigo: "I06", categoria: "prazo", destaque: true, titulo: "Aderência ao planejado",
+      valor: `${aderenciaPP >= 0 ? "+" : ""}${aderenciaPP.toFixed(1)} p.p.`, valorNumerico: aderenciaPP,
+      descricao: "Diferença entre realizado e planejado linear no ponto atual.", tendencia: tendAderencia },
+    { codigo: "I07", categoria: "prazo", titulo: "Ritmo médio por BM",
+      valor: fmtPctBR(ritmoPorBM, 2), valorNumerico: ritmoPorBM,
+      descricao: "Percentual médio executado por boletim já emitido.", tendencia: ritmoPorBM > 0 ? "positiva" : "neutra" },
+    { codigo: "I08", categoria: "prazo", titulo: "BMs restantes estimados",
+      valor: bmsRestantesEstimados == null ? "—" : String(bmsRestantesEstimados),
+      valorNumerico: bmsRestantesEstimados ?? 0,
+      descricao: "Projeção linear com base no ritmo médio atual.", tendencia: "neutra" },
+    { codigo: "I09", categoria: "fisico", titulo: "Itens contratados",
+      valor: String(totalItens), valorNumerico: totalItens,
+      descricao: "Total de itens mensuráveis no contrato.", tendencia: "neutra" },
+    { codigo: "I10", categoria: "fisico", titulo: "Itens medidos no período",
+      valor: String(totais.itens_medidos), valorNumerico: totais.itens_medidos,
+      descricao: "Itens que receberam quantidade neste boletim.", tendencia: "positiva" },
+    { codigo: "I11", categoria: "fisico", titulo: "Itens concluídos",
+      valor: `${concluidos} (${fmtPctBR(pctConcluidos, 1)})`, valorNumerico: concluidos,
+      descricao: "Itens com quantidade acumulada igual à contratada.", tendencia: "positiva" },
+    { codigo: "I12", categoria: "fisico", titulo: "Itens não iniciados",
+      valor: `${naoIniciados} (${fmtPctBR(pctNaoIniciados, 1)})`, valorNumerico: naoIniciados,
+      descricao: "Itens sem execução até o momento.", tendencia: naoIniciados === 0 ? "positiva" : "neutra" },
+    { codigo: "I13", categoria: "qualidade", titulo: "Itens em andamento",
+      valor: String(emAndamento), valorNumerico: emAndamento,
+      descricao: "Itens parcialmente executados.", tendencia: "neutra" },
+    { codigo: "I14", categoria: "qualidade", titulo: "Itens extrapolados",
+      valor: String(extrapolados), valorNumerico: extrapolados,
+      descricao: "Itens cujo acumulado ultrapassou o contratado.", tendencia: tendExtrapolados },
+    { codigo: "I15", categoria: "qualidade", titulo: "Exceções autorizadas",
+      valor: String(excecoes), valorNumerico: excecoes,
+      descricao: "Extrapolações formalmente justificadas neste boletim.", tendencia: excecoes === 0 ? "positiva" : "neutra" },
+    { codigo: "I16", categoria: "financeiro", titulo: "Concentração top 5 (saldo)",
+      valor: fmtPctBR(concentracaoTop5, 1), valorNumerico: concentracaoTop5,
+      descricao: `Ticket médio no período: ${fmtMoneyBR(ticketMedioPeriodo)}. Quanto maior a concentração, maior o risco de dependência de poucos itens.`,
+      tendencia: tendConcentracao },
+  ];
+
+  return { indicadores, ritmoPorBM, bmsRestantesEstimados, aderenciaPlanejado: aderenciaPP, concentracaoTop5 };
+}
+
