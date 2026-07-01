@@ -16,7 +16,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ClipboardList, Plus, Trash2, Loader2, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { ClipboardList, Plus, Trash2, Loader2, Search, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/medicoes")({
@@ -247,6 +248,11 @@ function MedicoesPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/medicoes/$id" params={{ id: m.id }}>
+                    <ExternalLink className="w-3.5 h-3.5 mr-1" /> Abrir
+                  </Link>
+                </Button>
                 <Button variant="ghost" size="icon" onClick={() => { if (confirm("Excluir esta medição?")) mutDel.mutate(m.id); }}>
                   <Trash2 className="w-4 h-4 text-destructive" />
                 </Button>

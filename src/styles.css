@@ -141,6 +141,20 @@
   /* Transições */
   --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
   --transition-base: 200ms var(--ease-smooth);
+
+  /* Tokens institucionais SOLV — Boletim de Medição */
+  --solv-graphite: #363C49;
+  --solv-graphite-dark: #252A33;
+  --solv-gold: #C8A66A;
+  --solv-gold-light: #E4D2AE;
+  --solv-gold-soft: #F5EEDD;
+  --solv-silver: #EEF0F2;
+  --solv-surface: #F6F7F8;
+  --solv-white: #FFFFFF;
+  --solv-text: #20242B;
+  --solv-muted: #69717D;
+  --solv-border: #D9DDE3;
+  --solv-zebra: #FAFBFC;
 }
 
 .dark {
@@ -351,4 +365,14 @@
 @keyframes pulse-glow {
   0%, 100% { box-shadow: 0 0 0 0 oklch(0.67 0.045 70 / 0.4); }
   50%      { box-shadow: 0 0 0 8px oklch(0.67 0.045 70 / 0); }
+}
+
+/* ===== Boletim de Medição — impressão A4 paisagem ===== */
+@media print {
+  @page { size: A4 landscape; margin: 10mm; }
+  html, body { background: white !important; }
+  .print\:hidden { display: none !important; }
+  table { page-break-inside: auto; }
+  tr { page-break-inside: avoid; page-break-after: auto; }
+  thead { display: table-header-group; }
 }
