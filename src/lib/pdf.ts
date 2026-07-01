@@ -318,7 +318,7 @@ export function exportAcompanhamentoXlsx(
   ws["!rows"][10] = { hpt: 30 }; // sub-header
 
   // Freeze first 11 rows (banner + metadata + resumo + headers) and first 2 cols
-  ws["!freeze"] = { xSplit: 2, ySplit: 11 } as never;
+
   (ws as Record<string, unknown>)["!protect"] = {
     password: "",
     selectLockedCells: true,

@@ -127,7 +127,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   // ABA 2 — BOLETIM (principal)
   // ============================================================
   const ws = wb.addWorksheet("Boletim", {
-    views: [{ state: "frozen", ySplit: 13, showGridLines: false }],
+    views: [{ showGridLines: false }],
     pageSetup: {
       paperSize: 9, // A4
       orientation: "landscape",
@@ -691,7 +691,7 @@ function buildCapaSheet(wb: ExcelJS.Workbook, data: XLSXInput, logoImageId: numb
 // ===================================================================
 function buildBaseCalculosSheet(wb: ExcelJS.Workbook, data: XLSXInput) {
   const ws = wb.addWorksheet("Base e Cálculos", {
-    views: [{ state: "frozen", ySplit: 3, showGridLines: false }],
+    views: [{ showGridLines: false }],
     pageSetup: {
       paperSize: 9,
       orientation: "landscape",
@@ -836,7 +836,7 @@ function buildBaseCalculosSheet(wb: ExcelJS.Workbook, data: XLSXInput) {
 // ===================================================================
 function buildSnapshotSheet(wb: ExcelJS.Workbook, data: XLSXInput) {
   const ws = wb.addWorksheet("Snapshot", {
-    views: [{ state: "frozen", ySplit: 3, showGridLines: false }],
+    views: [{ showGridLines: false }],
     pageSetup: {
       paperSize: 9,
       orientation: "landscape",
