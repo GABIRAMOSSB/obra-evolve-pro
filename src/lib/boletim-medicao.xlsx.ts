@@ -78,7 +78,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   wb.created = new Date();
 
   const ws = wb.addWorksheet("Boletim de Medição", {
-    views: [{ state: "frozen", ySplit: 12, showGridLines: false }],
+    views: [{ state: "frozen", ySplit: 13, showGridLines: false }],
     pageSetup: {
       paperSize: 9, // A4
       orientation: "landscape",
@@ -86,7 +86,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
       fitToWidth: 1,
       fitToHeight: 0,
       margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 },
-      printTitlesRow: "11:12",
+      printTitlesRow: "12:13",
     },
     properties: { defaultRowHeight: 18 },
   });
@@ -111,7 +111,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
     { key: "pct", width: 10 },
   ];
 
-  // ===== HEADER SOLV (linhas 1-4) =====
+  // ===== HEADER SOLV (linhas 1-3) =====
   ws.mergeCells("A1:M1");
   const h1 = ws.getCell("A1");
   h1.value = "SOLV CONSTRUTORA";
@@ -120,70 +120,99 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   h1.alignment = { horizontal: "left", vertical: "middle", indent: 1 };
   ws.getRow(1).height = 26;
 
-  ws.mergeCells("A2:M2");
+  const bmLabel = data.medicao.numero_bm ?? `BM-${String(data.medicao.numero).padStart(2, "0")}`;
+  ws.mergeCells("A2:H2");
   const h2 = ws.getCell("A2");
   h2.value = "BOLETIM DE MEDIÇÃO";
   h2.font = { name: "Calibri", size: 10, bold: true, color: { argb: C.gold } };
   h2.fill = fill(C.graphiteDark);
   h2.alignment = { horizontal: "left", vertical: "middle", indent: 1 };
-  ws.getRow(2).height = 16;
+  ws.mergeCells("I2:M2");
+  const h2r = ws.getCell("I2");
+  h2r.value = `${bmLabel}  ·  ${fmtDateBR(data.medicao.data_medicao)}`;
+  h2r.font = { name: "Calibri", size: 10, bold: true, color: { argb: C.white } };
+  h2r.fill = fill(C.graphiteDark);
+  h2r.alignment = { horizontal: "right", vertical: "middle", indent: 1 };
+  ws.getRow(2).height = 18;
 
   // Linha dourada
   ws.mergeCells("A3:M3");
   ws.getCell("A3").fill = fill(C.gold);
   ws.getRow(3).height = 3;
 
-  // ===== DADOS CONTRATUAIS (linhas 4-8) =====
-  const bmLabel = data.medicao.numero_bm ?? `BM-${String(data.medicao.numero).padStart(2, "0")}`;
+  // ===== DADOS CONTRATUAIS (linhas 4-11) =====
   const nomeObra = data.obra?.nome ?? "—";
   const endereco = [data.obra?.endereco, data.obra?.cidade, data.obra?.uf].filter(Boolean).join(", ");
   const executora = data.company?.razao_social ?? data.company?.nome ?? "SOLV Construtora";
   const contratante = data.obra?.cliente ?? data.contrato?.orgao_contratante ?? "—";
+  const cnpjContratante = data.obra?.cnpj_cliente ?? "—";
+  const cnpjExecutora = data.company?.cnpj ?? "—";
+  const processo = data.contrato?.processo_administrativo ?? "—";
+  const licitacao = data.contrato?.numero_licitacao ?? "—";
+  const inicioObra = fmtDateBR(data.contrato?.data_inicio) || "—";
+  const prazoStr = data.contrato?.prazo_dias ? `${data.contrato.prazo_dias} dias` : "—";
+  const rtNome = data.responsavelTecnico?.nome ?? "—";
+  const rtReg = [data.responsavelTecnico?.registro, data.responsavelTecnico?.cargo].filter(Boolean).join(" · ") || "—";
+  const fiscalNome = data.fiscal?.nome ?? "—";
+  const fiscalReg = [data.fiscal?.registro, data.fiscal?.cargo].filter(Boolean).join(" · ") || "—";
 
   const labelStyle = (cell: ExcelJS.Cell) => {
-    cell.font = { name: "Calibri", size: 8, color: { argb: C.muted }, bold: true };
-    cell.alignment = { vertical: "middle" };
+    cell.font = { name: "Calibri", size: 7.5, color: { argb: C.muted }, bold: true };
+    cell.alignment = { vertical: "middle", indent: 1 };
+    cell.fill = fill(C.silver);
   };
   const valueStyle = (cell: ExcelJS.Cell) => {
     cell.font = { name: "Calibri", size: 10, color: { argb: C.text }, bold: true };
-    cell.alignment = { vertical: "middle" };
+    cell.alignment = { vertical: "middle", indent: 1, wrapText: true };
   };
 
-  const kv = (row: number, col: number, label: string, value: string, span = 3) => {
-    const cLabel = ws.getCell(row, col);
+  const kv = (rowLbl: number, col: number, label: string, value: string, span: number) => {
+    if (span > 1) ws.mergeCells(rowLbl, col, rowLbl, col + span - 1);
+    const cLabel = ws.getCell(rowLbl, col);
     cLabel.value = label.toUpperCase();
     labelStyle(cLabel);
-    ws.mergeCells(row + 1, col, row + 1, col + span - 1);
-    const cVal = ws.getCell(row + 1, col);
+    if (span > 1) ws.mergeCells(rowLbl + 1, col, rowLbl + 1, col + span - 1);
+    const cVal = ws.getCell(rowLbl + 1, col);
     cVal.value = value;
     valueStyle(cVal);
   };
 
-  // Row 4 labels / Row 5 values
-  kv(4, 1, "Obra", nomeObra, 4);
-  kv(4, 5, "Contratante", contratante, 3);
-  kv(4, 8, "Executora", executora, 3);
-  kv(4, 11, "Contrato nº", data.contrato?.numero ?? "—", 3);
+  // Linha 4/5
+  kv(4, 1, "Obra", nomeObra, 5);
+  kv(4, 6, "Cliente / Contratante", contratante, 3);
+  kv(4, 9, "CNPJ Contratante", cnpjContratante, 2);
+  kv(4, 11, "Endereço da obra", endereco || "—", 3);
+  ws.getRow(4).height = 14;
   ws.getRow(5).height = 20;
 
-  // Row 6 labels / Row 7 values
-  kv(6, 1, "Endereço", endereco || "—", 5);
-  kv(6, 6, "Objeto", data.contrato?.objeto ?? "—", 5);
-  kv(6, 11, "Nº BM", bmLabel, 1);
-  kv(6, 12, "Data", fmtDateBR(data.medicao.data_medicao), 1);
-  kv(6, 13, "Período", `${fmtDateBR(data.medicao.periodo_inicio)} a ${fmtDateBR(data.medicao.periodo_fim)}`, 1);
+  // Linha 6/7
+  kv(6, 1, "Empresa Executora", executora, 5);
+  kv(6, 6, "CNPJ Executora", cnpjExecutora, 2);
+  kv(6, 8, "Contrato nº", data.contrato?.numero ?? "—", 3);
+  kv(6, 11, "Processo administrativo", processo, 3);
+  ws.getRow(6).height = 14;
   ws.getRow(7).height = 20;
 
-  // Espaço em branco
-  ws.getRow(8).height = 6;
-  ws.getRow(9).height = 6;
+  // Linha 8/9
+  kv(8, 1, "Nº Boletim", bmLabel, 2);
+  kv(8, 3, "Data medição", fmtDateBR(data.medicao.data_medicao) || "—", 2);
+  kv(8, 5, "Período de medição", `${fmtDateBR(data.medicao.periodo_inicio) || "—"} a ${fmtDateBR(data.medicao.periodo_fim) || "—"}`, 3);
+  kv(8, 8, "Início da obra", inicioObra, 2);
+  kv(8, 10, "Prazo contratual", prazoStr, 2);
+  kv(8, 12, "Licitação nº", licitacao, 2);
+  ws.getRow(8).height = 14;
+  ws.getRow(9).height = 20;
 
-  // ===== KPI band (linha 10) — deixamos para os totais no rodapé =====
-  ws.getRow(10).height = 6;
+  // Linha 10/11
+  kv(10, 1, "Objeto do contrato", data.contrato?.objeto ?? "—", 6);
+  kv(10, 7, "Responsável Técnico", `${rtNome}\n${rtReg}`, 3);
+  kv(10, 10, "Fiscal da Obra", `${fiscalNome}\n${fiscalReg}`, 4);
+  ws.getRow(10).height = 14;
+  ws.getRow(11).height = 30;
 
-  // ===== CABEÇALHO DA TABELA (linhas 11-12) =====
-  const headerRow1 = ws.getRow(11);
-  const headerRow2 = ws.getRow(12);
+  // ===== CABEÇALHO DA TABELA (linhas 12-13) =====
+  const headerRow1 = ws.getRow(12);
+  const headerRow2 = ws.getRow(13);
   headerRow1.height = 22;
   headerRow2.height = 18;
 
@@ -195,26 +224,27 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   };
 
   // Merges do grupo
-  ws.mergeCells("A11:A12"); setHead(ws.getCell("A11"), "Item");
-  ws.mergeCells("B11:B12"); setHead(ws.getCell("B11"), "Descrição");
-  ws.mergeCells("C11:C12"); setHead(ws.getCell("C11"), "Un.");
-  ws.mergeCells("D11:D12"); setHead(ws.getCell("D11"), "Qtd.");
-  ws.mergeCells("E11:E12"); setHead(ws.getCell("E11"), "V. Unit.");
-  ws.mergeCells("F11:F12"); setHead(ws.getCell("F11"), "Total");
-  ws.mergeCells("G11:I11"); setHead(ws.getCell("G11"), "EXECUTADO FÍSICO");
-  setHead(ws.getCell("G12"), "Anterior");
-  setHead(ws.getCell("H12"), "Período");
-  setHead(ws.getCell("I12"), "Acum.");
-  ws.mergeCells("J11:L11"); setHead(ws.getCell("J11"), "EXECUTADO FINANCEIRO");
-  setHead(ws.getCell("J12"), "Anterior");
-  setHead(ws.getCell("K12"), "Período");
-  setHead(ws.getCell("L12"), "Acum.");
-  ws.mergeCells("M11:M12"); setHead(ws.getCell("M11"), "Executado %");
+  ws.mergeCells("A12:A13"); setHead(ws.getCell("A12"), "Item");
+  ws.mergeCells("B12:B13"); setHead(ws.getCell("B12"), "Descrição");
+  ws.mergeCells("C12:C13"); setHead(ws.getCell("C12"), "Un.");
+  ws.mergeCells("D12:D13"); setHead(ws.getCell("D12"), "Qtd.");
+  ws.mergeCells("E12:E13"); setHead(ws.getCell("E12"), "V. Unit.");
+  ws.mergeCells("F12:F13"); setHead(ws.getCell("F12"), "Total");
+  ws.mergeCells("G12:I12"); setHead(ws.getCell("G12"), "EXECUTADO FÍSICO");
+  setHead(ws.getCell("G13"), "Anterior");
+  setHead(ws.getCell("H13"), "Período");
+  setHead(ws.getCell("I13"), "Acum.");
+  ws.mergeCells("J12:L12"); setHead(ws.getCell("J12"), "EXECUTADO FINANCEIRO");
+  setHead(ws.getCell("J13"), "Anterior");
+  setHead(ws.getCell("K13"), "Período");
+  setHead(ws.getCell("L13"), "Acum.");
+  ws.mergeCells("M12:M13"); setHead(ws.getCell("M12"), "Executado %");
 
   // ===== LINHAS DE ITENS =====
-  const startRow = 13;
+  const startRow = 14;
   let rowNum = startRow;
   let zebra = false;
+
 
   const applyCommon = (row: ExcelJS.Row) => {
     row.eachCell((cell) => {
