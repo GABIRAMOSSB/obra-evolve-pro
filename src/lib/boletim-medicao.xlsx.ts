@@ -448,41 +448,96 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   const totalRowNum = rowNum;
   rowNum++;
 
-  // ===== RESUMO FINANCEIRO (5 KPIs abaixo) =====
+  // ===== BARRAS DE DADOS (progress inline) — cara de dashboard =====
+  // Barra dourada gradiente na coluna % Executado (col M) por item
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (ws.addConditionalFormatting as any)({
+    ref: `M${startRow}:M${lastItemRow}`,
+    rules: [
+      {
+        type: "dataBar",
+        priority: 1,
+        cfvo: [{ type: "num", value: 0 }, { type: "num", value: 1 }],
+        color: { argb: C.gold },
+        gradient: true,
+        showValue: true,
+      },
+    ],
+  });
+  // Escala de calor sutil na coluna Financeiro Período (col K)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (ws.addConditionalFormatting as any)({
+    ref: `K${startRow}:K${lastItemRow}`,
+    rules: [
+      {
+        type: "colorScale",
+        priority: 2,
+        cfvo: [{ type: "min" }, { type: "percentile", value: 50 }, { type: "max" }],
+        color: [
+          { argb: "FFFFFFFF" },
+          { argb: C.goldSoft },
+          { argb: C.gold },
+        ],
+      },
+    ],
+  });
+
+  // ===== HERO KPI CARDS — 5 tiles grandes com respiro =====
   rowNum += 2;
+  const kpiTitleRow = ws.getRow(rowNum);
+  kpiTitleRow.height = 20;
+  ws.mergeCells(rowNum, 1, rowNum, 13);
+  const kpiTitle = ws.getCell(rowNum, 1);
+  kpiTitle.value = "RESUMO EXECUTIVO DA MEDIÇÃO";
+  kpiTitle.font = { name: "Calibri", size: 10, bold: true, color: { argb: C.muted } };
+  kpiTitle.alignment = { horizontal: "left", vertical: "middle", indent: 1 };
+  rowNum += 1;
+
   const kpiLabelRow = ws.getRow(rowNum);
   const kpiValueRow = ws.getRow(rowNum + 1);
-  kpiLabelRow.height = 16;
-  kpiValueRow.height = 22;
+  const kpiSpacerRow = ws.getRow(rowNum + 2);
+  kpiLabelRow.height = 20;
+  kpiValueRow.height = 34;
+  kpiSpacerRow.height = 6;
 
-  const kpis: Array<[string, ExcelJS.CellValue, string]> = [
-    ["Valor total contrato", { formula: `F${totalRowNum}` }, 'R$ #,##0.00'],
-    ["Medição do período", { formula: `K${totalRowNum}` }, 'R$ #,##0.00'],
-    ["Acumulado", { formula: `L${totalRowNum}` }, 'R$ #,##0.00'],
-    ["% Executado", { formula: `IF(F${totalRowNum}=0,0,L${totalRowNum}/F${totalRowNum})` }, "0.00%"],
-    ["Saldo contratual", { formula: `F${totalRowNum}-L${totalRowNum}` }, 'R$ #,##0.00'],
+  // 5 tiles com destaque no % Executado (dourado)
+  const kpis: Array<[string, ExcelJS.CellValue, string, boolean]> = [
+    ["VALOR DO CONTRATO", { formula: `F${totalRowNum}` }, 'R$ #,##0.00', false],
+    ["MEDIÇÃO DO PERÍODO", { formula: `K${totalRowNum}` }, 'R$ #,##0.00', false],
+    ["ACUMULADO EXECUTADO", { formula: `L${totalRowNum}` }, 'R$ #,##0.00', false],
+    ["% EXECUTADO", { formula: `IF(F${totalRowNum}=0,0,L${totalRowNum}/F${totalRowNum})` }, "0.00%", true],
+    ["SALDO CONTRATUAL", { formula: `F${totalRowNum}-L${totalRowNum}` }, 'R$ #,##0.00', false],
   ];
 
   const kpiCols = [
-    [1, 3], [4, 5], [6, 7], [8, 9], [10, 13],
+    [1, 3], [4, 5], [6, 8], [9, 10], [11, 13],
   ] as const;
-  kpis.forEach(([label, val, fmt], idx) => {
+  kpis.forEach(([label, val, fmt, highlight], idx) => {
     const [cStart, cEnd] = kpiCols[idx];
     ws.mergeCells(rowNum, cStart, rowNum, cEnd);
     ws.mergeCells(rowNum + 1, cStart, rowNum + 1, cEnd);
+
+    const bgLabel = highlight ? C.gold : C.silver;
+    const bgValue = highlight ? C.graphiteDark : C.white;
+    const fgLabel = highlight ? C.graphiteDark : C.muted;
+    const fgValue = highlight ? C.gold : C.graphiteDark;
+
     const l = ws.getCell(rowNum, cStart);
-    l.value = label.toUpperCase();
-    l.font = { name: "Calibri", size: 8, bold: true, color: { argb: C.muted } };
-    l.fill = fill(C.goldSoft);
+    l.value = label;
+    l.font = { name: "Calibri", size: 8, bold: true, color: { argb: fgLabel } };
+    l.fill = fill(bgLabel);
     l.alignment = { horizontal: "left", vertical: "middle", indent: 1 };
+
     const v = ws.getCell(rowNum + 1, cStart);
     v.value = val;
     v.numFmt = fmt;
-    v.font = { name: "Calibri", size: 12, bold: true, color: { argb: C.graphiteDark } };
-    v.fill = fill(C.goldSoft);
+    v.font = { name: "Calibri", size: 16, bold: true, color: { argb: fgValue } };
+    v.fill = fill(bgValue);
     v.alignment = { horizontal: "left", vertical: "middle", indent: 1 };
+    // Borda inferior dourada em todas — assinatura visual
+    v.border = { bottom: { style: "medium", color: { argb: C.gold } } };
   });
-  rowNum += 3;
+  rowNum += 4;
 
   // ===== DECLARAÇÃO + ASSINATURAS =====
   rowNum += 2;
