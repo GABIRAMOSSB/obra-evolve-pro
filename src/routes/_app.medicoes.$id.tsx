@@ -431,7 +431,8 @@ function BoletimDetalhePage() {
                 size="sm"
                 className="bg-[#C8A66A] text-[#252A33] hover:bg-[#B69354] font-semibold"
                 onClick={() => mutAprovar.mutate()}
-                disabled={readOnly || mutAprovar.isPending || pendencias.length > 0}
+                disabled={readOnly || mutAprovar.isPending || pendencias.length > 0 || conferencia.bloqueia_aprovacao}
+                title={conferencia.bloqueia_aprovacao ? `Corrija ${conferencia.erros} erro(s) da conferência antes de aprovar` : undefined}
               >
                 <CheckCircle2 className="w-4 h-4 mr-1" /> Validar medição
               </Button>
