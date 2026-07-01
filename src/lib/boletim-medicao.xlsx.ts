@@ -24,14 +24,20 @@ async function loadSolvLogo(): Promise<ArrayBuffer | null> {
 const C = {
   graphite: "FF363C49",
   graphiteDark: "FF252A33",
+  graphiteDeep: "FF14171D",
   gold: "FFC8A66A",
+  goldBright: "FFE7C892",
   goldSoft: "FFF5EEDD",
   silver: "FFEEF0F2",
   zebra: "FFFAFBFC",
   white: "FFFFFFFF",
   text: "FF20242B",
   muted: "FF69717D",
+  cyan: "FF7FD8E8",
 };
+
+// Formato monetário BRL — força símbolo R$ e separadores pt-BR
+const BRL = '[$R$-pt-BR] #,##0.00;[Red]-[$R$-pt-BR] #,##0.00;[$R$-pt-BR] "-"';
 
 interface XLSXInput {
   medicao: {
@@ -87,16 +93,19 @@ function fmtDateBR(iso: string | null | undefined): string {
 /**
  * Calcula altura de linha necessária para que o texto envolvido não fique
  * escondido. Considera quebras explícitas (\n) e o wrap por largura da coluna.
+ * Ajustado para Calibri 9–10pt: ~1.7 caracteres por unidade de largura de coluna,
+ * ~15pt de altura por linha visual + folga vertical.
  */
 function autosizeRowHeight(
   texts: Array<{ text: string | null | undefined; colWidth: number }>,
-  minHeight = 18,
+  minHeight = 20,
 ): number {
   let maxLines = 1;
   for (const { text, colWidth } of texts) {
     if (!text) continue;
     const raw = String(text);
-    const perLine = Math.max(8, Math.floor(colWidth * 1.05));
+    // Estimativa conservadora — ~1.7 chars por unidade (mais folga que 1.05)
+    const perLine = Math.max(6, Math.floor(colWidth * 1.7));
     const parts = raw.split(/\r?\n/);
     let total = 0;
     for (const p of parts) {
@@ -104,7 +113,7 @@ function autosizeRowHeight(
     }
     if (total > maxLines) maxLines = total;
   }
-  return Math.max(minHeight, maxLines * 13 + 8);
+  return Math.max(minHeight, maxLines * 15 + 10);
 }
 
 export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob> {
@@ -161,59 +170,65 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
     { key: "pct", width: 10 },
   ];
 
-  // ===== HERO SOLV (linhas 1-3) — logo em faixa própria, sem sobreposição =====
-  // Row 1: área do logo (grafite) + wordmark tipográfico (sem overlap)
-  ws.getRow(1).height = 58;
-  // Preenche toda a faixa em grafite escuro para a moldura hero
+  // ===== HERO SOLV FUTURISTA (linhas 1-3) =====
+  // Row 1 — faixa hero preta profunda com logo, wordmark expandido e tagline dourada
+  ws.getRow(1).height = 72;
   for (let c = 1; c <= 13; c++) {
-    ws.getCell(1, c).fill = fill(C.graphiteDark);
+    ws.getCell(1, c).fill = fill(C.graphiteDeep);
   }
-  // Reserva colunas A:B para o logo (largura combinada ~67pt)
   ws.mergeCells("A1:B1");
-  // Wordmark tipográfico em C:H, alinhado à esquerda dando ar refinado
   ws.mergeCells("C1:H1");
   const h1 = ws.getCell("C1");
-  h1.value = "SOLV CONSTRUTORA";
-  h1.font = { name: "Calibri", size: 18, bold: true, color: { argb: C.white } };
-  h1.fill = fill(C.graphiteDark);
+  h1.value = "S O L V   C O N S T R U T O R A";
+  h1.font = { name: "Calibri", size: 20, bold: true, color: { argb: C.white } };
+  h1.fill = fill(C.graphiteDeep);
   h1.alignment = { horizontal: "left", vertical: "middle", indent: 1 };
-  // Tagline à direita em dourado — hierarquia clara
   ws.mergeCells("I1:M1");
   const h1r = ws.getCell("I1");
-  h1r.value = "EXCELÊNCIA EM CONSTRUÇÃO CIVIL";
-  h1r.font = { name: "Calibri", size: 9, bold: true, color: { argb: C.gold } };
-  h1r.fill = fill(C.graphiteDark);
+  h1r.value = "◤ EXCELÊNCIA EM CONSTRUÇÃO CIVIL ◢";
+  h1r.font = { name: "Calibri", size: 9, bold: true, color: { argb: C.goldBright } };
+  h1r.fill = fill(C.graphiteDeep);
   h1r.alignment = { horizontal: "right", vertical: "middle", indent: 2 };
 
   if (logoImageId !== null) {
-    // Logo contido em A1:B1 (~134pt de largura, 58pt altura). Imagem menor com respiro.
     ws.addImage(logoImageId, {
-      tl: { col: 0.15, row: 0.15 },
-      ext: { width: 96, height: 44 },
+      tl: { col: 0.15, row: 0.18 },
+      ext: { width: 104, height: 54 },
       editAs: "absolute",
     });
   }
 
-  // Row 2: barra grafite com título do documento (esq) e identificação (dir)
+  // Row 2 — meta strip com "chips" (Nº BM · Período · Data · Contrato)
   const bmLabel = data.medicao.numero_bm ?? `BM-${String(data.medicao.numero).padStart(2, "0")}`;
-  ws.mergeCells("A2:H2");
+  ws.getRow(2).height = 30;
+  for (let c = 1; c <= 13; c++) {
+    ws.getCell(2, c).fill = fill(C.graphite);
+  }
+  ws.mergeCells("A2:E2");
   const h2 = ws.getCell("A2");
   h2.value = "BOLETIM DE MEDIÇÃO";
-  h2.font = { name: "Calibri", size: 11, bold: true, color: { argb: C.white } };
-  h2.fill = fill(C.graphite);
+  h2.font = { name: "Calibri", size: 13, bold: true, color: { argb: C.white } };
   h2.alignment = { horizontal: "left", vertical: "middle", indent: 2 };
-  ws.mergeCells("I2:M2");
-  const h2r = ws.getCell("I2");
-  h2r.value = `${bmLabel}   ·   ${fmtDateBR(data.medicao.data_medicao)}`;
-  h2r.font = { name: "Calibri", size: 11, bold: true, color: { argb: C.gold } };
-  h2r.fill = fill(C.graphite);
-  h2r.alignment = { horizontal: "right", vertical: "middle", indent: 2 };
-  ws.getRow(2).height = 24;
+  ws.mergeCells("F2:H2");
+  const h2m = ws.getCell("F2");
+  h2m.value = `◈ ${bmLabel}`;
+  h2m.font = { name: "Calibri", size: 10, bold: true, color: { argb: C.goldBright } };
+  h2m.alignment = { horizontal: "center", vertical: "middle" };
+  ws.mergeCells("I2:J2");
+  const h2p = ws.getCell("I2");
+  h2p.value = `${fmtDateBR(data.medicao.periodo_inicio) || "—"} → ${fmtDateBR(data.medicao.periodo_fim) || "—"}`;
+  h2p.font = { name: "Calibri", size: 10, bold: true, color: { argb: C.white } };
+  h2p.alignment = { horizontal: "center", vertical: "middle" };
+  ws.mergeCells("K2:M2");
+  const h2d = ws.getCell("K2");
+  h2d.value = `EMISSÃO · ${fmtDateBR(data.medicao.data_medicao) || "—"}`;
+  h2d.font = { name: "Calibri", size: 10, bold: true, color: { argb: C.goldBright } };
+  h2d.alignment = { horizontal: "right", vertical: "middle", indent: 2 };
 
-  // Linha dourada fina — divisor elegante
+  // Row 3 — divisor dourado duplo (assinatura visual)
   ws.mergeCells("A3:M3");
   ws.getCell("A3").fill = fill(C.gold);
-  ws.getRow(3).height = 3;
+  ws.getRow(3).height = 4;
 
   // ===== DADOS CONTRATUAIS (linhas 4-11) =====
   const nomeObra = data.obra?.nome ?? "—";
@@ -232,13 +247,15 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   const fiscalReg = [data.fiscal?.registro, data.fiscal?.cargo].filter(Boolean).join(" · ") || "—";
 
   const labelStyle = (cell: ExcelJS.Cell) => {
-    cell.font = { name: "Calibri", size: 7.5, color: { argb: C.muted }, bold: true };
-    cell.alignment = { vertical: "middle", indent: 1 };
+    cell.font = { name: "Calibri", size: 8, color: { argb: C.muted }, bold: true };
+    cell.alignment = { vertical: "middle", indent: 1, wrapText: true };
     cell.fill = fill(C.silver);
+    cell.border = { left: { style: "medium", color: { argb: C.gold } } };
   };
   const valueStyle = (cell: ExcelJS.Cell) => {
     cell.font = { name: "Calibri", size: 10, color: { argb: C.text }, bold: true };
     cell.alignment = { vertical: "middle", indent: 1, wrapText: true };
+    cell.border = { bottom: { style: "hair", color: { argb: C.muted } } };
   };
 
   const kv = (rowLbl: number, col: number, label: string, value: string, span: number) => {
@@ -257,26 +274,26 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   kv(4, 6, "Cliente / Contratante", contratante, 3);
   kv(4, 9, "CNPJ Contratante", cnpjContratante, 2);
   kv(4, 11, "Endereço da obra", endereco || "—", 3);
-  ws.getRow(4).height = 14;
+  ws.getRow(4).height = 17;
   ws.getRow(5).height = autosizeRowHeight([
     { text: nomeObra, colWidth: 99 },
     { text: contratante, colWidth: 40 },
     { text: cnpjContratante, colWidth: 28 },
     { text: endereco || "—", colWidth: 42 },
-  ], 20);
+  ], 24);
 
   // Linha 6/7
   kv(6, 1, "Empresa Executora", executora, 5);
   kv(6, 6, "CNPJ Executora", cnpjExecutora, 2);
   kv(6, 8, "Contrato nº", data.contrato?.numero ?? "—", 3);
   kv(6, 11, "Processo administrativo", processo, 3);
-  ws.getRow(6).height = 14;
+  ws.getRow(6).height = 17;
   ws.getRow(7).height = autosizeRowHeight([
     { text: executora, colWidth: 99 },
     { text: cnpjExecutora, colWidth: 28 },
     { text: data.contrato?.numero ?? "—", colWidth: 40 },
     { text: processo, colWidth: 42 },
-  ], 20);
+  ], 24);
 
   // Linha 8/9
   kv(8, 1, "Nº Boletim", bmLabel, 2);
@@ -285,19 +302,19 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   kv(8, 8, "Início da obra", inicioObra, 2);
   kv(8, 10, "Prazo contratual", prazoStr, 2);
   kv(8, 12, "Licitação nº", licitacao, 2);
-  ws.getRow(8).height = 14;
-  ws.getRow(9).height = 20;
+  ws.getRow(8).height = 17;
+  ws.getRow(9).height = 24;
 
   // Linha 10/11
   kv(10, 1, "Objeto do contrato", data.contrato?.objeto ?? "—", 6);
   kv(10, 7, "Responsável Técnico", `${rtNome}\n${rtReg}`, 3);
   kv(10, 10, "Fiscal da Obra", `${fiscalNome}\n${fiscalReg}`, 4);
-  ws.getRow(10).height = 14;
+  ws.getRow(10).height = 17;
   ws.getRow(11).height = autosizeRowHeight([
     { text: data.contrato?.objeto ?? "—", colWidth: 115 },
     { text: `${rtNome}\n${rtReg}`, colWidth: 36 },
     { text: `${fiscalNome}\n${fiscalReg}`, colWidth: 58 },
-  ], 30);
+  ], 38);
 
 
   // ===== CABEÇALHO DA TABELA (linhas 12-13) =====
@@ -370,10 +387,10 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
       row.getCell(4).value = Number(i.qtd_contratada);
       row.getCell(4).numFmt = "#,##0.00";
       row.getCell(5).value = Number(i.valor_unitario);
-      row.getCell(5).numFmt = 'R$ #,##0.00;[Red]-R$ #,##0.00';
+      row.getCell(5).numFmt = BRL;
       // Total = ROUND(D*E, 2)
       row.getCell(6).value = { formula: `ROUND(D${rowNum}*E${rowNum},2)` };
-      row.getCell(6).numFmt = 'R$ #,##0.00';
+      row.getCell(6).numFmt = BRL;
       row.getCell(7).value = Number(i.qtd_acum_anterior);
       row.getCell(7).numFmt = "#,##0.00";
       // Período (EDITÁVEL) — destaque dourado suave
@@ -394,13 +411,13 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
       row.getCell(9).value = { formula: `G${rowNum}+H${rowNum}` };
       row.getCell(9).numFmt = "#,##0.00";
       row.getCell(10).value = Number(i.valor_acum_anterior);
-      row.getCell(10).numFmt = 'R$ #,##0.00';
+      row.getCell(10).numFmt = BRL;
       // Período financeiro = ROUND(H*E,2)
       row.getCell(11).value = { formula: `ROUND(H${rowNum}*E${rowNum},2)` };
-      row.getCell(11).numFmt = 'R$ #,##0.00';
+      row.getCell(11).numFmt = BRL;
       // Acum financeiro = J + K
       row.getCell(12).value = { formula: `J${rowNum}+K${rowNum}` };
-      row.getCell(12).numFmt = 'R$ #,##0.00';
+      row.getCell(12).numFmt = BRL;
       // Pct executado = IF(D=0,0,I/D)
       row.getCell(13).value = { formula: `IF(D${rowNum}=0,0,I${rowNum}/D${rowNum})` };
       row.getCell(13).numFmt = "0.00%";
@@ -432,11 +449,11 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   totalRow.getCell(1).value = "TOTAL GERAL";
   ws.mergeCells(rowNum, 1, rowNum, 5);
   totalRow.getCell(6).value = { formula: `SUM(F${startRow}:F${lastItemRow})` };
-  totalRow.getCell(6).numFmt = 'R$ #,##0.00';
+  totalRow.getCell(6).numFmt = BRL;
   totalRow.getCell(11).value = { formula: `SUM(K${startRow}:K${lastItemRow})` };
-  totalRow.getCell(11).numFmt = 'R$ #,##0.00';
+  totalRow.getCell(11).numFmt = BRL;
   totalRow.getCell(12).value = { formula: `SUM(L${startRow}:L${lastItemRow})` };
-  totalRow.getCell(12).numFmt = 'R$ #,##0.00';
+  totalRow.getCell(12).numFmt = BRL;
   totalRow.getCell(13).value = { formula: `IF(F${rowNum}=0,0,L${rowNum}/F${rowNum})` };
   totalRow.getCell(13).numFmt = "0.00%";
   for (let c = 1; c <= 13; c++) {
@@ -502,11 +519,11 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
 
   // 5 tiles com destaque no % Executado (dourado)
   const kpis: Array<[string, ExcelJS.CellValue, string, boolean]> = [
-    ["VALOR DO CONTRATO", { formula: `F${totalRowNum}` }, 'R$ #,##0.00', false],
-    ["MEDIÇÃO DO PERÍODO", { formula: `K${totalRowNum}` }, 'R$ #,##0.00', false],
-    ["ACUMULADO EXECUTADO", { formula: `L${totalRowNum}` }, 'R$ #,##0.00', false],
+    ["VALOR DO CONTRATO", { formula: `F${totalRowNum}` }, BRL, false],
+    ["MEDIÇÃO DO PERÍODO", { formula: `K${totalRowNum}` }, BRL, false],
+    ["ACUMULADO EXECUTADO", { formula: `L${totalRowNum}` }, BRL, false],
     ["% EXECUTADO", { formula: `IF(F${totalRowNum}=0,0,L${totalRowNum}/F${totalRowNum})` }, "0.00%", true],
-    ["SALDO CONTRATUAL", { formula: `F${totalRowNum}-L${totalRowNum}` }, 'R$ #,##0.00', false],
+    ["SALDO CONTRATUAL", { formula: `F${totalRowNum}-L${totalRowNum}` }, BRL, false],
   ];
 
   const kpiCols = [
@@ -839,9 +856,9 @@ function buildBaseCalculosSheet(wb: ExcelJS.Workbook, data: XLSXInput) {
       row.getCell(4).value = Number(i.qtd_contratada);
       row.getCell(4).numFmt = "#,##0.00";
       row.getCell(5).value = Number(i.valor_unitario);
-      row.getCell(5).numFmt = 'R$ #,##0.00';
+      row.getCell(5).numFmt = BRL;
       row.getCell(6).value = { formula: `ROUND(D${rowNum}*E${rowNum},2)` };
-      row.getCell(6).numFmt = 'R$ #,##0.00';
+      row.getCell(6).numFmt = BRL;
       row.getCell(7).value = Number(i.qtd_acum_anterior);
       row.getCell(7).numFmt = "#,##0.00";
       row.getCell(8).value = Number(i.qtd_periodo);
@@ -850,17 +867,17 @@ function buildBaseCalculosSheet(wb: ExcelJS.Workbook, data: XLSXInput) {
       row.getCell(9).value = { formula: `G${rowNum}+H${rowNum}` };
       row.getCell(9).numFmt = "#,##0.00";
       row.getCell(10).value = Number(i.valor_acum_anterior);
-      row.getCell(10).numFmt = 'R$ #,##0.00';
+      row.getCell(10).numFmt = BRL;
       row.getCell(11).value = { formula: `ROUND(H${rowNum}*E${rowNum},2)` };
-      row.getCell(11).numFmt = 'R$ #,##0.00';
+      row.getCell(11).numFmt = BRL;
       row.getCell(12).value = { formula: `J${rowNum}+K${rowNum}` };
-      row.getCell(12).numFmt = 'R$ #,##0.00';
+      row.getCell(12).numFmt = BRL;
       row.getCell(13).value = { formula: `IF(D${rowNum}=0,0,I${rowNum}/D${rowNum})` };
       row.getCell(13).numFmt = "0.00%";
       row.getCell(14).value = { formula: `D${rowNum}-I${rowNum}` };
       row.getCell(14).numFmt = "#,##0.00";
       row.getCell(15).value = { formula: `F${rowNum}-L${rowNum}` };
-      row.getCell(15).numFmt = 'R$ #,##0.00';
+      row.getCell(15).numFmt = BRL;
 
       for (const c of [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]) {
         row.getCell(c).alignment = { horizontal: "right", vertical: "middle" };
@@ -880,17 +897,17 @@ function buildBaseCalculosSheet(wb: ExcelJS.Workbook, data: XLSXInput) {
   ws.mergeCells(rowNum, 1, rowNum, 5);
   tr.getCell(1).value = "TOTAIS";
   tr.getCell(6).value = { formula: `SUM(F${startRow}:F${lastItem})` };
-  tr.getCell(6).numFmt = 'R$ #,##0.00';
+  tr.getCell(6).numFmt = BRL;
   tr.getCell(10).value = { formula: `SUM(J${startRow}:J${lastItem})` };
-  tr.getCell(10).numFmt = 'R$ #,##0.00';
+  tr.getCell(10).numFmt = BRL;
   tr.getCell(11).value = { formula: `SUM(K${startRow}:K${lastItem})` };
-  tr.getCell(11).numFmt = 'R$ #,##0.00';
+  tr.getCell(11).numFmt = BRL;
   tr.getCell(12).value = { formula: `SUM(L${startRow}:L${lastItem})` };
-  tr.getCell(12).numFmt = 'R$ #,##0.00';
+  tr.getCell(12).numFmt = BRL;
   tr.getCell(13).value = { formula: `IF(F${rowNum}=0,0,L${rowNum}/F${rowNum})` };
   tr.getCell(13).numFmt = "0.00%";
   tr.getCell(15).value = { formula: `F${rowNum}-L${rowNum}` };
-  tr.getCell(15).numFmt = 'R$ #,##0.00';
+  tr.getCell(15).numFmt = BRL;
   for (let c = 1; c <= 15; c++) {
     const cell = tr.getCell(c);
     cell.fill = fill(C.graphite);
