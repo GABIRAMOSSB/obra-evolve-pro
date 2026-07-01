@@ -67,7 +67,9 @@ function parseBR(v: string): number {
 function statusBadge(s: string) {
   const map: Record<string, { label: string; cls: string }> = {
     rascunho: { label: "Rascunho", cls: "bg-slate-100 text-slate-700" },
-    enviada: { label: "Em conferência", cls: "bg-[#F5EEDD] text-[#8A6D2E]" },
+    enviada: { label: "Enviada", cls: "bg-[#F5EEDD] text-[#8A6D2E]" },
+    em_conferencia: { label: "Em conferência", cls: "bg-[#F5EEDD] text-[#8A6D2E]" },
+    revisao_solicitada: { label: "Revisão solicitada", cls: "bg-amber-50 text-amber-800 border border-amber-300" },
     aprovada: { label: "Aprovada", cls: "bg-emerald-50 text-emerald-700" },
     paga: { label: "Paga", cls: "bg-emerald-100 text-emerald-800" },
     rejeitada: { label: "Rejeitada", cls: "bg-red-50 text-red-700" },
