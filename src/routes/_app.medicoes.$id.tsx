@@ -419,6 +419,17 @@ function BoletimDetalhePage() {
               >
                 <Printer className="w-4 h-4 mr-1" /> Imprimir
               </Button>
+              {data.obra?.id && !readOnly && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="bg-white text-[#252A33] border-white/20 hover:bg-white/90"
+                  onClick={() => setImportOpen(true)}
+                  title="Importar orçamento (Excel/CSV) — cria nova versão em rascunho"
+                >
+                  <Upload className="w-4 h-4 mr-1" /> Importar orçamento
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="outline"
