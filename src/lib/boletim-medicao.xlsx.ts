@@ -450,7 +450,8 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
 
   // ===== BARRAS DE DADOS (progress inline) — cara de dashboard =====
   // Barra dourada gradiente na coluna % Executado (col M) por item
-  ws.addConditionalFormatting({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (ws.addConditionalFormatting as any)({
     ref: `M${startRow}:M${lastItemRow}`,
     rules: [
       {
@@ -460,11 +461,12 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
         color: { argb: C.gold },
         gradient: true,
         showValue: true,
-      } as unknown as Parameters<typeof ws.addConditionalFormatting>[0]["rules"][0],
+      },
     ],
   });
   // Escala de calor sutil na coluna Financeiro Período (col K)
-  ws.addConditionalFormatting({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (ws.addConditionalFormatting as any)({
     ref: `K${startRow}:K${lastItemRow}`,
     rules: [
       {
@@ -476,7 +478,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
           { argb: C.goldSoft },
           { argb: C.gold },
         ],
-      } as unknown as ExcelJS.ColorScaleRule,
+      },
     ],
   });
 
