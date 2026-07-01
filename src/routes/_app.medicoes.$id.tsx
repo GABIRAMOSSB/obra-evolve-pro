@@ -20,6 +20,7 @@ import {
   computeItem,
   computeTotais,
   classifyHierarquia,
+  runConferencia,
 } from "@/lib/boletim-medicao.calc";
 import { generateBoletimMedicaoPDF } from "@/lib/boletim-medicao.pdf";
 import { generateBoletimMedicaoXLSX } from "@/lib/boletim-medicao.xlsx";
