@@ -165,7 +165,8 @@ export const getMedicaoDetalhe = createServerFn({ method: "GET" })
     });
 
     // Itens salvos que não têm atividade correspondente (mantém histórico)
-    for (const e of itensExistentes ?? []) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    for (const e of (itensExistentes ?? []) as any[]) {
       if (!atividades.some((a) => a.item_codigo === e.item_codigo)) {
         itens.push({
           id: e.id,
