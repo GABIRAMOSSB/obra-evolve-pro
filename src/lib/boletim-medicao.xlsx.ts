@@ -174,7 +174,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   if (logoImageId !== null) {
     ws.addImage(logoImageId, {
       tl: { col: 0.15, row: 0.15 },
-      ext: { width: 90, height: 52 },
+      ext: { width: 132, height: 64 },
       editAs: "absolute",
     });
   }
