@@ -232,16 +232,17 @@ export function exportAcompanhamentoXlsx(
     }
   }
 
-  // Group header row 10
+  // Group header row 10 — bandas coloridas SOLV
   for (let c = 0; c < 14; c++) {
-    let bg = HEADER_BG;
-    if (c >= 6 && c <= 8) bg = "B45309"; // orange-ish for executado físico
-    if (c >= 9 && c <= 11) bg = "166534"; // green for financeiro
+    let bg = HEADER_BG_ALT;              // Planejamento (dourado SOLV)
+    if (c >= 6 && c <= 8) bg = ORANGE;   // Executado físico (laranja medição)
+    if (c >= 9 && c <= 11) bg = GREEN;   // Executado financeiro (verde acumulado)
+    if (c === 12 || c === 13) bg = HEADER_BG; // Desvio / Status (marrom escuro)
     setStyle(addr(10, c), styleHeader(bg));
   }
-  // Sub-header row 11
+  // Sub-header row 11 — bege institucional
   for (let c = 0; c < 14; c++) {
-    setStyle(addr(11, c), styleHeader(SUBHEADER_BG, "0F172A", 10));
+    setStyle(addr(11, c), styleHeader(SUBHEADER_BG, LABEL_COLOR, 10));
   }
 
   // Data rows
@@ -250,7 +251,7 @@ export function exportAcompanhamentoXlsx(
     for (let c = 0; c < 14; c++) {
       if (isGroup) {
         setStyle(addr(row1, c), styleCell({
-          bold: true, bg: GROUP_BG, color: "082B5C", size: 10,
+          bold: true, bg: GROUP_BG, color: NAVY, size: 10,
           align: c === 0 ? "center" : c === 1 ? "left" : "center",
         }));
       } else {
