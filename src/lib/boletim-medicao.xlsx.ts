@@ -30,11 +30,26 @@ interface XLSXInput {
     periodo_fim: string;
     observacoes: string | null;
   };
-  contrato: { numero: string; objeto: string | null; orgao_contratante: string | null } | null;
-  obra: { nome: string; endereco: string | null; cidade: string | null; uf: string | null; cliente: string | null } | null;
-  company: { razao_social?: string | null; nome?: string | null } | null;
-  responsavelTecnico?: { nome: string; registro: string | null } | null;
-  fiscal?: { nome: string; registro: string | null } | null;
+  contrato: {
+    numero: string;
+    objeto: string | null;
+    orgao_contratante: string | null;
+    processo_administrativo?: string | null;
+    numero_licitacao?: string | null;
+    data_inicio?: string | null;
+    prazo_dias?: number | null;
+  } | null;
+  obra: {
+    nome: string;
+    endereco: string | null;
+    cidade: string | null;
+    uf: string | null;
+    cliente: string | null;
+    cnpj_cliente?: string | null;
+  } | null;
+  company: { razao_social?: string | null; nome?: string | null; cnpj?: string | null } | null;
+  responsavelTecnico?: { nome: string; registro: string | null; cargo?: string | null } | null;
+  fiscal?: { nome: string; registro: string | null; cargo?: string | null } | null;
   itens: Array<{
     item_codigo: string;
     descricao: string;
@@ -47,6 +62,7 @@ interface XLSXInput {
     qtd_periodo: number;
   }>;
 }
+
 
 const fill = (c: string): ExcelJS.FillPattern => ({ type: "pattern", pattern: "solid", fgColor: { argb: c } });
 
