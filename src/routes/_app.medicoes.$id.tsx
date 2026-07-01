@@ -889,6 +889,9 @@ function BoletimDetalhePage() {
         </>
         )}
 
+        {/* ===== FASE H — ADITIVOS E REAJUSTES ===== */}
+        <ContratoImpactosPanel medicaoId={id} />
+
         {/* ===== FASE G — ANEXOS DO BOLETIM ===== */}
         {data.medicao.company_id && (
           <AnexosMedicaoPanel
@@ -897,6 +900,8 @@ function BoletimDetalhePage() {
             readOnly={readOnly}
           />
         )}
+
+
 
 
         <Badge variant="outline" className="text-[10px] print:hidden">
