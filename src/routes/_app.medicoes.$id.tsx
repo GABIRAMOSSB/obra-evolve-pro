@@ -37,6 +37,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { ArrowLeft, Save, CheckCircle2, FileDown, Printer, Search, Loader2, AlertTriangle, ShieldAlert, Upload, Send, XCircle, RefreshCw, History } from "lucide-react";
 import { toast } from "sonner";
 import { OrcamentoImportDialog } from "@/components/OrcamentoImportDialog";
+import { AnexosMedicaoPanel } from "@/components/AnexosMedicaoPanel";
 
 export const Route = createFileRoute("/_app/medicoes/$id")({
   component: BoletimDetalhePage,
@@ -887,6 +888,14 @@ function BoletimDetalhePage() {
         </>
         )}
 
+        {/* ===== FASE G — ANEXOS DO BOLETIM ===== */}
+        {data.medicao.company_id && (
+          <AnexosMedicaoPanel
+            medicaoId={id}
+            companyId={data.medicao.company_id}
+            readOnly={readOnly}
+          />
+        )}
 
 
         <Badge variant="outline" className="text-[10px] print:hidden">
