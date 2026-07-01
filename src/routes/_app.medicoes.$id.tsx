@@ -731,6 +731,36 @@ function BoletimDetalhePage() {
         <Badge variant="outline" className="text-[10px] print:hidden">
           Última atualização: {new Date(data.medicao.updated_at ?? data.medicao.created_at ?? Date.now()).toLocaleString("pt-BR")}
         </Badge>
+
+        {/* ===== DIALOG DE JUSTIFICATIVA DE EXCEÇÃO ===== */}
+        <Dialog open={!!justDialog} onOpenChange={(o) => { if (!o) { setJustDialog(null); setJustTexto(""); } }}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-[#C83E4D]">
+                <ShieldAlert className="w-5 h-5" /> Extrapolação de saldo — justificativa obrigatória
+              </DialogTitle>
+              <DialogDescription className="text-[#69717D]">
+                O item <span className="font-mono font-semibold">{justDialog?.codigo}</span> teve quantidade lançada
+                {" "}<span className="font-semibold text-[#252A33]">{fmtNumberBR(justDialog?.valorTentado ?? 0)}</span>,
+                superior ao saldo disponível de <span className="font-semibold text-[#252A33]">{fmtNumberBR(justDialog?.saldo ?? 0)}</span>.
+                Descreva formalmente a razão da exceção (mínimo 10 caracteres). O texto ficará registrado no boletim, no snapshot e na trilha de auditoria.
+              </DialogDescription>
+            </DialogHeader>
+            <Textarea
+              value={justTexto}
+              onChange={(e) => setJustTexto(e.target.value)}
+              placeholder="Ex.: Aditivo de escopo em análise — autorização verbal do fiscal em 12/03. Registrar aditivo no próximo BM."
+              rows={5}
+              className="border-[#D9DDE3] focus-visible:border-[#C8A66A] focus-visible:ring-[#C8A66A]/40"
+            />
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setJustDialog(null); setJustTexto(""); }}>Cancelar</Button>
+              <Button onClick={confirmarJustificativa} className="bg-[#C83E4D] hover:bg-[#B02E3D] text-white">
+                Autorizar exceção
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
