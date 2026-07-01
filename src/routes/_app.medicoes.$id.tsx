@@ -336,6 +336,11 @@ function BoletimDetalhePage() {
               <div className="text-lg font-bold leading-tight truncate">{nomeObra}</div>
             </div>
             {statusBadge(data.medicao.status)}
+            {dirty && !readOnly && (
+              <span className="text-[10px] uppercase tracking-widest font-bold text-[#252A33] bg-[#C8A66A] px-2 py-1 rounded-full">
+                Alterações não salvas
+              </span>
+            )}
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 size="sm"
