@@ -19,14 +19,17 @@ import {
   sanitizeDescricao,
   computeItem,
   computeTotais,
+  classifyHierarquia,
 } from "@/lib/boletim-medicao.calc";
 import { generateBoletimMedicaoPDF } from "@/lib/boletim-medicao.pdf";
 import { generateBoletimMedicaoXLSX } from "@/lib/boletim-medicao.xlsx";
 import { VisaoExecutivaMedicao } from "@/components/VisaoExecutivaMedicao";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Save, CheckCircle2, FileDown, Printer, Search, Loader2, AlertTriangle } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { ArrowLeft, Save, CheckCircle2, FileDown, Printer, Search, Loader2, AlertTriangle, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/medicoes/$id")({
