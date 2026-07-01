@@ -574,72 +574,69 @@ function buildCapaSheet(wb: ExcelJS.Workbook, data: XLSXInput, logoImageId: numb
     { width: 4 }, { width: 22 }, { width: 22 }, { width: 22 }, { width: 22 }, { width: 4 },
   ];
 
-  // ===== FAIXA GRAFITE TOPO (linhas 1-6) — moldura institucional =====
-  ws.mergeCells("A1:F6");
+  // ===== HERO GRAFITE (linhas 1-8) — logo isolado, sem sobreposição =====
+  ws.mergeCells("A1:F8");
   const top = ws.getCell("A1");
   top.fill = fill(C.graphiteDark);
   top.alignment = { horizontal: "center", vertical: "middle" };
-  ws.getRow(1).height = 22;
-  ws.getRow(2).height = 22;
-  ws.getRow(3).height = 22;
-  ws.getRow(4).height = 22;
-  ws.getRow(5).height = 22;
-  ws.getRow(6).height = 22;
+  for (let i = 1; i <= 8; i++) ws.getRow(i).height = 22;
 
-  // Logo centralizado sobre a faixa grafite
+  // Logo centralizado, dimensões contidas dentro da faixa (176pt total de altura).
   if (logoImageId !== null) {
     ws.addImage(logoImageId, {
-      tl: { col: 1.6, row: 0.4 },
-      ext: { width: 260, height: 126 },
+      tl: { col: 2.1, row: 1.4 },
+      ext: { width: 180, height: 88 },
       editAs: "absolute",
     });
   } else {
-    // Fallback textual quando o logo não carrega
     const fb = ws.getCell("A3");
     fb.value = "SOLV";
     fb.font = { name: "Calibri", size: 34, bold: true, color: { argb: C.gold } };
     fb.alignment = { horizontal: "center", vertical: "middle" };
   }
 
-  // Linha dourada dupla (divisor decorativo)
-  ws.mergeCells("A7:F7");
-  ws.getCell("A7").fill = fill(C.gold);
-  ws.getRow(7).height = 6;
-  ws.mergeCells("A8:F8");
-  ws.getCell("A8").fill = fill(C.graphiteDark);
-  ws.getRow(8).height = 2;
-
-  // Selo institucional
+  // Divisor dourado triplo — assinatura visual refinada
+  ws.mergeCells("A9:F9");
+  ws.getCell("A9").fill = fill(C.gold);
+  ws.getRow(9).height = 4;
   ws.mergeCells("A10:F10");
-  const seloTop = ws.getCell("A10");
-  seloTop.value = "◆   DOCUMENTO OFICIAL   ◆";
-  seloTop.font = { name: "Calibri", size: 9, bold: true, color: { argb: C.gold }, italic: true };
-  seloTop.alignment = { horizontal: "center", vertical: "middle" };
-  ws.getRow(10).height = 18;
+  ws.getCell("A10").fill = fill(C.graphiteDark);
+  ws.getRow(10).height = 1;
+  ws.mergeCells("A11:F11");
+  ws.getCell("A11").fill = fill(C.gold);
+  ws.getRow(11).height = 2;
 
-  // Título
-  ws.mergeCells("A12:F12");
-  const t = ws.getCell("A12");
+  // Selo institucional — tipografia expandida
+  ws.mergeCells("A13:F13");
+  const seloTop = ws.getCell("A13");
+  seloTop.value = "D O C U M E N T O   O F I C I A L";
+  seloTop.font = { name: "Calibri", size: 9, bold: true, color: { argb: C.gold } };
+  seloTop.alignment = { horizontal: "center", vertical: "middle" };
+  ws.getRow(13).height = 20;
+
+  // Título principal
+  ws.mergeCells("A15:F15");
+  const t = ws.getCell("A15");
   t.value = "BOLETIM DE MEDIÇÃO";
-  t.font = { name: "Calibri", size: 22, bold: true, color: { argb: C.graphiteDark } };
+  t.font = { name: "Calibri", size: 26, bold: true, color: { argb: C.graphiteDark } };
   t.alignment = { horizontal: "center", vertical: "middle" };
-  ws.getRow(12).height = 36;
+  ws.getRow(15).height = 42;
 
   const bmLabel = data.medicao.numero_bm ?? `BM-${String(data.medicao.numero).padStart(2, "0")}`;
-  ws.mergeCells("A13:F13");
-  const sub = ws.getCell("A13");
-  sub.value = `${bmLabel}   ◆   ${fmtDateBR(data.medicao.data_medicao)}`;
+  ws.mergeCells("A16:F16");
+  const sub = ws.getCell("A16");
+  sub.value = `${bmLabel}   ·   ${fmtDateBR(data.medicao.data_medicao)}`;
   sub.font = { name: "Calibri", size: 13, bold: true, color: { argb: C.gold } };
   sub.alignment = { horizontal: "center", vertical: "middle" };
-  ws.getRow(13).height = 22;
+  ws.getRow(16).height = 22;
 
-  // Ornamento — três diamantes centrais
-  ws.mergeCells("A14:F14");
-  const orn = ws.getCell("A14");
-  orn.value = "◆   ◆   ◆";
+  // Ornamento sutil
+  ws.mergeCells("A17:F17");
+  const orn = ws.getCell("A17");
+  orn.value = "———   ◆   ———";
   orn.font = { name: "Calibri", size: 10, color: { argb: C.gold } };
   orn.alignment = { horizontal: "center", vertical: "middle" };
-  ws.getRow(14).height = 16;
+  ws.getRow(17).height = 18;
 
   // Bloco de dados
   const executora = data.company?.razao_social ?? data.company?.nome ?? "SOLV Construtora";
