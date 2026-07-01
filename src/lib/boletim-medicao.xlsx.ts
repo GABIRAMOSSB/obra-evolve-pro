@@ -161,43 +161,59 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
     { key: "pct", width: 10 },
   ];
 
-  // ===== HEADER SOLV (linhas 1-3) =====
-  // Faixa grafite com logo à esquerda + wordmark centralizado
-  ws.mergeCells("A1:M1");
-  const h1 = ws.getCell("A1");
-  h1.value = "SOLV CONSTRUTORA  ·  Excelência em construção civil";
-  h1.font = { name: "Calibri", size: 15, bold: true, color: { argb: C.white } };
+  // ===== HERO SOLV (linhas 1-3) — logo em faixa própria, sem sobreposição =====
+  // Row 1: área do logo (grafite) + wordmark tipográfico (sem overlap)
+  ws.getRow(1).height = 58;
+  // Preenche toda a faixa em grafite escuro para a moldura hero
+  for (let c = 1; c <= 13; c++) {
+    ws.getCell(1, c).fill = fill(C.graphiteDark);
+  }
+  // Reserva colunas A:B para o logo (largura combinada ~67pt)
+  ws.mergeCells("A1:B1");
+  // Wordmark tipográfico em C:H, alinhado à esquerda dando ar refinado
+  ws.mergeCells("C1:H1");
+  const h1 = ws.getCell("C1");
+  h1.value = "SOLV CONSTRUTORA";
+  h1.font = { name: "Calibri", size: 18, bold: true, color: { argb: C.white } };
   h1.fill = fill(C.graphiteDark);
-  h1.alignment = { horizontal: "center", vertical: "middle" };
-  ws.getRow(1).height = 42;
+  h1.alignment = { horizontal: "left", vertical: "middle", indent: 1 };
+  // Tagline à direita em dourado — hierarquia clara
+  ws.mergeCells("I1:M1");
+  const h1r = ws.getCell("I1");
+  h1r.value = "EXCELÊNCIA EM CONSTRUÇÃO CIVIL";
+  h1r.font = { name: "Calibri", size: 9, bold: true, color: { argb: C.gold } };
+  h1r.fill = fill(C.graphiteDark);
+  h1r.alignment = { horizontal: "right", vertical: "middle", indent: 2 };
 
   if (logoImageId !== null) {
+    // Logo contido em A1:B1 (~134pt de largura, 58pt altura). Imagem menor com respiro.
     ws.addImage(logoImageId, {
       tl: { col: 0.15, row: 0.15 },
-      ext: { width: 132, height: 64 },
+      ext: { width: 96, height: 44 },
       editAs: "absolute",
     });
   }
 
+  // Row 2: barra grafite com título do documento (esq) e identificação (dir)
   const bmLabel = data.medicao.numero_bm ?? `BM-${String(data.medicao.numero).padStart(2, "0")}`;
   ws.mergeCells("A2:H2");
   const h2 = ws.getCell("A2");
-  h2.value = "◆  BOLETIM DE MEDIÇÃO";
-  h2.font = { name: "Calibri", size: 10, bold: true, color: { argb: C.gold } };
+  h2.value = "BOLETIM DE MEDIÇÃO";
+  h2.font = { name: "Calibri", size: 11, bold: true, color: { argb: C.white } };
   h2.fill = fill(C.graphite);
-  h2.alignment = { horizontal: "left", vertical: "middle", indent: 1 };
+  h2.alignment = { horizontal: "left", vertical: "middle", indent: 2 };
   ws.mergeCells("I2:M2");
   const h2r = ws.getCell("I2");
-  h2r.value = `${bmLabel}   ◆   ${fmtDateBR(data.medicao.data_medicao)}`;
-  h2r.font = { name: "Calibri", size: 10, bold: true, color: { argb: C.white } };
+  h2r.value = `${bmLabel}   ·   ${fmtDateBR(data.medicao.data_medicao)}`;
+  h2r.font = { name: "Calibri", size: 11, bold: true, color: { argb: C.gold } };
   h2r.fill = fill(C.graphite);
-  h2r.alignment = { horizontal: "right", vertical: "middle", indent: 1 };
-  ws.getRow(2).height = 20;
+  h2r.alignment = { horizontal: "right", vertical: "middle", indent: 2 };
+  ws.getRow(2).height = 24;
 
-  // Linha dourada dupla como divisor decorativo
+  // Linha dourada fina — divisor elegante
   ws.mergeCells("A3:M3");
   ws.getCell("A3").fill = fill(C.gold);
-  ws.getRow(3).height = 4;
+  ws.getRow(3).height = 3;
 
   // ===== DADOS CONTRATUAIS (linhas 4-11) =====
   const nomeObra = data.obra?.nome ?? "—";
@@ -558,72 +574,69 @@ function buildCapaSheet(wb: ExcelJS.Workbook, data: XLSXInput, logoImageId: numb
     { width: 4 }, { width: 22 }, { width: 22 }, { width: 22 }, { width: 22 }, { width: 4 },
   ];
 
-  // ===== FAIXA GRAFITE TOPO (linhas 1-6) — moldura institucional =====
-  ws.mergeCells("A1:F6");
+  // ===== HERO GRAFITE (linhas 1-8) — logo isolado, sem sobreposição =====
+  ws.mergeCells("A1:F8");
   const top = ws.getCell("A1");
   top.fill = fill(C.graphiteDark);
   top.alignment = { horizontal: "center", vertical: "middle" };
-  ws.getRow(1).height = 22;
-  ws.getRow(2).height = 22;
-  ws.getRow(3).height = 22;
-  ws.getRow(4).height = 22;
-  ws.getRow(5).height = 22;
-  ws.getRow(6).height = 22;
+  for (let i = 1; i <= 8; i++) ws.getRow(i).height = 22;
 
-  // Logo centralizado sobre a faixa grafite
+  // Logo centralizado, dimensões contidas dentro da faixa (176pt total de altura).
   if (logoImageId !== null) {
     ws.addImage(logoImageId, {
-      tl: { col: 1.6, row: 0.4 },
-      ext: { width: 260, height: 126 },
+      tl: { col: 2.1, row: 1.4 },
+      ext: { width: 180, height: 88 },
       editAs: "absolute",
     });
   } else {
-    // Fallback textual quando o logo não carrega
     const fb = ws.getCell("A3");
     fb.value = "SOLV";
     fb.font = { name: "Calibri", size: 34, bold: true, color: { argb: C.gold } };
     fb.alignment = { horizontal: "center", vertical: "middle" };
   }
 
-  // Linha dourada dupla (divisor decorativo)
-  ws.mergeCells("A7:F7");
-  ws.getCell("A7").fill = fill(C.gold);
-  ws.getRow(7).height = 6;
-  ws.mergeCells("A8:F8");
-  ws.getCell("A8").fill = fill(C.graphiteDark);
-  ws.getRow(8).height = 2;
-
-  // Selo institucional
+  // Divisor dourado triplo — assinatura visual refinada
+  ws.mergeCells("A9:F9");
+  ws.getCell("A9").fill = fill(C.gold);
+  ws.getRow(9).height = 4;
   ws.mergeCells("A10:F10");
-  const seloTop = ws.getCell("A10");
-  seloTop.value = "◆   DOCUMENTO OFICIAL   ◆";
-  seloTop.font = { name: "Calibri", size: 9, bold: true, color: { argb: C.gold }, italic: true };
-  seloTop.alignment = { horizontal: "center", vertical: "middle" };
-  ws.getRow(10).height = 18;
+  ws.getCell("A10").fill = fill(C.graphiteDark);
+  ws.getRow(10).height = 1;
+  ws.mergeCells("A11:F11");
+  ws.getCell("A11").fill = fill(C.gold);
+  ws.getRow(11).height = 2;
 
-  // Título
-  ws.mergeCells("A12:F12");
-  const t = ws.getCell("A12");
+  // Selo institucional — tipografia expandida
+  ws.mergeCells("A13:F13");
+  const seloTop = ws.getCell("A13");
+  seloTop.value = "D O C U M E N T O   O F I C I A L";
+  seloTop.font = { name: "Calibri", size: 9, bold: true, color: { argb: C.gold } };
+  seloTop.alignment = { horizontal: "center", vertical: "middle" };
+  ws.getRow(13).height = 20;
+
+  // Título principal
+  ws.mergeCells("A15:F15");
+  const t = ws.getCell("A15");
   t.value = "BOLETIM DE MEDIÇÃO";
-  t.font = { name: "Calibri", size: 22, bold: true, color: { argb: C.graphiteDark } };
+  t.font = { name: "Calibri", size: 26, bold: true, color: { argb: C.graphiteDark } };
   t.alignment = { horizontal: "center", vertical: "middle" };
-  ws.getRow(12).height = 36;
+  ws.getRow(15).height = 42;
 
   const bmLabel = data.medicao.numero_bm ?? `BM-${String(data.medicao.numero).padStart(2, "0")}`;
-  ws.mergeCells("A13:F13");
-  const sub = ws.getCell("A13");
-  sub.value = `${bmLabel}   ◆   ${fmtDateBR(data.medicao.data_medicao)}`;
+  ws.mergeCells("A16:F16");
+  const sub = ws.getCell("A16");
+  sub.value = `${bmLabel}   ·   ${fmtDateBR(data.medicao.data_medicao)}`;
   sub.font = { name: "Calibri", size: 13, bold: true, color: { argb: C.gold } };
   sub.alignment = { horizontal: "center", vertical: "middle" };
-  ws.getRow(13).height = 22;
+  ws.getRow(16).height = 22;
 
-  // Ornamento — três diamantes centrais
-  ws.mergeCells("A14:F14");
-  const orn = ws.getCell("A14");
-  orn.value = "◆   ◆   ◆";
+  // Ornamento sutil
+  ws.mergeCells("A17:F17");
+  const orn = ws.getCell("A17");
+  orn.value = "———   ◆   ———";
   orn.font = { name: "Calibri", size: 10, color: { argb: C.gold } };
   orn.alignment = { horizontal: "center", vertical: "middle" };
-  ws.getRow(14).height = 16;
+  ws.getRow(17).height = 18;
 
   // Bloco de dados
   const executora = data.company?.razao_social ?? data.company?.nome ?? "SOLV Construtora";
@@ -645,7 +658,7 @@ function buildCapaSheet(wb: ExcelJS.Workbook, data: XLSXInput, logoImageId: numb
     ["Fiscal da Obra", data.fiscal?.nome ?? "—"],
   ];
 
-  let r = 16;
+  let r = 19;
   for (const [label, value] of rows) {
     ws.mergeCells(r, 2, r, 3);
     const cl = ws.getCell(r, 2);
