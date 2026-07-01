@@ -460,7 +460,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
         color: { argb: C.gold },
         gradient: true,
         showValue: true,
-      } as unknown as ExcelJS.DataBarRule,
+      } as unknown as Parameters<typeof ws.addConditionalFormatting>[0]["rules"][0],
     ],
   });
   // Escala de calor sutil na coluna Financeiro Período (col K)
