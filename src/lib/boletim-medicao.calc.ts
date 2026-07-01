@@ -81,6 +81,8 @@ export interface ItemComputed {
   valor_periodo: number;
   valor_acum_atual: number;
   pct_executado: number; // fraction 0..1
+  saldo_qtd: number;
+  saldo_financeiro: number;
   status_calc: "nao_iniciada" | "em_andamento" | "concluida" | "erro";
 }
 
@@ -92,6 +94,8 @@ export function computeItem(i: ItemInput): ItemComputed {
       valor_periodo: 0,
       valor_acum_atual: 0,
       pct_executado: 0,
+      saldo_qtd: 0,
+      saldo_financeiro: 0,
       status_calc: "nao_iniciada",
     };
   }
@@ -99,15 +103,34 @@ export function computeItem(i: ItemInput): ItemComputed {
   const qtd_acum_atual = Number((i.qtd_acum_anterior + i.qtd_periodo).toFixed(4));
   const valor_periodo = roundMoney(i.qtd_periodo, i.valor_unitario);
   const valor_acum_atual = Number((i.valor_acum_anterior + valor_periodo).toFixed(2));
-
   const pct_executado = i.qtd_contratada > 0 ? qtd_acum_atual / i.qtd_contratada : 0;
+  const saldo_qtd = Number((i.qtd_contratada - qtd_acum_atual).toFixed(4));
+  const saldo_financeiro = Number((total_contratual - valor_acum_atual).toFixed(2));
 
   let status_calc: ItemComputed["status_calc"] = "nao_iniciada";
   if (qtd_acum_atual > i.qtd_contratada + EPSILON) status_calc = "erro";
   else if (Math.abs(qtd_acum_atual - i.qtd_contratada) <= EPSILON && i.qtd_contratada > 0) status_calc = "concluida";
   else if (qtd_acum_atual > EPSILON) status_calc = "em_andamento";
 
-  return { total_contratual, qtd_acum_atual, valor_periodo, valor_acum_atual, pct_executado, status_calc };
+  return { total_contratual, qtd_acum_atual, valor_periodo, valor_acum_atual, pct_executado, saldo_qtd, saldo_financeiro, status_calc };
+}
+
+/**
+ * Classifica hierarquicamente a linha a partir do código do item e da flag is_etapa.
+ * Convenção institucional SOLV:
+ *   1        → etapa      (fundo grafite, texto branco)
+ *   1.1      → subetapa   (fundo cinza azulado, texto branco)
+ *   1.1.1    → grupo      (fundo cinza claro, texto grafite)
+ *   1.1.0.0.1 ou linha com qtd_contratada > 0 → item mensurável (fundo branco)
+ */
+export type NivelHierarquico = "etapa" | "subetapa" | "grupo" | "item";
+
+export function classifyHierarquia(codigo: string, isEtapa: boolean, qtdContratada = 0, valorUnitario = 0): NivelHierarquico {
+  if (!isEtapa && (qtdContratada > 0 || valorUnitario > 0)) return "item";
+  const segs = String(codigo || "").split(".").filter((s) => s.length > 0).length;
+  if (segs <= 1) return "etapa";
+  if (segs === 2) return "subetapa";
+  return "grupo";
 }
 
 export interface TotaisMedicao {
