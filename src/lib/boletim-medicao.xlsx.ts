@@ -112,10 +112,16 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   wb.creator = "SOLV Construtora";
   wb.created = new Date();
 
+  // Carrega o logo uma única vez para reutilizar entre as abas.
+  const logoBuffer = await loadSolvLogo();
+  const logoImageId = logoBuffer
+    ? wb.addImage({ buffer: logoBuffer as ArrayBuffer, extension: "png" })
+    : null;
+
   // ============================================================
   // ABA 1 — CAPA
   // ============================================================
-  buildCapaSheet(wb, data);
+  buildCapaSheet(wb, data, logoImageId);
 
   // ============================================================
   // ABA 2 — BOLETIM (principal)
@@ -156,33 +162,42 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   ];
 
   // ===== HEADER SOLV (linhas 1-3) =====
+  // Faixa grafite com logo à esquerda + wordmark centralizado
   ws.mergeCells("A1:M1");
   const h1 = ws.getCell("A1");
-  h1.value = "SOLV CONSTRUTORA";
-  h1.font = { name: "Calibri", size: 16, bold: true, color: { argb: C.white } };
+  h1.value = "SOLV CONSTRUTORA  ·  Excelência em construção civil";
+  h1.font = { name: "Calibri", size: 15, bold: true, color: { argb: C.white } };
   h1.fill = fill(C.graphiteDark);
-  h1.alignment = { horizontal: "left", vertical: "middle", indent: 1 };
-  ws.getRow(1).height = 26;
+  h1.alignment = { horizontal: "center", vertical: "middle" };
+  ws.getRow(1).height = 42;
+
+  if (logoImageId !== null) {
+    ws.addImage(logoImageId, {
+      tl: { col: 0.15, row: 0.15 },
+      ext: { width: 90, height: 52 },
+      editAs: "absolute",
+    });
+  }
 
   const bmLabel = data.medicao.numero_bm ?? `BM-${String(data.medicao.numero).padStart(2, "0")}`;
   ws.mergeCells("A2:H2");
   const h2 = ws.getCell("A2");
-  h2.value = "BOLETIM DE MEDIÇÃO";
+  h2.value = "◆  BOLETIM DE MEDIÇÃO";
   h2.font = { name: "Calibri", size: 10, bold: true, color: { argb: C.gold } };
-  h2.fill = fill(C.graphiteDark);
+  h2.fill = fill(C.graphite);
   h2.alignment = { horizontal: "left", vertical: "middle", indent: 1 };
   ws.mergeCells("I2:M2");
   const h2r = ws.getCell("I2");
-  h2r.value = `${bmLabel}  ·  ${fmtDateBR(data.medicao.data_medicao)}`;
+  h2r.value = `${bmLabel}   ◆   ${fmtDateBR(data.medicao.data_medicao)}`;
   h2r.font = { name: "Calibri", size: 10, bold: true, color: { argb: C.white } };
-  h2r.fill = fill(C.graphiteDark);
+  h2r.fill = fill(C.graphite);
   h2r.alignment = { horizontal: "right", vertical: "middle", indent: 1 };
-  ws.getRow(2).height = 18;
+  ws.getRow(2).height = 20;
 
-  // Linha dourada
+  // Linha dourada dupla como divisor decorativo
   ws.mergeCells("A3:M3");
   ws.getCell("A3").fill = fill(C.gold);
-  ws.getRow(3).height = 3;
+  ws.getRow(3).height = 4;
 
   // ===== DADOS CONTRATUAIS (linhas 4-11) =====
   const nomeObra = data.obra?.nome ?? "—";
