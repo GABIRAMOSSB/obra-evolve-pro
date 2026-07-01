@@ -121,28 +121,28 @@ export interface TotaisMedicao {
 }
 
 export function computeTotais(itens: (ItemInput & Partial<ItemComputed>)[]): TotaisMedicao {
-  let valor_total_contrato = 0;
-  let valor_medicao_atual = 0;
-  let valor_acumulado = 0;
+  // Somamos em CENTAVOS INTEIROS para eliminar drift de ponto flutuante.
+  let totalContratoCents = 0;
+  let medicaoAtualCents = 0;
+  let acumuladoCents = 0;
   let itens_medidos = 0;
   let itens_concluidos = 0;
 
   for (const it of itens) {
     if (it.is_etapa) continue;
     const c = computeItem(it);
-    valor_total_contrato += c.total_contratual;
-    valor_medicao_atual += c.valor_periodo;
-    valor_acumulado += c.valor_acum_atual;
+    totalContratoCents += Math.round(c.total_contratual * 100);
+    medicaoAtualCents += Math.round(c.valor_periodo * 100);
+    acumuladoCents += Math.round(c.valor_acum_atual * 100);
     if (it.qtd_periodo > EPSILON) itens_medidos++;
     if (c.status_calc === "concluida") itens_concluidos++;
   }
 
-  valor_total_contrato = Number(valor_total_contrato.toFixed(2));
-  valor_medicao_atual = Number(valor_medicao_atual.toFixed(2));
-  valor_acumulado = Number(valor_acumulado.toFixed(2));
-
-  const percentual_executado = valor_total_contrato > 0 ? valor_acumulado / valor_total_contrato : 0;
-  const saldo_contratual = Number((valor_total_contrato - valor_acumulado).toFixed(2));
+  const valor_total_contrato = fromCents(totalContratoCents);
+  const valor_medicao_atual = fromCents(medicaoAtualCents);
+  const valor_acumulado = fromCents(acumuladoCents);
+  const percentual_executado = totalContratoCents > 0 ? acumuladoCents / totalContratoCents : 0;
+  const saldo_contratual = fromCents(totalContratoCents - acumuladoCents);
 
   return {
     valor_total_contrato,
@@ -154,6 +154,7 @@ export function computeTotais(itens: (ItemInput & Partial<ItemComputed>)[]): Tot
     itens_concluidos,
   };
 }
+
 
 /** Valida um item; devolve mensagens de erro (vazio = ok). */
 export function validateItem(i: ItemInput): string[] {
