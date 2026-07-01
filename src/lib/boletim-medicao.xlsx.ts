@@ -247,13 +247,15 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   const fiscalReg = [data.fiscal?.registro, data.fiscal?.cargo].filter(Boolean).join(" · ") || "—";
 
   const labelStyle = (cell: ExcelJS.Cell) => {
-    cell.font = { name: "Calibri", size: 7.5, color: { argb: C.muted }, bold: true };
-    cell.alignment = { vertical: "middle", indent: 1 };
+    cell.font = { name: "Calibri", size: 8, color: { argb: C.muted }, bold: true };
+    cell.alignment = { vertical: "middle", indent: 1, wrapText: true };
     cell.fill = fill(C.silver);
+    cell.border = { left: { style: "medium", color: { argb: C.gold } } };
   };
   const valueStyle = (cell: ExcelJS.Cell) => {
     cell.font = { name: "Calibri", size: 10, color: { argb: C.text }, bold: true };
     cell.alignment = { vertical: "middle", indent: 1, wrapText: true };
+    cell.border = { bottom: { style: "hair", color: { argb: C.muted } } };
   };
 
   const kv = (rowLbl: number, col: number, label: string, value: string, span: number) => {
