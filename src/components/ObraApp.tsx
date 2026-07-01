@@ -1281,10 +1281,21 @@ function Dashboard({
  </div>
 
  <div className="flex items-center gap-1">
- <Button variant="ghost" size="sm" className="h-8 px-2.5" onClick={() => exportAcompanhamentoXlsx(filteredRows, data.evolutions, info, data.nome, selectedBM ?? currentMeasNumber, undefined, data.rows)}>
- <FileSpreadsheet className="w-4 h-4 text-success" />
- <span className="hidden xl:inline ml-1">Excel</span>
- </Button>
+  <Button variant="ghost" size="sm" className="h-8 px-2.5" onClick={async () => {
+    const { exportBoletimMedicaoInstitucional } = await import("@/lib/boletim-medicao.xlsx-adapter");
+    await exportBoletimMedicaoInstitucional({
+      rows: filteredRows,
+      evolutions: data.evolutions,
+      info,
+      projectName: data.nome,
+      measurementNumber: selectedBM ?? currentMeasNumber,
+      allRows: data.rows,
+    });
+    toast.success("Boletim Excel exportado");
+  }}>
+  <FileSpreadsheet className="w-4 h-4 text-success" />
+  <span className="hidden xl:inline ml-1">Excel</span>
+  </Button>
  <Button variant="ghost" size="sm" className="h-8 px-2.5" onClick={() => exportRelatorioPdf(filteredRows, data.evolutions, data.fileName)}>
  <FileText className="w-4 h-4 text-destructive" />
  <span className="hidden xl:inline ml-1">PDF</span>
