@@ -546,118 +546,163 @@ function BoletimDetalhePage() {
           </label>
         </div>
 
-        {/* ===== TABELA ===== */}
+        {/* ===== GRADE DE MEDIÇÃO — 16 COLUNAS ===== */}
         <div className="bg-white rounded-xl shadow-sm overflow-hidden print:shadow-none print:rounded-none">
           <div className="overflow-x-auto">
-            <table className="w-full text-[12px] border-separate border-spacing-0">
-              <thead className="bg-[#252A33] text-white text-[10.5px] uppercase tracking-wide">
-                <tr>
-                  <th rowSpan={2} className="text-left px-3 py-2.5 font-semibold sticky left-0 bg-[#252A33] z-10">Item</th>
-                  <th rowSpan={2} className="text-left px-3 py-2.5 font-semibold">Descrição</th>
-                  <th rowSpan={2} className="text-center px-2 py-2.5 font-semibold">Un.</th>
-                  <th rowSpan={2} className="text-right px-3 py-2.5 font-semibold">Qtd.</th>
-                  <th rowSpan={2} className="text-right px-3 py-2.5 font-semibold">V. Unit.</th>
-                  <th rowSpan={2} className="text-right px-3 py-2.5 font-semibold">Total</th>
-                  <th colSpan={3} className="text-center px-3 py-1.5 font-semibold border-b border-[#C8A66A]/30">Executado Físico</th>
-                  <th colSpan={3} className="text-center px-3 py-1.5 font-semibold border-b border-[#C8A66A]/30">Executado Financeiro</th>
-                  <th rowSpan={2} className="text-right px-3 py-2.5 font-semibold">Executado %</th>
+            <table className="w-full text-[11.5px] border-separate border-spacing-0">
+              <thead className="text-white text-[10px] uppercase tracking-wide">
+                <tr className="bg-[#252A33]">
+                  <th rowSpan={2} className="text-left px-2 py-2 font-semibold sticky left-0 bg-[#252A33] z-20 min-w-[70px]">Item</th>
+                  <th rowSpan={2} className="text-left px-3 py-2 font-semibold min-w-[280px]">Descrição</th>
+                  <th rowSpan={2} className="text-center px-2 py-2 font-semibold">Un.</th>
+                  <th rowSpan={2} className="text-right px-2 py-2 font-semibold">Qtd. contr.</th>
+                  <th rowSpan={2} className="text-right px-2 py-2 font-semibold">V. unit.</th>
+                  <th rowSpan={2} className="text-right px-2 py-2 font-semibold">Total contr.</th>
+                  <th colSpan={3} className="text-center px-2 py-1.5 font-semibold bg-[#343B46] border-b border-[#C8A66A]/30">Executado físico</th>
+                  <th colSpan={3} className="text-center px-2 py-1.5 font-semibold bg-[#343B46] border-b border-[#C8A66A]/30">Executado financeiro</th>
+                  <th rowSpan={2} className="text-right px-2 py-2 font-semibold">% exec.</th>
+                  <th rowSpan={2} className="text-right px-2 py-2 font-semibold">Saldo qtd.</th>
+                  <th rowSpan={2} className="text-right px-2 py-2 font-semibold">Saldo R$</th>
+                  <th rowSpan={2} className="text-center px-2 py-2 font-semibold">Situação</th>
                 </tr>
-                <tr className="text-[10px] text-white/80">
-                  <th className="text-right px-2 py-2 font-medium">Anterior</th>
-                  <th className="text-right px-2 py-2 font-medium">Período</th>
-                  <th className="text-right px-2 py-2 font-medium">Acum.</th>
-                  <th className="text-right px-2 py-2 font-medium">Anterior</th>
-                  <th className="text-right px-2 py-2 font-medium">Período</th>
-                  <th className="text-right px-2 py-2 font-medium">Acum.</th>
+                <tr className="text-[9.5px] text-white/90 bg-[#343B46]">
+                  <th className="text-right px-2 py-1.5 font-medium">Anterior</th>
+                  <th className="text-right px-2 py-1.5 font-medium bg-[#C8A66A]/20">Período</th>
+                  <th className="text-right px-2 py-1.5 font-medium">Acum.</th>
+                  <th className="text-right px-2 py-1.5 font-medium">Anterior</th>
+                  <th className="text-right px-2 py-1.5 font-medium bg-[#C8A66A]/20">Período</th>
+                  <th className="text-right px-2 py-1.5 font-medium">Acum.</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((it, idx) => {
                   const c = computeItem(it);
-                  const nivel = it.item_codigo.split(".").length;
-                  const zebra = idx % 2 === 1 ? "bg-[#FAFBFC]" : "bg-white";
-                  if (it.is_etapa) {
+                  const tipo = classifyHierarquia(it.item_codigo, it.is_etapa, it.qtd_contratada, it.valor_unitario);
+                  const nivel = it.item_codigo.split(".").filter(Boolean).length;
+
+                  // Linhas não-mensuráveis: 3 níveis de header
+                  if (tipo !== "item") {
+                    const styles: Record<string, string> = {
+                      etapa: "bg-[#252A33] text-white font-bold",
+                      subetapa: "bg-[#343B46] text-white font-semibold",
+                      grupo: "bg-[#EEF0F2] text-[#252A33] font-semibold",
+                    };
+                    const stickyBg: Record<string, string> = {
+                      etapa: "bg-[#252A33]",
+                      subetapa: "bg-[#343B46]",
+                      grupo: "bg-[#EEF0F2]",
+                    };
                     return (
-                      <tr key={it.item_codigo} className="bg-[#EEF0F2]">
-                        <td className="px-3 py-2.5 font-bold text-[#252A33] sticky left-0 bg-[#EEF0F2] z-10">{it.item_codigo}</td>
-                        <td colSpan={12} className="px-3 py-2.5 font-bold text-[#252A33]" style={{ paddingLeft: 12 + nivel * 6 }}>
+                      <tr key={it.item_codigo} className={styles[tipo]}>
+                        <td className={`px-2 py-2 sticky left-0 z-10 font-mono text-[11px] ${stickyBg[tipo]}`}>{it.item_codigo}</td>
+                        <td colSpan={15} className="px-3 py-2 uppercase tracking-wide text-[11px]" style={{ paddingLeft: 12 + Math.max(0, nivel - 1) * 10 }}>
                           {sanitizeDescricao(it.descricao)}
                         </td>
                       </tr>
                     );
                   }
-                  const statusColor: Record<string, string> = {
-                    nao_iniciada: "bg-slate-100 text-slate-600",
-                    em_andamento: "bg-[#F5EEDD] text-[#8A6D2E]",
-                    concluida: "bg-emerald-50 text-emerald-700",
-                    erro: "bg-red-50 text-red-700",
+
+                  const zebra = idx % 2 === 1 ? "bg-[#FAFBFC]" : "bg-white";
+                  const excedido = c.status_calc === "erro";
+                  const concluida = c.status_calc === "concluida";
+                  const parcial = c.status_calc === "em_andamento";
+                  const saldoNeg = c.saldo_qtd < -1e-6 || c.saldo_financeiro < -0.005;
+                  const semUnidade = !it.unidade;
+                  const semValor = it.valor_unitario <= 0;
+                  const semQtd = it.qtd_contratada <= 0;
+                  const temExcecao = !!it.justificativa;
+
+                  const rowBg = excedido || saldoNeg ? "bg-[#FEEDEE]" : concluida ? "bg-[#EAF6F0]" : zebra;
+
+                  const statusBadgeMap: Record<string, { label: string; cls: string }> = {
+                    nao_iniciada: { label: "Não iniciada", cls: "bg-slate-100 text-slate-600" },
+                    em_andamento: { label: "Parcial", cls: "bg-[#F5EEDD] text-[#C47A1B]" },
+                    concluida: { label: "Concluída", cls: "bg-[#DFF3E9] text-[#16855B]" },
+                    erro: { label: "Extrapolada", cls: "bg-[#FBE0E3] text-[#C83E4D]" },
                   };
-                  const statusLabel: Record<string, string> = {
-                    nao_iniciada: "Não iniciada",
-                    em_andamento: "Em andamento",
-                    concluida: "Concluída",
-                    erro: "Extrapolação",
-                  };
+                  const stb = statusBadgeMap[c.status_calc];
+
                   return (
-                    <tr key={it.item_codigo} className={`${zebra} hover:bg-[#F5EEDD]/40`}>
-                      <td className={`px-3 py-2 text-center text-[#69717D] font-mono text-[11px] sticky left-0 z-10 ${zebra}`}>{it.item_codigo}</td>
-                      <td className="px-3 py-2 text-[#20242B]" title={it.descricao}>
-                        <div className="line-clamp-2">{sanitizeDescricao(it.descricao)}</div>
-                        <div className="mt-1">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${statusColor[c.status_calc]}`}>
-                            {statusLabel[c.status_calc]}
-                          </span>
-                        </div>
+                    <tr key={it.item_codigo} className={`${rowBg} hover:bg-[#F5EEDD]/40`}>
+                      <td className={`px-2 py-1.5 text-center text-[#69717D] font-mono text-[10.5px] sticky left-0 z-10 ${rowBg}`}>{it.item_codigo}</td>
+                      <td className="px-3 py-1.5 text-[#20242B]">
+                        <div className="line-clamp-2" title={it.descricao}>{sanitizeDescricao(it.descricao)}</div>
+                        {(semValor || semQtd || temExcecao) && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {semValor && <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#FBE0E3] text-[#C83E4D] font-semibold">Sem valor unit.</span>}
+                            {semQtd && <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#FBE0E3] text-[#C83E4D] font-semibold">Sem qtd. contr.</span>}
+                            {temExcecao && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#F5EEDD] text-[#C47A1B] font-semibold inline-flex items-center gap-1" title={it.justificativa ?? ""}>
+                                <ShieldAlert className="w-2.5 h-2.5" /> Exceção autorizada
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </td>
-                      <td className="px-2 py-2 text-center text-[#69717D]">{normalizeUnidade(it.unidade)}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{fmtNumberBR(it.qtd_contratada)}</td>
-                      <td className="px-3 py-2 text-right tabular-nums text-[#69717D]">{fmtMoneyBR(it.valor_unitario)}</td>
-                      <td className="px-3 py-2 text-right tabular-nums font-semibold">{fmtMoneyBR(c.total_contratual)}</td>
-                      <td className="px-2 py-2 text-right tabular-nums text-[#69717D]">{fmtNumberBR(it.qtd_acum_anterior)}</td>
+                      <td className={`px-2 py-1.5 text-center ${semUnidade ? "text-[#C83E4D] font-semibold" : "text-[#69717D]"}`}>{semUnidade ? "—" : normalizeUnidade(it.unidade)}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{fmtNumberBR(it.qtd_contratada)}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums text-[#69717D]">{fmtMoneyBR(it.valor_unitario)}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums font-semibold">{fmtMoneyBR(c.total_contratual)}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums text-[#69717D]">{fmtNumberBR(it.qtd_acum_anterior)}</td>
                       {modoOficial ? (
-                        <td className="px-2 py-2 text-right tabular-nums font-semibold text-[#8A6D2E]">
+                        <td className="px-2 py-1.5 text-right tabular-nums font-semibold text-[#8A6D2E] bg-[#FBF5E6]/50">
                           {fmtNumberBR(it.qtd_periodo)}
                         </td>
                       ) : (
-                        <>
-                          <td className="px-1 py-1 text-right print:hidden">
-                            <Input
-                              value={it.qtd_periodo ? fmtNumberBR(it.qtd_periodo) : ""}
-                              onChange={(e) => updateQtdPeriodo(it.item_codigo, parseBR(e.target.value))}
-                              onKeyDown={handleCellKey}
-                              onPaste={(e) => {
-                                const txt = e.clipboardData.getData("text");
-                                if (handlePasteSequence(it.item_codigo, txt)) e.preventDefault();
-                              }}
-                              data-bm-cell="1"
-                              disabled={readOnly}
-                              placeholder="0,00"
-                              className="h-8 text-right tabular-nums bg-[#FBF5E6] border-transparent focus-visible:border-[#C8A66A] focus-visible:ring-1 focus-visible:ring-[#C8A66A]/40 rounded-md"
-                            />
-                          </td>
-                          <td className="px-2 py-2 text-right tabular-nums hidden print:table-cell">{fmtNumberBR(it.qtd_periodo)}</td>
-                        </>
+                        <td className="px-1 py-1 text-right print:hidden">
+                          <Input
+                            value={it.qtd_periodo ? fmtNumberBR(it.qtd_periodo) : ""}
+                            onChange={(e) => updateQtdPeriodo(it.item_codigo, parseBR(e.target.value))}
+                            onKeyDown={handleCellKey}
+                            onPaste={(e) => {
+                              const txt = e.clipboardData.getData("text");
+                              if (handlePasteSequence(it.item_codigo, txt)) e.preventDefault();
+                            }}
+                            data-bm-cell="1"
+                            disabled={readOnly}
+                            placeholder="0,00"
+                            className={`h-7 text-right tabular-nums bg-[#FBF5E6] border-transparent focus-visible:border-[#C8A66A] focus-visible:ring-1 focus-visible:ring-[#C8A66A]/40 rounded ${excedido ? "!bg-[#FBE0E3]" : ""}`}
+                          />
+                        </td>
                       )}
-                      <td className="px-2 py-2 text-right tabular-nums font-semibold">{fmtNumberBR(c.qtd_acum_atual)}</td>
-                      <td className="px-2 py-2 text-right tabular-nums text-[#69717D]">{fmtMoneyBR(it.valor_acum_anterior)}</td>
-                      <td className="px-2 py-2 text-right tabular-nums">{fmtMoneyBR(c.valor_periodo)}</td>
-                      <td className="px-2 py-2 text-right tabular-nums font-semibold">{fmtMoneyBR(c.valor_acum_atual)}</td>
-                      <td className="px-3 py-2 text-right tabular-nums font-semibold">{fmtPctBR(c.pct_executado, 2)}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums font-semibold">{fmtNumberBR(c.qtd_acum_atual)}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums text-[#69717D]">{fmtMoneyBR(it.valor_acum_anterior)}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{fmtMoneyBR(c.valor_periodo)}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums font-semibold">{fmtMoneyBR(c.valor_acum_atual)}</td>
+                      <td className={`px-2 py-1.5 text-right tabular-nums font-semibold ${concluida ? "text-[#16855B]" : parcial ? "text-[#C47A1B]" : excedido ? "text-[#C83E4D]" : ""}`}>{fmtPctBR(c.pct_executado, 2)}</td>
+                      <td className={`px-2 py-1.5 text-right tabular-nums ${c.saldo_qtd < -1e-6 ? "text-[#C83E4D] font-bold" : "text-[#69717D]"}`}>{fmtNumberBR(c.saldo_qtd)}</td>
+                      <td className={`px-2 py-1.5 text-right tabular-nums ${c.saldo_financeiro < -0.005 ? "text-[#C83E4D] font-bold" : "text-[#69717D]"}`}>{fmtMoneyBR(c.saldo_financeiro)}</td>
+                      <td className="px-2 py-1.5 text-center">
+                        <span className={`px-2 py-0.5 rounded-full text-[9.5px] font-semibold ${stb.cls}`}>{stb.label}</span>
+                      </td>
                     </tr>
                   );
                 })}
                 {/* TOTAL GERAL */}
                 <tr className="bg-[#252A33] text-white">
-                  <td colSpan={5} className="px-3 py-3 font-bold sticky left-0 bg-[#252A33]">TOTAL GERAL</td>
-                  <td className="px-3 py-3 text-right font-bold tabular-nums">{fmtMoneyBR(totais.valor_total_contrato)}</td>
-                  <td colSpan={4}></td>
+                  <td className="px-2 py-3 font-bold sticky left-0 bg-[#252A33]"></td>
+                  <td colSpan={4} className="px-3 py-3 font-bold uppercase tracking-widest text-[#C8A66A]">Total geral</td>
+                  <td className="px-2 py-3 text-right font-bold tabular-nums">{fmtMoneyBR(totais.valor_total_contrato)}</td>
+                  <td colSpan={3}></td>
                   <td className="px-2 py-3 text-right font-bold tabular-nums text-[#C8A66A]">{fmtMoneyBR(totais.valor_medicao_atual)}</td>
                   <td className="px-2 py-3 text-right font-bold tabular-nums">{fmtMoneyBR(totais.valor_acumulado)}</td>
-                  <td className="px-3 py-3 text-right font-bold tabular-nums text-[#C8A66A]">{fmtPctBR(totais.percentual_executado, 2)}</td>
+                  <td className="px-2 py-3 text-right font-bold tabular-nums text-[#C8A66A]">{fmtPctBR(totais.percentual_executado, 2)}</td>
+                  <td colSpan={2} className="px-2 py-3 text-right font-bold tabular-nums text-[#C8A66A]">{fmtMoneyBR(totais.saldo_contratual)}</td>
+                  <td></td>
                 </tr>
               </tbody>
             </table>
           </div>
+        </div>
+
+        {/* ===== LEGENDA HIERARQUIA ===== */}
+        <div className="flex flex-wrap gap-3 text-[10px] text-[#69717D] print:hidden">
+          <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded bg-[#252A33]" /> Etapa</span>
+          <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded bg-[#343B46]" /> Subetapa</span>
+          <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded bg-[#EEF0F2] border border-[#D9DDE3]" /> Grupo</span>
+          <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded bg-white border border-[#D9DDE3]" /> Item mensurável</span>
+          <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded bg-[#EAF6F0]" /> Concluída</span>
+          <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded bg-[#FEEDEE]" /> Extrapolada / saldo negativo</span>
         </div>
 
         {/* ===== CONFERÊNCIA ===== */}
