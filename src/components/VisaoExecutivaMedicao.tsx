@@ -126,15 +126,68 @@ export function VisaoExecutivaMedicao({
     );
   }
 
+  // Painel executivo — 16 indicadores gerenciais
+  const painel = useMemo(
+    () =>
+      computePainelExecutivo({
+        itens: itens as never,
+        totais: {
+          valor_total_contrato: valorTotalContrato,
+          valor_medicao_atual: valorMedicaoAtual,
+          valor_acumulado: valorAcumulado,
+          percentual_executado: percentualExecutado,
+          saldo_contratual: saldoContratual,
+          itens_medidos: itens.filter((i) => !i.is_etapa && i.qtd_periodo > 1e-6).length,
+          itens_concluidos: 0,
+        },
+        numBMsAprovados,
+        posicaoBMAtual: numBMsAprovados + 1,
+      }),
+    [itens, valorTotalContrato, valorMedicaoAtual, valorAcumulado, percentualExecutado, saldoContratual, numBMsAprovados],
+  );
+
+  const porCategoria = useMemo(() => {
+    const map: Record<string, IndicadorPainel[]> = { financeiro: [], fisico: [], prazo: [], qualidade: [] };
+    for (const i of painel.indicadores) map[i.categoria].push(i);
+    return map;
+  }, [painel]);
+
   return (
     <div className="space-y-6">
-      {/* KPIs institucionais */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <ExecKpi icon={<Target className="w-4 h-4" />} label="Avanço físico-financeiro" value={fmtPctBR(percentualExecutado, 2)} accent />
-        <ExecKpi icon={<TrendingUp className="w-4 h-4" />} label="Medido no período" value={fmtMoneyBR(valorMedicaoAtual)} />
-        <ExecKpi icon={<Calendar className="w-4 h-4" />} label="Boletins aprovados" value={String(numBMsAprovados)} />
-        <ExecKpi icon={<AlertTriangle className="w-4 h-4" />} label="Saldo contratual" value={fmtMoneyBR(saldoContratual)} />
+      {/* Cabeçalho do Painel Executivo */}
+      <div className="bg-gradient-to-br from-[#252A33] to-[#3B4250] text-white rounded-xl p-6 shadow-sm print:shadow-none">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-[10px] uppercase tracking-widest text-[#C8A66A] font-bold flex items-center gap-1.5">
+              <Gauge className="w-3.5 h-3.5" /> Painel executivo
+            </div>
+            <div className="text-xl font-bold mt-0.5">16 indicadores gerenciais</div>
+            <div className="text-[11px] text-white/70 mt-1">
+              Snapshot financeiro, físico, de prazo e qualidade — atualizado em tempo real conforme a grade é preenchida.
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-4 text-[11px]">
+            <PainelHeaderStat label="Aderência" value={`${painel.aderenciaPlanejado >= 0 ? "+" : ""}${painel.aderenciaPlanejado.toFixed(1)} p.p.`} accent={painel.aderenciaPlanejado >= 0} />
+            <PainelHeaderStat label="Ritmo por BM" value={fmtPctBR(painel.ritmoPorBM, 2)} />
+            <PainelHeaderStat label="Top 5 (saldo)" value={fmtPctBR(painel.concentracaoTop5, 1)} />
+          </div>
+        </div>
       </div>
+
+      {/* Grade 16 indicadores agrupados por categoria */}
+      {(["financeiro", "fisico", "prazo", "qualidade"] as const).map((cat) => (
+        <div key={cat}>
+          <div className="text-[10px] uppercase tracking-widest text-[#8A6D2E] font-bold mb-2 flex items-center gap-2">
+            <span className="inline-block w-2 h-2 rounded-full bg-[#C8A66A]" /> {CATEGORIA_LABEL[cat]}
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {porCategoria[cat].map((ind) => (
+              <IndicadorCard key={ind.codigo} indicador={ind} />
+            ))}
+          </div>
+        </div>
+      ))}
+
 
       {/* Curva S */}
       <div className="bg-white rounded-xl shadow-sm p-6 print:shadow-none">
