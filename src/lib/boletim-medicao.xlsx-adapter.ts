@@ -60,6 +60,10 @@ export async function exportBoletimMedicaoInstitucional(args: Args): Promise<voi
       numero: args.info.numeroContrato ?? "—",
       objeto: null,
       orgao_contratante: args.info.contratante ?? null,
+      processo_administrativo: null,
+      numero_licitacao: args.info.numeroLicitacao ?? null,
+      data_inicio: args.info.dataInicioObra ?? null,
+      prazo_dias: args.info.prazoContratualDias ?? null,
     },
     obra: {
       nome: args.projectName,
@@ -67,14 +71,27 @@ export async function exportBoletimMedicaoInstitucional(args: Args): Promise<voi
       cidade: args.info.municipio ?? null,
       uf: args.info.estado ?? null,
       cliente: args.info.cliente ?? args.info.contratante ?? null,
+      cnpj_cliente: null,
     },
     company: {
       razao_social: args.info.empresaExecutora ?? null,
+      cnpj: args.info.cnpj ?? null,
     },
     responsavelTecnico: args.info.responsavelTecnico
-      ? { nome: args.info.responsavelTecnico, registro: args.info.crea ?? args.info.artRrt ?? null }
+      ? {
+          nome: args.info.responsavelTecnico,
+          registro: args.info.crea ?? args.info.artRrt ?? null,
+          cargo: args.info.cargoResponsavel ?? null,
+        }
       : null,
-    fiscal: args.info.fiscal ? { nome: args.info.fiscal, registro: args.info.creaFiscal ?? null } : null,
+    fiscal: args.info.fiscal
+      ? {
+          nome: args.info.fiscal,
+          registro: args.info.creaFiscal ?? null,
+          cargo: args.info.cargoFiscal ?? null,
+        }
+      : null,
+
     itens,
   });
 
