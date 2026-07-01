@@ -66,7 +66,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 const DocumentsTab = lazy(() => import("@/components/DocumentsTab"));
-import { AnaliseGerencialPanel } from "@/components/AnaliseGerencialPanel";
+
 import { AnaliseGerencialV2 } from "@/components/AnaliseGerencialV2";
 import { MeasurementClosure } from "@/components/MeasurementClosure";
 import {
