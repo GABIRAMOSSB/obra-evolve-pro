@@ -213,6 +213,31 @@ function BoletimDetalhePage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Ctrl/Cmd+S salva rascunho quando há alterações.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        if (!readOnly && dirty && !mutSalvar.isPending) mutSalvar.mutate();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [readOnly, dirty, mutSalvar]);
+
+  // Avisa antes de sair com alterações não salvas.
+  useEffect(() => {
+    if (!dirty) return;
+    const h = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", h);
+    return () => window.removeEventListener("beforeunload", h);
+  }, [dirty]);
+
+
+
   const buildExportData = () => ({
     medicao: {
       numero_bm: numeroBM,
