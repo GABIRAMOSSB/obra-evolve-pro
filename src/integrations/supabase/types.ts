@@ -3393,8 +3393,11 @@ export type Database = {
           created_at: string
           created_by: string | null
           data_medicao: string | null
+          enviada_em: string | null
+          enviada_por: string | null
           id: string
           metadata: Json
+          motivo_rejeicao: string | null
           numero: number
           numero_bm: string | null
           obra_id: string | null
@@ -3402,6 +3405,8 @@ export type Database = {
           percentual_fisico: number
           periodo_fim: string
           periodo_inicio: string
+          rejeitada_em: string | null
+          rejeitada_por: string | null
           snapshot_itens: Json
           status: string
           updated_at: string
@@ -3417,8 +3422,11 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           data_medicao?: string | null
+          enviada_em?: string | null
+          enviada_por?: string | null
           id?: string
           metadata?: Json
+          motivo_rejeicao?: string | null
           numero: number
           numero_bm?: string | null
           obra_id?: string | null
@@ -3426,6 +3434,8 @@ export type Database = {
           percentual_fisico?: number
           periodo_fim: string
           periodo_inicio: string
+          rejeitada_em?: string | null
+          rejeitada_por?: string | null
           snapshot_itens?: Json
           status?: string
           updated_at?: string
@@ -3441,8 +3451,11 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           data_medicao?: string | null
+          enviada_em?: string | null
+          enviada_por?: string | null
           id?: string
           metadata?: Json
+          motivo_rejeicao?: string | null
           numero?: number
           numero_bm?: string | null
           obra_id?: string | null
@@ -3450,6 +3463,8 @@ export type Database = {
           percentual_fisico?: number
           periodo_fim?: string
           periodo_inicio?: string
+          rejeitada_em?: string | null
+          rejeitada_por?: string | null
           snapshot_itens?: Json
           status?: string
           updated_at?: string
