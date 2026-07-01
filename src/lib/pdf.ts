@@ -90,11 +90,15 @@ export function exportAcompanhamentoXlsx(
   aoa.push(["Obra:", projectName, "", "Endereço:", info.endereco || "—", "", "Município:", info.municipio || "—", "", "UF:", info.estado || "—", "", "Nº Licitação:", info.numeroLicitacao || "—"]);
   aoa.push(["Resp. Técnico:", info.responsavelTecnico || "—", "", "CREA/CAU:", info.crea || "—", "", "Cargo (Resp.):", info.cargoResponsavel || "—", "", "ART/RRT:", info.artRrt || "—", "", "Fiscal:", info.fiscal || "—"]);
   aoa.push(["CPF Fiscal:", info.cpfFiscal || "—", "", "Cargo (Fiscal):", info.cargoFiscal || "—", "", "Início da Obra:", info.dataInicioObra || "—", "", "Prazo (dias):", info.prazoContratualDias ?? "—", "", "", ""]);
+  // IMPORTANTE: o corpo da planilha usa SEMPRE a lista completa (allRows),
+  // nunca a lista filtrada da tela. Assim os totais somam o contrato inteiro
+  // e o cabeçalho (Valor Total / % Acumulado / Saldo) fica coerente com o BM.
+  const bodyRows = allRows ?? rows;
   // Linha de resumo financeiro — os totais são derivados por FÓRMULA a
   // partir da linha de TOTAL GERAL da tabela (calculada mais abaixo),
   // garantindo que qualquer edição da coluna "Período" no Excel
   // atualize automaticamente todos os KPIs.
-  const totalRowRef = 12 + rows.length;
+  const totalRowRef = 12 + bodyRows.length;
   aoa.push([
     "Nº do BM:", resumo.descricaoBM, "",
     "Data:", resumo.dataMedicao, "",
@@ -118,7 +122,7 @@ export function exportAcompanhamentoXlsx(
   const itemRows: number[] = [];
   const groupRows: number[] = [];
   const periodEditableRows: number[] = []; // unlocked cells (H column)
-  for (const row of rows) {
+  for (const row of bodyRows) {
     if (row.isGroup) {
       aoa.push([row.item, row.descricao.toUpperCase(), "", "", "", "", "", "", "", "", "", "", "", "ETAPA"]);
       groupRows.push(r);
