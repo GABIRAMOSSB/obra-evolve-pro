@@ -806,7 +806,11 @@ function buildSnapshotSheet(wb: ExcelJS.Workbook, data: XLSXInput) {
   let rowNum = 4;
   for (const i of data.itens) {
     const row = ws.getRow(rowNum);
-    row.height = 18;
+    row.height = autosizeRowHeight([
+      { text: sanitizeDescricao(i.descricao), colWidth: 55 },
+      { text: i.item_codigo, colWidth: 12 },
+    ], 18);
+
     if (i.is_etapa) {
       row.getCell(1).value = i.item_codigo;
       row.getCell(2).value = sanitizeDescricao(i.descricao);
