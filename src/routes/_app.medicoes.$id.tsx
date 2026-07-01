@@ -935,6 +935,129 @@ function BoletimDetalhePage() {
             }}
           />
         )}
+
+        {/* ===== DIALOG DE WORKFLOW (enviar / aprovar / rejeitar / revisão) ===== */}
+        <Dialog open={!!workflowDialog} onOpenChange={(o) => { if (!o) { setWorkflowDialog(null); setWorkflowTexto(""); } }}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-[#252A33]">
+                {workflowDialog === "enviar" && "Enviar boletim para conferência"}
+                {workflowDialog === "aprovar" && "Aprovar medição"}
+                {workflowDialog === "rejeitar" && "Rejeitar medição"}
+                {workflowDialog === "revisao" && "Solicitar revisão"}
+              </DialogTitle>
+              <DialogDescription className="text-[#69717D]">
+                {workflowDialog === "enviar" && "O boletim ficará indisponível para edição até a decisão de aprovação. Todo o histórico será registrado na trilha de auditoria."}
+                {workflowDialog === "aprovar" && "Ao aprovar, os quantitativos serão congelados como snapshot e passarão a compor a base do próximo BM. Uma observação opcional pode ser registrada."}
+                {workflowDialog === "rejeitar" && "O motivo é obrigatório (mínimo 10 caracteres) e ficará registrado como decisão formal."}
+                {workflowDialog === "revisao" && "A observação retorna o boletim ao lançamento com trilha do que precisa ser revisto (mínimo 10 caracteres)."}
+              </DialogDescription>
+            </DialogHeader>
+            <Textarea
+              value={workflowTexto}
+              onChange={(e) => setWorkflowTexto(e.target.value)}
+              placeholder={
+                workflowDialog === "aprovar"
+                  ? "Observação (opcional): condições, aditivos previstos, ressalvas…"
+                  : workflowDialog === "enviar"
+                    ? "Observação (opcional) para o aprovador…"
+                    : "Descreva formalmente o motivo (mínimo 10 caracteres)…"
+              }
+              rows={5}
+              className="border-[#D9DDE3] focus-visible:border-[#C8A66A] focus-visible:ring-[#C8A66A]/40"
+            />
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setWorkflowDialog(null); setWorkflowTexto(""); }}>Cancelar</Button>
+              {workflowDialog === "enviar" && (
+                <Button onClick={() => mutEnviar.mutate()} disabled={mutEnviar.isPending} className="bg-[#C8A66A] hover:bg-[#B69354] text-[#252A33] font-semibold">
+                  {mutEnviar.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Send className="w-4 h-4 mr-1" />} Enviar
+                </Button>
+              )}
+              {workflowDialog === "aprovar" && (
+                <Button onClick={() => mutAprovar.mutate()} disabled={mutAprovar.isPending} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                  {mutAprovar.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-1" />} Aprovar
+                </Button>
+              )}
+              {workflowDialog === "rejeitar" && (
+                <Button
+                  onClick={() => mutRejeitar.mutate()}
+                  disabled={mutRejeitar.isPending || workflowTexto.trim().length < 10}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  {mutRejeitar.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <XCircle className="w-4 h-4 mr-1" />} Rejeitar
+                </Button>
+              )}
+              {workflowDialog === "revisao" && (
+                <Button
+                  onClick={() => mutRevisao.mutate()}
+                  disabled={mutRevisao.isPending || workflowTexto.trim().length < 10}
+                  className="bg-amber-600 hover:bg-amber-700 text-white"
+                >
+                  {mutRevisao.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-1" />} Solicitar revisão
+                </Button>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* ===== DIALOG DE HISTÓRICO / TRILHA DE AUDITORIA ===== */}
+        <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
+          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-[#252A33]">Histórico do boletim</DialogTitle>
+              <DialogDescription className="text-[#69717D]">
+                Decisões formais de aprovação e trilha de auditoria das últimas alterações.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-6 text-sm">
+              <div>
+                <div className="text-[10px] uppercase tracking-widest text-[#C8A66A] font-bold mb-2">Decisões</div>
+                {(historico?.aprovacoes?.length ?? 0) === 0 ? (
+                  <div className="text-[#69717D] italic">Nenhuma decisão registrada ainda.</div>
+                ) : (
+                  <ul className="space-y-2">
+                    {historico!.aprovacoes.map((a: {
+                      id: string; papel: string; decisao: string; justificativa: string | null; decidido_em: string; aprovador_nome: string | null;
+                    }) => (
+                      <li key={a.id} className="border-l-2 border-[#C8A66A] pl-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-semibold text-[#252A33]">{a.decisao.replace(/_/g, " ")}</span>
+                          <span className="text-xs text-[#69717D]">· {a.papel.replace(/_/g, " ")}</span>
+                          <span className="text-xs text-[#69717D] ml-auto">{new Date(a.decidido_em).toLocaleString("pt-BR")}</span>
+                        </div>
+                        {a.justificativa && <div className="text-[#20242B] mt-1">{a.justificativa}</div>}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div>
+                <div className="text-[10px] uppercase tracking-widest text-[#C8A66A] font-bold mb-2">Trilha de auditoria</div>
+                {(historico?.logs?.length ?? 0) === 0 ? (
+                  <div className="text-[#69717D] italic">Sem eventos registrados.</div>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {historico!.logs.map((l: {
+                      id: string; acao: string; campo: string | null; valor_anterior: unknown; valor_novo: unknown; justificativa: string | null; created_at: string;
+                    }) => (
+                      <li key={l.id} className="text-xs flex flex-wrap gap-2 border-b border-[#EDEFF3] pb-1.5">
+                        <span className="font-semibold text-[#252A33] uppercase">{l.acao}</span>
+                        {l.campo && <span className="text-[#69717D]">{l.campo}</span>}
+                        {l.valor_anterior != null && l.valor_novo != null && (
+                          <span className="text-[#69717D]">
+                            {String(l.valor_anterior)} → <span className="text-[#252A33] font-semibold">{String(l.valor_novo)}</span>
+                          </span>
+                        )}
+                        <span className="ml-auto text-[#69717D]">{new Date(l.created_at).toLocaleString("pt-BR")}</span>
+                        {l.justificativa && <div className="w-full text-[#20242B] mt-0.5">{l.justificativa}</div>}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
