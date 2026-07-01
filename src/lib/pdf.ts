@@ -94,7 +94,7 @@ export function exportAcompanhamentoXlsx(
   // partir da linha de TOTAL GERAL da tabela (calculada mais abaixo),
   // garantindo que qualquer edição da coluna "Período" no Excel
   // atualize automaticamente todos os KPIs.
-  const totalRowRef = dataStart_placeholder(rows.length);
+  const totalRowRef = 12 + rows.length;
   aoa.push([
     "Nº do BM:", resumo.descricaoBM, "",
     "Data:", resumo.dataMedicao, "",
