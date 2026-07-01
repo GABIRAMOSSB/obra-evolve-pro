@@ -480,13 +480,53 @@ function BoletimDetalhePage() {
               </Button>
               <Button
                 size="sm"
-                className="bg-[#C8A66A] text-[#252A33] hover:bg-[#B69354] font-semibold"
-                onClick={() => mutAprovar.mutate()}
-                disabled={readOnly || mutAprovar.isPending || pendencias.length > 0 || conferencia.bloqueia_aprovacao}
-                title={conferencia.bloqueia_aprovacao ? `Corrija ${conferencia.erros} erro(s) da conferência antes de aprovar` : undefined}
+                variant="outline"
+                className="bg-white text-[#252A33] border-white/20 hover:bg-white/90"
+                onClick={() => setHistoryOpen(true)}
+                title="Trilha de aprovações e auditoria"
               >
-                <CheckCircle2 className="w-4 h-4 mr-1" /> Validar medição
+                <History className="w-4 h-4 mr-1" /> Histórico
               </Button>
+              {(data.medicao.status === "rascunho" || data.medicao.status === "revisao_solicitada") && (
+                <Button
+                  size="sm"
+                  className="bg-[#C8A66A] text-[#252A33] hover:bg-[#B69354] font-semibold"
+                  onClick={() => { setWorkflowTexto(""); setWorkflowDialog("enviar"); }}
+                  disabled={pendencias.length > 0 || conferencia.bloqueia_aprovacao || mutEnviar.isPending}
+                  title={conferencia.bloqueia_aprovacao ? `Corrija ${conferencia.erros} erro(s) da conferência antes de enviar` : undefined}
+                >
+                  <Send className="w-4 h-4 mr-1" /> Enviar para conferência
+                </Button>
+              )}
+              {data.medicao.status === "em_conferencia" && (
+                <>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="bg-white text-amber-700 border-amber-300 hover:bg-amber-50"
+                    onClick={() => { setWorkflowTexto(""); setWorkflowDialog("revisao"); }}
+                  >
+                    <RefreshCw className="w-4 h-4 mr-1" /> Solicitar revisão
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="bg-white text-red-700 border-red-300 hover:bg-red-50"
+                    onClick={() => { setWorkflowTexto(""); setWorkflowDialog("rejeitar"); }}
+                  >
+                    <XCircle className="w-4 h-4 mr-1" /> Rejeitar
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="bg-[#C8A66A] text-[#252A33] hover:bg-[#B69354] font-semibold"
+                    onClick={() => { setWorkflowTexto(""); setWorkflowDialog("aprovar"); }}
+                    disabled={mutAprovar.isPending || conferencia.bloqueia_aprovacao}
+                    title={conferencia.bloqueia_aprovacao ? `Corrija ${conferencia.erros} erro(s) antes de aprovar` : undefined}
+                  >
+                    <CheckCircle2 className="w-4 h-4 mr-1" /> Aprovar medição
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
