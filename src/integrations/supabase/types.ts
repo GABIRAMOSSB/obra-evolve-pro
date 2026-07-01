@@ -3088,56 +3088,165 @@ export type Database = {
         }
         Relationships: []
       }
+      medicao_itens: {
+        Row: {
+          company_id: string
+          created_at: string
+          descricao: string
+          id: string
+          is_etapa: boolean
+          item_codigo: string
+          medicao_id: string
+          obra_atividade_id: string | null
+          ordem: number
+          pct_executado: number
+          qtd_acum_anterior: number
+          qtd_acum_atual: number
+          qtd_contratada: number
+          qtd_periodo: number
+          status_calc: string
+          unidade: string | null
+          updated_at: string
+          valor_acum_anterior: number
+          valor_acum_atual: number
+          valor_periodo: number
+          valor_unitario: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          descricao: string
+          id?: string
+          is_etapa?: boolean
+          item_codigo: string
+          medicao_id: string
+          obra_atividade_id?: string | null
+          ordem?: number
+          pct_executado?: number
+          qtd_acum_anterior?: number
+          qtd_acum_atual?: number
+          qtd_contratada?: number
+          qtd_periodo?: number
+          status_calc?: string
+          unidade?: string | null
+          updated_at?: string
+          valor_acum_anterior?: number
+          valor_acum_atual?: number
+          valor_periodo?: number
+          valor_unitario?: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          descricao?: string
+          id?: string
+          is_etapa?: boolean
+          item_codigo?: string
+          medicao_id?: string
+          obra_atividade_id?: string | null
+          ordem?: number
+          pct_executado?: number
+          qtd_acum_anterior?: number
+          qtd_acum_atual?: number
+          qtd_contratada?: number
+          qtd_periodo?: number
+          status_calc?: string
+          unidade?: string | null
+          updated_at?: string
+          valor_acum_anterior?: number
+          valor_acum_atual?: number
+          valor_periodo?: number
+          valor_unitario?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medicao_itens_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medicao_itens_medicao_id_fkey"
+            columns: ["medicao_id"]
+            isOneToOne: false
+            referencedRelation: "medicoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medicao_itens_obra_atividade_id_fkey"
+            columns: ["obra_atividade_id"]
+            isOneToOne: false
+            referencedRelation: "obra_atividades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       medicoes: {
         Row: {
+          aprovada_em: string | null
+          aprovada_por: string | null
           company_id: string
           contrato_id: string
           created_at: string
           created_by: string | null
+          data_medicao: string | null
           id: string
           metadata: Json
           numero: number
+          numero_bm: string | null
           obra_id: string | null
           observacoes: string | null
           percentual_fisico: number
           periodo_fim: string
           periodo_inicio: string
+          snapshot_itens: Json
           status: string
           updated_at: string
           valor_acumulado: number
           valor_executado: number
         }
         Insert: {
+          aprovada_em?: string | null
+          aprovada_por?: string | null
           company_id: string
           contrato_id: string
           created_at?: string
           created_by?: string | null
+          data_medicao?: string | null
           id?: string
           metadata?: Json
           numero: number
+          numero_bm?: string | null
           obra_id?: string | null
           observacoes?: string | null
           percentual_fisico?: number
           periodo_fim: string
           periodo_inicio: string
+          snapshot_itens?: Json
           status?: string
           updated_at?: string
           valor_acumulado?: number
           valor_executado?: number
         }
         Update: {
+          aprovada_em?: string | null
+          aprovada_por?: string | null
           company_id?: string
           contrato_id?: string
           created_at?: string
           created_by?: string | null
+          data_medicao?: string | null
           id?: string
           metadata?: Json
           numero?: number
+          numero_bm?: string | null
           obra_id?: string | null
           observacoes?: string | null
           percentual_fisico?: number
           periodo_fim?: string
           periodo_inicio?: string
+          snapshot_itens?: Json
           status?: string
           updated_at?: string
           valor_acumulado?: number
