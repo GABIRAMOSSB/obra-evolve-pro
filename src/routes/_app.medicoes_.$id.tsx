@@ -40,7 +40,7 @@ import { OrcamentoImportDialog } from "@/components/OrcamentoImportDialog";
 import { AnexosMedicaoPanel } from "@/components/AnexosMedicaoPanel";
 import { ContratoImpactosPanel } from "@/components/ContratoImpactosPanel";
 
-export const Route = createFileRoute("/_app/medicoes/$id")({
+export const Route = createFileRoute("/_app/medicoes_/$id")({
   component: BoletimDetalhePage,
 });
 
