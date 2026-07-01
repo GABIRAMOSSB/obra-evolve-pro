@@ -77,7 +77,15 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   wb.creator = "SOLV Construtora";
   wb.created = new Date();
 
-  const ws = wb.addWorksheet("Boletim de Medição", {
+  // ============================================================
+  // ABA 1 — CAPA
+  // ============================================================
+  buildCapaSheet(wb, data);
+
+  // ============================================================
+  // ABA 2 — BOLETIM (principal)
+  // ============================================================
+  const ws = wb.addWorksheet("Boletim", {
     views: [{ state: "frozen", ySplit: 13, showGridLines: false }],
     pageSetup: {
       paperSize: 9, // A4
@@ -90,6 +98,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
     },
     properties: { defaultRowHeight: 18 },
   });
+
   // showGridLines na impressão (via propriedade pageSetup)
   ws.pageSetup.showGridLines = false;
   ws.pageSetup.horizontalCentered = true;
@@ -444,6 +453,360 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
     autoFilter: false,
   });
 
+  // ============================================================
+  // ABA 3 — BASE E CÁLCULOS (fórmulas expostas, sem proteção)
+  // ============================================================
+  buildBaseCalculosSheet(wb, data);
+
+  // ============================================================
+  // ABA 4 — SNAPSHOT (registro imutável dos valores da medição)
+  // ============================================================
+  buildSnapshotSheet(wb, data);
+
   const buf = await wb.xlsx.writeBuffer();
   return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
 }
+
+// ===================================================================
+// ABA 1 — CAPA
+// ===================================================================
+function buildCapaSheet(wb: ExcelJS.Workbook, data: XLSXInput) {
+  const ws = wb.addWorksheet("Capa", {
+    views: [{ showGridLines: false }],
+    pageSetup: {
+      paperSize: 9,
+      orientation: "portrait",
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 1,
+      margins: { left: 0.5, right: 0.5, top: 0.6, bottom: 0.6, header: 0.3, footer: 0.3 },
+    },
+  });
+  ws.pageSetup.showGridLines = false;
+
+  ws.columns = [
+    { width: 4 }, { width: 22 }, { width: 22 }, { width: 22 }, { width: 22 }, { width: 4 },
+  ];
+
+  // Faixa grafite topo
+  ws.mergeCells("A1:F3");
+  const top = ws.getCell("A1");
+  top.value = "SOLV CONSTRUTORA";
+  top.font = { name: "Calibri", size: 22, bold: true, color: { argb: C.white } };
+  top.alignment = { horizontal: "center", vertical: "middle" };
+  top.fill = fill(C.graphiteDark);
+
+  // Linha dourada
+  ws.mergeCells("A4:F4");
+  ws.getCell("A4").fill = fill(C.gold);
+  ws.getRow(4).height = 4;
+
+  // Título
+  ws.mergeCells("A6:F6");
+  const t = ws.getCell("A6");
+  t.value = "BOLETIM DE MEDIÇÃO";
+  t.font = { name: "Calibri", size: 18, bold: true, color: { argb: C.graphiteDark } };
+  t.alignment = { horizontal: "center", vertical: "middle" };
+  ws.getRow(6).height = 30;
+
+  const bmLabel = data.medicao.numero_bm ?? `BM-${String(data.medicao.numero).padStart(2, "0")}`;
+  ws.mergeCells("A7:F7");
+  const sub = ws.getCell("A7");
+  sub.value = `${bmLabel}  ·  ${fmtDateBR(data.medicao.data_medicao)}`;
+  sub.font = { name: "Calibri", size: 12, color: { argb: C.gold } };
+  sub.alignment = { horizontal: "center", vertical: "middle" };
+
+  // Bloco de dados
+  const executora = data.company?.razao_social ?? data.company?.nome ?? "SOLV Construtora";
+  const contratante = data.obra?.cliente ?? data.contrato?.orgao_contratante ?? "—";
+  const endereco = [data.obra?.endereco, data.obra?.cidade, data.obra?.uf].filter(Boolean).join(", ");
+
+  const rows: Array<[string, string]> = [
+    ["Obra", data.obra?.nome ?? "—"],
+    ["Endereço", endereco || "—"],
+    ["Cliente / Contratante", contratante],
+    ["CNPJ Contratante", data.obra?.cnpj_cliente ?? "—"],
+    ["Empresa Executora", executora],
+    ["CNPJ Executora", data.company?.cnpj ?? "—"],
+    ["Contrato nº", data.contrato?.numero ?? "—"],
+    ["Objeto", data.contrato?.objeto ?? "—"],
+    ["Período de medição", `${fmtDateBR(data.medicao.periodo_inicio) || "—"} a ${fmtDateBR(data.medicao.periodo_fim) || "—"}`],
+    ["Data da medição", fmtDateBR(data.medicao.data_medicao) || "—"],
+    ["Responsável Técnico", data.responsavelTecnico?.nome ?? "—"],
+    ["Fiscal da Obra", data.fiscal?.nome ?? "—"],
+  ];
+
+  let r = 10;
+  for (const [label, value] of rows) {
+    ws.mergeCells(r, 2, r, 3);
+    const cl = ws.getCell(r, 2);
+    cl.value = label.toUpperCase();
+    cl.font = { name: "Calibri", size: 8, bold: true, color: { argb: C.muted } };
+    cl.fill = fill(C.silver);
+    cl.alignment = { horizontal: "left", vertical: "middle", indent: 1 };
+
+    ws.mergeCells(r, 4, r, 5);
+    const cv = ws.getCell(r, 4);
+    cv.value = value;
+    cv.font = { name: "Calibri", size: 10, bold: true, color: { argb: C.text } };
+    cv.alignment = { horizontal: "left", vertical: "middle", indent: 1, wrapText: true };
+    ws.getRow(r).height = 20;
+    r++;
+  }
+
+  // Rodapé
+  r += 2;
+  ws.mergeCells(r, 1, r, 6);
+  const foot = ws.getCell(r, 1);
+  foot.value = "Documento gerado pelo sistema SOLV — valores em Reais (R$).";
+  foot.font = { name: "Calibri", size: 8, italic: true, color: { argb: C.muted } };
+  foot.alignment = { horizontal: "center", vertical: "middle" };
+}
+
+// ===================================================================
+// ABA 3 — BASE E CÁLCULOS
+// ===================================================================
+function buildBaseCalculosSheet(wb: ExcelJS.Workbook, data: XLSXInput) {
+  const ws = wb.addWorksheet("Base e Cálculos", {
+    views: [{ state: "frozen", ySplit: 3, showGridLines: false }],
+    pageSetup: {
+      paperSize: 9,
+      orientation: "landscape",
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 0,
+      margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 },
+      printTitlesRow: "2:3",
+    },
+  });
+  ws.pageSetup.showGridLines = false;
+
+  ws.columns = [
+    { header: "Item", width: 12 },
+    { header: "Descrição", width: 55 },
+    { header: "Un.", width: 6 },
+    { header: "Qtd. Contratada", width: 14 },
+    { header: "V. Unit.", width: 14 },
+    { header: "Total Contratado", width: 16 },
+    { header: "Qtd. Anterior", width: 14 },
+    { header: "Qtd. Período", width: 14 },
+    { header: "Qtd. Acum.", width: 14 },
+    { header: "Fin. Anterior", width: 16 },
+    { header: "Fin. Período", width: 16 },
+    { header: "Fin. Acum.", width: 16 },
+    { header: "% Executado", width: 12 },
+    { header: "Saldo Qtd.", width: 14 },
+    { header: "Saldo R$", width: 16 },
+  ];
+
+  // Cabeçalho institucional
+  ws.mergeCells("A1:O1");
+  const h = ws.getCell("A1");
+  h.value = "BASE E CÁLCULOS — Fórmulas expostas para conferência";
+  h.font = { name: "Calibri", size: 11, bold: true, color: { argb: C.white } };
+  h.fill = fill(C.graphiteDark);
+  h.alignment = { horizontal: "left", vertical: "middle", indent: 1 };
+  ws.getRow(1).height = 24;
+
+  // Cabeçalho de colunas (linha 2-3)
+  const hdrRow = ws.getRow(2);
+  ws.columns.forEach((col, i) => {
+    const cell = hdrRow.getCell(i + 1);
+    cell.value = col.header as string;
+    cell.font = { name: "Calibri", size: 9, bold: true, color: { argb: C.white } };
+    cell.fill = fill(C.graphite);
+    cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+  });
+  hdrRow.height = 30;
+  ws.mergeCells("A3:O3");
+  ws.getCell("A3").fill = fill(C.gold);
+  ws.getRow(3).height = 2;
+
+  // Linhas
+  const startRow = 4;
+  let rowNum = startRow;
+  for (const i of data.itens) {
+    const row = ws.getRow(rowNum);
+    row.height = 20;
+
+    if (i.is_etapa) {
+      row.getCell(1).value = i.item_codigo;
+      row.getCell(2).value = sanitizeDescricao(i.descricao);
+      for (let c = 1; c <= 15; c++) {
+        const cell = row.getCell(c);
+        cell.fill = fill(C.silver);
+        cell.font = { name: "Calibri", size: 9, bold: true, color: { argb: C.graphiteDark } };
+      }
+    } else {
+      row.getCell(1).value = i.item_codigo;
+      row.getCell(2).value = sanitizeDescricao(i.descricao);
+      row.getCell(3).value = normalizeUnidade(i.unidade);
+      row.getCell(4).value = Number(i.qtd_contratada);
+      row.getCell(4).numFmt = "#,##0.00";
+      row.getCell(5).value = Number(i.valor_unitario);
+      row.getCell(5).numFmt = 'R$ #,##0.00';
+      row.getCell(6).value = { formula: `ROUND(D${rowNum}*E${rowNum},2)` };
+      row.getCell(6).numFmt = 'R$ #,##0.00';
+      row.getCell(7).value = Number(i.qtd_acum_anterior);
+      row.getCell(7).numFmt = "#,##0.00";
+      row.getCell(8).value = Number(i.qtd_periodo);
+      row.getCell(8).numFmt = "#,##0.00";
+      row.getCell(8).fill = fill(C.goldSoft);
+      row.getCell(9).value = { formula: `G${rowNum}+H${rowNum}` };
+      row.getCell(9).numFmt = "#,##0.00";
+      row.getCell(10).value = Number(i.valor_acum_anterior);
+      row.getCell(10).numFmt = 'R$ #,##0.00';
+      row.getCell(11).value = { formula: `ROUND(H${rowNum}*E${rowNum},2)` };
+      row.getCell(11).numFmt = 'R$ #,##0.00';
+      row.getCell(12).value = { formula: `J${rowNum}+K${rowNum}` };
+      row.getCell(12).numFmt = 'R$ #,##0.00';
+      row.getCell(13).value = { formula: `IF(D${rowNum}=0,0,I${rowNum}/D${rowNum})` };
+      row.getCell(13).numFmt = "0.00%";
+      row.getCell(14).value = { formula: `D${rowNum}-I${rowNum}` };
+      row.getCell(14).numFmt = "#,##0.00";
+      row.getCell(15).value = { formula: `F${rowNum}-L${rowNum}` };
+      row.getCell(15).numFmt = 'R$ #,##0.00';
+
+      for (const c of [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]) {
+        row.getCell(c).alignment = { horizontal: "right", vertical: "middle" };
+      }
+    }
+    row.eachCell((cell) => {
+      cell.font = { ...(cell.font ?? {}), name: "Calibri", size: 9 };
+      cell.alignment = { ...(cell.alignment ?? {}), vertical: "middle", wrapText: true };
+    });
+    rowNum++;
+  }
+
+  // Totais
+  const lastItem = rowNum - 1;
+  const tr = ws.getRow(rowNum);
+  tr.height = 24;
+  ws.mergeCells(rowNum, 1, rowNum, 5);
+  tr.getCell(1).value = "TOTAIS";
+  tr.getCell(6).value = { formula: `SUM(F${startRow}:F${lastItem})` };
+  tr.getCell(6).numFmt = 'R$ #,##0.00';
+  tr.getCell(10).value = { formula: `SUM(J${startRow}:J${lastItem})` };
+  tr.getCell(10).numFmt = 'R$ #,##0.00';
+  tr.getCell(11).value = { formula: `SUM(K${startRow}:K${lastItem})` };
+  tr.getCell(11).numFmt = 'R$ #,##0.00';
+  tr.getCell(12).value = { formula: `SUM(L${startRow}:L${lastItem})` };
+  tr.getCell(12).numFmt = 'R$ #,##0.00';
+  tr.getCell(13).value = { formula: `IF(F${rowNum}=0,0,L${rowNum}/F${rowNum})` };
+  tr.getCell(13).numFmt = "0.00%";
+  tr.getCell(15).value = { formula: `F${rowNum}-L${rowNum}` };
+  tr.getCell(15).numFmt = 'R$ #,##0.00';
+  for (let c = 1; c <= 15; c++) {
+    const cell = tr.getCell(c);
+    cell.fill = fill(C.graphite);
+    cell.font = { name: "Calibri", size: 10, bold: true, color: { argb: C.white } };
+    cell.alignment = { horizontal: c === 1 ? "left" : "right", vertical: "middle", indent: c === 1 ? 1 : 0 };
+  }
+}
+
+// ===================================================================
+// ABA 4 — SNAPSHOT (registro imutável)
+// ===================================================================
+function buildSnapshotSheet(wb: ExcelJS.Workbook, data: XLSXInput) {
+  const ws = wb.addWorksheet("Snapshot", {
+    views: [{ state: "frozen", ySplit: 3, showGridLines: false }],
+    pageSetup: {
+      paperSize: 9,
+      orientation: "landscape",
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 0,
+      margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 },
+    },
+  });
+  ws.pageSetup.showGridLines = false;
+
+  ws.mergeCells("A1:I1");
+  const h = ws.getCell("A1");
+  const bmLabel = data.medicao.numero_bm ?? `BM-${String(data.medicao.numero).padStart(2, "0")}`;
+  h.value = `SNAPSHOT — ${bmLabel} · gerado em ${new Date().toLocaleString("pt-BR")}`;
+  h.font = { name: "Calibri", size: 10, bold: true, color: { argb: C.white } };
+  h.fill = fill(C.graphiteDark);
+  h.alignment = { horizontal: "left", vertical: "middle", indent: 1 };
+  ws.getRow(1).height = 22;
+
+  const cols = [
+    { header: "Item", width: 12 },
+    { header: "Descrição", width: 55 },
+    { header: "Un.", width: 6 },
+    { header: "Qtd. Contratada", width: 14 },
+    { header: "V. Unit. (R$)", width: 14 },
+    { header: "Qtd. Anterior", width: 14 },
+    { header: "Qtd. Período", width: 14 },
+    { header: "Fin. Período (R$)", width: 18 },
+    { header: "Fin. Acum. (R$)", width: 18 },
+  ];
+  ws.columns = cols.map((c) => ({ width: c.width }));
+
+  const hdr = ws.getRow(2);
+  cols.forEach((c, i) => {
+    const cell = hdr.getCell(i + 1);
+    cell.value = c.header;
+    cell.font = { name: "Calibri", size: 9, bold: true, color: { argb: C.white } };
+    cell.fill = fill(C.graphite);
+    cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+  });
+  hdr.height = 26;
+  ws.mergeCells("A3:I3");
+  ws.getCell("A3").fill = fill(C.gold);
+  ws.getRow(3).height = 2;
+
+  let rowNum = 4;
+  for (const i of data.itens) {
+    const row = ws.getRow(rowNum);
+    row.height = 18;
+    if (i.is_etapa) {
+      row.getCell(1).value = i.item_codigo;
+      row.getCell(2).value = sanitizeDescricao(i.descricao);
+      for (let c = 1; c <= 9; c++) {
+        const cell = row.getCell(c);
+        cell.fill = fill(C.silver);
+        cell.font = { name: "Calibri", size: 9, bold: true, color: { argb: C.graphiteDark } };
+      }
+    } else {
+      const qtdPer = Number(i.qtd_periodo);
+      const vu = Number(i.valor_unitario);
+      const finPer = Math.round(qtdPer * vu * 100) / 100;
+      const finAcum = Math.round((Number(i.valor_acum_anterior) + finPer) * 100) / 100;
+      row.getCell(1).value = i.item_codigo;
+      row.getCell(2).value = sanitizeDescricao(i.descricao);
+      row.getCell(3).value = normalizeUnidade(i.unidade);
+      row.getCell(4).value = Number(i.qtd_contratada);
+      row.getCell(4).numFmt = "#,##0.00";
+      row.getCell(5).value = vu;
+      row.getCell(5).numFmt = "#,##0.00";
+      row.getCell(6).value = Number(i.qtd_acum_anterior);
+      row.getCell(6).numFmt = "#,##0.00";
+      row.getCell(7).value = qtdPer;
+      row.getCell(7).numFmt = "#,##0.00";
+      row.getCell(8).value = finPer;
+      row.getCell(8).numFmt = "#,##0.00";
+      row.getCell(9).value = finAcum;
+      row.getCell(9).numFmt = "#,##0.00";
+      for (const c of [4, 5, 6, 7, 8, 9]) {
+        row.getCell(c).alignment = { horizontal: "right", vertical: "middle" };
+      }
+    }
+    row.eachCell((cell) => {
+      cell.font = { ...(cell.font ?? {}), name: "Calibri", size: 9 };
+      cell.alignment = { ...(cell.alignment ?? {}), vertical: "middle", wrapText: true };
+    });
+    rowNum++;
+  }
+
+  // Nota
+  rowNum += 1;
+  ws.mergeCells(rowNum, 1, rowNum, 9);
+  const nota = ws.getCell(rowNum, 1);
+  nota.value =
+    "Este snapshot registra os valores exatos utilizados no fechamento desta medição. Valores em Reais (R$), calculados em centavos inteiros para preservar a integridade contábil.";
+  nota.font = { name: "Calibri", size: 8, italic: true, color: { argb: C.muted } };
+  nota.alignment = { horizontal: "left", vertical: "middle", wrapText: true };
+  ws.getRow(rowNum).height = 30;
+}
+
