@@ -1,70 +1,60 @@
-# Reformulação do Boletim de Medição
+## Fase I — Testes E2E do Boletim de Medição (Playwright)
 
-Escopo grande — proponho executar em 4 fases sequenciais dentro deste mesmo fluxo, cada uma verificável isoladamente. Preservo banco, autenticação, integrações e dados existentes.
+Cobertura end-to-end do fluxo completo do módulo BM, executável no sandbox contra `http://localhost:8080` usando a sessão Supabase injetada.
 
-## Fase 1 — Fundação de dados e cálculos (backend)
+### Escopo dos cenários
 
-**Migração de banco (aditiva, sem quebrar dados atuais):**
-- `medicoes`: adicionar `numero_bm` (text), `data_medicao` (date), `snapshot_itens` (jsonb) para congelar acumulados por item após aprovação, `status_workflow` (rascunho/em_conferencia/aprovada/cancelada).
-- `medicao_itens` (nova): `medicao_id`, `obra_atividade_id`, `item_codigo`, `descricao`, `unidade`, `qtd_contratada`, `valor_unitario`, `qtd_periodo`, `qtd_acum_anterior`, `valor_acum_anterior`, `valor_periodo`, `valor_acum_atual`, `pct_executado`, `status_calc`. Unique (medicao_id, item_codigo).
-- Grants + RLS por company_id, seguindo padrão do projeto.
+1. **Import de orçamento** — abrir wizard, subir planilha de exemplo, mapear colunas, confirmar preview, criar versão em rascunho e congelar.
+2. **Lançamento do BM** — abrir medição, digitar quantidades na grade hierárquica, colar bloco Excel, salvar em lote, ver totais/saldos atualizados.
+3. **Extrapolação com justificativa** — lançar quantidade > saldo, validar bloqueio até preencher justificativa (≥10 chars).
+4. **Conferência automática** — disparar `runConferencia`, validar 12 checks e o bloqueio do botão "Validar medição" quando há erro.
+5. **Workflow de aprovação** — enviar para conferência → aprovar (ou rejeitar/solicitar revisão com motivo) → conferir badges, histórico e trilha de auditoria.
+6. **Painel executivo** — validar 16 KPIs, curva S e Top 8 offenders após aprovação.
+7. **Anexos** — upload de arquivo em cada categoria, download via signed URL, remoção com log.
+8. **Impactos contratuais** — aditivo + reajuste aplicados, conferir valor ajustado e delta de prazo no `ContratoImpactosPanel`.
+9. **Export PDF/XLSX** — gerar ambos e validar bytes/estrutura mínima.
 
-**Cálculos (util novo `src/lib/boletim-medicao.calc.ts`):**
-- Trabalhar em centavos inteiros; arredondar ROUND(qtd × unit, 2) por item **antes** de somar.
-- `computeItem`, `computeTotais`, `computeStatus`, validações (saldo, período, número BM único por obra).
-- Testes unitários (vitest) cobrindo os casos de aceite: total = R$ 236.951,00 na planilha referência; BM-01 zerado; BM-02 puxando snapshot; extrapolação bloqueada.
+### Estrutura técnica
 
-**Server functions (`src/lib/medicoes.functions.ts` estendido):**
-- `getMedicaoDetalhe(id)`: retorna itens da obra (do orçamento + atividades) + snapshot anterior consolidado + dados contratuais completos (obra, contrato, responsável técnico, fiscal).
-- `salvarRascunhoMedicao({ id, itens })`: upsert em `medicao_itens`, sem aprovar.
-- `aprovarMedicao(id)`: valida tudo, congela `snapshot_itens`, muda status.
-- `gerarMedicao` refatorado: cria BM vazio herdando acumulado da última aprovada (não mais consolidando NFe/MO — passa a ser preenchimento manual guiado, como no modelo Excel de referência).
+```text
+/tmp/browser/bm-e2e/
+  fixtures/
+    orcamento-exemplo.xlsx     (gerado via xlsxwriter)
+    anexo-foto.jpg
+  helpers/
+    auth.py                    (restore sessão Supabase — sb cookies + localStorage)
+    seed.py                    (cria company/obra/contrato via SQL antes do teste)
+    cleanup.py                 (rollback do estado seed)
+  scenarios/
+    01_import.py
+    02_lancamento.py
+    03_extrapolacao.py
+    04_conferencia.py
+    05_workflow.py
+    06_executivo.py
+    07_anexos.py
+    08_contrato.py
+    09_export.py
+  run_all.sh
+  screenshots/                 (evidência por passo)
+```
 
-## Fase 2 — Tela institucional (`src/routes/_app.medicoes.$id.tsx`)
+- Cada cenário isola state: cria medição própria, executa fluxo, coleta screenshots.
+- Selectors estáveis via `get_by_role`/`aria-label` (adicionar `aria-label` nos pontos onde faltar).
+- Seed usa `supabase--insert` direto no banco (company, obra, contrato base) para evitar dependência do onboarding.
+- Cleanup roda no `finally` de cada script.
 
-Nova rota de detalhe do BM (lista atual em `_app.medicoes.tsx` vira índice + botão "Abrir"). Layout:
+### Ajustes prévios de código
 
-- **Tokens SOLV** em `src/styles.css`: `--solv-graphite`, `--solv-gold`, `--solv-silver`, etc.
-- **Barra superior** grafite com logo, obra, nº BM, status; botões Salvar/Validar/PDF/Excel/Imprimir (principal dourado).
-- **Card contratual** em grid sem bordas: órgão, contratante, executora, CNPJ, contrato, licitação, endereço, RT, CREA, ART, fiscal, datas. "Informação pendente" quando faltar.
-- **5 KPIs** (Valor Total / Medição / Acumulado / % / Saldo) + barra de progresso dourada.
-- **Tabela de serviços** sem grid: cabeçalho fixo, colunas Item/Descrição fixas, grupos Planejamento/Físico/Financeiro/Controle por fundo e tipografia. Zebra suave. Coluna editável (qtd período) com fundo dourado claro só no foco. Etapas colapsáveis. Busca, filtro por etapa/status, "só pendências", "só medidos".
-- **Rodapé de conferência**: totais, alertas, "última atualização por Fulano".
-- Responsivo: cards expansíveis no mobile.
-- `Executado %` (renomear a coluna "Desvio").
+- Adicionar `aria-label` em botões críticos do BM que hoje só têm ícone (salvar, aprovar, enviar, adicionar anexo, remover linha).
+- Nenhuma mudança de lógica de negócio.
 
-## Fase 3 — PDF institucional (`src/lib/boletim-pdf.ts` novo)
+### Entrega
 
-- jsPDF + autoTable, A4 paisagem, margens 10-12mm.
-- Header repetido: logo SOLV, obra, BM, período.
-- Tabela sem grid vertical, separadores horizontais 0.2pt cor `#EEF0F2`, zebra `#FAFBFC`, cabeçalho grafite/branco.
-- `rowPageBreak: 'avoid'` para não quebrar serviços; total nunca sozinho.
-- Rodapé "SOLV Construtora… | Página X de Y" + declaração final + bloco de assinaturas (RT e Fiscal do cadastro, sem hardcode).
-- Descrições íntegras, unidades normalizadas na exibição, sanitização `x000d`.
+1. Ajustes de acessibilidade (`aria-label`) na tela de medição.
+2. Fixtures + helpers em `/tmp/browser/bm-e2e/`.
+3. 9 scripts de cenário + `run_all.sh` agregador.
+4. Execução completa dos cenários com screenshots como evidência.
+5. Relatório final: passou/falhou por cenário + prints anexados.
 
-## Fase 4 — Excel institucional (refatorar `src/lib/pdf.ts` → `src/lib/boletim-xlsx.ts`)
-
-- Migrar para **ExcelJS** (mais controle sobre showGridLines, proteção, validação, print setup). Instalar `exceljs`.
-- `worksheet.views = [{ state:'frozen', ySplit: N, showGridLines:false }]`
-- `worksheet.pageSetup.showGridLines = false`, A4 paisagem, fit-to-width 1.
-- Fórmulas por linha (ROUND, acumulados, %). Proteção: só qtd período desbloqueada. Validação numérica. Formato pt-BR moeda/data/%. Formatação condicional no status. Cabeçalhos repetidos na impressão.
-- Paleta SOLV nos títulos/totais; sem grade quadriculada.
-
-## Detalhes técnicos
-
-- Dinheiro sempre em centavos inteiros no cálculo; conversão só na apresentação (`Intl.NumberFormat('pt-BR', {style:'currency', currency:'BRL'})`).
-- Sanitização de descrição: remover `x000d`, `\r\n\r\n`, espaços duplos; preservar acentos e códigos SINAPI/ORSE.
-- Normalização de unidade só na exibição (`un`→`UN`, `m²/m2`→`M²`, `m³/m3`→`M³`).
-- Snapshot congelado: aprovar BM-N grava `snapshot_itens` com acumulados; BM-(N+1) lê daí (não recalcula retroativo).
-- Concorrência: `updated_at` como versão otimista no salvar rascunho.
-- Testes vitest para calc + snapshot chain.
-
-## Fora de escopo (para não inflar)
-
-- Colar de planilha (multi-célula): fica para follow-up.
-- Auditoria histórica granular por campo: usar `audit_logs_v2` existente sem novo schema.
-- Assinatura digital embutida no PDF: exibir bloco de assinatura textual; integração ZapSign continua no fluxo atual.
-
----
-
-**Confirma iniciar pela Fase 1 (migração + cálculos + testes)?** Ou prefere que eu ataque tudo em sequência sem parar entre fases (leva várias execuções, mas entrego cada fase verificável)?
+Após concluída a Fase I, sigo para os itens 2–5 (Notificações, Integração financeira, Relatório multi-BM, Mobile/PWA) na ordem apresentada.
