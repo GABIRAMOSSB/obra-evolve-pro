@@ -49,6 +49,7 @@ interface ItemLocal {
   valor_acum_anterior: number;
   qtd_periodo: number;
   ordem: number;
+  justificativa?: string | null;
 }
 
 function parseBR(v: string): number {
