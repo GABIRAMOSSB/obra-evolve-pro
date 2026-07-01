@@ -844,6 +844,19 @@ function BoletimDetalhePage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {data.obra?.id && (
+          <OrcamentoImportDialog
+            obraId={data.obra.id}
+            contratoId={data.contrato?.id ?? null}
+            open={importOpen}
+            onOpenChange={setImportOpen}
+            onImported={() => {
+              qc.invalidateQueries({ queryKey: ["medicao-detalhe", id] });
+              toast.success("Orçamento importado. Congele a versão em rascunho para atualizar as atividades desta obra.");
+            }}
+          />
+        )}
       </div>
     </div>
   );
