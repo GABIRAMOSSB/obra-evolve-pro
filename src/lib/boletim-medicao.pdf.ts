@@ -38,6 +38,9 @@ interface BoletimData {
     objeto: string | null;
     orgao_contratante: string | null;
     processo_administrativo: string | null;
+    numero_licitacao?: string | null;
+    data_inicio?: string | null;
+    prazo_dias?: number | null;
   } | null;
   obra: {
     nome: string;
@@ -67,6 +70,7 @@ interface BoletimData {
     qtd_periodo: number;
   }>;
 }
+
 
 function fmtDate(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -130,23 +134,44 @@ export function generateBoletimMedicaoPDF(data: BoletimData): jsPDF {
     doc.text(doc.splitTextToSize(val, colW - 2), x, y + 3.2);
   };
 
-  const colW = (pageW - margin * 2) / 4;
+  const col4 = (pageW - margin * 2) / 4;
+  const col6 = (pageW - margin * 2) / 6;
   const nomeObra = data.obra?.nome ?? "—";
   const endereco = [data.obra?.endereco, data.obra?.cidade, data.obra?.uf].filter(Boolean).join(", ");
   const executora = data.company?.razao_social ?? data.company?.nome ?? "SOLV Construtora";
   const contratante = data.obra?.cliente ?? data.contrato?.orgao_contratante ?? "—";
+  const prazoStr = data.contrato?.prazo_dias ? `${data.contrato.prazo_dias} dias` : "—";
+  const inicioObra = fmtDate(data.contrato?.data_inicio ?? data.obra?.data_inicio ?? null);
+  const rt = data.responsavelTecnico;
+  const fs = data.fiscal;
+  const rtLine = rt ? `${rt.nome}${rt.registro ? ` — ${rt.registro}` : ""}${rt.cargo ? ` (${rt.cargo})` : ""}` : "—";
+  const fsLine = fs ? `${fs.nome}${fs.registro ? ` — ${fs.registro}` : ""}${fs.cargo ? ` (${fs.cargo})` : ""}` : "—";
 
-  kv("Obra", nomeObra, margin, colW);
-  kv("Contratante", contratante, margin + colW, colW);
-  kv("Executora", executora, margin + colW * 2, colW);
-  kv("Contrato nº", data.contrato?.numero, margin + colW * 3, colW);
+  // Linha 1 (4 colunas)
+  kv("Obra", nomeObra, margin, col4);
+  kv("Cliente / Contratante", contratante, margin + col4, col4);
+  kv("CNPJ Contratante", data.obra?.cnpj_cliente, margin + col4 * 2, col4);
+  kv("Empresa Executora", executora, margin + col4 * 3, col4);
   y += 8;
-  kv("Endereço", endereco || "—", margin, colW * 2);
-  kv("CNPJ contratante", data.obra?.cnpj_cliente, margin + colW * 2, colW);
-  kv("Processo", data.contrato?.processo_administrativo, margin + colW * 3, colW);
+  // Linha 2 (4 colunas)
+  kv("CNPJ Executora", data.company?.cnpj, margin, col4);
+  kv("Endereço da obra", endereco || "—", margin + col4, col4 * 2);
+  kv("Contrato nº", data.contrato?.numero, margin + col4 * 3, col4);
   y += 8;
-  kv("Objeto", data.contrato?.objeto ?? "—", margin, colW * 4);
+  // Linha 3 (6 colunas — dados temporais)
+  kv("Processo administrativo", data.contrato?.processo_administrativo, margin, col6);
+  kv("Licitação nº", data.contrato?.numero_licitacao, margin + col6, col6);
+  kv("Início da obra", inicioObra, margin + col6 * 2, col6);
+  kv("Prazo contratual", prazoStr, margin + col6 * 3, col6);
+  kv("Data medição", fmtDate(data.medicao.data_medicao), margin + col6 * 4, col6);
+  kv("Período", `${fmtDate(data.medicao.periodo_inicio)} a ${fmtDate(data.medicao.periodo_fim)}`, margin + col6 * 5, col6);
+  y += 8;
+  // Linha 4 — objeto + responsáveis
+  kv("Objeto do contrato", data.contrato?.objeto ?? "—", margin, col4 * 2);
+  kv("Responsável Técnico", rtLine, margin + col4 * 2, col4);
+  kv("Fiscal da Obra", fsLine, margin + col4 * 3, col4);
   y += 10;
+
 
   // ===== KPIs =====
   const kpiW = (pageW - margin * 2 - 8) / 5;
