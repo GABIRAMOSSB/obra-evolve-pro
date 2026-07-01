@@ -73,6 +73,8 @@ export interface ItemInput {
   qtd_acum_anterior: number;
   valor_acum_anterior: number;
   qtd_periodo: number;
+  unidade?: string | null;
+  descricao?: string | null;
 }
 
 export interface ItemComputed {
