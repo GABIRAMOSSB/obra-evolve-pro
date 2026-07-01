@@ -72,6 +72,29 @@ function fmtDateBR(iso: string | null | undefined): string {
   return isNaN(d.getTime()) ? "" : d.toLocaleDateString("pt-BR");
 }
 
+/**
+ * Calcula altura de linha necessária para que o texto envolvido não fique
+ * escondido. Considera quebras explícitas (\n) e o wrap por largura da coluna.
+ */
+function autosizeRowHeight(
+  texts: Array<{ text: string | null | undefined; colWidth: number }>,
+  minHeight = 18,
+): number {
+  let maxLines = 1;
+  for (const { text, colWidth } of texts) {
+    if (!text) continue;
+    const raw = String(text);
+    const perLine = Math.max(8, Math.floor(colWidth * 1.05));
+    const parts = raw.split(/\r?\n/);
+    let total = 0;
+    for (const p of parts) {
+      total += Math.max(1, Math.ceil(p.length / perLine));
+    }
+    if (total > maxLines) maxLines = total;
+  }
+  return Math.max(minHeight, maxLines * 13 + 8);
+}
+
 export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob> {
   const wb = new ExcelJS.Workbook();
   wb.creator = "SOLV Construtora";
@@ -192,7 +215,12 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   kv(4, 9, "CNPJ Contratante", cnpjContratante, 2);
   kv(4, 11, "Endereço da obra", endereco || "—", 3);
   ws.getRow(4).height = 14;
-  ws.getRow(5).height = 20;
+  ws.getRow(5).height = autosizeRowHeight([
+    { text: nomeObra, colWidth: 99 },
+    { text: contratante, colWidth: 40 },
+    { text: cnpjContratante, colWidth: 28 },
+    { text: endereco || "—", colWidth: 42 },
+  ], 20);
 
   // Linha 6/7
   kv(6, 1, "Empresa Executora", executora, 5);
@@ -200,7 +228,12 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   kv(6, 8, "Contrato nº", data.contrato?.numero ?? "—", 3);
   kv(6, 11, "Processo administrativo", processo, 3);
   ws.getRow(6).height = 14;
-  ws.getRow(7).height = 20;
+  ws.getRow(7).height = autosizeRowHeight([
+    { text: executora, colWidth: 99 },
+    { text: cnpjExecutora, colWidth: 28 },
+    { text: data.contrato?.numero ?? "—", colWidth: 40 },
+    { text: processo, colWidth: 42 },
+  ], 20);
 
   // Linha 8/9
   kv(8, 1, "Nº Boletim", bmLabel, 2);
@@ -217,7 +250,12 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   kv(10, 7, "Responsável Técnico", `${rtNome}\n${rtReg}`, 3);
   kv(10, 10, "Fiscal da Obra", `${fiscalNome}\n${fiscalReg}`, 4);
   ws.getRow(10).height = 14;
-  ws.getRow(11).height = 30;
+  ws.getRow(11).height = autosizeRowHeight([
+    { text: data.contrato?.objeto ?? "—", colWidth: 115 },
+    { text: `${rtNome}\n${rtReg}`, colWidth: 36 },
+    { text: `${fiscalNome}\n${fiscalReg}`, colWidth: 58 },
+  ], 30);
+
 
   // ===== CABEÇALHO DA TABELA (linhas 12-13) =====
   const headerRow1 = ws.getRow(12);
@@ -264,7 +302,12 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
 
   for (const i of data.itens) {
     const row = ws.getRow(rowNum);
-    row.height = 22;
+    row.height = autosizeRowHeight([
+      { text: sanitizeDescricao(i.descricao), colWidth: 55 },
+      { text: i.item_codigo, colWidth: 12 },
+    ], 22);
+
+
 
     if (i.is_etapa) {
       row.getCell(1).value = i.item_codigo;
@@ -550,7 +593,7 @@ function buildCapaSheet(wb: ExcelJS.Workbook, data: XLSXInput) {
     cv.value = value;
     cv.font = { name: "Calibri", size: 10, bold: true, color: { argb: C.text } };
     cv.alignment = { horizontal: "left", vertical: "middle", indent: 1, wrapText: true };
-    ws.getRow(r).height = 20;
+    ws.getRow(r).height = autosizeRowHeight([{ text: value, colWidth: 44 }], 20);
     r++;
   }
 
@@ -627,7 +670,11 @@ function buildBaseCalculosSheet(wb: ExcelJS.Workbook, data: XLSXInput) {
   let rowNum = startRow;
   for (const i of data.itens) {
     const row = ws.getRow(rowNum);
-    row.height = 20;
+    row.height = autosizeRowHeight([
+      { text: sanitizeDescricao(i.descricao), colWidth: 55 },
+      { text: i.item_codigo, colWidth: 12 },
+    ], 20);
+
 
     if (i.is_etapa) {
       row.getCell(1).value = i.item_codigo;
@@ -759,7 +806,11 @@ function buildSnapshotSheet(wb: ExcelJS.Workbook, data: XLSXInput) {
   let rowNum = 4;
   for (const i of data.itens) {
     const row = ws.getRow(rowNum);
-    row.height = 18;
+    row.height = autosizeRowHeight([
+      { text: sanitizeDescricao(i.descricao), colWidth: 55 },
+      { text: i.item_codigo, colWidth: 12 },
+    ], 18);
+
     if (i.is_etapa) {
       row.getCell(1).value = i.item_codigo;
       row.getCell(2).value = sanitizeDescricao(i.descricao);
