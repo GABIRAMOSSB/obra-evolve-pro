@@ -509,6 +509,186 @@ export type Database = {
           },
         ]
       }
+      boletim_anexos: {
+        Row: {
+          categoria: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          id: string
+          medicao_id: string
+          mime_type: string | null
+          nome: string
+          storage_path: string
+          tamanho_bytes: number | null
+        }
+        Insert: {
+          categoria?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          medicao_id: string
+          mime_type?: string | null
+          nome: string
+          storage_path: string
+          tamanho_bytes?: number | null
+        }
+        Update: {
+          categoria?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          medicao_id?: string
+          mime_type?: string | null
+          nome?: string
+          storage_path?: string
+          tamanho_bytes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boletim_anexos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boletim_anexos_medicao_id_fkey"
+            columns: ["medicao_id"]
+            isOneToOne: false
+            referencedRelation: "medicoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      boletim_aprovacoes: {
+        Row: {
+          aprovador_id: string | null
+          aprovador_nome: string | null
+          company_id: string
+          created_at: string
+          decidido_em: string
+          decisao: string
+          id: string
+          justificativa: string | null
+          medicao_id: string
+          metadata: Json
+          papel: string
+        }
+        Insert: {
+          aprovador_id?: string | null
+          aprovador_nome?: string | null
+          company_id: string
+          created_at?: string
+          decidido_em?: string
+          decisao: string
+          id?: string
+          justificativa?: string | null
+          medicao_id: string
+          metadata?: Json
+          papel?: string
+        }
+        Update: {
+          aprovador_id?: string | null
+          aprovador_nome?: string | null
+          company_id?: string
+          created_at?: string
+          decidido_em?: string
+          decisao?: string
+          id?: string
+          justificativa?: string | null
+          medicao_id?: string
+          metadata?: Json
+          papel?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boletim_aprovacoes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boletim_aprovacoes_medicao_id_fkey"
+            columns: ["medicao_id"]
+            isOneToOne: false
+            referencedRelation: "medicoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      boletim_audit_logs: {
+        Row: {
+          acao: string
+          ator_id: string | null
+          ator_nome: string | null
+          campo: string | null
+          company_id: string
+          created_at: string
+          entidade: string
+          entidade_id: string | null
+          id: string
+          ip_origem: string | null
+          justificativa: string | null
+          medicao_id: string | null
+          valor_anterior: Json | null
+          valor_novo: Json | null
+        }
+        Insert: {
+          acao: string
+          ator_id?: string | null
+          ator_nome?: string | null
+          campo?: string | null
+          company_id: string
+          created_at?: string
+          entidade: string
+          entidade_id?: string | null
+          id?: string
+          ip_origem?: string | null
+          justificativa?: string | null
+          medicao_id?: string | null
+          valor_anterior?: Json | null
+          valor_novo?: Json | null
+        }
+        Update: {
+          acao?: string
+          ator_id?: string | null
+          ator_nome?: string | null
+          campo?: string | null
+          company_id?: string
+          created_at?: string
+          entidade?: string
+          entidade_id?: string | null
+          id?: string
+          ip_origem?: string | null
+          justificativa?: string | null
+          medicao_id?: string | null
+          valor_anterior?: Json | null
+          valor_novo?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boletim_audit_logs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boletim_audit_logs_medicao_id_fkey"
+            columns: ["medicao_id"]
+            isOneToOne: false
+            referencedRelation: "medicoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cartas_proposta: {
         Row: {
           company_id: string
@@ -3096,8 +3276,12 @@ export type Database = {
           id: string
           is_etapa: boolean
           item_codigo: string
+          item_codigo_pai: string | null
+          justificativa: string | null
           medicao_id: string
+          nivel: number | null
           obra_atividade_id: string | null
+          orcamento_item_id: string | null
           ordem: number
           pct_executado: number
           qtd_acum_anterior: number
@@ -3105,6 +3289,7 @@ export type Database = {
           qtd_contratada: number
           qtd_periodo: number
           status_calc: string
+          tipo: string | null
           unidade: string | null
           updated_at: string
           valor_acum_anterior: number
@@ -3119,8 +3304,12 @@ export type Database = {
           id?: string
           is_etapa?: boolean
           item_codigo: string
+          item_codigo_pai?: string | null
+          justificativa?: string | null
           medicao_id: string
+          nivel?: number | null
           obra_atividade_id?: string | null
+          orcamento_item_id?: string | null
           ordem?: number
           pct_executado?: number
           qtd_acum_anterior?: number
@@ -3128,6 +3317,7 @@ export type Database = {
           qtd_contratada?: number
           qtd_periodo?: number
           status_calc?: string
+          tipo?: string | null
           unidade?: string | null
           updated_at?: string
           valor_acum_anterior?: number
@@ -3142,8 +3332,12 @@ export type Database = {
           id?: string
           is_etapa?: boolean
           item_codigo?: string
+          item_codigo_pai?: string | null
+          justificativa?: string | null
           medicao_id?: string
+          nivel?: number | null
           obra_atividade_id?: string | null
+          orcamento_item_id?: string | null
           ordem?: number
           pct_executado?: number
           qtd_acum_anterior?: number
@@ -3151,6 +3345,7 @@ export type Database = {
           qtd_contratada?: number
           qtd_periodo?: number
           status_calc?: string
+          tipo?: string | null
           unidade?: string | null
           updated_at?: string
           valor_acum_anterior?: number
@@ -3180,6 +3375,13 @@ export type Database = {
             referencedRelation: "obra_atividades"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "medicao_itens_orcamento_item_id_fkey"
+            columns: ["orcamento_item_id"]
+            isOneToOne: false
+            referencedRelation: "orcamento_itens"
+            referencedColumns: ["id"]
+          },
         ]
       }
       medicoes: {
@@ -3205,6 +3407,7 @@ export type Database = {
           updated_at: string
           valor_acumulado: number
           valor_executado: number
+          versao_orcamento_id: string | null
         }
         Insert: {
           aprovada_em?: string | null
@@ -3228,6 +3431,7 @@ export type Database = {
           updated_at?: string
           valor_acumulado?: number
           valor_executado?: number
+          versao_orcamento_id?: string | null
         }
         Update: {
           aprovada_em?: string | null
@@ -3251,6 +3455,7 @@ export type Database = {
           updated_at?: string
           valor_acumulado?: number
           valor_executado?: number
+          versao_orcamento_id?: string | null
         }
         Relationships: [
           {
@@ -3272,6 +3477,13 @@ export type Database = {
             columns: ["obra_id"]
             isOneToOne: false
             referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medicoes_versao_orcamento_id_fkey"
+            columns: ["versao_orcamento_id"]
+            isOneToOne: false
+            referencedRelation: "orcamento_versoes"
             referencedColumns: ["id"]
           },
         ]
@@ -4291,6 +4503,170 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orcamento_itens: {
+        Row: {
+          company_id: string
+          created_at: string
+          descricao: string
+          id: string
+          item_codigo: string
+          item_codigo_pai: string | null
+          nivel: number
+          obra_id: string
+          observacoes: string | null
+          ordem: number
+          qtd_contratada: number
+          sinapi_codigo: string | null
+          tipo: string
+          total_contratado_cents: number
+          unidade: string | null
+          updated_at: string
+          valor_unitario_cents: number
+          versao_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          descricao: string
+          id?: string
+          item_codigo: string
+          item_codigo_pai?: string | null
+          nivel?: number
+          obra_id: string
+          observacoes?: string | null
+          ordem?: number
+          qtd_contratada?: number
+          sinapi_codigo?: string | null
+          tipo?: string
+          total_contratado_cents?: number
+          unidade?: string | null
+          updated_at?: string
+          valor_unitario_cents?: number
+          versao_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          descricao?: string
+          id?: string
+          item_codigo?: string
+          item_codigo_pai?: string | null
+          nivel?: number
+          obra_id?: string
+          observacoes?: string | null
+          ordem?: number
+          qtd_contratada?: number
+          sinapi_codigo?: string | null
+          tipo?: string
+          total_contratado_cents?: number
+          unidade?: string | null
+          updated_at?: string
+          valor_unitario_cents?: number
+          versao_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orcamento_itens_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orcamento_itens_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orcamento_itens_versao_id_fkey"
+            columns: ["versao_id"]
+            isOneToOne: false
+            referencedRelation: "orcamento_versoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orcamento_versoes: {
+        Row: {
+          company_id: string
+          congelada_em: string | null
+          congelada_por: string | null
+          contrato_id: string | null
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          id: string
+          numero_versao: number
+          obra_id: string
+          observacoes: string | null
+          origem: string
+          origem_arquivo: string | null
+          status: string
+          updated_at: string
+          valor_total_cents: number
+        }
+        Insert: {
+          company_id: string
+          congelada_em?: string | null
+          congelada_por?: string | null
+          contrato_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          numero_versao: number
+          obra_id: string
+          observacoes?: string | null
+          origem?: string
+          origem_arquivo?: string | null
+          status?: string
+          updated_at?: string
+          valor_total_cents?: number
+        }
+        Update: {
+          company_id?: string
+          congelada_em?: string | null
+          congelada_por?: string | null
+          contrato_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          numero_versao?: number
+          obra_id?: string
+          observacoes?: string | null
+          origem?: string
+          origem_arquivo?: string | null
+          status?: string
+          updated_at?: string
+          valor_total_cents?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orcamento_versoes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orcamento_versoes_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orcamento_versoes_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
             referencedColumns: ["id"]
           },
         ]
