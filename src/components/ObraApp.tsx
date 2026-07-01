@@ -1510,59 +1510,64 @@ function Dashboard({
  {resumoBM.hasMeasurement ? `Período: ${resumoBM.periodoLabel}` : ""}
  </div>
  </div>
- {/* Linha 1 — Identificação */}
- <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 divide-x divide-y divide-border border-b border-border text-xs">
- <BMField label="Licitador" value={info.cliente || "—"} />
- <BMField label="Contratante" value={info.contratante || "—"} />
- <BMField label="Empresa Executora" value={info.empresaExecutora || "—"} />
- <BMField label="CNPJ" value={info.cnpj || "—"} />
- <BMField label="Nº Contrato" value={info.numeroContrato || "—"} />
- <BMField label="Nº Licitação" value={info.numeroLicitacao || "—"} />
- </div>
- {/* Linha 2 — Obra e localização */}
- <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 divide-x divide-y divide-border border-b border-border text-xs">
- <BMField label="Obra" value={data.nome} wide />
- <BMField label="Endereço" value={info.endereco || "—"} wide />
- <BMField label="Município" value={info.municipio || "—"} />
- <BMField label="UF" value={info.estado || "—"} />
- </div>
- {/* Linha 3 — Responsabilidade técnica */}
- <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 divide-x divide-y divide-border border-b border-border text-xs">
- <BMField label="Responsável Técnico" value={info.responsavelTecnico || "—"} />
- <BMField label="CREA / CAU" value={info.crea || "—"} />
- <BMField label="Cargo / Função (Resp.)" value={info.cargoResponsavel || "—"} />
- <BMField label="ART / RRT" value={info.artRrt || "—"} />
- <BMField label="Início da Obra" value={formatarDataBR(info.dataInicioObra) || "—"} />
- <BMField label="Prazo (dias)" value={info.prazoContratualDias ? String(info.prazoContratualDias) : "—"} />
- </div>
- {/* Linha 3b — Fiscalização */}
- <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 divide-x divide-y divide-border border-b border-border text-xs">
- <BMField label="Fiscal da Obra" value={info.fiscal || "—"} wide />
- <BMField label="CREA/CAU do Fiscal" value={info.creaFiscal || "—"} />
- <BMField label="Cargo / Função (Fiscal)" value={info.cargoFiscal || "—"} wide />
- </div>
- {/* Linha 4 — Resumo financeiro da medição */}
- {resumoBM.hasMeasurement ? (
- <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 divide-x divide-y divide-border text-xs">
- <BMField label="Nº do BM" value={resumoBM.descricaoBM} strong tone="primary" />
- <BMField label="Data da Medição" value={resumoBM.dataMedicao} />
- <BMField label="Período da Medição" value={resumoBM.periodoLabel} wide />
- <BMField label="Valor desta medição" value={fmtBRL(resumoBM.valorDestaMedicao)} strong tone="measure" />
- <BMField label="Valor acumulado" value={fmtBRL(resumoBM.valorAcumulado)} strong tone="success" />
- <BMField label="% Acumulado" value={`${fmtNum(resumoBM.percentualAcumulado)}%`} strong tone="primary" progress={resumoBM.percentualAcumulado} />
- <BMField label="Saldo restante" value={fmtBRL(resumoBM.saldoRestante)} strong />
- <BMField label="Dias decorridos" value={`${resumoBM.diasDecorridos} dias`} />
- <BMField label="Dias restantes" value={info.prazoContratualDias ? `${resumoBM.diasRestantes} dias` : "—"} />
- <BMField label="Valor total da obra" value={fmtBRL(resumoBM.valorTotalObra)} strong />
- </div>
- ) : (
- <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 divide-x divide-y divide-border text-xs">
- <BMField label="Valor total da obra" value={fmtBRL(resumoBM.valorTotalObra)} strong />
- <BMField label="Acumulado executado" value={fmtBRL(resumoBM.valorAcumulado)} strong tone="success" />
- <BMField label="% Acumulado" value={`${fmtNum(resumoBM.percentualAcumulado)}%`} strong tone="primary" progress={resumoBM.percentualAcumulado} />
- <BMField label="Saldo restante" value={fmtBRL(resumoBM.saldoRestante)} strong />
- </div>
- )}
+        {/* Seção 1 — Partes contratuais */}
+        <BMSection title="Partes contratuais" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 divide-x divide-y divide-border border-b border-border text-xs">
+          <BMField label="Licitador" value={info.cliente || "—"} wide />
+          <BMField label="Contratante" value={info.contratante || "—"} wide />
+          <BMField label="Empresa Executora" value={info.empresaExecutora || "—"} wide />
+          <BMField label="CNPJ Executora" value={info.cnpj || "—"} wide />
+          <BMField label="Nº Contrato" value={info.numeroContrato || "—"} wide />
+          <BMField label="Nº Licitação" value={info.numeroLicitacao || "—"} wide />
+        </div>
+
+        {/* Seção 2 — Obra */}
+        <BMSection title="Obra e localização" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 divide-x divide-y divide-border border-b border-border text-xs">
+          <BMField label="Obra" value={data.nome} wide />
+          <BMField label="Endereço" value={info.endereco || "—"} wide />
+          <BMField label="Município" value={info.municipio || "—"} />
+          <BMField label="UF" value={info.estado || "—"} />
+          <BMField label="Início da Obra" value={formatarDataBR(info.dataInicioObra) || "—"} />
+          <BMField label="Prazo (dias)" value={info.prazoContratualDias ? String(info.prazoContratualDias) : "—"} />
+        </div>
+
+        {/* Seção 3 — Responsabilidade técnica e fiscalização */}
+        <BMSection title="Responsabilidade técnica e fiscalização" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 divide-x divide-y divide-border border-b border-border text-xs">
+          <BMField label="Responsável Técnico" value={info.responsavelTecnico || "—"} />
+          <BMField label="CREA / CAU" value={info.crea || "—"} />
+          <BMField label="ART / RRT" value={info.artRrt || "—"} />
+          <BMField label="Cargo / Função (Resp.)" value={info.cargoResponsavel || "—"} />
+          <BMField label="Fiscal da Obra" value={info.fiscal || "—"} />
+          <BMField label="CREA/CAU do Fiscal" value={info.creaFiscal || "—"} />
+          <BMField label="Cargo / Função (Fiscal)" value={info.cargoFiscal || "—"} />
+          <BMField label="CPF do Fiscal" value={info.cpfFiscal || "—"} />
+        </div>
+
+        {/* Seção 4 — Resumo financeiro */}
+        <BMSection title={resumoBM.hasMeasurement ? `Resumo financeiro — ${resumoBM.descricaoBM}` : "Resumo financeiro"} />
+        {resumoBM.hasMeasurement ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 divide-x divide-y divide-border text-xs">
+            <BMField label="Data da Medição" value={resumoBM.dataMedicao} />
+            <BMField label="Período da Medição" value={resumoBM.periodoLabel} wide />
+            <BMField label="Dias decorridos" value={`${resumoBM.diasDecorridos} dias`} />
+            <BMField label="Dias restantes" value={info.prazoContratualDias ? `${resumoBM.diasRestantes} dias` : "—"} />
+            <BMField label="Valor total da obra" value={fmtBRL(resumoBM.valorTotalObra)} strong />
+            <BMField label="Valor desta medição" value={fmtBRL(resumoBM.valorDestaMedicao)} strong tone="measure" />
+            <BMField label="Valor acumulado" value={fmtBRL(resumoBM.valorAcumulado)} strong tone="success" />
+            <BMField label="Saldo restante" value={fmtBRL(resumoBM.saldoRestante)} strong />
+            <BMField label="% Acumulado" value={`${fmtNum(resumoBM.percentualAcumulado)}%`} strong tone="primary" progress={resumoBM.percentualAcumulado} wide />
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y divide-border text-xs">
+            <BMField label="Valor total da obra" value={fmtBRL(resumoBM.valorTotalObra)} strong />
+            <BMField label="Acumulado executado" value={fmtBRL(resumoBM.valorAcumulado)} strong tone="success" />
+            <BMField label="% Acumulado" value={`${fmtNum(resumoBM.percentualAcumulado)}%`} strong tone="primary" progress={resumoBM.percentualAcumulado} />
+            <BMField label="Saldo restante" value={fmtBRL(resumoBM.saldoRestante)} strong />
+          </div>
+        )}
+
  </Card>
 
 
@@ -1907,6 +1912,14 @@ function BMField({
  </div>
  );
 }
+function BMSection({ title }: { title: string }) {
+  return (
+    <div className="bg-muted/40 border-b border-border px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+      {title}
+    </div>
+  );
+}
+
 
 function SignatureBlock({ info, municipio }: { info: ObraInfo; municipio?: string }) {
  const hoje = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
