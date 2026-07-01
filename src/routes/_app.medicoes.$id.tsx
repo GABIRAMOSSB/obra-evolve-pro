@@ -84,6 +84,7 @@ function BoletimDetalhePage() {
   const [periodoInicio, setPeriodoInicio] = useState("");
   const [periodoFim, setPeriodoFim] = useState("");
   const [itens, setItens] = useState<ItemLocal[]>([]);
+  const [initialSig, setInitialSig] = useState<string>("");
   const [q, setQ] = useState("");
   const [somentePeriodo, setSomentePeriodo] = useState(false);
 
@@ -93,12 +94,19 @@ function BoletimDetalhePage() {
     setDataMedicao(data.medicao.data_medicao ?? new Date().toISOString().slice(0, 10));
     setPeriodoInicio(data.medicao.periodo_inicio ?? "");
     setPeriodoFim(data.medicao.periodo_fim ?? "");
-    setItens(data.itens as ItemLocal[]);
+    const arr = data.itens as ItemLocal[];
+    setItens(arr);
+    setInitialSig(JSON.stringify(arr.map((i) => [i.item_codigo, i.qtd_periodo])));
   }, [data]);
 
   const totais = useMemo(() => computeTotais(itens), [itens]);
 
   const readOnly = data?.medicao?.status === "aprovada" || data?.medicao?.status === "paga";
+
+  const dirty = useMemo(
+    () => initialSig !== "" && initialSig !== JSON.stringify(itens.map((i) => [i.item_codigo, i.qtd_periodo])),
+    [initialSig, itens],
+  );
 
   const updateQtdPeriodo = useCallback((codigo: string, valor: number) => {
     setItens((prev) =>
@@ -112,6 +120,46 @@ function BoletimDetalhePage() {
         return { ...it, qtd_periodo: Math.max(0, valor) };
       }),
     );
+  }, []);
+
+  /** Colar coluna do Excel → distribui nos próximos itens mensuráveis, pulando etapas. */
+  const handlePasteSequence = useCallback((startCodigo: string, text: string): boolean => {
+    const linhas = text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
+    if (linhas.length <= 1) return false;
+    setItens((prev) => {
+      const startIdx = prev.findIndex((i) => i.item_codigo === startCodigo);
+      if (startIdx < 0) return prev;
+      const next = [...prev];
+      let cursor = startIdx;
+      let usados = 0;
+      for (const raw of linhas) {
+        while (cursor < next.length && next[cursor].is_etapa) cursor++;
+        if (cursor >= next.length) break;
+        const it = next[cursor];
+        const valor = parseBR(raw);
+        const saldo = it.qtd_contratada - it.qtd_acum_anterior;
+        if (valor > saldo + 1e-6) {
+          toast.warning(`${it.item_codigo}: ${fmtNumberBR(valor)} ajustado ao saldo ${fmtNumberBR(saldo)}`);
+        }
+        next[cursor] = { ...it, qtd_periodo: Math.max(0, Math.min(valor, saldo)) };
+        usados++;
+        cursor++;
+      }
+      toast.success(`${usados} valores colados (etapas puladas)`);
+      return next;
+    });
+    return true;
+  }, []);
+
+  /** Enter avança para o próximo input mensurável. */
+  const handleCellKey = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    const inputs = Array.from(
+      e.currentTarget.closest("table")?.querySelectorAll<HTMLInputElement>('input[data-bm-cell="1"]') ?? [],
+    );
+    const i = inputs.indexOf(e.currentTarget);
+    if (i >= 0 && i + 1 < inputs.length) inputs[i + 1].focus();
   }, []);
 
   const filtered = useMemo(() => {
@@ -164,6 +212,31 @@ function BoletimDetalhePage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  // Ctrl/Cmd+S salva rascunho quando há alterações.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        if (!readOnly && dirty && !mutSalvar.isPending) mutSalvar.mutate();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [readOnly, dirty, mutSalvar]);
+
+  // Avisa antes de sair com alterações não salvas.
+  useEffect(() => {
+    if (!dirty) return;
+    const h = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", h);
+    return () => window.removeEventListener("beforeunload", h);
+  }, [dirty]);
+
+
 
   const buildExportData = () => ({
     medicao: {
@@ -263,6 +336,11 @@ function BoletimDetalhePage() {
               <div className="text-lg font-bold leading-tight truncate">{nomeObra}</div>
             </div>
             {statusBadge(data.medicao.status)}
+            {dirty && !readOnly && (
+              <span className="text-[10px] uppercase tracking-widest font-bold text-[#252A33] bg-[#C8A66A] px-2 py-1 rounded-full">
+                Alterações não salvas
+              </span>
+            )}
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 size="sm"
@@ -480,6 +558,12 @@ function BoletimDetalhePage() {
                         <Input
                           value={it.qtd_periodo ? fmtNumberBR(it.qtd_periodo) : ""}
                           onChange={(e) => updateQtdPeriodo(it.item_codigo, parseBR(e.target.value))}
+                          onKeyDown={handleCellKey}
+                          onPaste={(e) => {
+                            const txt = e.clipboardData.getData("text");
+                            if (handlePasteSequence(it.item_codigo, txt)) e.preventDefault();
+                          }}
+                          data-bm-cell="1"
                           disabled={readOnly}
                           placeholder="0,00"
                           className="h-8 text-right tabular-nums bg-[#FBF5E6] border-transparent focus-visible:border-[#C8A66A] focus-visible:ring-1 focus-visible:ring-[#C8A66A]/40 rounded-md"
