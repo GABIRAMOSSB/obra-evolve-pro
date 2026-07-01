@@ -6,8 +6,8 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getVisaoExecutivaMedicao } from "@/lib/boletim-medicao.functions";
-import { fmtMoneyBR, fmtPctBR, computeItem, sanitizeDescricao } from "@/lib/boletim-medicao.calc";
-import { Loader2, TrendingUp, AlertTriangle, Target, Calendar } from "lucide-react";
+import { fmtMoneyBR, fmtPctBR, computeItem, sanitizeDescricao, computePainelExecutivo, type IndicadorPainel } from "@/lib/boletim-medicao.calc";
+import { Loader2, TrendingUp, TrendingDown, Minus, Gauge } from "lucide-react";
 
 interface ItemLike {
   item_codigo: string;
@@ -126,15 +126,68 @@ export function VisaoExecutivaMedicao({
     );
   }
 
+  // Painel executivo — 16 indicadores gerenciais
+  const painel = useMemo(
+    () =>
+      computePainelExecutivo({
+        itens: itens as never,
+        totais: {
+          valor_total_contrato: valorTotalContrato,
+          valor_medicao_atual: valorMedicaoAtual,
+          valor_acumulado: valorAcumulado,
+          percentual_executado: percentualExecutado,
+          saldo_contratual: saldoContratual,
+          itens_medidos: itens.filter((i) => !i.is_etapa && i.qtd_periodo > 1e-6).length,
+          itens_concluidos: 0,
+        },
+        numBMsAprovados,
+        posicaoBMAtual: numBMsAprovados + 1,
+      }),
+    [itens, valorTotalContrato, valorMedicaoAtual, valorAcumulado, percentualExecutado, saldoContratual, numBMsAprovados],
+  );
+
+  const porCategoria = useMemo(() => {
+    const map: Record<string, IndicadorPainel[]> = { financeiro: [], fisico: [], prazo: [], qualidade: [] };
+    for (const i of painel.indicadores) map[i.categoria].push(i);
+    return map;
+  }, [painel]);
+
   return (
     <div className="space-y-6">
-      {/* KPIs institucionais */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <ExecKpi icon={<Target className="w-4 h-4" />} label="Avanço físico-financeiro" value={fmtPctBR(percentualExecutado, 2)} accent />
-        <ExecKpi icon={<TrendingUp className="w-4 h-4" />} label="Medido no período" value={fmtMoneyBR(valorMedicaoAtual)} />
-        <ExecKpi icon={<Calendar className="w-4 h-4" />} label="Boletins aprovados" value={String(numBMsAprovados)} />
-        <ExecKpi icon={<AlertTriangle className="w-4 h-4" />} label="Saldo contratual" value={fmtMoneyBR(saldoContratual)} />
+      {/* Cabeçalho do Painel Executivo */}
+      <div className="bg-gradient-to-br from-[#252A33] to-[#3B4250] text-white rounded-xl p-6 shadow-sm print:shadow-none">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-[10px] uppercase tracking-widest text-[#C8A66A] font-bold flex items-center gap-1.5">
+              <Gauge className="w-3.5 h-3.5" /> Painel executivo
+            </div>
+            <div className="text-xl font-bold mt-0.5">16 indicadores gerenciais</div>
+            <div className="text-[11px] text-white/70 mt-1">
+              Snapshot financeiro, físico, de prazo e qualidade — atualizado em tempo real conforme a grade é preenchida.
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-4 text-[11px]">
+            <PainelHeaderStat label="Aderência" value={`${painel.aderenciaPlanejado >= 0 ? "+" : ""}${painel.aderenciaPlanejado.toFixed(1)} p.p.`} accent={painel.aderenciaPlanejado >= 0} />
+            <PainelHeaderStat label="Ritmo por BM" value={fmtPctBR(painel.ritmoPorBM, 2)} />
+            <PainelHeaderStat label="Top 5 (saldo)" value={fmtPctBR(painel.concentracaoTop5, 1)} />
+          </div>
+        </div>
       </div>
+
+      {/* Grade 16 indicadores agrupados por categoria */}
+      {(["financeiro", "fisico", "prazo", "qualidade"] as const).map((cat) => (
+        <div key={cat}>
+          <div className="text-[10px] uppercase tracking-widest text-[#8A6D2E] font-bold mb-2 flex items-center gap-2">
+            <span className="inline-block w-2 h-2 rounded-full bg-[#C8A66A]" /> {CATEGORIA_LABEL[cat]}
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {porCategoria[cat].map((ind) => (
+              <IndicadorCard key={ind.codigo} indicador={ind} />
+            ))}
+          </div>
+        </div>
+      ))}
+
 
       {/* Curva S */}
       <div className="bg-white rounded-xl shadow-sm p-6 print:shadow-none">
@@ -199,16 +252,49 @@ export function VisaoExecutivaMedicao({
   );
 }
 
-function ExecKpi({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: string; accent?: boolean }) {
+const CATEGORIA_LABEL: Record<string, string> = {
+  financeiro: "Indicadores financeiros",
+  fisico: "Execução física",
+  prazo: "Prazo e ritmo",
+  qualidade: "Qualidade e risco",
+};
+
+function IndicadorCard({ indicador }: { indicador: IndicadorPainel }) {
+  const cores = indicador.tendencia === "positiva"
+    ? { bar: "bg-[#16855B]", ico: <TrendingUp className="w-3 h-3 text-[#16855B]" /> }
+    : indicador.tendencia === "negativa"
+    ? { bar: "bg-[#C83E4D]", ico: <TrendingDown className="w-3 h-3 text-[#C83E4D]" /> }
+    : { bar: "bg-[#C8A66A]", ico: <Minus className="w-3 h-3 text-[#8A6D2E]" /> };
+  const destaque = indicador.destaque;
   return (
-    <div className={`rounded-xl px-4 py-4 shadow-sm ${accent ? "bg-gradient-to-br from-[#C8A66A] to-[#B69354] text-white" : "bg-white"}`}>
-      <div className={`flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-semibold ${accent ? "text-white/90" : "text-[#69717D]"}`}>
-        {icon} {label}
+    <div className={`relative rounded-xl px-4 py-4 shadow-sm overflow-hidden ${destaque ? "bg-gradient-to-br from-[#252A33] to-[#3B4250] text-white" : "bg-white"}`}>
+      <div className={`absolute left-0 top-0 bottom-0 w-1 ${cores.bar}`} />
+      <div className="flex items-center justify-between">
+        <span className={`text-[9px] font-mono font-bold ${destaque ? "text-[#C8A66A]" : "text-[#69717D]"}`}>{indicador.codigo}</span>
+        {cores.ico}
       </div>
-      <div className={`text-2xl font-bold mt-2 tabular-nums ${accent ? "text-white" : "text-[#252A33]"}`}>{value}</div>
+      <div className={`text-[10px] uppercase tracking-widest font-semibold mt-1 ${destaque ? "text-white/80" : "text-[#69717D]"}`}>
+        {indicador.titulo}
+      </div>
+      <div className={`text-lg md:text-xl font-bold mt-1.5 tabular-nums ${destaque ? "text-white" : "text-[#252A33]"}`}>
+        {indicador.valor}
+      </div>
+      <div className={`text-[10px] mt-1.5 leading-snug ${destaque ? "text-white/70" : "text-[#69717D]"}`}>
+        {indicador.descricao}
+      </div>
     </div>
   );
 }
+
+function PainelHeaderStat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div>
+      <div className="text-[9px] uppercase tracking-widest text-white/60 font-bold">{label}</div>
+      <div className={`text-base font-bold tabular-nums ${accent ? "text-[#C8A66A]" : "text-white"}`}>{value}</div>
+    </div>
+  );
+}
+
 
 function ProjItem({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
