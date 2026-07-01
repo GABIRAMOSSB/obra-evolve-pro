@@ -24,14 +24,20 @@ async function loadSolvLogo(): Promise<ArrayBuffer | null> {
 const C = {
   graphite: "FF363C49",
   graphiteDark: "FF252A33",
+  graphiteDeep: "FF14171D",
   gold: "FFC8A66A",
+  goldBright: "FFE7C892",
   goldSoft: "FFF5EEDD",
   silver: "FFEEF0F2",
   zebra: "FFFAFBFC",
   white: "FFFFFFFF",
   text: "FF20242B",
   muted: "FF69717D",
+  cyan: "FF7FD8E8",
 };
+
+// Formato monetário BRL — força símbolo R$ e separadores pt-BR
+const BRL = '[$R$-pt-BR] #,##0.00;[Red]-[$R$-pt-BR] #,##0.00;[$R$-pt-BR] "-"';
 
 interface XLSXInput {
   medicao: {
