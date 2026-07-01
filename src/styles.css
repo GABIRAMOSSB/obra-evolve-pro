@@ -366,3 +366,13 @@
   0%, 100% { box-shadow: 0 0 0 0 oklch(0.67 0.045 70 / 0.4); }
   50%      { box-shadow: 0 0 0 8px oklch(0.67 0.045 70 / 0); }
 }
+
+/* ===== Boletim de Medição — impressão A4 paisagem ===== */
+@media print {
+  @page { size: A4 landscape; margin: 10mm; }
+  html, body { background: white !important; }
+  .print\:hidden { display: none !important; }
+  table { page-break-inside: auto; }
+  tr { page-break-inside: avoid; page-break-after: auto; }
+  thead { display: table-header-group; }
+}
