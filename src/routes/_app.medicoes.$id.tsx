@@ -571,22 +571,30 @@ function BoletimDetalhePage() {
                       <td className="px-3 py-2 text-right tabular-nums text-[#69717D]">{fmtMoneyBR(it.valor_unitario)}</td>
                       <td className="px-3 py-2 text-right tabular-nums font-semibold">{fmtMoneyBR(c.total_contratual)}</td>
                       <td className="px-2 py-2 text-right tabular-nums text-[#69717D]">{fmtNumberBR(it.qtd_acum_anterior)}</td>
-                      <td className="px-1 py-1 text-right print:hidden">
-                        <Input
-                          value={it.qtd_periodo ? fmtNumberBR(it.qtd_periodo) : ""}
-                          onChange={(e) => updateQtdPeriodo(it.item_codigo, parseBR(e.target.value))}
-                          onKeyDown={handleCellKey}
-                          onPaste={(e) => {
-                            const txt = e.clipboardData.getData("text");
-                            if (handlePasteSequence(it.item_codigo, txt)) e.preventDefault();
-                          }}
-                          data-bm-cell="1"
-                          disabled={readOnly}
-                          placeholder="0,00"
-                          className="h-8 text-right tabular-nums bg-[#FBF5E6] border-transparent focus-visible:border-[#C8A66A] focus-visible:ring-1 focus-visible:ring-[#C8A66A]/40 rounded-md"
-                        />
-                      </td>
-                      <td className="px-2 py-2 text-right tabular-nums hidden print:table-cell">{fmtNumberBR(it.qtd_periodo)}</td>
+                      {modoOficial ? (
+                        <td className="px-2 py-2 text-right tabular-nums font-semibold text-[#8A6D2E]">
+                          {fmtNumberBR(it.qtd_periodo)}
+                        </td>
+                      ) : (
+                        <>
+                          <td className="px-1 py-1 text-right print:hidden">
+                            <Input
+                              value={it.qtd_periodo ? fmtNumberBR(it.qtd_periodo) : ""}
+                              onChange={(e) => updateQtdPeriodo(it.item_codigo, parseBR(e.target.value))}
+                              onKeyDown={handleCellKey}
+                              onPaste={(e) => {
+                                const txt = e.clipboardData.getData("text");
+                                if (handlePasteSequence(it.item_codigo, txt)) e.preventDefault();
+                              }}
+                              data-bm-cell="1"
+                              disabled={readOnly}
+                              placeholder="0,00"
+                              className="h-8 text-right tabular-nums bg-[#FBF5E6] border-transparent focus-visible:border-[#C8A66A] focus-visible:ring-1 focus-visible:ring-[#C8A66A]/40 rounded-md"
+                            />
+                          </td>
+                          <td className="px-2 py-2 text-right tabular-nums hidden print:table-cell">{fmtNumberBR(it.qtd_periodo)}</td>
+                        </>
+                      )}
                       <td className="px-2 py-2 text-right tabular-nums font-semibold">{fmtNumberBR(c.qtd_acum_atual)}</td>
                       <td className="px-2 py-2 text-right tabular-nums text-[#69717D]">{fmtMoneyBR(it.valor_acum_anterior)}</td>
                       <td className="px-2 py-2 text-right tabular-nums">{fmtMoneyBR(c.valor_periodo)}</td>
