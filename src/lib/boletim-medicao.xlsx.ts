@@ -77,7 +77,15 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   wb.creator = "SOLV Construtora";
   wb.created = new Date();
 
-  const ws = wb.addWorksheet("Boletim de Medição", {
+  // ============================================================
+  // ABA 1 — CAPA
+  // ============================================================
+  buildCapaSheet(wb, data);
+
+  // ============================================================
+  // ABA 2 — BOLETIM (principal)
+  // ============================================================
+  const ws = wb.addWorksheet("Boletim", {
     views: [{ state: "frozen", ySplit: 13, showGridLines: false }],
     pageSetup: {
       paperSize: 9, // A4
@@ -90,6 +98,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
     },
     properties: { defaultRowHeight: 18 },
   });
+
   // showGridLines na impressão (via propriedade pageSetup)
   ws.pageSetup.showGridLines = false;
   ws.pageSetup.horizontalCentered = true;
