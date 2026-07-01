@@ -128,7 +128,7 @@ export const getMedicaoDetalhe = createServerFn({ method: "GET" })
     }
 
     // Merge: se já existem itens salvos, prevalecem; senão gera a partir das atividades.
-    const existingByCode = new Map<string, (typeof itensExistentes extends Array<infer T> ? T : never) | undefined>();
+    const existingByCode = new Map<string, NonNullable<typeof itensExistentes>[number]>();
     for (const e of itensExistentes ?? []) existingByCode.set(e.item_codigo, e);
 
     const itens = atividades.map((a, idx) => {
