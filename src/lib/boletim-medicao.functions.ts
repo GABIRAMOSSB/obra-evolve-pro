@@ -307,9 +307,69 @@ export const salvarRascunhoMedicao = createServerFn({ method: "POST" })
     return { ok: true, totais };
   });
 
-export const aprovarMedicao = createServerFn({ method: "POST" })
+async function logAudit(
+  supabase: AnySupabase,
+  companyId: string,
+  medicaoId: string,
+  acao: "create" | "update" | "delete" | "approve" | "reject" | "snapshot" | "import",
+  atorId: string,
+  extra?: { campo?: string; valor_anterior?: unknown; valor_novo?: unknown; justificativa?: string },
+) {
+  try {
+    await supabase.from("boletim_audit_logs").insert({
+      company_id: companyId,
+      medicao_id: medicaoId,
+      entidade: "medicao",
+      entidade_id: medicaoId,
+      acao,
+      campo: extra?.campo ?? null,
+      valor_anterior: extra?.valor_anterior ?? null,
+      valor_novo: extra?.valor_novo ?? null,
+      justificativa: extra?.justificativa ?? null,
+      ator_id: atorId,
+    });
+  } catch {
+    /* trilha nunca bloqueia workflow */
+  }
+}
+
+export const enviarMedicaoParaConferencia = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as AnySupabase;
+    const { companyId } = await resolveCompany(supabase, context.userId, true);
+    const { data: med } = await supabase
+      .from("medicoes")
+      .select("id, status")
+      .eq("id", data.id)
+      .eq("company_id", companyId)
+      .maybeSingle();
+    if (!med) throw new Error("Medição não encontrada.");
+    if (!["rascunho", "revisao_solicitada", "enviada"].includes(med.status)) {
+      throw new Error(`Não é possível enviar para conferência a partir do status "${med.status}".`);
+    }
+    const { error } = await supabase
+      .from("medicoes")
+      .update({ status: "em_conferencia", enviada_em: new Date().toISOString(), enviada_por: context.userId })
+      .eq("id", data.id)
+      .eq("company_id", companyId);
+    if (error) throw new Error(error.message);
+    await logAudit(supabase, companyId, data.id, "update", context.userId, {
+      campo: "status", valor_anterior: med.status, valor_novo: "em_conferencia",
+    });
+    return { ok: true };
+  });
+
+export const aprovarMedicao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({
+      id: z.string().uuid(),
+      papel: z.enum(["responsavel_tecnico", "fiscal", "gerente", "aprovador", "contratante"]).default("aprovador"),
+      observacao: z.string().max(2000).optional(),
+    }).parse(data),
+  )
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as AnySupabase;
     const { companyId } = await resolveCompany(supabase, context.userId, true);
@@ -322,11 +382,8 @@ export const aprovarMedicao = createServerFn({ method: "POST" })
     if (!itens || itens.length === 0) throw new Error("Não há itens para aprovar.");
 
     const snapshot = itens.map((it: {
-      item_codigo: string;
-      descricao: string;
-      unidade: string | null;
-      qtd_acum_atual: number | string;
-      valor_acum_atual: number | string;
+      item_codigo: string; descricao: string; unidade: string | null;
+      qtd_acum_atual: number | string; valor_acum_atual: number | string;
     }) => ({
       item_codigo: it.item_codigo,
       descricao: it.descricao,
@@ -346,8 +403,100 @@ export const aprovarMedicao = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .eq("company_id", companyId);
     if (error) throw new Error(error.message);
+
+    await supabase.from("boletim_aprovacoes").insert({
+      company_id: companyId,
+      medicao_id: data.id,
+      aprovador_id: context.userId,
+      papel: data.papel,
+      decisao: "aprovada",
+      justificativa: data.observacao ?? null,
+    });
+    await logAudit(supabase, companyId, data.id, "approve", context.userId, { justificativa: data.observacao });
     return { ok: true };
   });
+
+export const rejeitarMedicao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({
+      id: z.string().uuid(),
+      motivo: z.string().min(10, "Motivo deve ter ao menos 10 caracteres.").max(2000),
+      papel: z.enum(["responsavel_tecnico", "fiscal", "gerente", "aprovador", "contratante"]).default("aprovador"),
+    }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as AnySupabase;
+    const { companyId } = await resolveCompany(supabase, context.userId, true);
+    const { data: med } = await supabase
+      .from("medicoes").select("id, status").eq("id", data.id).eq("company_id", companyId).maybeSingle();
+    if (!med) throw new Error("Medição não encontrada.");
+    if (med.status === "aprovada" || med.status === "paga") throw new Error("Medição já aprovada.");
+    const { error } = await supabase.from("medicoes").update({
+      status: "rejeitada",
+      rejeitada_em: new Date().toISOString(),
+      rejeitada_por: context.userId,
+      motivo_rejeicao: data.motivo,
+    }).eq("id", data.id).eq("company_id", companyId);
+    if (error) throw new Error(error.message);
+    await supabase.from("boletim_aprovacoes").insert({
+      company_id: companyId, medicao_id: data.id, aprovador_id: context.userId,
+      papel: data.papel, decisao: "reprovada", justificativa: data.motivo,
+    });
+    await logAudit(supabase, companyId, data.id, "reject", context.userId, { justificativa: data.motivo });
+    return { ok: true };
+  });
+
+export const solicitarRevisaoMedicao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({
+      id: z.string().uuid(),
+      observacao: z.string().min(10).max(2000),
+      papel: z.enum(["responsavel_tecnico", "fiscal", "gerente", "aprovador", "contratante"]).default("aprovador"),
+    }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as AnySupabase;
+    const { companyId } = await resolveCompany(supabase, context.userId, true);
+    const { data: med } = await supabase
+      .from("medicoes").select("id, status").eq("id", data.id).eq("company_id", companyId).maybeSingle();
+    if (!med) throw new Error("Medição não encontrada.");
+    if (med.status === "aprovada" || med.status === "paga") throw new Error("Medição já aprovada.");
+    const { error } = await supabase.from("medicoes")
+      .update({ status: "revisao_solicitada" })
+      .eq("id", data.id).eq("company_id", companyId);
+    if (error) throw new Error(error.message);
+    await supabase.from("boletim_aprovacoes").insert({
+      company_id: companyId, medicao_id: data.id, aprovador_id: context.userId,
+      papel: data.papel, decisao: "solicita_revisao", justificativa: data.observacao,
+    });
+    await logAudit(supabase, companyId, data.id, "update", context.userId, {
+      campo: "status", valor_anterior: med.status, valor_novo: "revisao_solicitada", justificativa: data.observacao,
+    });
+    return { ok: true };
+  });
+
+export const getBoletimHistorico = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as AnySupabase;
+    const { companyId } = await resolveCompany(supabase, context.userId);
+    const [apr, logs] = await Promise.all([
+      supabase.from("boletim_aprovacoes")
+        .select("id, aprovador_id, aprovador_nome, papel, decisao, justificativa, decidido_em")
+        .eq("company_id", companyId).eq("medicao_id", data.id)
+        .order("decidido_em", { ascending: false }),
+      supabase.from("boletim_audit_logs")
+        .select("id, acao, campo, valor_anterior, valor_novo, justificativa, ator_id, ator_nome, created_at")
+        .eq("company_id", companyId).eq("medicao_id", data.id)
+        .order("created_at", { ascending: false })
+        .limit(50),
+    ]);
+    return { aprovacoes: apr.data ?? [], logs: logs.data ?? [] };
+  });
+
 
 /**
  * Visão Executiva — histórico do contrato para montar Curva S,
