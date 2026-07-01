@@ -663,3 +663,88 @@ export const getUrlAnexoMedicao = createServerFn({ method: "POST" })
     return { url: signed.signedUrl, nome: anexo.nome };
   });
 
+// ============================================================
+// FASE H — Aditivos, reajustes e impacto contratual
+// ============================================================
+
+export const getContratoImpactos = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ medicao_id: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as AnySupabase;
+    const { companyId } = await resolveCompany(supabase, context.userId);
+
+    const { data: medicao, error: mErr } = await supabase
+      .from("medicoes")
+      .select("id, contrato_id, data_medicao, periodo_fim")
+      .eq("id", data.medicao_id)
+      .eq("company_id", companyId)
+      .maybeSingle();
+    if (mErr) throw new Error(mErr.message);
+    if (!medicao) throw new Error("Medição não encontrada.");
+
+    const { data: contrato } = await supabase
+      .from("contratos")
+      .select("id, numero, objeto, valor_total, prazo_dias, data_assinatura, data_inicio, data_fim")
+      .eq("id", medicao.contrato_id)
+      .maybeSingle();
+
+    const [{ data: aditivos }, { data: reajustes }] = await Promise.all([
+      supabase
+        .from("aditivos_contratuais")
+        .select("id, numero, tipo, valor_delta, prazo_dias_delta, data_assinatura, aplicado_em, status, justificativa")
+        .eq("company_id", companyId)
+        .eq("contrato_id", medicao.contrato_id)
+        .order("numero", { ascending: true }),
+      supabase
+        .from("reajustes_contratuais")
+        .select("id, numero, indice, percentual_acumulado, valor_base, valor_reajuste, periodo_inicio, periodo_fim, data_aplicacao, aplicado_em, status")
+        .eq("company_id", companyId)
+        .eq("contrato_id", medicao.contrato_id)
+        .order("numero", { ascending: true }),
+    ]);
+
+    const aditivosList = (aditivos ?? []) as Array<{
+      id: string; numero: number; tipo: string; valor_delta: number;
+      prazo_dias_delta: number; data_assinatura: string | null;
+      aplicado_em: string | null; status: string; justificativa: string | null;
+    }>;
+    const reajustesList = (reajustes ?? []) as Array<{
+      id: string; numero: number; indice: string; percentual_acumulado: number;
+      valor_base: number; valor_reajuste: number; periodo_inicio: string;
+      periodo_fim: string; data_aplicacao: string | null; aplicado_em: string | null;
+      status: string;
+    }>;
+
+    const aditivosAplicados = aditivosList.filter((a) => a.status === "aplicado");
+    const reajustesAplicados = reajustesList.filter((r) => r.status === "aplicado");
+
+    const valorAditivos = aditivosAplicados.reduce((s, a) => s + Number(a.valor_delta ?? 0), 0);
+    const valorReajustes = reajustesAplicados.reduce((s, r) => s + Number(r.valor_reajuste ?? 0), 0);
+    const prazoDeltaDias = aditivosAplicados.reduce((s, a) => s + Number(a.prazo_dias_delta ?? 0), 0);
+
+    const valorOriginal = Number(contrato?.valor_total ?? 0);
+    const valorAjustado = valorOriginal + valorAditivos + valorReajustes;
+    const prazoOriginal = Number(contrato?.prazo_dias ?? 0);
+    const prazoAjustado = prazoOriginal + prazoDeltaDias;
+
+    return {
+      contrato,
+      aditivos: aditivosList,
+      reajustes: reajustesList,
+      resumo: {
+        valor_original: valorOriginal,
+        valor_aditivos: valorAditivos,
+        valor_reajustes: valorReajustes,
+        valor_ajustado: valorAjustado,
+        prazo_original_dias: prazoOriginal,
+        prazo_delta_dias: prazoDeltaDias,
+        prazo_ajustado_dias: prazoAjustado,
+        qtd_aditivos_aplicados: aditivosAplicados.length,
+        qtd_aditivos_pendentes: aditivosList.length - aditivosAplicados.length,
+        qtd_reajustes_aplicados: reajustesAplicados.length,
+        qtd_reajustes_pendentes: reajustesList.length - reajustesAplicados.length,
+      },
+    };
+  });
+

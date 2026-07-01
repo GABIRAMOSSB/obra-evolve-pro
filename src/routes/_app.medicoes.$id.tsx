@@ -38,6 +38,7 @@ import { ArrowLeft, Save, CheckCircle2, FileDown, Printer, Search, Loader2, Aler
 import { toast } from "sonner";
 import { OrcamentoImportDialog } from "@/components/OrcamentoImportDialog";
 import { AnexosMedicaoPanel } from "@/components/AnexosMedicaoPanel";
+import { ContratoImpactosPanel } from "@/components/ContratoImpactosPanel";
 
 export const Route = createFileRoute("/_app/medicoes/$id")({
   component: BoletimDetalhePage,
@@ -888,6 +889,9 @@ function BoletimDetalhePage() {
         </>
         )}
 
+        {/* ===== FASE H — ADITIVOS E REAJUSTES ===== */}
+        <ContratoImpactosPanel medicaoId={id} />
+
         {/* ===== FASE G — ANEXOS DO BOLETIM ===== */}
         {data.medicao.company_id && (
           <AnexosMedicaoPanel
@@ -896,6 +900,8 @@ function BoletimDetalhePage() {
             readOnly={readOnly}
           />
         )}
+
+
 
 
         <Badge variant="outline" className="text-[10px] print:hidden">
