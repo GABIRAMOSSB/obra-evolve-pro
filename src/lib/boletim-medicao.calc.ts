@@ -182,16 +182,20 @@ export function computeTotais(itens: (ItemInput & Partial<ItemComputed>)[]): Tot
 
 
 /** Valida um item; devolve mensagens de erro (vazio = ok). */
-export function validateItem(i: ItemInput): string[] {
+export function validateItem(i: ItemInput & { justificativa?: string | null }): string[] {
   const erros: string[] = [];
   if (i.is_etapa) return erros;
   if (i.qtd_periodo < 0) erros.push(`${i.item_codigo}: quantidade do período não pode ser negativa`);
   const acum = i.qtd_acum_anterior + i.qtd_periodo;
   if (acum > i.qtd_contratada + EPSILON) {
-    erros.push(`${i.item_codigo}: quantidade acumulada ultrapassa o contratado`);
+    const temJust = !!(i.justificativa && i.justificativa.trim().length >= 10);
+    if (!temJust) {
+      erros.push(`${i.item_codigo}: quantidade acumulada ultrapassa o contratado (registre justificativa formal)`);
+    }
   }
   return erros;
 }
+
 
 /* ============================================================
  * CONFERÊNCIA AUTOMÁTICA (Fase C) — 12 verificações
