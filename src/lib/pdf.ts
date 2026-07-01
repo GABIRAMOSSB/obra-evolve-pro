@@ -301,11 +301,17 @@ export function exportAcompanhamentoXlsx(
     { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 16 }, { wch: 16 }, { wch: 16 },
     { wch: 10 }, { wch: 14 },
   ];
-  // Row heights
+  // Row heights — layout mais respirado
   ws["!rows"] = [];
-  ws["!rows"][0] = { hpt: 26 }; // banner
-  ws["!rows"][9] = { hpt: 22 }; // group header
-  ws["!rows"][10] = { hpt: 28 }; // sub-header
+  ws["!rows"][0] = { hpt: 32 };  // banner
+  ws["!rows"][2] = { hpt: 20 };  // metadata
+  ws["!rows"][3] = { hpt: 20 };
+  ws["!rows"][4] = { hpt: 20 };
+  ws["!rows"][5] = { hpt: 20 };
+  ws["!rows"][6] = { hpt: 24 };  // resumo financeiro
+  ws["!rows"][7] = { hpt: 22 };
+  ws["!rows"][9] = { hpt: 24 };  // group header
+  ws["!rows"][10] = { hpt: 30 }; // sub-header
 
   // Freeze first 11 rows (banner + metadata + resumo + headers) and first 2 cols
   ws["!freeze"] = { xSplit: 2, ySplit: 11 } as never;
