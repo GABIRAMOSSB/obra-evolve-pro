@@ -13,15 +13,23 @@ function fmtDateBR(d: Date) {
 type Cell = string | number | { f: string } | null;
 type StyledCell = { v?: string | number; f?: string; t?: string; s?: Record<string, unknown> };
 
-const NAVY = "082B5C";
-const ORANGE = "C94B16";
-const GREEN = "15803D";
+// Paleta institucional SOLV — mantida em sincronia com REPORT_HEX (report-theme.ts)
+// para paridade visual entre tela (Atividades / Medição), PDF e XLSX.
+const NAVY = "785F44";           // marrom escuro SOLV (antes NAVY azul)
+const NAVY_SOFT = "B19777";      // dourado SOLV (headers secundários)
+const ORANGE = "C94B16";         // laranja medição
+const GREEN = "21BD5C";          // verde acumulado
 const LIGHT_ORANGE = "FDEBDC";
 const LIGHT_GREEN = "DCFCE7";
-const GROUP_BG = "E8EEF7";
-const HEADER_BG = "0F3D7A";
-const SUBHEADER_BG = "D7E2F0";
-const BORDER = { style: "thin", color: { rgb: "B0B7C3" } };
+const GROUP_BG = "EFE8DC";       // fundo etapa (bege claro SOLV)
+const SUBGROUP_BG = "F5EFE5";
+const HEADER_BG = "785F44";      // banda principal cabeçalho tabela
+const HEADER_BG_ALT = "B19777";  // banda auxiliar (planejamento)
+const SUBHEADER_BG = "EAE1D2";   // sub-cabeçalho bege
+const LABEL_BG = "F5EFE5";       // fundo dos rótulos de metadados
+const LABEL_COLOR = "6B5A46";    // marrom médio para rótulos
+const VALUE_COLOR = "1F2937";
+const BORDER = { style: "thin", color: { rgb: "D9CFBE" } };
 const ALL_BORDERS = { top: BORDER, bottom: BORDER, left: BORDER, right: BORDER };
 
 function styleHeader(bg: string, color = "FFFFFF", size = 11): Record<string, unknown> {
