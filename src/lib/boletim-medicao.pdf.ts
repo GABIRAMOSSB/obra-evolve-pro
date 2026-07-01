@@ -38,6 +38,9 @@ interface BoletimData {
     objeto: string | null;
     orgao_contratante: string | null;
     processo_administrativo: string | null;
+    numero_licitacao?: string | null;
+    data_inicio?: string | null;
+    prazo_dias?: number | null;
   } | null;
   obra: {
     nome: string;
@@ -67,6 +70,7 @@ interface BoletimData {
     qtd_periodo: number;
   }>;
 }
+
 
 function fmtDate(iso: string | null | undefined): string {
   if (!iso) return "—";
