@@ -482,7 +482,7 @@ function BoletimDetalhePage() {
         </div>
 
         {/* ===== FILTROS ===== */}
-        <div className="bg-white rounded-xl shadow-sm px-4 py-3 flex flex-wrap gap-3 items-center print:hidden">
+        <div className={`bg-white rounded-xl shadow-sm px-4 py-3 flex flex-wrap gap-3 items-center print:hidden ${modoOficial ? "hidden" : ""}`}>
           <div className="relative flex-1 min-w-[220px]">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#69717D]" />
             <Input
