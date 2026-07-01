@@ -90,17 +90,21 @@ export function exportAcompanhamentoXlsx(
   aoa.push(["Obra:", projectName, "", "Endereço:", info.endereco || "—", "", "Município:", info.municipio || "—", "", "UF:", info.estado || "—", "", "Nº Licitação:", info.numeroLicitacao || "—"]);
   aoa.push(["Resp. Técnico:", info.responsavelTecnico || "—", "", "CREA/CAU:", info.crea || "—", "", "Cargo (Resp.):", info.cargoResponsavel || "—", "", "ART/RRT:", info.artRrt || "—", "", "Fiscal:", info.fiscal || "—"]);
   aoa.push(["CPF Fiscal:", info.cpfFiscal || "—", "", "Cargo (Fiscal):", info.cargoFiscal || "—", "", "Início da Obra:", info.dataInicioObra || "—", "", "Prazo (dias):", info.prazoContratualDias ?? "—", "", "", ""]);
-  // Linha de resumo financeiro (idêntica à tela e ao PDF)
+  // Linha de resumo financeiro — os totais são derivados por FÓRMULA a
+  // partir da linha de TOTAL GERAL da tabela (calculada mais abaixo),
+  // garantindo que qualquer edição da coluna "Período" no Excel
+  // atualize automaticamente todos os KPIs.
+  const totalRowRef = dataStart_placeholder(rows.length);
   aoa.push([
     "Nº do BM:", resumo.descricaoBM, "",
     "Data:", resumo.dataMedicao, "",
-    "Valor Total da Obra:", resumo.valorTotalObra, "",
-    "Valor desta Medição:", resumo.valorDestaMedicao, "",
-    "Valor Acumulado:", resumo.valorAcumulado,
+    "Valor Total da Obra:", { f: `F${totalRowRef}` }, "",
+    "Valor desta Medição:", { f: `K${totalRowRef}` }, "",
+    "Valor Acumulado:", { f: `L${totalRowRef}` },
   ]);
   aoa.push([
-    "% Acumulado:", resumo.percentualAcumulado / 100, "",
-    "Saldo Restante:", resumo.saldoRestante, "",
+    "% Acumulado:", { f: `IF(H7=0,0,N7/H7)` }, "",
+    "Saldo Restante:", { f: `H7-N7` }, "",
     "", "", "", "", "", "", "", "",
   ]);
   aoa.push([]);
