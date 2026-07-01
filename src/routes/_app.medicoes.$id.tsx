@@ -22,6 +22,7 @@ import {
 } from "@/lib/boletim-medicao.calc";
 import { generateBoletimMedicaoPDF } from "@/lib/boletim-medicao.pdf";
 import { generateBoletimMedicaoXLSX } from "@/lib/boletim-medicao.xlsx";
+import { VisaoExecutivaMedicao } from "@/components/VisaoExecutivaMedicao";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
