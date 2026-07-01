@@ -86,10 +86,19 @@ function BoletimDetalhePage() {
   const get = useServerFn(getMedicaoDetalhe);
   const salvar = useServerFn(salvarRascunhoMedicao);
   const aprovar = useServerFn(aprovarMedicao);
+  const enviar = useServerFn(enviarMedicaoParaConferencia);
+  const rejeitar = useServerFn(rejeitarMedicao);
+  const solicitarRev = useServerFn(solicitarRevisaoMedicao);
+  const getHist = useServerFn(getBoletimHistorico);
 
   const { data, isLoading } = useQuery({
     queryKey: ["medicao-detalhe", id],
     queryFn: () => get({ data: { id } }),
+  });
+
+  const { data: historico } = useQuery({
+    queryKey: ["medicao-historico", id],
+    queryFn: () => getHist({ data: { id } }),
   });
 
   const [numeroBM, setNumeroBM] = useState("");
