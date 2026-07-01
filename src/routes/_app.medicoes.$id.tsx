@@ -648,6 +648,10 @@ function BoletimDetalhePage() {
             <SignBlock title="Fiscal da Obra" nome="—" registro={null} />
           </div>
         </div>
+        </>
+        )}
+
+
 
         <Badge variant="outline" className="text-[10px] print:hidden">
           Última atualização: {new Date(data.medicao.updated_at ?? data.medicao.created_at ?? Date.now()).toLocaleString("pt-BR")}
