@@ -528,6 +528,12 @@ function BoletimDetalhePage() {
                         <Input
                           value={it.qtd_periodo ? fmtNumberBR(it.qtd_periodo) : ""}
                           onChange={(e) => updateQtdPeriodo(it.item_codigo, parseBR(e.target.value))}
+                          onKeyDown={handleCellKey}
+                          onPaste={(e) => {
+                            const txt = e.clipboardData.getData("text");
+                            if (handlePasteSequence(it.item_codigo, txt)) e.preventDefault();
+                          }}
+                          data-bm-cell="1"
                           disabled={readOnly}
                           placeholder="0,00"
                           className="h-8 text-right tabular-nums bg-[#FBF5E6] border-transparent focus-visible:border-[#C8A66A] focus-visible:ring-1 focus-visible:ring-[#C8A66A]/40 rounded-md"
