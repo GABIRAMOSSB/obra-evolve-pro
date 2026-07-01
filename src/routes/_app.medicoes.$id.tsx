@@ -94,6 +94,8 @@ function BoletimDetalhePage() {
   const [somentePeriodo, setSomentePeriodo] = useState(false);
   const [modo, setModo] = useState<"lancamento" | "oficial" | "executiva">("lancamento");
   const modoOficial = modo === "oficial";
+  const [justDialog, setJustDialog] = useState<{ codigo: string; valorTentado: number; saldo: number } | null>(null);
+  const [justTexto, setJustTexto] = useState("");
 
   useEffect(() => {
     if (!data) return;
