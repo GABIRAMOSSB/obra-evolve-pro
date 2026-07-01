@@ -121,15 +121,39 @@ function BoletimDetalhePage() {
     setItens((prev) =>
       prev.map((it) => {
         if (it.item_codigo !== codigo) return it;
+        if (valor < 0) {
+          toast.error(`${it.item_codigo}: quantidade não pode ser negativa`);
+          return { ...it, qtd_periodo: 0 };
+        }
         const saldo = it.qtd_contratada - it.qtd_acum_anterior;
         if (valor > saldo + 1e-6) {
-          toast.error(`${it.item_codigo}: quantidade superior ao saldo disponível (${fmtNumberBR(saldo)})`);
-          return { ...it, qtd_periodo: Math.max(0, saldo) };
+          // Abre modal de justificativa para exceção formal
+          setJustDialog({ codigo, valorTentado: valor, saldo });
+          setJustTexto(it.justificativa ?? "");
+          return it; // não aplica ainda; espera justificativa
         }
-        return { ...it, qtd_periodo: Math.max(0, valor) };
+        return { ...it, qtd_periodo: valor, justificativa: null };
       }),
     );
   }, []);
+
+  const confirmarJustificativa = useCallback(() => {
+    if (!justDialog) return;
+    if (justTexto.trim().length < 10) {
+      toast.error("Justificativa precisa ter ao menos 10 caracteres");
+      return;
+    }
+    setItens((prev) =>
+      prev.map((it) =>
+        it.item_codigo === justDialog.codigo
+          ? { ...it, qtd_periodo: justDialog.valorTentado, justificativa: justTexto.trim() }
+          : it,
+      ),
+    );
+    toast.success(`Exceção autorizada em ${justDialog.codigo}`);
+    setJustDialog(null);
+    setJustTexto("");
+  }, [justDialog, justTexto]);
 
   /** Colar coluna do Excel → distribui nos próximos itens mensuráveis, pulando etapas. */
   const handlePasteSequence = useCallback((startCodigo: string, text: string): boolean => {
