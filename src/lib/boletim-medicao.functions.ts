@@ -222,6 +222,7 @@ const salvarSchema = z.object({
       qtd_acum_anterior: z.number(),
       valor_acum_anterior: z.number(),
       qtd_periodo: z.number(),
+      justificativa: z.string().max(2000).nullable().optional(),
       ordem: z.number().optional(),
     }),
   ),
