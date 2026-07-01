@@ -110,6 +110,7 @@ function BoletimDetalhePage() {
   }, [data]);
 
   const totais = useMemo(() => computeTotais(itens), [itens]);
+  const conferencia = useMemo(() => runConferencia(itens, totais), [itens, totais]);
 
   const readOnly = data?.medicao?.status === "aprovada" || data?.medicao?.status === "paga";
 
