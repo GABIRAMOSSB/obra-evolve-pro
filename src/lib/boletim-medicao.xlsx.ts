@@ -573,8 +573,8 @@ function buildCapaSheet(wb: ExcelJS.Workbook, data: XLSXInput, logoImageId: numb
   // Logo centralizado sobre a faixa grafite
   if (logoImageId !== null) {
     ws.addImage(logoImageId, {
-      tl: { col: 2.4, row: 0.4 },
-      ext: { width: 140, height: 120 },
+      tl: { col: 1.6, row: 0.4 },
+      ext: { width: 260, height: 126 },
       editAs: "absolute",
     });
   } else {
