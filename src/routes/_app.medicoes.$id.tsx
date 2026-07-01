@@ -30,8 +30,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { ArrowLeft, Save, CheckCircle2, FileDown, Printer, Search, Loader2, AlertTriangle, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Save, CheckCircle2, FileDown, Printer, Search, Loader2, AlertTriangle, ShieldAlert, Upload } from "lucide-react";
 import { toast } from "sonner";
+import { OrcamentoImportDialog } from "@/components/OrcamentoImportDialog";
 
 export const Route = createFileRoute("/_app/medicoes/$id")({
   component: BoletimDetalhePage,
@@ -97,6 +98,7 @@ function BoletimDetalhePage() {
   const modoOficial = modo === "oficial";
   const [justDialog, setJustDialog] = useState<{ codigo: string; valorTentado: number; saldo: number } | null>(null);
   const [justTexto, setJustTexto] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
 
   useEffect(() => {
     if (!data) return;
@@ -417,6 +419,17 @@ function BoletimDetalhePage() {
               >
                 <Printer className="w-4 h-4 mr-1" /> Imprimir
               </Button>
+              {data.obra?.id && !readOnly && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="bg-white text-[#252A33] border-white/20 hover:bg-white/90"
+                  onClick={() => setImportOpen(true)}
+                  title="Importar orçamento (Excel/CSV) — cria nova versão em rascunho"
+                >
+                  <Upload className="w-4 h-4 mr-1" /> Importar orçamento
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="outline"
@@ -831,6 +844,19 @@ function BoletimDetalhePage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {data.obra?.id && (
+          <OrcamentoImportDialog
+            obraId={data.obra.id}
+            contratoId={data.contrato?.id ?? null}
+            open={importOpen}
+            onOpenChange={setImportOpen}
+            onImported={() => {
+              qc.invalidateQueries({ queryKey: ["medicao-detalhe", id] });
+              toast.success("Orçamento importado. Congele a versão em rascunho para atualizar as atividades desta obra.");
+            }}
+          />
+        )}
       </div>
     </div>
   );
