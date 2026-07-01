@@ -346,20 +346,20 @@ function BoletimDetalhePage() {
             )}
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center rounded-full bg-white/10 p-0.5 text-[11px] font-semibold">
-                <button
-                  type="button"
-                  onClick={() => setModoOficial(false)}
-                  className={`px-3 py-1 rounded-full transition ${!modoOficial ? "bg-[#C8A66A] text-[#252A33]" : "text-white/70 hover:text-white"}`}
-                >
-                  Lançamento
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setModoOficial(true)}
-                  className={`px-3 py-1 rounded-full transition ${modoOficial ? "bg-[#C8A66A] text-[#252A33]" : "text-white/70 hover:text-white"}`}
-                >
-                  Boletim oficial
-                </button>
+                {([
+                  ["lancamento", "Lançamento"],
+                  ["oficial", "Boletim oficial"],
+                  ["executiva", "Visão executiva"],
+                ] as const).map(([k, label]) => (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setModo(k)}
+                    className={`px-3 py-1 rounded-full transition ${modo === k ? "bg-[#C8A66A] text-[#252A33]" : "text-white/70 hover:text-white"}`}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
               <Button
                 size="sm"
