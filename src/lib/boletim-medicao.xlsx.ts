@@ -593,7 +593,7 @@ function buildCapaSheet(wb: ExcelJS.Workbook, data: XLSXInput) {
     cv.value = value;
     cv.font = { name: "Calibri", size: 10, bold: true, color: { argb: C.text } };
     cv.alignment = { horizontal: "left", vertical: "middle", indent: 1, wrapText: true };
-    ws.getRow(r).height = 20;
+    ws.getRow(r).height = autosizeRowHeight([{ text: value, colWidth: 44 }], 20);
     r++;
   }
 
