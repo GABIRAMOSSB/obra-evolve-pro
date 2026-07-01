@@ -22,6 +22,7 @@ import {
 } from "@/lib/boletim-medicao.calc";
 import { generateBoletimMedicaoPDF } from "@/lib/boletim-medicao.pdf";
 import { generateBoletimMedicaoXLSX } from "@/lib/boletim-medicao.xlsx";
+import { VisaoExecutivaMedicao } from "@/components/VisaoExecutivaMedicao";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -87,7 +88,8 @@ function BoletimDetalhePage() {
   const [initialSig, setInitialSig] = useState<string>("");
   const [q, setQ] = useState("");
   const [somentePeriodo, setSomentePeriodo] = useState(false);
-  const [modoOficial, setModoOficial] = useState(false);
+  const [modo, setModo] = useState<"lancamento" | "oficial" | "executiva">("lancamento");
+  const modoOficial = modo === "oficial";
 
   useEffect(() => {
     if (!data) return;
@@ -344,20 +346,20 @@ function BoletimDetalhePage() {
             )}
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center rounded-full bg-white/10 p-0.5 text-[11px] font-semibold">
-                <button
-                  type="button"
-                  onClick={() => setModoOficial(false)}
-                  className={`px-3 py-1 rounded-full transition ${!modoOficial ? "bg-[#C8A66A] text-[#252A33]" : "text-white/70 hover:text-white"}`}
-                >
-                  Lançamento
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setModoOficial(true)}
-                  className={`px-3 py-1 rounded-full transition ${modoOficial ? "bg-[#C8A66A] text-[#252A33]" : "text-white/70 hover:text-white"}`}
-                >
-                  Boletim oficial
-                </button>
+                {([
+                  ["lancamento", "Lançamento"],
+                  ["oficial", "Boletim oficial"],
+                  ["executiva", "Visão executiva"],
+                ] as const).map(([k, label]) => (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setModo(k)}
+                    className={`px-3 py-1 rounded-full transition ${modo === k ? "bg-[#C8A66A] text-[#252A33]" : "text-white/70 hover:text-white"}`}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
               <Button
                 size="sm"
@@ -481,6 +483,17 @@ function BoletimDetalhePage() {
           </div>
         </div>
 
+        {modo === "executiva" ? (
+          <VisaoExecutivaMedicao
+            medicaoId={id}
+            itens={itens}
+            valorTotalContrato={totais.valor_total_contrato}
+            valorMedicaoAtual={totais.valor_medicao_atual}
+            valorAcumulado={totais.valor_acumulado}
+            percentualExecutado={totais.percentual_executado}
+          />
+        ) : (
+        <>
         {/* ===== FILTROS ===== */}
         <div className={`bg-white rounded-xl shadow-sm px-4 py-3 flex flex-wrap gap-3 items-center print:hidden ${modoOficial ? "hidden" : ""}`}>
           <div className="relative flex-1 min-w-[220px]">
@@ -635,6 +648,10 @@ function BoletimDetalhePage() {
             <SignBlock title="Fiscal da Obra" nome="—" registro={null} />
           </div>
         </div>
+        </>
+        )}
+
+
 
         <Badge variant="outline" className="text-[10px] print:hidden">
           Última atualização: {new Date(data.medicao.updated_at ?? data.medicao.created_at ?? Date.now()).toLocaleString("pt-BR")}
