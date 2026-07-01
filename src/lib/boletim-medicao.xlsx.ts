@@ -387,10 +387,10 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
       row.getCell(4).value = Number(i.qtd_contratada);
       row.getCell(4).numFmt = "#,##0.00";
       row.getCell(5).value = Number(i.valor_unitario);
-      row.getCell(5).numFmt = 'R$ #,##0.00;[Red]-R$ #,##0.00';
+      row.getCell(5).numFmt = BRL;
       // Total = ROUND(D*E, 2)
       row.getCell(6).value = { formula: `ROUND(D${rowNum}*E${rowNum},2)` };
-      row.getCell(6).numFmt = 'R$ #,##0.00';
+      row.getCell(6).numFmt = BRL;
       row.getCell(7).value = Number(i.qtd_acum_anterior);
       row.getCell(7).numFmt = "#,##0.00";
       // Período (EDITÁVEL) — destaque dourado suave
@@ -411,13 +411,13 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
       row.getCell(9).value = { formula: `G${rowNum}+H${rowNum}` };
       row.getCell(9).numFmt = "#,##0.00";
       row.getCell(10).value = Number(i.valor_acum_anterior);
-      row.getCell(10).numFmt = 'R$ #,##0.00';
+      row.getCell(10).numFmt = BRL;
       // Período financeiro = ROUND(H*E,2)
       row.getCell(11).value = { formula: `ROUND(H${rowNum}*E${rowNum},2)` };
-      row.getCell(11).numFmt = 'R$ #,##0.00';
+      row.getCell(11).numFmt = BRL;
       // Acum financeiro = J + K
       row.getCell(12).value = { formula: `J${rowNum}+K${rowNum}` };
-      row.getCell(12).numFmt = 'R$ #,##0.00';
+      row.getCell(12).numFmt = BRL;
       // Pct executado = IF(D=0,0,I/D)
       row.getCell(13).value = { formula: `IF(D${rowNum}=0,0,I${rowNum}/D${rowNum})` };
       row.getCell(13).numFmt = "0.00%";
@@ -449,11 +449,11 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   totalRow.getCell(1).value = "TOTAL GERAL";
   ws.mergeCells(rowNum, 1, rowNum, 5);
   totalRow.getCell(6).value = { formula: `SUM(F${startRow}:F${lastItemRow})` };
-  totalRow.getCell(6).numFmt = 'R$ #,##0.00';
+  totalRow.getCell(6).numFmt = BRL;
   totalRow.getCell(11).value = { formula: `SUM(K${startRow}:K${lastItemRow})` };
-  totalRow.getCell(11).numFmt = 'R$ #,##0.00';
+  totalRow.getCell(11).numFmt = BRL;
   totalRow.getCell(12).value = { formula: `SUM(L${startRow}:L${lastItemRow})` };
-  totalRow.getCell(12).numFmt = 'R$ #,##0.00';
+  totalRow.getCell(12).numFmt = BRL;
   totalRow.getCell(13).value = { formula: `IF(F${rowNum}=0,0,L${rowNum}/F${rowNum})` };
   totalRow.getCell(13).numFmt = "0.00%";
   for (let c = 1; c <= 13; c++) {
@@ -519,11 +519,11 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
 
   // 5 tiles com destaque no % Executado (dourado)
   const kpis: Array<[string, ExcelJS.CellValue, string, boolean]> = [
-    ["VALOR DO CONTRATO", { formula: `F${totalRowNum}` }, 'R$ #,##0.00', false],
-    ["MEDIÇÃO DO PERÍODO", { formula: `K${totalRowNum}` }, 'R$ #,##0.00', false],
-    ["ACUMULADO EXECUTADO", { formula: `L${totalRowNum}` }, 'R$ #,##0.00', false],
+    ["VALOR DO CONTRATO", { formula: `F${totalRowNum}` }, BRL, false],
+    ["MEDIÇÃO DO PERÍODO", { formula: `K${totalRowNum}` }, BRL, false],
+    ["ACUMULADO EXECUTADO", { formula: `L${totalRowNum}` }, BRL, false],
     ["% EXECUTADO", { formula: `IF(F${totalRowNum}=0,0,L${totalRowNum}/F${totalRowNum})` }, "0.00%", true],
-    ["SALDO CONTRATUAL", { formula: `F${totalRowNum}-L${totalRowNum}` }, 'R$ #,##0.00', false],
+    ["SALDO CONTRATUAL", { formula: `F${totalRowNum}-L${totalRowNum}` }, BRL, false],
   ];
 
   const kpiCols = [
@@ -856,9 +856,9 @@ function buildBaseCalculosSheet(wb: ExcelJS.Workbook, data: XLSXInput) {
       row.getCell(4).value = Number(i.qtd_contratada);
       row.getCell(4).numFmt = "#,##0.00";
       row.getCell(5).value = Number(i.valor_unitario);
-      row.getCell(5).numFmt = 'R$ #,##0.00';
+      row.getCell(5).numFmt = BRL;
       row.getCell(6).value = { formula: `ROUND(D${rowNum}*E${rowNum},2)` };
-      row.getCell(6).numFmt = 'R$ #,##0.00';
+      row.getCell(6).numFmt = BRL;
       row.getCell(7).value = Number(i.qtd_acum_anterior);
       row.getCell(7).numFmt = "#,##0.00";
       row.getCell(8).value = Number(i.qtd_periodo);
@@ -867,17 +867,17 @@ function buildBaseCalculosSheet(wb: ExcelJS.Workbook, data: XLSXInput) {
       row.getCell(9).value = { formula: `G${rowNum}+H${rowNum}` };
       row.getCell(9).numFmt = "#,##0.00";
       row.getCell(10).value = Number(i.valor_acum_anterior);
-      row.getCell(10).numFmt = 'R$ #,##0.00';
+      row.getCell(10).numFmt = BRL;
       row.getCell(11).value = { formula: `ROUND(H${rowNum}*E${rowNum},2)` };
-      row.getCell(11).numFmt = 'R$ #,##0.00';
+      row.getCell(11).numFmt = BRL;
       row.getCell(12).value = { formula: `J${rowNum}+K${rowNum}` };
-      row.getCell(12).numFmt = 'R$ #,##0.00';
+      row.getCell(12).numFmt = BRL;
       row.getCell(13).value = { formula: `IF(D${rowNum}=0,0,I${rowNum}/D${rowNum})` };
       row.getCell(13).numFmt = "0.00%";
       row.getCell(14).value = { formula: `D${rowNum}-I${rowNum}` };
       row.getCell(14).numFmt = "#,##0.00";
       row.getCell(15).value = { formula: `F${rowNum}-L${rowNum}` };
-      row.getCell(15).numFmt = 'R$ #,##0.00';
+      row.getCell(15).numFmt = BRL;
 
       for (const c of [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]) {
         row.getCell(c).alignment = { horizontal: "right", vertical: "middle" };
@@ -897,17 +897,17 @@ function buildBaseCalculosSheet(wb: ExcelJS.Workbook, data: XLSXInput) {
   ws.mergeCells(rowNum, 1, rowNum, 5);
   tr.getCell(1).value = "TOTAIS";
   tr.getCell(6).value = { formula: `SUM(F${startRow}:F${lastItem})` };
-  tr.getCell(6).numFmt = 'R$ #,##0.00';
+  tr.getCell(6).numFmt = BRL;
   tr.getCell(10).value = { formula: `SUM(J${startRow}:J${lastItem})` };
-  tr.getCell(10).numFmt = 'R$ #,##0.00';
+  tr.getCell(10).numFmt = BRL;
   tr.getCell(11).value = { formula: `SUM(K${startRow}:K${lastItem})` };
-  tr.getCell(11).numFmt = 'R$ #,##0.00';
+  tr.getCell(11).numFmt = BRL;
   tr.getCell(12).value = { formula: `SUM(L${startRow}:L${lastItem})` };
-  tr.getCell(12).numFmt = 'R$ #,##0.00';
+  tr.getCell(12).numFmt = BRL;
   tr.getCell(13).value = { formula: `IF(F${rowNum}=0,0,L${rowNum}/F${rowNum})` };
   tr.getCell(13).numFmt = "0.00%";
   tr.getCell(15).value = { formula: `F${rowNum}-L${rowNum}` };
-  tr.getCell(15).numFmt = 'R$ #,##0.00';
+  tr.getCell(15).numFmt = BRL;
   for (let c = 1; c <= 15; c++) {
     const cell = tr.getCell(c);
     cell.fill = fill(C.graphite);
