@@ -280,6 +280,7 @@ function BoletimDetalhePage() {
             qtd_acum_anterior: i.qtd_acum_anterior,
             valor_acum_anterior: i.valor_acum_anterior,
             qtd_periodo: i.qtd_periodo,
+            justificativa: i.justificativa ?? null,
             ordem: i.ordem,
           })),
         },

@@ -222,6 +222,7 @@ const salvarSchema = z.object({
       qtd_acum_anterior: z.number(),
       valor_acum_anterior: z.number(),
       qtd_periodo: z.number(),
+      justificativa: z.string().max(2000).nullable().optional(),
       ordem: z.number().optional(),
     }),
   ),
@@ -297,6 +298,7 @@ export const salvarRascunhoMedicao = createServerFn({ method: "POST" })
         valor_acum_atual: c.valor_acum_atual,
         pct_executado: c.pct_executado,
         status_calc: c.status_calc,
+        justificativa: i.justificativa ?? null,
         ordem: i.ordem ?? idx,
       };
     });
