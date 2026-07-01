@@ -87,6 +87,7 @@ function BoletimDetalhePage() {
   const [initialSig, setInitialSig] = useState<string>("");
   const [q, setQ] = useState("");
   const [somentePeriodo, setSomentePeriodo] = useState(false);
+  const [modoOficial, setModoOficial] = useState(false);
 
   useEffect(() => {
     if (!data) return;
