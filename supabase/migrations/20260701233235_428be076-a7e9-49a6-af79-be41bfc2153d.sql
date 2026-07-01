@@ -1,0 +1,1 @@
+UPDATE public.medicao_itens SET valor_acum_anterior = 0 WHERE id = '16631346-730f-4b02-b464-6a3599a3cc60';
