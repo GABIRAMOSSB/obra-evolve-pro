@@ -1912,6 +1912,14 @@ function BMField({
  </div>
  );
 }
+function BMSection({ title }: { title: string }) {
+  return (
+    <div className="bg-muted/40 border-b border-border px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+      {title}
+    </div>
+  );
+}
+
 
 function SignatureBlock({ info, municipio }: { info: ObraInfo; municipio?: string }) {
  const hoje = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
