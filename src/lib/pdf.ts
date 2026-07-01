@@ -13,15 +13,23 @@ function fmtDateBR(d: Date) {
 type Cell = string | number | { f: string } | null;
 type StyledCell = { v?: string | number; f?: string; t?: string; s?: Record<string, unknown> };
 
-const NAVY = "082B5C";
-const ORANGE = "C94B16";
-const GREEN = "15803D";
+// Paleta institucional SOLV — mantida em sincronia com REPORT_HEX (report-theme.ts)
+// para paridade visual entre tela (Atividades / Medição), PDF e XLSX.
+const NAVY = "785F44";           // marrom escuro SOLV (antes NAVY azul)
+const NAVY_SOFT = "B19777";      // dourado SOLV (headers secundários)
+const ORANGE = "C94B16";         // laranja medição
+const GREEN = "21BD5C";          // verde acumulado
 const LIGHT_ORANGE = "FDEBDC";
 const LIGHT_GREEN = "DCFCE7";
-const GROUP_BG = "E8EEF7";
-const HEADER_BG = "0F3D7A";
-const SUBHEADER_BG = "D7E2F0";
-const BORDER = { style: "thin", color: { rgb: "B0B7C3" } };
+const GROUP_BG = "EFE8DC";       // fundo etapa (bege claro SOLV)
+const SUBGROUP_BG = "F5EFE5";
+const HEADER_BG = "785F44";      // banda principal cabeçalho tabela
+const HEADER_BG_ALT = "B19777";  // banda auxiliar (planejamento)
+const SUBHEADER_BG = "EAE1D2";   // sub-cabeçalho bege
+const LABEL_BG = "F5EFE5";       // fundo dos rótulos de metadados
+const LABEL_COLOR = "6B5A46";    // marrom médio para rótulos
+const VALUE_COLOR = "1F2937";
+const BORDER = { style: "thin", color: { rgb: "D9CFBE" } };
 const ALL_BORDERS = { top: BORDER, bottom: BORDER, left: BORDER, right: BORDER };
 
 function styleHeader(bg: string, color = "FFFFFF", size = 11): Record<string, unknown> {
@@ -82,17 +90,21 @@ export function exportAcompanhamentoXlsx(
   aoa.push(["Obra:", projectName, "", "Endereço:", info.endereco || "—", "", "Município:", info.municipio || "—", "", "UF:", info.estado || "—", "", "Nº Licitação:", info.numeroLicitacao || "—"]);
   aoa.push(["Resp. Técnico:", info.responsavelTecnico || "—", "", "CREA/CAU:", info.crea || "—", "", "Cargo (Resp.):", info.cargoResponsavel || "—", "", "ART/RRT:", info.artRrt || "—", "", "Fiscal:", info.fiscal || "—"]);
   aoa.push(["CPF Fiscal:", info.cpfFiscal || "—", "", "Cargo (Fiscal):", info.cargoFiscal || "—", "", "Início da Obra:", info.dataInicioObra || "—", "", "Prazo (dias):", info.prazoContratualDias ?? "—", "", "", ""]);
-  // Linha de resumo financeiro (idêntica à tela e ao PDF)
+  // Linha de resumo financeiro — os totais são derivados por FÓRMULA a
+  // partir da linha de TOTAL GERAL da tabela (calculada mais abaixo),
+  // garantindo que qualquer edição da coluna "Período" no Excel
+  // atualize automaticamente todos os KPIs.
+  const totalRowRef = 12 + rows.length;
   aoa.push([
     "Nº do BM:", resumo.descricaoBM, "",
     "Data:", resumo.dataMedicao, "",
-    "Valor Total da Obra:", resumo.valorTotalObra, "",
-    "Valor desta Medição:", resumo.valorDestaMedicao, "",
-    "Valor Acumulado:", resumo.valorAcumulado,
+    "Valor Total da Obra:", { f: `F${totalRowRef}` }, "",
+    "Valor desta Medição:", { f: `K${totalRowRef}` }, "",
+    "Valor Acumulado:", { f: `L${totalRowRef}` },
   ]);
   aoa.push([
-    "% Acumulado:", resumo.percentualAcumulado / 100, "",
-    "Saldo Restante:", resumo.saldoRestante, "",
+    "% Acumulado:", { f: `IF(H7=0,0,N7/H7)` }, "",
+    "Saldo Restante:", { f: `H7-N7` }, "",
     "", "", "", "", "", "", "", "",
   ]);
   aoa.push([]);
@@ -186,14 +198,14 @@ export function exportAcompanhamentoXlsx(
       border: ALL_BORDERS,
     });
   }
-  // Metadata rows 3-6: labels bold, values normal
+  // Metadata rows 3-6: labels bold, values normal (paleta SOLV)
   for (let row1 = 3; row1 <= 6; row1++) {
     for (let c = 0; c < 14; c++) {
       const isLabel = c % 3 === 0;
       setStyle(addr(row1, c), styleCell({
         bold: isLabel,
-        color: isLabel ? "475569" : "0F172A",
-        bg: isLabel ? "F1F5F9" : "FFFFFF",
+        color: isLabel ? LABEL_COLOR : VALUE_COLOR,
+        bg: isLabel ? LABEL_BG : "FFFFFF",
         size: 9,
       }));
     }
@@ -205,31 +217,35 @@ export function exportAcompanhamentoXlsx(
       const isLabel = c % 3 === 0;
       const isMoney = !isLabel && (c === 7 || c === 10 || c === 13 || (row1 === 8 && c === 4));
       const isPercent = row1 === 8 && c === 1;
-      let bg = isLabel ? "F1F5F9" : "FFFFFF";
-      let color = isLabel ? "475569" : "0F172A";
-      if (row1 === 7 && c === 10) { bg = "FDEBDC"; color = ORANGE; } // Valor desta medição
-      if (row1 === 7 && c === 13) { bg = "DCFCE7"; color = GREEN; } // Valor acumulado
+      let bg = isLabel ? LABEL_BG : "FFFFFF";
+      let color = isLabel ? LABEL_COLOR : VALUE_COLOR;
+      if (row1 === 7 && c === 7) { bg = SUBGROUP_BG; color = NAVY; }        // Valor total da obra
+      if (row1 === 7 && c === 10) { bg = LIGHT_ORANGE; color = ORANGE; }     // Valor desta medição
+      if (row1 === 7 && c === 13) { bg = LIGHT_GREEN; color = GREEN; }       // Valor acumulado
+      if (row1 === 8 && c === 1) { bg = SUBGROUP_BG; color = NAVY_SOFT; }    // % acumulado
+      if (row1 === 8 && c === 4) { bg = SUBGROUP_BG; color = NAVY; }         // Saldo restante
       setStyle(addr(row1, c), styleCell({
         bold: isLabel || isMoney || isPercent,
         color,
         bg,
-        size: 9,
+        size: 10,
         align: isLabel ? "left" : "right",
         numFmt: isMoney ? "R$ #,##0.00" : isPercent ? "0.0%" : undefined,
       }));
     }
   }
 
-  // Group header row 10
+  // Group header row 10 — bandas coloridas SOLV
   for (let c = 0; c < 14; c++) {
-    let bg = HEADER_BG;
-    if (c >= 6 && c <= 8) bg = "B45309"; // orange-ish for executado físico
-    if (c >= 9 && c <= 11) bg = "166534"; // green for financeiro
+    let bg = HEADER_BG_ALT;              // Planejamento (dourado SOLV)
+    if (c >= 6 && c <= 8) bg = ORANGE;   // Executado físico (laranja medição)
+    if (c >= 9 && c <= 11) bg = GREEN;   // Executado financeiro (verde acumulado)
+    if (c === 12 || c === 13) bg = HEADER_BG; // Desvio / Status (marrom escuro)
     setStyle(addr(10, c), styleHeader(bg));
   }
-  // Sub-header row 11
+  // Sub-header row 11 — bege institucional
   for (let c = 0; c < 14; c++) {
-    setStyle(addr(11, c), styleHeader(SUBHEADER_BG, "0F172A", 10));
+    setStyle(addr(11, c), styleHeader(SUBHEADER_BG, LABEL_COLOR, 10));
   }
 
   // Data rows
@@ -238,7 +254,7 @@ export function exportAcompanhamentoXlsx(
     for (let c = 0; c < 14; c++) {
       if (isGroup) {
         setStyle(addr(row1, c), styleCell({
-          bold: true, bg: GROUP_BG, color: "082B5C", size: 10,
+          bold: true, bg: GROUP_BG, color: NAVY, size: 10,
           align: c === 0 ? "center" : c === 1 ? "left" : "center",
         }));
       } else {
@@ -285,11 +301,17 @@ export function exportAcompanhamentoXlsx(
     { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 16 }, { wch: 16 }, { wch: 16 },
     { wch: 10 }, { wch: 14 },
   ];
-  // Row heights
+  // Row heights — layout mais respirado
   ws["!rows"] = [];
-  ws["!rows"][0] = { hpt: 26 }; // banner
-  ws["!rows"][9] = { hpt: 22 }; // group header
-  ws["!rows"][10] = { hpt: 28 }; // sub-header
+  ws["!rows"][0] = { hpt: 32 };  // banner
+  ws["!rows"][2] = { hpt: 20 };  // metadata
+  ws["!rows"][3] = { hpt: 20 };
+  ws["!rows"][4] = { hpt: 20 };
+  ws["!rows"][5] = { hpt: 20 };
+  ws["!rows"][6] = { hpt: 24 };  // resumo financeiro
+  ws["!rows"][7] = { hpt: 22 };
+  ws["!rows"][9] = { hpt: 24 };  // group header
+  ws["!rows"][10] = { hpt: 30 }; // sub-header
 
   // Freeze first 11 rows (banner + metadata + resumo + headers) and first 2 cols
   ws["!freeze"] = { xSplit: 2, ySplit: 11 } as never;
