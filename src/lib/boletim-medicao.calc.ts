@@ -73,6 +73,8 @@ export interface ItemInput {
   qtd_acum_anterior: number;
   valor_acum_anterior: number;
   qtd_periodo: number;
+  unidade?: string | null;
+  descricao?: string | null;
 }
 
 export interface ItemComputed {
@@ -189,4 +191,163 @@ export function validateItem(i: ItemInput): string[] {
     erros.push(`${i.item_codigo}: quantidade acumulada ultrapassa o contratado`);
   }
   return erros;
+}
+
+/* ============================================================
+ * CONFERÊNCIA AUTOMÁTICA (Fase C) — 12 verificações
+ * ============================================================ */
+
+export type Severidade = "ok" | "aviso" | "erro";
+
+export interface CheckResultado {
+  codigo: string;              // C01..C12
+  titulo: string;
+  severidade: Severidade;
+  passou: boolean;
+  contagem: number;            // nº de itens afetados
+  detalhes: { item_codigo: string; mensagem: string }[];
+  descricao: string;           // explicação do check
+}
+
+export interface ConferenciaResumo {
+  total_checks: number;
+  ok: number;
+  avisos: number;
+  erros: number;
+  bloqueia_aprovacao: boolean; // true se qualquer erro
+  checks: CheckResultado[];
+}
+
+export function runConferencia(
+  itens: (ItemInput & { justificativa?: string | null })[],
+  totais: TotaisMedicao,
+): ConferenciaResumo {
+  const mensuraveis = itens.filter((i) => !i.is_etapa);
+  const checks: CheckResultado[] = [];
+
+  const push = (
+    codigo: string,
+    titulo: string,
+    descricao: string,
+    severidade: Severidade,
+    detalhes: { item_codigo: string; mensagem: string }[],
+  ) => {
+    checks.push({
+      codigo, titulo, descricao, severidade,
+      passou: detalhes.length === 0,
+      contagem: detalhes.length,
+      detalhes,
+    });
+  };
+
+  // C01 — Quantidade do período negativa
+  push("C01", "Quantidades negativas", "Nenhum item pode ter quantidade lançada menor que zero.", "erro",
+    mensuraveis.filter((i) => i.qtd_periodo < -EPSILON).map((i) => ({
+      item_codigo: i.item_codigo, mensagem: `qtd_periodo = ${i.qtd_periodo}`,
+    })),
+  );
+
+  // C02 — Acumulado excede contratado sem justificativa
+  push("C02", "Extrapolação sem justificativa", "Itens cujo acumulado supera o contratado precisam de justificativa formal.", "erro",
+    mensuraveis.filter((i) => {
+      const acum = i.qtd_acum_anterior + i.qtd_periodo;
+      return acum > i.qtd_contratada + EPSILON && !(i.justificativa && i.justificativa.trim().length >= 10);
+    }).map((i) => ({
+      item_codigo: i.item_codigo,
+      mensagem: `acumulado ${fmtNumberBR(i.qtd_acum_anterior + i.qtd_periodo)} > contratado ${fmtNumberBR(i.qtd_contratada)}`,
+    })),
+  );
+
+  // C03 — Extrapolação COM justificativa (aviso informativo)
+  push("C03", "Exceções autorizadas", "Itens extrapolados com justificativa registrada — revisar em reunião de aprovação.", "aviso",
+    mensuraveis.filter((i) => {
+      const acum = i.qtd_acum_anterior + i.qtd_periodo;
+      return acum > i.qtd_contratada + EPSILON && !!(i.justificativa && i.justificativa.trim().length >= 10);
+    }).map((i) => ({ item_codigo: i.item_codigo, mensagem: i.justificativa ?? "" })),
+  );
+
+  // C04 — Valor unitário ausente ou zero
+  push("C04", "Valor unitário ausente", "Todo item mensurável deve ter valor unitário maior que zero.", "erro",
+    mensuraveis.filter((i) => i.valor_unitario <= 0).map((i) => ({
+      item_codigo: i.item_codigo, mensagem: "valor_unitario ≤ 0",
+    })),
+  );
+
+  // C05 — Quantidade contratada ausente
+  push("C05", "Quantidade contratada ausente", "Itens sem quantidade contratada não podem ser medidos.", "erro",
+    mensuraveis.filter((i) => i.qtd_contratada <= 0 && i.qtd_periodo > EPSILON).map((i) => ({
+      item_codigo: i.item_codigo, mensagem: "medindo item sem qtd contratada",
+    })),
+  );
+
+  // C06 — Unidade não informada
+  push("C06", "Unidade não informada", "Itens sem unidade de medida atrapalham a rastreabilidade contratual.", "aviso",
+    mensuraveis.filter((i) => !i.unidade || i.unidade.trim() === "").map((i) => ({
+      item_codigo: i.item_codigo, mensagem: "unidade em branco",
+    })),
+  );
+
+  // C07 — Descrição muito curta (< 6 caracteres)
+  push("C07", "Descrição incompleta", "Descrições muito curtas dificultam a leitura do boletim oficial.", "aviso",
+    mensuraveis.filter((i) => sanitizeDescricao(i.descricao).length < 6).map((i) => ({
+      item_codigo: i.item_codigo, mensagem: `descrição: "${sanitizeDescricao(i.descricao)}"`,
+    })),
+  );
+
+  // C08 — Valor financeiro anterior maior que o total contratual do item
+  push("C08", "Valor anterior inconsistente", "Valor acumulado anterior maior que o total contratual do item — provável erro de importação.", "erro",
+    mensuraveis.filter((i) => i.valor_acum_anterior > (i.qtd_contratada * i.valor_unitario) + 0.01).map((i) => ({
+      item_codigo: i.item_codigo,
+      mensagem: `anterior ${fmtMoneyBR(i.valor_acum_anterior)} > total ${fmtMoneyBR(i.qtd_contratada * i.valor_unitario)}`,
+    })),
+  );
+
+  // C09 — Divergência entre qtd anterior e valor anterior (> 1%)
+  push("C09", "Divergência físico × financeiro anterior", "Quantidade anterior e valor anterior devem ser coerentes (tolerância 1%).", "aviso",
+    mensuraveis.filter((i) => {
+      if (i.qtd_acum_anterior <= EPSILON || i.valor_unitario <= 0) return false;
+      const esperado = i.qtd_acum_anterior * i.valor_unitario;
+      if (esperado <= 0.01) return false;
+      const dif = Math.abs(esperado - i.valor_acum_anterior) / esperado;
+      return dif > 0.01;
+    }).map((i) => ({
+      item_codigo: i.item_codigo,
+      mensagem: `esperado ${fmtMoneyBR(i.qtd_acum_anterior * i.valor_unitario)}, informado ${fmtMoneyBR(i.valor_acum_anterior)}`,
+    })),
+  );
+
+  // C10 — Códigos duplicados
+  const cont = new Map<string, number>();
+  mensuraveis.forEach((i) => cont.set(i.item_codigo, (cont.get(i.item_codigo) ?? 0) + 1));
+  push("C10", "Códigos de item duplicados", "Cada item mensurável deve ter código único.", "erro",
+    [...cont.entries()].filter(([, n]) => n > 1).map(([codigo, n]) => ({
+      item_codigo: codigo, mensagem: `${n} ocorrências`,
+    })),
+  );
+
+  // C11 — Boletim vazio (nenhum item medido no período)
+  const medidosNoPeriodo = mensuraveis.filter((i) => i.qtd_periodo > EPSILON).length;
+  push("C11", "Boletim sem lançamento no período", "Nenhum item recebeu quantidade no período — verifique se o BM realmente deve ser emitido.",
+    medidosNoPeriodo === 0 ? "aviso" : "ok",
+    medidosNoPeriodo === 0 ? [{ item_codigo: "—", mensagem: "0 itens medidos" }] : [],
+  );
+
+  // C12 — Total do período não confere com a soma dos itens (tolerância R$ 0,05)
+  const somaPeriodo = mensuraveis.reduce((s, i) => s + roundMoney(i.qtd_periodo, i.valor_unitario), 0);
+  const difTotal = Math.abs(somaPeriodo - totais.valor_medicao_atual);
+  push("C12", "Fechamento do período", "Soma item-a-item deve bater com o total exibido nos KPIs (tolerância R$ 0,05).",
+    difTotal > 0.05 ? "erro" : "ok",
+    difTotal > 0.05 ? [{ item_codigo: "—", mensagem: `soma ${fmtMoneyBR(somaPeriodo)} × total ${fmtMoneyBR(totais.valor_medicao_atual)}` }] : [],
+  );
+
+  const erros = checks.filter((c) => c.severidade === "erro" && !c.passou).length;
+  const avisos = checks.filter((c) => c.severidade === "aviso" && !c.passou).length;
+  const ok = checks.filter((c) => c.passou).length;
+
+  return {
+    total_checks: checks.length,
+    ok, avisos, erros,
+    bloqueia_aprovacao: erros > 0,
+    checks,
+  };
 }

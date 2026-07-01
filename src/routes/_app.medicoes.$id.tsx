@@ -20,6 +20,7 @@ import {
   computeItem,
   computeTotais,
   classifyHierarquia,
+  runConferencia,
 } from "@/lib/boletim-medicao.calc";
 import { generateBoletimMedicaoPDF } from "@/lib/boletim-medicao.pdf";
 import { generateBoletimMedicaoXLSX } from "@/lib/boletim-medicao.xlsx";
@@ -109,6 +110,7 @@ function BoletimDetalhePage() {
   }, [data]);
 
   const totais = useMemo(() => computeTotais(itens), [itens]);
+  const conferencia = useMemo(() => runConferencia(itens, totais), [itens, totais]);
 
   const readOnly = data?.medicao?.status === "aprovada" || data?.medicao?.status === "paga";
 
@@ -429,7 +431,8 @@ function BoletimDetalhePage() {
                 size="sm"
                 className="bg-[#C8A66A] text-[#252A33] hover:bg-[#B69354] font-semibold"
                 onClick={() => mutAprovar.mutate()}
-                disabled={readOnly || mutAprovar.isPending || pendencias.length > 0}
+                disabled={readOnly || mutAprovar.isPending || pendencias.length > 0 || conferencia.bloqueia_aprovacao}
+                title={conferencia.bloqueia_aprovacao ? `Corrija ${conferencia.erros} erro(s) da conferência antes de aprovar` : undefined}
               >
                 <CheckCircle2 className="w-4 h-4 mr-1" /> Validar medição
               </Button>
@@ -705,12 +708,79 @@ function BoletimDetalhePage() {
           <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded bg-[#FEEDEE]" /> Extrapolada / saldo negativo</span>
         </div>
 
-        {/* ===== CONFERÊNCIA ===== */}
-        <div className="bg-white rounded-xl shadow-sm p-6 grid grid-cols-2 md:grid-cols-4 gap-5 print:shadow-none">
-          <Field label="Itens medidos" value={String(totais.itens_medidos)} />
-          <Field label="Itens concluídos" value={String(totais.itens_concluidos)} />
-          <Field label="Total contratado" value={fmtMoneyBR(totais.valor_total_contrato)} />
-          <Field label="Total do período" value={fmtMoneyBR(totais.valor_medicao_atual)} />
+        {/* ===== CONFERÊNCIA AUTOMÁTICA (12 checks) ===== */}
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden print:shadow-none print:rounded-none">
+          <div className="bg-[#252A33] text-white px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="text-[10px] uppercase tracking-widest text-[#C8A66A] font-bold">Conferência automática</div>
+              <div className="text-lg font-bold mt-0.5">Auditoria do boletim — 12 verificações</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1.5 rounded-full text-[11px] font-bold bg-[#16855B]/20 text-[#DFF3E9] border border-[#16855B]/40">{conferencia.ok} ok</span>
+              <span className="px-3 py-1.5 rounded-full text-[11px] font-bold bg-[#C47A1B]/20 text-[#FBE7B8] border border-[#C47A1B]/40">{conferencia.avisos} avisos</span>
+              <span className="px-3 py-1.5 rounded-full text-[11px] font-bold bg-[#C83E4D]/20 text-[#FBE0E3] border border-[#C83E4D]/40">{conferencia.erros} erros</span>
+              {conferencia.bloqueia_aprovacao ? (
+                <span className="px-3 py-1.5 rounded-full text-[11px] font-bold bg-[#C83E4D] text-white inline-flex items-center gap-1.5">
+                  <ShieldAlert className="w-3.5 h-3.5" /> Aprovação bloqueada
+                </span>
+              ) : (
+                <span className="px-3 py-1.5 rounded-full text-[11px] font-bold bg-[#16855B] text-white inline-flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Pronto para aprovar
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="divide-y divide-[#EEF0F2]">
+            {conferencia.checks.map((c) => {
+              const cores = c.passou
+                ? { bar: "bg-[#16855B]", tag: "bg-[#DFF3E9] text-[#16855B]", label: "OK" }
+                : c.severidade === "erro"
+                ? { bar: "bg-[#C83E4D]", tag: "bg-[#FBE0E3] text-[#C83E4D]", label: "ERRO" }
+                : { bar: "bg-[#C47A1B]", tag: "bg-[#F5EEDD] text-[#C47A1B]", label: "AVISO" };
+              return (
+                <div key={c.codigo} className="flex items-start gap-4 px-6 py-3.5 hover:bg-[#FAFBFC]">
+                  <div className={`w-1 self-stretch rounded-full ${cores.bar}`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-[10px] text-[#69717D] font-bold">{c.codigo}</span>
+                      <span className="font-semibold text-[#252A33] text-[13px]">{c.titulo}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[9.5px] font-bold ${cores.tag}`}>{cores.label}</span>
+                      {!c.passou && (
+                        <span className="text-[10.5px] text-[#69717D]">
+                          {c.contagem} {c.contagem === 1 ? "ocorrência" : "ocorrências"}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[11.5px] text-[#69717D] mt-0.5">{c.descricao}</div>
+                    {!c.passou && c.detalhes.length > 0 && (
+                      <details className="mt-1.5">
+                        <summary className="text-[10.5px] text-[#8A6D2E] font-semibold cursor-pointer hover:underline">
+                          Ver itens afetados
+                        </summary>
+                        <ul className="mt-1.5 space-y-0.5 max-h-40 overflow-y-auto pr-2">
+                          {c.detalhes.slice(0, 40).map((d, i) => (
+                            <li key={i} className="text-[10.5px] text-[#20242B] flex gap-2">
+                              <span className="font-mono font-semibold text-[#8A6D2E] shrink-0">{d.item_codigo}</span>
+                              <span className="text-[#69717D]">— {d.mensagem}</span>
+                            </li>
+                          ))}
+                          {c.detalhes.length > 40 && (
+                            <li className="text-[10px] text-[#69717D] italic">+ {c.detalhes.length - 40} outras...</li>
+                          )}
+                        </ul>
+                      </details>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="bg-[#FAFBFC] px-6 py-3 grid grid-cols-2 md:grid-cols-4 gap-4 text-[11px] border-t border-[#EEF0F2]">
+            <div><div className="text-[9.5px] uppercase tracking-widest text-[#69717D] font-bold">Itens medidos</div><div className="font-bold text-[#252A33] mt-0.5">{totais.itens_medidos}</div></div>
+            <div><div className="text-[9.5px] uppercase tracking-widest text-[#69717D] font-bold">Itens concluídos</div><div className="font-bold text-[#252A33] mt-0.5">{totais.itens_concluidos}</div></div>
+            <div><div className="text-[9.5px] uppercase tracking-widest text-[#69717D] font-bold">Total contratado</div><div className="font-bold text-[#252A33] mt-0.5">{fmtMoneyBR(totais.valor_total_contrato)}</div></div>
+            <div><div className="text-[9.5px] uppercase tracking-widest text-[#69717D] font-bold">Total do período</div><div className="font-bold text-[#C8A66A] mt-0.5">{fmtMoneyBR(totais.valor_medicao_atual)}</div></div>
+          </div>
         </div>
 
         {/* ===== DECLARAÇÃO E ASSINATURAS (impressão) ===== */}
