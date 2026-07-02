@@ -434,80 +434,127 @@ export function buildMeasurementPdfBlob(
   const bm = resumo.codigoBM;
   const periodoLabel = resumo.periodoLabel;
 
-  // Header banner
+  // ─────────────────────────────────────────────────────────────────
+  // HEADER — banda navy (18mm) + faixa dourada de 2mm; chip do BM à
+  // esquerda, título centralizado com subtítulo, chip de data à direita.
+  // ─────────────────────────────────────────────────────────────────
+  const gold: [number, number, number] = [177, 151, 119]; // B19777
   doc.setFillColor(navy[0], navy[1], navy[2]);
-  doc.rect(0, 0, pageW, 14, "F");
-  doc.setTextColor(255, 255, 255);
+  doc.rect(0, 0, pageW, 18, "F");
+  doc.setFillColor(gold[0], gold[1], gold[2]);
+  doc.rect(0, 18, pageW, 1.6, "F");
+
+  // Chip do BM (arredondado)
+  const chipW = 34, chipH = 9;
+  doc.setFillColor(255, 255, 255);
+  doc.roundedRect(MARGIN, 4.5, chipW, chipH, 1.6, 1.6, "F");
+  doc.setTextColor(navy[0], navy[1], navy[2]);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
-  doc.text(bm, MARGIN, 9);
-  doc.setFontSize(13);
-  doc.text("BOLETIM DE MEDIÇÃO", pageW / 2, 9.5, { align: "center" });
-  doc.setFontSize(9);
-  doc.text(`Período: ${periodoLabel}`, pageW - MARGIN, 9, { align: "right" });
+  doc.text(bm, MARGIN + chipW / 2, 10.6, { align: "center" });
+
+  // Título + subtítulo centralizados
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text("BOLETIM DE MEDIÇÃO", pageW / 2, 9.2, { align: "center" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.6);
+  doc.setTextColor(230, 220, 200);
+  doc.text("Snapshot oficial do período fechado", pageW / 2, 13.6, { align: "center" });
+
+  // Chip de período à direita
+  const rChipW = 74;
+  doc.setFillColor(255, 255, 255);
+  doc.roundedRect(pageW - MARGIN - rChipW, 4.5, rChipW, chipH, 1.6, 1.6, "F");
+  doc.setTextColor(110, 92, 70);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(6.2);
+  doc.text("PERÍODO DE MEDIÇÃO", pageW - MARGIN - rChipW + 2, 7.4);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8.5);
+  doc.setTextColor(navy[0], navy[1], navy[2]);
+  doc.text(periodoLabel, pageW - MARGIN - rChipW + 2, 12);
+
   doc.setTextColor(0, 0, 0);
 
-  // Dados da obra (3 lines)
+  // ─────────────────────────────────────────────────────────────────
+  // CARTÃO — Dados da obra (bordas suaves + faixa lateral dourada)
+  // ─────────────────────────────────────────────────────────────────
   const dy = (lbl: string, val: string, x: number, yy: number, w: number) => {
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(6.5);
-    doc.setTextColor(110);
+    doc.setFontSize(6.2);
+    doc.setTextColor(120, 105, 82);
     doc.text(lbl.toUpperCase(), x, yy);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
-    doc.setTextColor(20);
+    doc.setTextColor(31, 41, 55);
     const lines = doc.splitTextToSize(val || "—", w);
     doc.text(lines[0] ?? "—", x, yy + 3.5);
   };
-  let y = 18;
-  const col = usableW / 4;
-  dy("Licitador", info.cliente || "—", MARGIN, y, col - 2);
-  dy("Contratante", info.contratante || "—", MARGIN + col, y, col - 2);
-  dy("Empresa Executora", info.empresaExecutora || "—", MARGIN + 2 * col, y, col - 2);
-  dy("CNPJ", info.cnpj || "—", MARGIN + 3 * col, y, col - 2);
-  y += 7.5;
-  dy("Obra", projectName, MARGIN, y, col * 2 - 2);
-  dy("Endereço", info.endereco || "—", MARGIN + 2 * col, y, col - 2);
-  dy("Município / UF", `${info.municipio || "—"}${info.estado ? " / " + info.estado : ""}`, MARGIN + 3 * col, y, col - 2);
-  y += 7.5;
-  dy("Nº Contrato", info.numeroContrato || "—", MARGIN, y, col - 2);
-  dy("Nº Licitação", info.numeroLicitacao || "—", MARGIN + col, y, col - 2);
-  dy("Resp. Técnico", `${info.responsavelTecnico || "—"}${info.crea ? " — " + info.crea : ""}`, MARGIN + 2 * col, y, col - 2);
-  dy("Cargo / Função (Resp.)", info.cargoResponsavel || "—", MARGIN + 3 * col, y, col - 2);
-  y += 7.5;
-  dy("Fiscal da Obra", info.fiscal || "—", MARGIN, y, col - 2);
-  dy("CREA/CAU do Fiscal", info.creaFiscal || "—", MARGIN + col, y, col - 2);
-  dy("Cargo / Função (Fiscal)", info.cargoFiscal || "—", MARGIN + 2 * col, y, col - 2);
-  dy("ART / RRT", info.artRrt || "—", MARGIN + 3 * col, y, col - 2);
-  y += 8;
 
-  // Resumo financeiro do BM (faixa única — 7 colunas, como na tela)
+  let y = 24;
+  const cardH = 34;
+  doc.setFillColor(252, 250, 246);
+  doc.setDrawColor(217, 207, 190);
+  doc.roundedRect(MARGIN, y, usableW, cardH, 1.4, 1.4, "FD");
+  doc.setFillColor(gold[0], gold[1], gold[2]);
+  doc.rect(MARGIN, y, 1.4, cardH, "F");
+
+  const col = usableW / 4;
+  const px = MARGIN + 4;
+  let yy = y + 5.5;
+  dy("Licitador", info.cliente || "—", px, yy, col - 4);
+  dy("Contratante", info.contratante || "—", px + col, yy, col - 4);
+  dy("Empresa Executora", info.empresaExecutora || "—", px + 2 * col, yy, col - 4);
+  dy("CNPJ", info.cnpj || "—", px + 3 * col, yy, col - 4);
+  yy += 8;
+  dy("Obra", projectName, px, yy, col * 2 - 4);
+  dy("Endereço", info.endereco || "—", px + 2 * col, yy, col - 4);
+  dy("Município / UF", `${info.municipio || "—"}${info.estado ? " / " + info.estado : ""}`, px + 3 * col, yy, col - 4);
+  yy += 8;
+  dy("Nº Contrato", info.numeroContrato || "—", px, yy, col - 4);
+  dy("Nº Licitação", info.numeroLicitacao || "—", px + col, yy, col - 4);
+  dy("Resp. Técnico", `${info.responsavelTecnico || "—"}${info.crea ? " — " + info.crea : ""}`, px + 2 * col, yy, col - 4);
+  dy("Fiscal da Obra", `${info.fiscal || "—"}${info.creaFiscal ? " — " + info.creaFiscal : ""}`, px + 3 * col, yy, col - 4);
+  y += cardH + 5;
+
+  // ─────────────────────────────────────────────────────────────────
+  // KPIs — 7 cartões coloridos (tira de badges)
+  // ─────────────────────────────────────────────────────────────────
+  const kpiH = 13;
   const col7 = usableW / 7;
-  doc.setFillColor(240, 244, 250);
-  doc.rect(MARGIN, y - 4, usableW, 10, "F");
-  doc.setDrawColor(200, 207, 219);
-  doc.rect(MARGIN, y - 4, usableW, 10, "S");
-  const cell = (lbl: string, val: string, idx: number, color?: [number, number, number]) => {
-    const x = MARGIN + idx * col7 + 1;
+  const kpi = (
+    lbl: string,
+    val: string,
+    idx: number,
+    tint: [number, number, number],
+    valColor: [number, number, number] = [31, 41, 55],
+  ) => {
+    const x = MARGIN + idx * col7;
+    const w = col7 - 1.2;
+    doc.setFillColor(tint[0], tint[1], tint[2]);
+    doc.setDrawColor(220, 213, 200);
+    doc.roundedRect(x, y, w, kpiH, 1.2, 1.2, "FD");
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(6.2);
-    doc.setTextColor(110);
-    doc.text(lbl.toUpperCase(), x, y - 1);
+    doc.setFontSize(6);
+    doc.setTextColor(110, 95, 72);
+    doc.text(lbl.toUpperCase(), x + 2, y + 3.4);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(8.5);
-    if (color) doc.setTextColor(color[0], color[1], color[2]);
-    else doc.setTextColor(20);
-    doc.text(val, x, y + 4);
+    doc.setFontSize(9);
+    doc.setTextColor(valColor[0], valColor[1], valColor[2]);
+    doc.text(val, x + 2, y + 9.8);
   };
-  cell("Nº do BM", resumo.descricaoBM, 0, navy);
-  cell("Data da Medição", resumo.dataMedicao, 1);
-  cell("Valor total do contrato", fmtBRL(resumo.valorTotalObra), 2);
-  cell("Valor desta medição", fmtBRL(resumo.valorDestaMedicao), 3, orange);
-  cell("Valor acumulado", fmtBRL(resumo.valorAcumulado), 4, green);
-  cell("% Acumulado", `${fmtNum(resumo.percentualAcumulado)}%`, 5, navy);
-  cell("Saldo restante", fmtBRL(resumo.saldoRestante), 6);
+  kpi("Nº do BM", resumo.descricaoBM, 0, [245, 239, 229], navy);
+  kpi("Data da Medição", resumo.dataMedicao, 1, [252, 250, 246]);
+  kpi("Valor total do contrato", fmtBRL(resumo.valorTotalObra), 2, [252, 250, 246]);
+  kpi("Valor desta medição", fmtBRL(resumo.valorDestaMedicao), 3, [253, 235, 220], orange);
+  kpi("Valor acumulado", fmtBRL(resumo.valorAcumulado), 4, [220, 252, 231], green);
+  kpi("% Acumulado", `${fmtNum(resumo.percentualAcumulado)}%`, 5, [245, 239, 229], navy);
+  kpi("Saldo restante", fmtBRL(resumo.saldoRestante), 6, [252, 250, 246]);
   doc.setTextColor(0, 0, 0);
-  y += 10;
+  y += kpiH + 4;
+
 
 
   // Tabela — colunas alinhadas com a página de Atividades (Planejamento — Orçamento Contratado)
@@ -672,63 +719,110 @@ export function buildMeasurementPdfBlob(
     didDrawPage: (data) => {
       if (data.pageNumber > 1) {
         doc.setFillColor(navy[0], navy[1], navy[2]);
-        doc.rect(0, 0, pageW, 14, "F");
+        doc.rect(0, 0, pageW, 12, "F");
+        doc.setFillColor(gold[0], gold[1], gold[2]);
+        doc.rect(0, 12, pageW, 1.2, "F");
         doc.setTextColor(255, 255, 255);
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
-        doc.text(bm, MARGIN, 9);
-        doc.setFontSize(13);
-        doc.text("BOLETIM DE MEDIÇÃO", pageW / 2, 9.5, { align: "center" });
         doc.setFontSize(9);
-        doc.text(`Período: ${periodoLabel}`, pageW - MARGIN, 9, { align: "right" });
+        doc.text(bm, MARGIN, 8);
+        doc.setFontSize(11);
+        doc.text("BOLETIM DE MEDIÇÃO", pageW / 2, 8, { align: "center" });
+        doc.setFontSize(8);
+        doc.text(periodoLabel, pageW - MARGIN, 8, { align: "right" });
         doc.setTextColor(0, 0, 0);
       }
       const pH = doc.internal.pageSize.getHeight();
+      doc.setDrawColor(217, 207, 190);
+      doc.setLineWidth(0.2);
+      doc.line(MARGIN, pH - 8, pageW - MARGIN, pH - 8);
+      doc.setFont("helvetica", "normal");
       doc.setFontSize(7);
       doc.setTextColor(140);
-      doc.text(
-        `${projectName} • ${bm} • Página ${data.pageNumber}`,
-        pageW / 2, pH - 5, { align: "center" },
-      );
+      doc.text(projectName, MARGIN, pH - 4);
+      doc.text(`${bm} • Página ${data.pageNumber}`, pageW - MARGIN, pH - 4, { align: "right" });
     },
   });
 
   type AutoTableDoc = jsPDF & { lastAutoTable?: { finalY: number } };
   let endY = ((doc as AutoTableDoc).lastAutoTable?.finalY ?? y) + 8;
   const pageH = doc.internal.pageSize.getHeight();
-  if (endY > pageH - 60) {
+  if (endY > pageH - 70) {
     doc.addPage();
-    endY = 20;
+    endY = 22;
   }
 
+  // Local + data — em fonte serifada institucional
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.setTextColor(20);
+  doc.setTextColor(60);
   const local = info.municipio ? `${info.municipio}${info.estado ? "/" + info.estado : ""}` : "____________________";
   doc.text(`${local}, ${closedAt.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}.`, MARGIN, endY);
-  endY += 20;
+  endY += 8;
 
-  const sigW = 90;
-  const xL = pageW / 4 - sigW / 2;
-  const xR = (3 * pageW) / 4 - sigW / 2;
-  doc.setDrawColor(20);
-  doc.line(xL, endY, xL + sigW, endY);
-  doc.line(xR, endY, xR + sigW, endY);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.text(info.responsavelTecnico || "Responsável Técnico", xL + sigW / 2, endY + 5, { align: "center" });
-  doc.text(info.fiscal || "Fiscal da Obra", xR + sigW / 2, endY + 5, { align: "center" });
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(80);
-  doc.text(
-    `${info.cargoResponsavel || "Responsável Técnico"}${info.crea ? " — CREA/CAU " + info.crea : ""}`,
-    xL + sigW / 2, endY + 10, { align: "center" },
+  // Dois cartões de assinatura lado a lado
+  const gap = 6;
+  const boxW = (usableW - gap) / 2;
+  const boxH = 42;
+  const drawSignBox = (x: number, header: string, name: string, cargo: string, extra: string) => {
+    // Cartão
+    doc.setFillColor(252, 250, 246);
+    doc.setDrawColor(217, 207, 190);
+    doc.roundedRect(x, endY, boxW, boxH, 1.6, 1.6, "FD");
+    // Faixa de topo
+    doc.setFillColor(navy[0], navy[1], navy[2]);
+    doc.roundedRect(x, endY, boxW, 6.5, 1.6, 1.6, "F");
+    doc.rect(x, endY + 3, boxW, 3.5, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    doc.text(header, x + boxW / 2, endY + 4.4, { align: "center" });
+    // Linha de assinatura
+    const lineY = endY + boxH - 14;
+    doc.setDrawColor(80, 68, 52);
+    doc.setLineWidth(0.35);
+    doc.line(x + 10, lineY, x + boxW - 10, lineY);
+    doc.setLineWidth(0.1);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(31, 41, 55);
+    doc.text(name || "—", x + boxW / 2, lineY + 4.5, { align: "center" });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.6);
+    doc.setTextColor(90, 78, 62);
+    doc.text(cargo || " ", x + boxW / 2, lineY + 8.5, { align: "center" });
+    if (extra) {
+      doc.setFontSize(7);
+      doc.text(extra, x + boxW / 2, lineY + 11.5, { align: "center" });
+    }
+    // Rodapé "Assinatura digital ou física" em small caps
+    doc.setFontSize(6);
+    doc.setTextColor(150, 138, 118);
+    doc.text("ASSINATURA DIGITAL OU FÍSICA", x + boxW / 2, endY + boxH - 2.5, { align: "center" });
+  };
+
+  const respCargo = info.cargoResponsavel || "Responsável Técnico";
+  const respExtra = [
+    info.crea ? `CREA/CAU ${info.crea}` : "",
+    info.artRrt ? `ART/RRT ${info.artRrt}` : "",
+  ].filter(Boolean).join(" • ");
+  const fiscExtra = [
+    info.creaFiscal ? `CREA/CAU ${info.creaFiscal}` : "",
+  ].filter(Boolean).join(" • ");
+
+  drawSignBox(
+    MARGIN,
+    (info.empresaExecutora || "EMPRESA EXECUTORA").toUpperCase(),
+    info.responsavelTecnico || "Responsável Técnico",
+    respCargo,
+    respExtra,
   );
-  if (info.artRrt) doc.text(`ART/RRT: ${info.artRrt}`, xL + sigW / 2, endY + 14, { align: "center" });
-  doc.text(
-    `${info.cargoFiscal || "Fiscal da Obra"}${info.creaFiscal ? " — CREA/CAU " + info.creaFiscal : ""}`,
-    xR + sigW / 2, endY + 10, { align: "center" },
+  drawSignBox(
+    MARGIN + boxW + gap,
+    (info.contratante || "FISCALIZAÇÃO").toUpperCase(),
+    info.fiscal || "Fiscal da Obra",
+    info.cargoFiscal || "Fiscal da Obra",
+    fiscExtra,
   );
 
   void projectMetrics;

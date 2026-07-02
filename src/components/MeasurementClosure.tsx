@@ -31,14 +31,17 @@ interface Props {
 }
 
 function currentNumber(p: ProjectData): number {
-  if (p.currentMeasurement && p.currentMeasurement > 0) return p.currentMeasurement;
   let maxClosed = 0;
   for (const evo of Object.values(p.evolutions || {})) {
     for (const m of evo?.measurements ?? []) {
       if (m.closed && m.number > maxClosed) maxClosed = m.number;
     }
   }
-  return maxClosed + 1;
+  const derived = maxClosed + 1;
+  const persisted = p.currentMeasurement && p.currentMeasurement > 0 ? p.currentMeasurement : derived;
+  // Nunca pula números: se `currentMeasurement` foi persistido acima do
+  // próximo slot real (bug legado), voltamos para o próximo válido.
+  return Math.min(persisted, derived);
 }
 
 export function MeasurementClosure({
