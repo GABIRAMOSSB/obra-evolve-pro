@@ -1280,24 +1280,32 @@ function Dashboard({
  {saving ? "Sincronizando…" : "Sincronizado"}
  </div>
 
- <div className="flex items-center gap-1">
-  <Button variant="ghost" size="sm" className="h-8 px-2.5" onClick={async () => {
-    const { exportBoletimMedicaoInstitucional } = await import("@/lib/boletim-medicao.xlsx-adapter");
-    await exportBoletimMedicaoInstitucional({
-      rows: filteredRows,
-      evolutions: data.evolutions,
-      info,
-      projectName: data.nome,
-      measurementNumber: selectedBM ?? currentMeasNumber,
-      allRows: data.rows,
-      periodoInicio: resumoBM.periodoInicio ?? null,
-      periodoFim: resumoBM.periodoFim ?? null,
-    });
-    toast.success("Boletim Excel exportado");
-  }}>
-  <FileSpreadsheet className="w-4 h-4 text-success" />
-  <span className="hidden xl:inline ml-1">Excel</span>
-  </Button>
+        <div className="flex items-center gap-1">
+   <Button variant="ghost" size="sm" className="h-8 px-2.5" onClick={async () => {
+     if (!resumoBM.hasMeasurement) {
+       toast.error("Selecione uma BM fechada para exportar.");
+       return;
+     }
+     if (!resumoBM.periodoValido) {
+       toast.error(resumoBM.periodoWarnings[0] ?? "Período da medição inválido.");
+       return;
+     }
+     const { exportBoletimMedicaoInstitucional } = await import("@/lib/boletim-medicao.xlsx-adapter");
+     await exportBoletimMedicaoInstitucional({
+       rows: filteredRows,
+       evolutions: data.evolutions,
+       info,
+       projectName: data.nome,
+       measurementNumber: selectedBM ?? currentMeasNumber,
+       allRows: data.rows,
+       periodoInicio: resumoBM.periodoInicio ?? null,
+       periodoFim: resumoBM.periodoFim ?? null,
+     });
+     toast.success("Boletim Excel exportado");
+   }}>
+   <FileSpreadsheet className="w-4 h-4 text-success" />
+   <span className="hidden xl:inline ml-1">Excel</span>
+   </Button>
  <Button variant="ghost" size="sm" className="h-8 px-2.5" onClick={() => exportRelatorioPdf(filteredRows, data.evolutions, data.fileName)}>
  <FileText className="w-4 h-4 text-destructive" />
  <span className="hidden xl:inline ml-1">PDF</span>
@@ -1307,6 +1315,14 @@ function Dashboard({
  size="sm"
  className="h-8 px-2.5"
  onClick={async () => {
+ if (!resumoBM.hasMeasurement) {
+   toast.error("Selecione uma BM fechada para exportar.");
+   return;
+ }
+ if (!resumoBM.periodoValido) {
+   toast.error(resumoBM.periodoWarnings[0] ?? "Período da medição inválido.");
+   return;
+ }
  const blob = await buildMeasurementPdfBlob(filteredRows, data.evolutions, selectedBM ?? currentMeasNumber, data.nome, new Date(), info, periodoInicio ?? undefined, data.rows);
  const url = URL.createObjectURL(blob);
  const a = document.createElement("a");
@@ -1322,6 +1338,7 @@ function Dashboard({
  <FileText className="w-4 h-4 text-primary" />
  <span className="hidden xl:inline ml-1">Boletim</span>
  </Button>
+
  <MeasurementClosure data={data} setData={setData} companyId={companyId} userId={userId} userEmail={userEmail} isAdmin={isAdmin} variant="inline" />
  </div>
 
@@ -1569,8 +1586,25 @@ function Dashboard({
             <BMField label="Saldo restante" value={fmtBRL(resumoBM.saldoRestante)} strong />
           </div>
         )}
+        {resumoBM.hasMeasurement && resumoBM.periodoWarnings.length > 0 && (
+          <div className="mx-4 my-3 rounded-md border border-warning/40 bg-warning/10 text-warning-foreground px-3 py-2 text-xs space-y-1">
+            <div className="font-semibold uppercase tracking-wider text-[10px]">Validação do período</div>
+            {resumoBM.periodoWarnings.map((w, i) => (
+              <div key={i}>• {w}</div>
+            ))}
+            <div className="text-[10px] opacity-80 mt-1">
+              Regra: 1ª BM usa a data de início da obra; demais BMs usam o fechamento da BM anterior até o fechamento atual.
+            </div>
+          </div>
+        )}
+        {resumoBM.hasMeasurement && resumoBM.periodoValido && (
+          <div className="mx-4 my-2 text-[10px] text-muted-foreground">
+            Início do período: {resumoBM.periodoOrigemInicio === "inicio_obra" ? "data de início da obra (1ª BM)" : "fechamento da BM anterior"}.
+          </div>
+        )}
 
  </Card>
+
 
 
 
