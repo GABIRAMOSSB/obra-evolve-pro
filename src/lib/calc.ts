@@ -17,7 +17,12 @@ export interface ResumoCabecalhoBM {
   saldoRestante: number;
   diasDecorridos: number;
   diasRestantes: number;
+  /** Regras: 1ª BM usa data de início da obra; demais usam fechamento da BM anterior. */
+  periodoValido: boolean;
+  periodoWarnings: string[];
+  periodoOrigemInicio: "inicio_obra" | "bm_anterior" | "indefinido";
 }
+
 
 export interface SavedMeasurement {
   number: number;
