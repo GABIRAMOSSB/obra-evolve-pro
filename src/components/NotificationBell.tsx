@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Bell, CheckCheck } from "lucide-react";
-import { useQuery, useMutation, useQueryClient, useServerFn } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn as useSFn } from "@tanstack/react-start";
 import {
   Popover,
