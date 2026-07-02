@@ -54,8 +54,9 @@ interface XLSXInput {
     cnpj_cliente?: string | null;
   } | null;
   company: { razao_social?: string | null; nome?: string | null; cnpj?: string | null } | null;
-  responsavelTecnico?: { nome: string; registro: string | null; cargo?: string | null } | null;
+  responsavelTecnico?: { nome: string; registro: string | null; cargo?: string | null; art_rrt?: string | null } | null;
   fiscal?: { nome: string; registro: string | null; cargo?: string | null } | null;
+  licitador?: string | null;
   itens: Array<{
     item_codigo: string;
     descricao: string;
