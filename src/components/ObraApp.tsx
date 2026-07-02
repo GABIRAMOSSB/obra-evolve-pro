@@ -165,15 +165,17 @@ function setAccumulatedQty(
 
 /** Número da medição atualmente aberta (global). */
 function getCurrentMeasurement(p: ProjectData): number {
- if (p.currentMeasurement && p.currentMeasurement > 0) return p.currentMeasurement;
- // Compatibilidade: deduz a partir do maior número já registrado nas evolutions.
  let maxClosed = 0;
  for (const evo of Object.values(p.evolutions || {})) {
  for (const m of evo?.measurements ?? []) {
  if (m.closed && m.number > maxClosed) maxClosed = m.number;
  }
  }
- return maxClosed + 1;
+ const derived = maxClosed + 1;
+ const persisted = p.currentMeasurement && p.currentMeasurement > 0 ? p.currentMeasurement : derived;
+ // Nunca pula números: se `currentMeasurement` foi persistido acima
+ // do próximo slot real (bug legado), voltamos ao próximo válido.
+ return Math.min(persisted, derived);
 }
 
 export function ObraApp() {
