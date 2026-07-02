@@ -471,6 +471,72 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   }
   ws.getRow(totalRow).height = 26;
 
+  // ============ Assinaturas (rodapé) ============
+  const empresa = data.company?.razao_social ?? data.company?.nome ?? "SOLV Construtora";
+  const rtNome = data.responsavelTecnico?.nome ?? "";
+  const rtCargo = data.responsavelTecnico?.cargo ?? "Responsável Técnico";
+  const rtReg = data.responsavelTecnico?.registro ?? "";
+  const rtArt = data.responsavelTecnico?.art_rrt ?? "";
+  const fiscalNome = data.fiscal?.nome ?? "";
+  const fiscalCargo = data.fiscal?.cargo ?? "Fiscal da Obra";
+  const fiscalReg = data.fiscal?.registro ?? "";
+  const fiscalOrgao = data.obra?.cliente ?? data.contrato?.orgao_contratante ?? "";
+
+  const spacer1 = totalRow + 1;
+  ws.getRow(spacer1).height = 10;
+  const signSpace = totalRow + 2;
+  ws.getRow(signSpace).height = 55; // espaço em branco para assinatura (digital/à punho)
+  const signLine = totalRow + 3;
+  const nameRow = totalRow + 4;
+  const cargoRow = totalRow + 5;
+  const regRow = totalRow + 6;
+
+  const drawSignBlock = (colStart: string, colEnd: string, header: string, nome: string, cargo: string, registro: string) => {
+    // linha da assinatura
+    ws.mergeCells(`${colStart}${signLine}:${colEnd}${signLine}`);
+    const line = ws.getCell(`${colStart}${signLine}`);
+    line.value = "";
+    line.border = { top: { style: "medium", color: { argb: COLOR_GRAFITE } } };
+
+    ws.mergeCells(`${colStart}${nameRow}:${colEnd}${nameRow}`);
+    const nc = ws.getCell(`${colStart}${nameRow}`);
+    nc.value = header;
+    nc.font = { name: "Aptos", size: 8.5, bold: true, color: { argb: COLOR_LABEL } };
+    nc.alignment = { horizontal: "center", vertical: "middle" };
+
+    ws.mergeCells(`${colStart}${cargoRow}:${colEnd}${cargoRow}`);
+    const cc = ws.getCell(`${colStart}${cargoRow}`);
+    cc.value = nome || "—";
+    cc.font = { name: "Aptos", size: 10, bold: true, color: { argb: COLOR_TEXT } };
+    cc.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+
+    ws.mergeCells(`${colStart}${regRow}:${colEnd}${regRow}`);
+    const rc = ws.getCell(`${colStart}${regRow}`);
+    const parts = [cargo, registro].filter(Boolean).join(" • ");
+    rc.value = parts;
+    rc.font = { name: "Aptos", size: 9, color: { argb: COLOR_MUTED } };
+    rc.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+  };
+
+  drawSignBlock(
+    "A", "F",
+    empresa.toUpperCase(),
+    rtNome,
+    rtCargo,
+    [rtReg, rtArt && `ART/RRT ${rtArt}`].filter(Boolean).join(" • "),
+  );
+  drawSignBlock(
+    "H", "M",
+    (fiscalOrgao || "Contratante").toUpperCase(),
+    fiscalNome,
+    fiscalCargo,
+    fiscalReg,
+  );
+
+  ws.getRow(nameRow).height = 16;
+  ws.getRow(cargoRow).height = 18;
+  ws.getRow(regRow).height = 16;
+
   ws.pageSetup.printTitlesRow = "1:11";
 
   const out = await wb.xlsx.writeBuffer();
