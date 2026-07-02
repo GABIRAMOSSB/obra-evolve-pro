@@ -26,6 +26,7 @@ import {
   PenTool,
   Layers,
   X,
+  Eye,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import SendForSignatureDialog from "@/components/SendForSignatureDialog";
