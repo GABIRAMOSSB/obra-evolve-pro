@@ -1,13 +1,24 @@
 /**
- * PDF institucional SOLV — Planilha Orçamentária COMPLETA da obra.
- * Layout paisagem A4, cabeçalho navy + dourado, tabela com grupos destacados,
- * totalizador ao final. Sem filtro por medição.
+ * Planilha Orçamentária COMPLETA — PDF institucional SOLV.
+ * Segue exatamente o mesmo layout do Boletim de Medição (A4 paisagem):
+ * cabeçalho grafite + faixa dourada, dados contratuais em KV, KPIs,
+ * tabela sem linhas de grade verticais, TOTAL GERAL, rodapé paginado
+ * e blocos de assinatura.
  */
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { BudgetRow, ObraInfo } from "./types";
 import { fmtBRL, fmtNum } from "./calc";
-import { REPORT_RGB } from "./report-theme";
+
+// SOLV tokens (RGB) — idênticos ao Boletim de Medição
+const GRAPHITE: [number, number, number] = [54, 60, 73];
+const GRAPHITE_DARK: [number, number, number] = [37, 42, 51];
+const GOLD: [number, number, number] = [200, 166, 106];
+const GOLD_SOFT: [number, number, number] = [245, 238, 221];
+const SILVER: [number, number, number] = [238, 240, 242];
+const ZEBRA: [number, number, number] = [250, 251, 252];
+const TEXT: [number, number, number] = [32, 36, 43];
+const MUTED: [number, number, number] = [105, 113, 125];
 
 interface Args {
   rows: BudgetRow[];
@@ -15,183 +26,301 @@ interface Args {
   projectName: string;
 }
 
+function fmtDate(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso.length === 10 ? iso + "T00:00:00" : iso);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("pt-BR");
+}
+
 export function exportOrcamentoFullPDF({ rows, info, projectName }: Args) {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
-  const NAVY = REPORT_RGB.primaryDark;
-  const GOLD = REPORT_RGB.primary;
-  const CREAM = REPORT_RGB.cardBg;
-  const LABEL = REPORT_RGB.labelMuted;
-  const TEXT = REPORT_RGB.textOnLight;
-  const SUBTITLE = REPORT_RGB.subtitleOnDark;
-  const BORDER = REPORT_RGB.border;
-  const GROUP_BG = REPORT_RGB.groupBg;
-  const FOOTER = REPORT_RGB.footerText;
+  const margin = 11;
 
-  // ---- Header band ----
-  doc.setFillColor(NAVY[0], NAVY[1], NAVY[2]);
+  // ===== CABEÇALHO =====
+  doc.setFillColor(...GRAPHITE_DARK);
   doc.rect(0, 0, pageW, 22, "F");
-  doc.setFillColor(GOLD[0], GOLD[1], GOLD[2]);
-  doc.rect(0, 22, pageW, 1.2, "F");
+  doc.setFillColor(...GOLD);
+  doc.rect(0, 22, pageW, 0.8, "F");
 
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.text("SOLV CONSTRUTORA E SOLUÇÕES", 12, 11);
+  doc.setFontSize(13);
+  doc.text("SOLV CONSTRUTORA", margin, 10);
+
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(SUBTITLE[0], SUBTITLE[1], SUBTITLE[2]);
-  doc.text("Planilha Orçamentária Completa", 12, 17);
-
   doc.setFontSize(8);
+  doc.setTextColor(...GOLD);
+  doc.text("PLANILHA ORÇAMENTÁRIA COMPLETA", margin, 15);
+
   doc.setTextColor(255, 255, 255);
-  doc.text(
-    `Emissão: ${new Date().toLocaleDateString("pt-BR")}`,
-    pageW - 12,
-    17,
-    { align: "right" },
-  );
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text(projectName, pageW - margin, 10, { align: "right" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(220, 220, 220);
+  doc.text(`Emissão: ${new Date().toLocaleDateString("pt-BR")}`, pageW - margin, 15, { align: "right" });
 
-  // ---- Metadata card ----
-  const cardY = 28;
-  const cardH = 18;
-  doc.setFillColor(CREAM[0], CREAM[1], CREAM[2]);
-  doc.setDrawColor(BORDER[0], BORDER[1], BORDER[2]);
-  doc.roundedRect(10, cardY, pageW - 20, cardH, 1.5, 1.5, "FD");
-
-  const meta: Array<[string, string]> = [
-    ["OBRA", projectName],
-    ["CONTRATANTE", info.contratante ?? "—"],
-    ["CONTRATO", info.numeroContrato ?? "—"],
-    ["LOCAL", info.endereco ?? "—"],
-  ];
-  const colW = (pageW - 20) / meta.length;
-  meta.forEach(([label, val], i) => {
-    const x = 10 + i * colW + 4;
+  // ===== DADOS CONTRATUAIS =====
+  let y = 28;
+  const kv = (label: string, value: string | null | undefined, x: number, colW: number) => {
+    doc.setTextColor(...MUTED);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    doc.text(label.toUpperCase(), x, y);
+    doc.setTextColor(...TEXT);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(7);
-    doc.setTextColor(LABEL[0], LABEL[1], LABEL[2]);
-    doc.text(label, x, cardY + 6);
+    doc.setFontSize(8);
+    const val = value && String(value).trim() ? String(value) : "—";
+    doc.text(doc.splitTextToSize(val, colW - 2), x, y + 3.2);
+  };
+
+  const col4 = (pageW - margin * 2) / 4;
+  const col6 = (pageW - margin * 2) / 6;
+  const endereco = [info.endereco, info.municipio, info.estado].filter(Boolean).join(", ");
+  const executora = info.empresaExecutora ?? "SOLV Construtora";
+  const contratante = info.contratante ?? info.cliente ?? "—";
+  const prazoStr = info.prazoContratualDias ? `${info.prazoContratualDias} dias` : "—";
+  const rtLine = info.responsavelTecnico
+    ? `${info.responsavelTecnico}${info.crea ? ` — ${info.crea}` : ""}${info.cargoResponsavel ? ` (${info.cargoResponsavel})` : ""}`
+    : "—";
+  const fsLine = info.fiscal
+    ? `${info.fiscal}${info.creaFiscal ? ` — ${info.creaFiscal}` : ""}${info.cargoFiscal ? ` (${info.cargoFiscal})` : ""}`
+    : "—";
+
+  kv("Obra", projectName, margin, col4);
+  kv("Cliente / Contratante", contratante, margin + col4, col4);
+  kv("CNPJ Contratante", info.cnpjContratante, margin + col4 * 2, col4);
+  kv("Empresa Executora", executora, margin + col4 * 3, col4);
+  y += 8;
+  kv("CNPJ Executora", info.cnpj, margin, col4);
+  kv("Endereço da obra", endereco || "—", margin + col4, col4 * 2);
+  kv("Contrato nº", info.numeroContrato, margin + col4 * 3, col4);
+  y += 8;
+  kv("Processo administrativo", info.processoAdministrativo, margin, col6);
+  kv("Licitação nº", info.numeroLicitacao, margin + col6, col6);
+  kv("Início da obra", fmtDate(info.dataInicioObra), margin + col6 * 2, col6);
+  kv("Prazo contratual", prazoStr, margin + col6 * 3, col6);
+  kv("ART / RRT", info.artRrt, margin + col6 * 4, col6);
+  kv("Emissão", new Date().toLocaleDateString("pt-BR"), margin + col6 * 5, col6);
+  y += 8;
+  kv("Objeto do contrato", info.objetoContrato ?? "—", margin, col4 * 2);
+  kv("Responsável Técnico", rtLine, margin + col4 * 2, col4);
+  kv("Fiscal da Obra", fsLine, margin + col4 * 3, col4);
+  y += 10;
+
+  // ===== KPIs =====
+  let totalContrato = 0;
+  let totalMO = 0;
+  let totalMaterial = 0;
+  let itensCount = 0;
+  let etapasCount = 0;
+  for (const r of rows) {
+    const isGroup = !!r.isGroup || ((r.quantidade ?? 0) === 0 && (r.valorUnitBDI || r.valorUnit || 0) === 0);
+    if (isGroup) {
+      etapasCount++;
+      continue;
+    }
+    itensCount++;
+    const vuBDI = r.valorUnitBDI || r.valorUnit || 0;
+    const qtd = Number(r.quantidade ?? 0);
+    totalContrato += qtd * vuBDI;
+    totalMO += Number(r.totalMO ?? 0);
+    totalMaterial += Number(r.totalMaterial ?? 0);
+  }
+
+  const kpiW = (pageW - margin * 2 - 8) / 5;
+  const kpis: Array<[string, string]> = [
+    ["Valor total do contrato", fmtBRL(totalContrato)],
+    ["Total mão de obra", fmtBRL(totalMO)],
+    ["Total material", fmtBRL(totalMaterial)],
+    ["Itens orçados", String(itensCount)],
+    ["Etapas / grupos", String(etapasCount)],
+  ];
+  kpis.forEach(([label, val], i) => {
+    const x = margin + i * (kpiW + 2);
+    doc.setFillColor(...GOLD_SOFT);
+    doc.roundedRect(x, y, kpiW, 12, 1.5, 1.5, "F");
+    doc.setTextColor(...MUTED);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    doc.text(label.toUpperCase(), x + 2, y + 4);
+    doc.setTextColor(...GRAPHITE_DARK);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
-    doc.setTextColor(TEXT[0], TEXT[1], TEXT[2]);
-    const truncated = doc.splitTextToSize(String(val || "—"), colW - 8)[0];
-    doc.text(truncated, x, cardY + 13);
+    doc.text(val, x + 2, y + 9.5);
   });
+  y += 15;
 
-  // ---- Table ----
-  let totalGeral = 0;
-  const body = rows.map((r) => {
-    const isGroup =
-      !!r.isGroup ||
-      ((r.quantidade ?? 0) === 0 && (r.valorUnitBDI || r.valorUnit || 0) === 0);
-    const vu = r.valorUnit || 0;
-    const vuBDI = r.valorUnitBDI || vu;
-    const qtd = Number(r.quantidade ?? 0);
-    const total = qtd * vuBDI;
-    if (!isGroup) totalGeral += total;
-    return {
-      isGroup,
-      row: [
+  // ===== TABELA =====
+  const head = [[
+    "Item",
+    "Descrição",
+    "Un.",
+    "Qtd.",
+    "V. Unit.",
+    "V. Unit. c/ BDI",
+    "Total",
+    "Peso %",
+  ]];
+
+  const body: (string | { content: string; styles?: Record<string, unknown> })[][] = [];
+  for (const r of rows) {
+    const isGroup = !!r.isGroup || ((r.quantidade ?? 0) === 0 && (r.valorUnitBDI || r.valorUnit || 0) === 0);
+    if (isGroup) {
+      body.push([
+        { content: r.item ?? "", styles: { fontStyle: "bold", fillColor: SILVER } },
+        { content: r.descricao ?? "", styles: { fontStyle: "bold", fillColor: SILVER } },
+        { content: "", styles: { fillColor: SILVER } },
+        { content: "", styles: { fillColor: SILVER } },
+        { content: "", styles: { fillColor: SILVER } },
+        { content: "", styles: { fillColor: SILVER } },
+        { content: "", styles: { fillColor: SILVER } },
+        { content: "", styles: { fillColor: SILVER } },
+      ]);
+    } else {
+      const vu = r.valorUnit || 0;
+      const vuBDI = r.valorUnitBDI || vu;
+      const qtd = Number(r.quantidade ?? 0);
+      const total = qtd * vuBDI;
+      body.push([
         r.item ?? "",
         r.descricao ?? "",
         r.und ?? "",
-        isGroup ? "" : fmtNum(qtd),
-        isGroup ? "" : fmtBRL(vu),
-        isGroup ? "" : fmtBRL(vuBDI),
-        isGroup ? "" : fmtBRL(total),
-        isGroup ? "" : r.peso != null ? `${fmtNum(r.peso)}%` : "",
-      ],
-    };
-  });
+        fmtNum(qtd),
+        fmtBRL(vu),
+        fmtBRL(vuBDI),
+        fmtBRL(total),
+        r.peso != null ? `${fmtNum(r.peso)}%` : "",
+      ]);
+    }
+  }
+
+  // Linha TOTAL GERAL
+  body.push([
+    { content: "TOTAL GERAL DO CONTRATO", styles: { fontStyle: "bold", fillColor: GRAPHITE, textColor: [255, 255, 255] } },
+    { content: "", styles: { fillColor: GRAPHITE } },
+    { content: "", styles: { fillColor: GRAPHITE } },
+    { content: "", styles: { fillColor: GRAPHITE } },
+    { content: "", styles: { fillColor: GRAPHITE } },
+    { content: "", styles: { fillColor: GRAPHITE } },
+    { content: fmtBRL(totalContrato), styles: { fontStyle: "bold", fillColor: GRAPHITE, textColor: [255, 255, 255] } },
+    { content: "100,00%", styles: { fontStyle: "bold", fillColor: GRAPHITE, textColor: [255, 255, 255] } },
+  ]);
 
   autoTable(doc, {
-    startY: cardY + cardH + 4,
-    head: [
-      [
-        "Item",
-        "Descrição",
-        "Und",
-        "Quant.",
-        "Valor Unit.",
-        "Vlr. Unit. c/ BDI",
-        "Total (R$)",
-        "Peso %",
-      ],
-    ],
-    body: body.map((b) => b.row),
-    theme: "grid",
+    startY: y,
+    head,
+    body,
+    margin: { left: margin, right: margin, top: 28, bottom: 22 },
+    theme: "plain",
     styles: {
-      fontSize: 7.5,
-      cellPadding: { top: 1.6, right: 2, bottom: 1.6, left: 2 },
-      lineColor: BORDER,
-      lineWidth: 0.1,
-      textColor: TEXT,
       font: "helvetica",
+      fontSize: 7.5,
+      cellPadding: { top: 2, right: 1.6, bottom: 2, left: 1.6 },
+      textColor: TEXT,
+      lineWidth: 0,
+      overflow: "linebreak",
+      valign: "middle",
     },
     headStyles: {
-      fillColor: NAVY,
+      fillColor: GRAPHITE_DARK,
       textColor: [255, 255, 255],
       fontStyle: "bold",
-      fontSize: 8,
+      fontSize: 7.5,
       halign: "center",
-      valign: "middle",
-      lineColor: NAVY,
-      lineWidth: 0.1,
+      lineWidth: 0,
     },
-    alternateRowStyles: { fillColor: [252, 250, 246] },
+    alternateRowStyles: { fillColor: ZEBRA },
     columnStyles: {
-      0: { cellWidth: 20, halign: "center" },
+      0: { cellWidth: 22, halign: "center" },
       1: { cellWidth: "auto" },
       2: { cellWidth: 14, halign: "center" },
       3: { cellWidth: 22, halign: "right" },
       4: { cellWidth: 26, halign: "right" },
       5: { cellWidth: 30, halign: "right" },
-      6: { cellWidth: 30, halign: "right", fontStyle: "bold" },
+      6: { cellWidth: 32, halign: "right" },
       7: { cellWidth: 18, halign: "right" },
     },
-    didParseCell: (data) => {
-      if (data.section !== "body") return;
-      const meta = body[data.row.index];
-      if (meta?.isGroup) {
-        data.cell.styles.fillColor = GROUP_BG;
-        data.cell.styles.fontStyle = "bold";
-        data.cell.styles.textColor = NAVY;
+    rowPageBreak: "avoid",
+    didDrawPage: (hook) => {
+      if (hook.pageNumber > 1) {
+        doc.setFillColor(...GRAPHITE_DARK);
+        doc.rect(0, 0, pageW, 18, "F");
+        doc.setFillColor(...GOLD);
+        doc.rect(0, 18, pageW, 0.6, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.text("SOLV CONSTRUTORA — PLANILHA ORÇAMENTÁRIA COMPLETA", margin, 8);
+        doc.setFontSize(8);
+        doc.text(projectName, margin, 13);
       }
-    },
-    margin: { left: 10, right: 10, top: 30, bottom: 15 },
-    didDrawPage: () => {
-      const p = doc.getNumberOfPages();
-      // Rodapé
-      doc.setFontSize(7.5);
-      doc.setTextColor(FOOTER[0], FOOTER[1], FOOTER[2]);
+      const pageStr = `SOLV Construtora e Soluções Ltda.  |  ${projectName}  |  Planilha Orçamentária  |  Página ${hook.pageNumber}`;
+      doc.setDrawColor(...SILVER);
+      doc.setLineWidth(0.1);
+      doc.line(margin, pageH - 12, pageW - margin, pageH - 12);
+      doc.setTextColor(...MUTED);
       doc.setFont("helvetica", "normal");
-      doc.text(
-        `${projectName}  •  Planilha Orçamentária Completa`,
-        10,
-        pageH - 6,
-      );
-      doc.text(`Página ${p}`, pageW - 10, pageH - 6, { align: "right" });
+      doc.setFontSize(7);
+      doc.text(pageStr, margin, pageH - 8);
+      doc.text(new Date().toLocaleString("pt-BR"), pageW - margin, pageH - 8, { align: "right" });
     },
   });
 
-  // ---- Totalizador ----
-  // @ts-expect-error lastAutoTable is added by jspdf-autotable
-  const finalY = (doc as unknown).lastAutoTable?.finalY ?? cardY + cardH + 4;
-  let ty = finalY + 4;
-  if (ty > pageH - 20) {
+  // ===== DECLARAÇÃO + ASSINATURAS =====
+  const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+  let sy = finalY;
+  if (sy > pageH - 55) {
     doc.addPage();
-    ty = 20;
+    sy = 32;
   }
-  doc.setFillColor(NAVY[0], NAVY[1], NAVY[2]);
-  doc.rect(10, ty, pageW - 20, 12, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.text("TOTAL GERAL DO CONTRATO", 14, ty + 7.6);
-  doc.setFontSize(12);
-  doc.text(fmtBRL(totalGeral), pageW - 14, ty + 7.8, { align: "right" });
+
+  doc.setTextColor(...TEXT);
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(8);
+  const decl =
+    "Esta planilha orçamentária reflete a totalidade dos serviços contratados, com quantitativos, valores unitários (com e sem BDI) e valor total do contrato.";
+  doc.text(doc.splitTextToSize(decl, pageW - margin * 2), margin, sy);
+  sy += 10;
+
+  const sigW = (pageW - margin * 2 - 12) / 2;
+  const drawSig = (title: string, nome: string, registro: string | null, cargo: string | null, x: number) => {
+    doc.setDrawColor(...GRAPHITE);
+    doc.setLineWidth(0.2);
+    doc.line(x, sy + 18, x + sigW, sy + 18);
+    doc.setTextColor(...GRAPHITE_DARK);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.text(nome || "—", x + sigW / 2, sy + 22, { align: "center" });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    doc.setTextColor(...MUTED);
+    if (registro) doc.text(registro, x + sigW / 2, sy + 26, { align: "center" });
+    if (cargo) doc.text(cargo, x + sigW / 2, sy + 30, { align: "center" });
+    doc.setTextColor(...GOLD);
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "bold");
+    doc.text(title.toUpperCase(), x + sigW / 2, sy + 6, { align: "center" });
+  };
+
+  drawSig(
+    "Responsável Técnico",
+    info.responsavelTecnico ?? "—",
+    info.crea ?? null,
+    info.cargoResponsavel ?? null,
+    margin,
+  );
+  drawSig(
+    "Fiscal da Obra",
+    info.fiscal ?? "—",
+    info.creaFiscal ?? null,
+    info.cargoFiscal ?? null,
+    margin + sigW + 12,
+  );
 
   doc.save(
     `Orcamento-${projectName.replace(/[^a-z0-9-_]+/gi, "_")}-${Date.now()}.pdf`,
