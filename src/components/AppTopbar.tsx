@@ -3,6 +3,7 @@ import { BarChart3, FileText, Package, HardHat, Wrench, Users, Database, LogOut,
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useCompany } from "@/hooks/use-company";
+import { NotificationBell } from "@/components/NotificationBell";
 
 const NAV_ITEMS: { to: string; icon: typeof HardHat; label: string; exact?: boolean }[] = [
   { to: "/", icon: BarChart3, label: "Visão", exact: true },
@@ -71,7 +72,9 @@ export function AppTopbar() {
 
         {/* User */}
         <div className="flex items-center gap-2 shrink-0 pl-2 border-l border-sidebar-border/40">
+          <NotificationBell />
           <div className="w-7 h-7 rounded-full bg-gradient-primary flex items-center justify-center text-[10px] font-bold text-primary-foreground shadow-sm">
+
             {(userEmail || "U").slice(0, 1).toUpperCase()}
           </div>
           <div className="hidden md:block min-w-0 max-w-[160px]">
