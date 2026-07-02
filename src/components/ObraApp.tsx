@@ -1307,7 +1307,20 @@ function Dashboard({
    }}>
    <FileSpreadsheet className="w-4 h-4 text-success" />
    <span className="hidden xl:inline ml-1">Excel</span>
-   </Button>
+    </Button>
+    <Button variant="ghost" size="sm" className="h-8 px-2.5" title="Baixar planilha orçamentária completa da obra" onClick={async () => {
+      try {
+        const { exportOrcamentoFullXLSX } = await import("@/lib/orcamento-full.xlsx");
+        await exportOrcamentoFullXLSX({ rows: data.rows, info, projectName: data.nome });
+        toast.success("Planilha orçamentária exportada");
+      } catch (e) {
+        console.error(e);
+        toast.error("Falha ao exportar planilha");
+      }
+    }}>
+    <FileSpreadsheet className="w-4 h-4 text-primary" />
+    <span className="hidden xl:inline ml-1">Planilha</span>
+    </Button>
  <Button variant="ghost" size="sm" className="h-8 px-2.5" onClick={() => exportRelatorioPdf(filteredRows, data.evolutions, data.fileName)}>
  <FileText className="w-4 h-4 text-destructive" />
  <span className="hidden xl:inline ml-1">PDF</span>
