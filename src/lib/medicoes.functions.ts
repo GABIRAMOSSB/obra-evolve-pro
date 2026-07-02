@@ -165,8 +165,30 @@ export const atualizarStatusMedicao = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .eq("company_id", companyId);
     if (error) throw new Error(error.message);
+
+    if (data.status === "aprovada" || data.status === "paga" || data.status === "rejeitada") {
+      const { data: med } = await supabase
+        .from("medicoes")
+        .select("numero, obra_id")
+        .eq("id", data.id)
+        .maybeSingle();
+      const numero = med?.numero ?? "";
+      const titleMap: Record<string, string> = {
+        aprovada: `Medição ${numero} aprovada`,
+        paga: `Medição ${numero} marcada como paga`,
+        rejeitada: `Medição ${numero} rejeitada`,
+      };
+      await supabase.from("notifications").insert({
+        company_id: companyId,
+        kind: `medicao_${data.status}`,
+        title: titleMap[data.status],
+        body: null,
+        link: `/medicoes/${data.id}`,
+      });
+    }
     return { ok: true };
   });
+
 
 export const excluirMedicao = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
