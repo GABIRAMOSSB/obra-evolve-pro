@@ -12,15 +12,20 @@ import { normalizeUnidade, sanitizeDescricao } from "./boletim-medicao.calc";
 const BRL = 'R$ #,##0.00';
 const PCT = '0.00%';
 
-// Paleta institucional SOLV
-const COLOR_GRAFITE = "FF141922";       // barra topo/etapa nível 1
-const COLOR_DOURADO = "FFC8A66A";       // detalhe
-const COLOR_BEGE = "FFF6EEDC";          // subgrupos e "Período"
-const COLOR_BEGE_LIGHT = "FFFDF8EE";    // linhas de dados
-const COLOR_FIN = "FFEEF3F8";           // colunas financeiras
-const COLOR_TEXT = "FF202833";
-const COLOR_MUTED = "FF2E3745";
+// Paleta institucional SOLV (refinada — estilo Figma)
+const COLOR_GRAFITE = "FF0F1420";       // barra topo/etapa nível 1 (quase preto)
+const COLOR_DOURADO = "FFC8A66A";       // detalhe dourado
+const COLOR_BEGE = "FFF6EEDC";          // subgrupos
+const COLOR_META_BG = "FFFAF7F1";       // fundo dos meta-cards
+const COLOR_BEGE_LIGHT = "FFFCFAF5";    // linhas de dados (par)
+const COLOR_ROW_ALT = "FFFFFFFF";       // linhas de dados (ímpar)
+const COLOR_FIN = "FFF1F5FA";           // colunas financeiras (par)
+const COLOR_FIN_ALT = "FFF8FBFE";       // colunas financeiras (ímpar)
+const COLOR_TEXT = "FF1B2230";
+const COLOR_MUTED = "FF4A5568";
+const COLOR_LABEL = "FF8A6E3E";         // labels em dourado escuro
 const COLOR_WHITE = "FFFFFFFF";
+const COLOR_BORDER = "FFECE6D6";        // borda suave bege
 
 interface XLSXInput {
   medicao: {
@@ -70,7 +75,7 @@ const fill = (c: string): ExcelJS.FillPattern => ({
   fgColor: { argb: c },
 });
 
-const thin = { style: "thin" as const, color: { argb: "FFD9D9D9" } };
+const thin = { style: "thin" as const, color: { argb: COLOR_BORDER } };
 const borderAll = {
   top: thin,
   left: thin,
@@ -123,7 +128,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   const periodoStr = `${fmtDateBR(data.medicao.periodo_inicio)} a ${fmtDateBR(data.medicao.periodo_fim)}`;
 
   const ws = wb.addWorksheet("Boletim", {
-    views: [{ state: "frozen", ySplit: 13 }],
+    views: [{ state: "frozen", ySplit: 13, showGridLines: false }],
     pageSetup: {
       paperSize: 9, // A4
       orientation: "landscape",
@@ -202,15 +207,20 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
       const cell = ws.getCell(start);
       cell.value = {
         richText: [
-          { text: `${label}\n`, font: { name: "Aptos", size: 8, bold: true, color: { argb: COLOR_DOURADO } } },
-          { text: value, font: { name: "Aptos", size: 9, bold: false, color: { argb: COLOR_TEXT } } },
+          { text: `${label.toUpperCase()}\n`, font: { name: "Aptos", size: 7, bold: true, color: { argb: COLOR_LABEL } } },
+          { text: value, font: { name: "Aptos", size: 9.5, bold: false, color: { argb: COLOR_TEXT } } },
         ],
       };
       cell.alignment = { horizontal: "left", vertical: "middle", wrapText: true, indent: 1 };
-      cell.fill = fill(COLOR_BEGE);
-      cell.border = borderAll;
+      cell.fill = fill(COLOR_META_BG);
+      cell.border = {
+        top: { style: "thin", color: { argb: COLOR_BORDER } },
+        bottom: { style: "thin", color: { argb: COLOR_BORDER } },
+        left: { style: "thin", color: { argb: COLOR_BORDER } },
+        right: { style: "thin", color: { argb: COLOR_BORDER } },
+      };
     }
-    ws.getRow(row).height = 34;
+    ws.getRow(row).height = 36;
   };
 
   metaRow(4, [
@@ -277,15 +287,19 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
     cell.font = { name: "Aptos", size: 9, bold: true, color: { argb: COLOR_WHITE } };
     cell.fill = fill(COLOR_GRAFITE);
     cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-    cell.border = borderAll;
+    cell.border = {
+      bottom: { style: "medium", color: { argb: COLOR_DOURADO } },
+    };
   }
   for (const [col, txt] of Object.entries(header2)) {
     const cell = ws.getCell(`${col}10`);
     cell.value = txt;
-    cell.font = { name: "Aptos", size: 8, bold: true, color: { argb: COLOR_TEXT } };
+    cell.font = { name: "Aptos", size: 8, bold: true, color: { argb: COLOR_LABEL } };
     cell.fill = fill(COLOR_BEGE);
     cell.alignment = { horizontal: "center", vertical: "middle" };
-    cell.border = borderAll;
+    cell.border = {
+      bottom: { style: "thin", color: { argb: COLOR_BORDER } },
+    };
   }
   ws.getRow(9).height = 22;
   ws.getRow(10).height = 18;
@@ -308,7 +322,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
     row.getCell(2).value = sanitizeDescricao(item.descricao);
 
     if (isNivel1) {
-      row.height = 22;
+      row.height = 24;
       for (let c = 1; c <= 13; c++) {
         const cell = row.getCell(c);
         cell.fill = fill(COLOR_GRAFITE);
@@ -319,7 +333,10 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
           wrapText: true,
           indent: c === 2 ? 1 : 0,
         };
-        cell.border = borderAll;
+        cell.border = {
+          top: { style: "medium", color: { argb: COLOR_DOURADO } },
+          bottom: { style: "medium", color: { argb: COLOR_DOURADO } },
+        };
       }
     } else if (isSubgrupo) {
       row.height = 20;
@@ -333,7 +350,9 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
           wrapText: true,
           indent: c === 2 ? 1 : 0,
         };
-        cell.border = borderAll;
+        cell.border = {
+          bottom: { style: "thin", color: { argb: COLOR_BORDER } },
+        };
       }
     } else {
       row.height = estimateHeight(sanitizeDescricao(item.descricao));
@@ -360,23 +379,30 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
       row.getCell(13).value = { formula: `IF(D${r}=0,0,I${r}/D${r})` };
       row.getCell(13).numFmt = PCT;
 
+      const zebra = i % 2 === 0;
       for (let c = 1; c <= 13; c++) {
         const cell = row.getCell(c);
-        let bg = COLOR_BEGE_LIGHT;
+        let bg = zebra ? COLOR_BEGE_LIGHT : COLOR_ROW_ALT;
         let bold = false;
         let color = COLOR_TEXT;
-        if (c === 8) { bg = COLOR_BEGE; bold = true; color = COLOR_MUTED; }
+        if (c === 8) { bg = COLOR_BEGE; bold = true; color = COLOR_TEXT; }
         else if (c === 7 || c === 9) { color = COLOR_MUTED; }
-        else if (c === 10 || c === 11 || c === 12) { bg = COLOR_FIN; }
+        else if (c === 10 || c === 11 || c === 12) { bg = zebra ? COLOR_FIN : COLOR_FIN_ALT; }
         cell.fill = fill(bg);
-        cell.font = { name: "Aptos", size: 8, bold, color: { argb: color } };
+        cell.font = { name: "Aptos", size: 8.5, bold, color: { argb: color } };
         cell.alignment = {
           horizontal: c === 2 ? "left" : "center",
           vertical: c <= 2 ? "top" : "middle",
           wrapText: true,
           indent: c === 2 ? 1 : 0,
         };
-        cell.border = borderAll;
+        // Bordas suaves: só divisão inferior + verticais entre grupos
+        cell.border = {
+          bottom: { style: "hair", color: { argb: COLOR_BORDER } },
+          left: c === 7 || c === 10 || c === 13
+            ? { style: "thin", color: { argb: COLOR_DOURADO } }
+            : undefined,
+        };
       }
     }
   }
@@ -403,14 +429,17 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   ws.getCell(`M${totalRow}`).value = N > 0 ? { formula: `IF(F${totalRow}=0,0,L${totalRow}/F${totalRow})` } : 0;
   ws.getCell(`M${totalRow}`).numFmt = PCT;
 
-  for (let c = 6; c <= 13; c++) {
+  for (let c = 1; c <= 13; c++) {
     const cell = ws.getRow(totalRow).getCell(c);
     cell.fill = fill(COLOR_GRAFITE);
-    cell.font = { name: "Aptos", size: 10, bold: true, color: { argb: COLOR_DOURADO } };
-    cell.alignment = { horizontal: "center", vertical: "middle" };
-    cell.border = borderAll;
+    cell.font = { name: "Aptos", size: 10, bold: true, color: { argb: c <= 5 ? COLOR_WHITE : COLOR_DOURADO } };
+    if (c > 5) cell.alignment = { horizontal: "center", vertical: "middle" };
+    cell.border = {
+      top: { style: "medium", color: { argb: COLOR_DOURADO } },
+      bottom: { style: "medium", color: { argb: COLOR_DOURADO } },
+    };
   }
-  ws.getRow(totalRow).height = 24;
+  ws.getRow(totalRow).height = 26;
 
   ws.pageSetup.printTitlesRow = "1:10";
 
