@@ -19,9 +19,11 @@ const NUM = '#,##0.00;[Red](#,##0.00);"-"';
 
 interface Args {
   rows: BudgetRow[];
+  evolutions?: Record<string, Evolution>;
   info: ObraInfo;
   projectName: string;
 }
+const PCT = '0.00"%";[Red](0.00"%");"-"';
 
 const thin = { style: "thin" as const, color: { argb: BORDER } };
 const boxBorder = { top: thin, left: thin, bottom: thin, right: thin };
