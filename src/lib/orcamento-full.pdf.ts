@@ -7,8 +7,8 @@
  */
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import type { BudgetRow, ObraInfo } from "./types";
-import { fmtBRL, fmtNum } from "./calc";
+import type { BudgetRow, Evolution, ObraInfo } from "./types";
+import { fmtBRL, fmtNum, activityMetrics } from "./calc";
 
 // SOLV tokens (RGB) — idênticos ao Boletim de Medição
 const GRAPHITE: [number, number, number] = [54, 60, 73];
@@ -22,6 +22,7 @@ const MUTED: [number, number, number] = [105, 113, 125];
 
 interface Args {
   rows: BudgetRow[];
+  evolutions?: Record<string, Evolution>;
   info: ObraInfo;
   projectName: string;
 }
