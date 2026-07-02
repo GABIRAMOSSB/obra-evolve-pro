@@ -372,11 +372,11 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
     if (i.is_etapa) {
       row.getCell(1).value = i.item_codigo;
       row.getCell(2).value = sanitizeDescricao(i.descricao);
-      // fundo prata suave, texto bold, sem valores
+      // Etapa: fundo dourado suave, texto grafite, sem valores (referência SOLV)
       for (let c = 1; c <= 13; c++) {
         const cell = row.getCell(c);
-        cell.fill = fill(C.silver);
-        cell.font = { name: "Calibri", size: 9, bold: true, color: { argb: C.graphiteDark } };
+        cell.fill = fill(C.goldSoft);
+        cell.font = { name: "Calibri", size: 9, bold: true, color: { argb: C.text } };
       }
     } else {
       row.getCell(1).value = i.item_codigo;
