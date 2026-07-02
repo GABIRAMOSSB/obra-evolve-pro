@@ -112,18 +112,30 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   const endereco =
     [data.obra?.endereco, data.obra?.cidade, data.obra?.uf].filter(Boolean).join(", ") || "—";
   const executora = data.company?.razao_social ?? data.company?.nome ?? "SOLV Construtora";
-  const contratante = data.obra?.cliente ?? data.contrato?.orgao_contratante ?? "—";
+  const licitador = data.licitador ?? data.obra?.cliente ?? "—";
+  const contratante = data.contrato?.orgao_contratante ?? data.obra?.cliente ?? "—";
   const cnpjContratante = data.obra?.cnpj_cliente ?? "—";
   const cnpjExecutora = data.company?.cnpj ?? "—";
   const processo = data.contrato?.processo_administrativo ?? "—";
   const licitacao = data.contrato?.numero_licitacao ?? "—";
   const inicioObra = fmtDateBR(data.contrato?.data_inicio);
   const prazoStr = data.contrato?.prazo_dias ? `${data.contrato.prazo_dias} dias` : "—";
-  const rtLinha = data.responsavelTecnico
-    ? `${data.responsavelTecnico.nome}\n${data.responsavelTecnico.registro ?? "—"}`
+  const rt = data.responsavelTecnico;
+  const rtLinha = rt
+    ? [
+        rt.nome,
+        rt.cargo ? `Cargo: ${rt.cargo}` : null,
+        rt.registro ? `CREA/CAU: ${rt.registro}` : null,
+        rt.art_rrt ? `ART/RRT: ${rt.art_rrt}` : null,
+      ].filter(Boolean).join("\n")
     : "—";
-  const fiscalLinha = data.fiscal
-    ? `${data.fiscal.nome}\n${data.fiscal.registro ?? "—"}`
+  const fs = data.fiscal;
+  const fiscalLinha = fs
+    ? [
+        fs.nome,
+        fs.cargo ? `Cargo: ${fs.cargo}` : null,
+        fs.registro ? `CREA/CAU: ${fs.registro}` : null,
+      ].filter(Boolean).join("\n")
     : "—";
   const dataMedBR = fmtDateBR(data.medicao.data_medicao);
   const periodoStr = `${fmtDateBR(data.medicao.periodo_inicio)} a ${fmtDateBR(data.medicao.periodo_fim)}`;
