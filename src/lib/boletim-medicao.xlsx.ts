@@ -20,19 +20,19 @@ async function loadSolvLogo(): Promise<ArrayBuffer | null> {
   }
 }
 
-// Paleta SOLV (ARGB para ExcelJS)
+// Paleta SOLV (ARGB para ExcelJS) — alinhada ao boletim institucional aprovado
 const C = {
-  graphite: "FF363C49",
-  graphiteDark: "FF252A33",
-  graphiteDeep: "FF14171D",
-  gold: "FFC8A66A",
+  graphite: "FF2E3745",
+  graphiteDark: "FF2E3745",
+  graphiteDeep: "FF141922",
+  gold: "FFB19777",
   goldBright: "FFE7C892",
-  goldSoft: "FFF5EEDD",
-  silver: "FFEEF0F2",
+  goldSoft: "FFF6EEDC",
+  silver: "FFF1F4F7",
   zebra: "FFFAFBFC",
   white: "FFFFFFFF",
-  text: "FF20242B",
-  muted: "FF69717D",
+  text: "FF202833",
+  muted: "FF2E3745",
   cyan: "FF7FD8E8",
 };
 
