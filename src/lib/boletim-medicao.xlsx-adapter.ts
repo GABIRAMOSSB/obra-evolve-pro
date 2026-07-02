@@ -14,6 +14,8 @@ interface Args {
   projectName: string;
   measurementNumber: number;
   allRows?: BudgetRow[];       // preferido — sempre o contrato completo
+  periodoInicio?: string | null; // ISO yyyy-mm-dd — início do período desta medição
+  periodoFim?: string | null;    // ISO yyyy-mm-dd — fim (fechamento) desta medição
 }
 
 export async function exportBoletimMedicaoInstitucional(args: Args): Promise<void> {
@@ -51,9 +53,9 @@ export async function exportBoletimMedicaoInstitucional(args: Args): Promise<voi
     medicao: {
       numero_bm: numeroBM,
       numero: args.measurementNumber,
-      data_medicao: new Date().toISOString().slice(0, 10),
-      periodo_inicio: "",
-      periodo_fim: "",
+      data_medicao: args.periodoFim ?? new Date().toISOString().slice(0, 10),
+      periodo_inicio: args.periodoInicio ?? "",
+      periodo_fim: args.periodoFim ?? "",
       observacoes: null,
     },
     contrato: {
