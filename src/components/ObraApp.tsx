@@ -1586,8 +1586,25 @@ function Dashboard({
             <BMField label="Saldo restante" value={fmtBRL(resumoBM.saldoRestante)} strong />
           </div>
         )}
+        {resumoBM.hasMeasurement && resumoBM.periodoWarnings.length > 0 && (
+          <div className="mx-4 my-3 rounded-md border border-warning/40 bg-warning/10 text-warning-foreground px-3 py-2 text-xs space-y-1">
+            <div className="font-semibold uppercase tracking-wider text-[10px]">Validação do período</div>
+            {resumoBM.periodoWarnings.map((w, i) => (
+              <div key={i}>• {w}</div>
+            ))}
+            <div className="text-[10px] opacity-80 mt-1">
+              Regra: 1ª BM usa a data de início da obra; demais BMs usam o fechamento da BM anterior até o fechamento atual.
+            </div>
+          </div>
+        )}
+        {resumoBM.hasMeasurement && resumoBM.periodoValido && (
+          <div className="mx-4 my-2 text-[10px] text-muted-foreground">
+            Início do período: {resumoBM.periodoOrigemInicio === "inicio_obra" ? "data de início da obra (1ª BM)" : "fechamento da BM anterior"}.
+          </div>
+        )}
 
  </Card>
+
 
 
 
