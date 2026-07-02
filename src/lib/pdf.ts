@@ -747,39 +747,82 @@ export function buildMeasurementPdfBlob(
   type AutoTableDoc = jsPDF & { lastAutoTable?: { finalY: number } };
   let endY = ((doc as AutoTableDoc).lastAutoTable?.finalY ?? y) + 8;
   const pageH = doc.internal.pageSize.getHeight();
-  if (endY > pageH - 60) {
+  if (endY > pageH - 70) {
     doc.addPage();
-    endY = 20;
+    endY = 22;
   }
 
+  // Local + data — em fonte serifada institucional
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.setTextColor(20);
+  doc.setTextColor(60);
   const local = info.municipio ? `${info.municipio}${info.estado ? "/" + info.estado : ""}` : "____________________";
   doc.text(`${local}, ${closedAt.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}.`, MARGIN, endY);
-  endY += 20;
+  endY += 8;
 
-  const sigW = 90;
-  const xL = pageW / 4 - sigW / 2;
-  const xR = (3 * pageW) / 4 - sigW / 2;
-  doc.setDrawColor(20);
-  doc.line(xL, endY, xL + sigW, endY);
-  doc.line(xR, endY, xR + sigW, endY);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.text(info.responsavelTecnico || "Responsável Técnico", xL + sigW / 2, endY + 5, { align: "center" });
-  doc.text(info.fiscal || "Fiscal da Obra", xR + sigW / 2, endY + 5, { align: "center" });
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(80);
-  doc.text(
-    `${info.cargoResponsavel || "Responsável Técnico"}${info.crea ? " — CREA/CAU " + info.crea : ""}`,
-    xL + sigW / 2, endY + 10, { align: "center" },
+  // Dois cartões de assinatura lado a lado
+  const gap = 6;
+  const boxW = (usableW - gap) / 2;
+  const boxH = 42;
+  const drawSignBox = (x: number, header: string, name: string, cargo: string, extra: string) => {
+    // Cartão
+    doc.setFillColor(252, 250, 246);
+    doc.setDrawColor(217, 207, 190);
+    doc.roundedRect(x, endY, boxW, boxH, 1.6, 1.6, "FD");
+    // Faixa de topo
+    doc.setFillColor(navy[0], navy[1], navy[2]);
+    doc.roundedRect(x, endY, boxW, 6.5, 1.6, 1.6, "F");
+    doc.rect(x, endY + 3, boxW, 3.5, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    doc.text(header, x + boxW / 2, endY + 4.4, { align: "center" });
+    // Linha de assinatura
+    const lineY = endY + boxH - 14;
+    doc.setDrawColor(80, 68, 52);
+    doc.setLineWidth(0.35);
+    doc.line(x + 10, lineY, x + boxW - 10, lineY);
+    doc.setLineWidth(0.1);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(31, 41, 55);
+    doc.text(name || "—", x + boxW / 2, lineY + 4.5, { align: "center" });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.6);
+    doc.setTextColor(90, 78, 62);
+    doc.text(cargo || " ", x + boxW / 2, lineY + 8.5, { align: "center" });
+    if (extra) {
+      doc.setFontSize(7);
+      doc.text(extra, x + boxW / 2, lineY + 11.5, { align: "center" });
+    }
+    // Rodapé "Assinatura digital ou física" em small caps
+    doc.setFontSize(6);
+    doc.setTextColor(150, 138, 118);
+    doc.text("ASSINATURA DIGITAL OU FÍSICA", x + boxW / 2, endY + boxH - 2.5, { align: "center" });
+  };
+
+  const respCargo = info.cargoResponsavel || "Responsável Técnico";
+  const respExtra = [
+    info.crea ? `CREA/CAU ${info.crea}` : "",
+    info.artRrt ? `ART/RRT ${info.artRrt}` : "",
+  ].filter(Boolean).join(" • ");
+  const fiscExtra = [
+    info.creaFiscal ? `CREA/CAU ${info.creaFiscal}` : "",
+  ].filter(Boolean).join(" • ");
+
+  drawSignBox(
+    MARGIN,
+    (info.empresaExecutora || "EMPRESA EXECUTORA").toUpperCase(),
+    info.responsavelTecnico || "Responsável Técnico",
+    respCargo,
+    respExtra,
   );
-  if (info.artRrt) doc.text(`ART/RRT: ${info.artRrt}`, xL + sigW / 2, endY + 14, { align: "center" });
-  doc.text(
-    `${info.cargoFiscal || "Fiscal da Obra"}${info.creaFiscal ? " — CREA/CAU " + info.creaFiscal : ""}`,
-    xR + sigW / 2, endY + 10, { align: "center" },
+  drawSignBox(
+    MARGIN + boxW + gap,
+    (info.contratante || "FISCALIZAÇÃO").toUpperCase(),
+    info.fiscal || "Fiscal da Obra",
+    info.cargoFiscal || "Fiscal da Obra",
+    fiscExtra,
   );
 
   void projectMetrics;
