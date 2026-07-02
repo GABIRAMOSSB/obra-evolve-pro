@@ -238,33 +238,38 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
 
   metaRow(4, [
     ["A4:D4", "OBRA", nomeObra],
-    ["E4:G4", "CLIENTE / CONTRATANTE", contratante],
+    ["E4:G4", "LICITADOR", licitador],
     ["H4:I4", "CNPJ CONTRATANTE", cnpjContratante],
     ["J4:M4", "ENDEREÇO DA OBRA", endereco],
   ]);
 
   metaRow(5, [
-    ["A5:D5", "EMPRESA EXECUTORA", executora],
-    ["E5:G5", "CNPJ EXECUTORA", cnpjExecutora],
-    ["H5:I5", "CONTRATO Nº", data.contrato?.numero ? `nº ${data.contrato.numero}` : "—"],
+    ["A5:D5", "CONTRATANTE", contratante],
+    ["E5:G5", "EMPRESA EXECUTORA", executora],
+    ["H5:I5", "CNPJ EXECUTORA", cnpjExecutora],
     ["J5:M5", "PROCESSO ADMINISTRATIVO", processo],
   ]);
 
   metaRow(6, [
     ["A6:B6", "Nº BOLETIM", bmLabel],
     ["C6:D6", "DATA MEDIÇÃO", dataMedBR],
-    ["E6:G6", "PERÍODO DE MEDIÇÃO", periodoStr],
-    ["H6:I6", "INÍCIO DA OBRA", inicioObra],
-    ["J6:K6", "PRAZO CONTRATUAL", prazoStr],
-    ["L6:M6", "LICITAÇÃO Nº", licitacao],
+    ["E6:F6", "CONTRATO Nº", data.contrato?.numero ? `nº ${data.contrato.numero}` : "—"],
+    ["G6:H6", "LICITAÇÃO Nº", licitacao],
+    ["I6:J6", "INÍCIO DA OBRA", inicioObra],
+    ["K6:M6", "PRAZO CONTRATUAL", prazoStr],
   ]);
 
   metaRow(7, [
-    ["A7:F7", "OBJETO DO CONTRATO", data.contrato?.objeto ?? "—"],
-    ["G7:I7", "RESPONSÁVEL TÉCNICO", rtLinha],
-    ["J7:M7", "FISCAL DA OBRA", fiscalLinha],
+    ["A7:E7", "PERÍODO DE MEDIÇÃO", periodoStr],
+    ["F7:M7", "OBJETO DO CONTRATO", data.contrato?.objeto ?? "—"],
   ]);
-  ws.getRow(7).height = 42;
+
+  metaRow(8, [
+    ["A8:F8", "RESPONSÁVEL TÉCNICO", rtLinha],
+    ["G8:M8", "FISCAL DA OBRA", fiscalLinha],
+  ]);
+  ws.getRow(8).height = 58;
+
 
   // Linha 8 vazia (respiro)
   ws.getRow(8).height = 4;
