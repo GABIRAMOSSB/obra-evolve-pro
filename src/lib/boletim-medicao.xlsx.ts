@@ -153,21 +153,21 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   ws.pageSetup.showGridLines = false;
   ws.pageSetup.horizontalCentered = true;
 
-  // Colunas (13)
+  // Colunas (13) — larguras exatas do boletim institucional aprovado
   ws.columns = [
-    { key: "item", width: 12 },
-    { key: "descricao", width: 55 },
-    { key: "un", width: 6 },
-    { key: "qtd", width: 12 },
-    { key: "vunit", width: 14 },
-    { key: "vtotal", width: 16 },
-    { key: "fisAnt", width: 12 },
-    { key: "fisPer", width: 12 },
-    { key: "fisAcum", width: 12 },
-    { key: "finAnt", width: 16 },
-    { key: "finPer", width: 16 },
-    { key: "finAcum", width: 16 },
-    { key: "pct", width: 10 },
+    { key: "item", width: 13 },
+    { key: "descricao", width: 53 },
+    { key: "un", width: 7 },
+    { key: "qtd", width: 10 },
+    { key: "vunit", width: 13 },
+    { key: "vtotal", width: 15 },
+    { key: "fisAnt", width: 11 },
+    { key: "fisPer", width: 11 },
+    { key: "fisAcum", width: 11 },
+    { key: "finAnt", width: 14 },
+    { key: "finPer", width: 14 },
+    { key: "finAcum", width: 14 },
+    { key: "pct", width: 11 },
   ];
 
   // ===== HERO SOLV FUTURISTA (linhas 1-3) =====
