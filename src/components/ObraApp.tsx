@@ -1347,7 +1347,10 @@ function Dashboard({
  className="h-8 px-2.5"
  onClick={async () => {
  if (!resumoBM.hasMeasurement) {
-   toast.error("Selecione uma BM fechada para exportar.");
+   // Sem BM selecionada — baixa o PDF da planilha completa.
+   const { exportOrcamentoFullPDF } = await import("@/lib/orcamento-full.pdf");
+   exportOrcamentoFullPDF({ rows: data.rows, evolutions: data.evolutions, info, projectName: data.nome });
+   toast.success("PDF da planilha exportado (sem filtro de BM)");
    return;
  }
  if (!resumoBM.periodoValido) {
