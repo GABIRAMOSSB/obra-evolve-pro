@@ -300,7 +300,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   ws.mergeCells("J10:L10");
 
   for (const [col, txt] of Object.entries(header1)) {
-    const cell = ws.getCell(`${col}9`);
+    const cell = ws.getCell(`${col}10`);
     cell.value = txt;
     cell.font = { name: "Aptos", size: 9, bold: true, color: { argb: COLOR_WHITE } };
     cell.fill = fill(COLOR_GRAFITE);
@@ -310,7 +310,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
     };
   }
   for (const [col, txt] of Object.entries(header2)) {
-    const cell = ws.getCell(`${col}10`);
+    const cell = ws.getCell(`${col}11`);
     cell.value = txt;
     cell.font = { name: "Aptos", size: 8, bold: true, color: { argb: COLOR_LABEL } };
     cell.fill = fill(COLOR_BEGE);
@@ -319,11 +319,11 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
       bottom: { style: "thin", color: { argb: COLOR_BORDER } },
     };
   }
-  ws.getRow(9).height = 22;
-  ws.getRow(10).height = 18;
+  ws.getRow(10).height = 22;
+  ws.getRow(11).height = 18;
 
-  // ============ Itens (a partir da linha 11) ============
-  const startRow = 11;
+  // ============ Itens (a partir da linha 12) ============
+  const startRow = 12;
   const N = data.itens.length;
 
   for (let i = 0; i < N; i++) {
