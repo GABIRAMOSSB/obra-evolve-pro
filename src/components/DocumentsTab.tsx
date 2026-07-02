@@ -289,7 +289,10 @@ export default function DocumentsTab({ obraId }: Props) {
                     <PenTool className="h-4 w-4" />
                   </Button>
                 ) : null}
-                <Button variant="ghost" size="sm" onClick={() => onDownload(item)}>
+                <Button variant="ghost" size="sm" title="Visualizar" onClick={() => onView(item)}>
+                  <Eye className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="sm" title="Baixar" onClick={() => onDownload(item)}>
                   <Download className="h-4 w-4" />
                 </Button>
                 <Button
