@@ -719,24 +719,28 @@ export function buildMeasurementPdfBlob(
     didDrawPage: (data) => {
       if (data.pageNumber > 1) {
         doc.setFillColor(navy[0], navy[1], navy[2]);
-        doc.rect(0, 0, pageW, 14, "F");
+        doc.rect(0, 0, pageW, 12, "F");
+        doc.setFillColor(gold[0], gold[1], gold[2]);
+        doc.rect(0, 12, pageW, 1.2, "F");
         doc.setTextColor(255, 255, 255);
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
-        doc.text(bm, MARGIN, 9);
-        doc.setFontSize(13);
-        doc.text("BOLETIM DE MEDIÇÃO", pageW / 2, 9.5, { align: "center" });
         doc.setFontSize(9);
-        doc.text(`Período: ${periodoLabel}`, pageW - MARGIN, 9, { align: "right" });
+        doc.text(bm, MARGIN, 8);
+        doc.setFontSize(11);
+        doc.text("BOLETIM DE MEDIÇÃO", pageW / 2, 8, { align: "center" });
+        doc.setFontSize(8);
+        doc.text(periodoLabel, pageW - MARGIN, 8, { align: "right" });
         doc.setTextColor(0, 0, 0);
       }
       const pH = doc.internal.pageSize.getHeight();
+      doc.setDrawColor(217, 207, 190);
+      doc.setLineWidth(0.2);
+      doc.line(MARGIN, pH - 8, pageW - MARGIN, pH - 8);
+      doc.setFont("helvetica", "normal");
       doc.setFontSize(7);
       doc.setTextColor(140);
-      doc.text(
-        `${projectName} • ${bm} • Página ${data.pageNumber}`,
-        pageW / 2, pH - 5, { align: "center" },
-      );
+      doc.text(projectName, MARGIN, pH - 4);
+      doc.text(`${bm} • Página ${data.pageNumber}`, pageW - MARGIN, pH - 4, { align: "right" });
     },
   });
 
