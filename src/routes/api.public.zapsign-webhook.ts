@@ -79,6 +79,25 @@ function mapSignerStatus(signer: ZapSignSigner): string {
   return s || "pending";
 }
 
+const ALLOWED_ZAPSIGN_HOSTS = [
+  "zapsign.com.br",
+  "zapsign.s3.amazonaws.com",
+  "s3.amazonaws.com",
+];
+
+function isAllowedZapSignUrl(raw: string): boolean {
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== "https:") return false;
+    const host = parsed.hostname.toLowerCase();
+    return ALLOWED_ZAPSIGN_HOSTS.some(
+      (h) => host === h || host.endsWith("." + h),
+    );
+  } catch {
+    return false;
+  }
+}
+
 async function archiveSignedPdf(params: {
   signedUrl: string;
   companyId: string;
@@ -88,6 +107,12 @@ async function archiveSignedPdf(params: {
   requestId: string;
 }): Promise<{ path: string; hash: string } | null> {
   try {
+    if (!isAllowedZapSignUrl(params.signedUrl)) {
+      console.error(
+        "[zapsign-webhook] blocked signed_file URL (not on allowlist)",
+      );
+      return null;
+    }
     const res = await fetch(params.signedUrl);
     if (!res.ok) {
       console.error("[zapsign-webhook] download signed_file failed", res.status);
