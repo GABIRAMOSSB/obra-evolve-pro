@@ -459,7 +459,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   }
   ws.getRow(totalRow).height = 26;
 
-  ws.pageSetup.printTitlesRow = "1:10";
+  ws.pageSetup.printTitlesRow = "1:11";
 
   const out = await wb.xlsx.writeBuffer();
   return new Blob([out], {
