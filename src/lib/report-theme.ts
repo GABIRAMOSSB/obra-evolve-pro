@@ -15,8 +15,8 @@ export type RGB = [number, number, number];
 
 /** Hex sem `#` (para xlsx-js-style). */
 export const REPORT_HEX = {
-  primary: "B19777",
-  primaryDark: "785F44",
+  primary: "B19777",         // dourado do logo SOLV
+  primaryDark: "3E4A5C",     // navy institucional (sidebar solvconstrutora.com)
   primarySoft: "DFCFBC",
   primarySofter: "EFE8DC",
   groupBg: "EFE8DC",
@@ -29,13 +29,13 @@ export const REPORT_HEX = {
   border: "D9CFBE",
   textOnDark: "FFFFFF",
   textOnLight: "1F2937",
-  navyBM: "785F44",
+  navyBM: "3E4A5C",
 } as const;
 
 /** RGB triplets (para jsPDF / autoTable). */
 export const REPORT_RGB: Record<keyof typeof REPORT_HEX, RGB> = {
   primary: [177, 151, 119],
-  primaryDark: [120, 95, 68],
+  primaryDark: [62, 74, 92],
   primarySoft: [223, 207, 188],
   primarySofter: [239, 232, 220],
   groupBg: [239, 232, 220],
@@ -48,5 +48,6 @@ export const REPORT_RGB: Record<keyof typeof REPORT_HEX, RGB> = {
   border: [217, 207, 190],
   textOnDark: [255, 255, 255],
   textOnLight: [31, 41, 55],
-  navyBM: [120, 95, 68],
+  navyBM: [62, 74, 92],
 };
+
