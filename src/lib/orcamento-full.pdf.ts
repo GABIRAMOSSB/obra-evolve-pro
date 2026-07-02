@@ -34,7 +34,7 @@ function fmtDate(iso: string | null | undefined): string {
   return d.toLocaleDateString("pt-BR");
 }
 
-export function exportOrcamentoFullPDF({ rows, info, projectName }: Args) {
+export function exportOrcamentoFullPDF({ rows, evolutions, info, projectName }: Args) {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
