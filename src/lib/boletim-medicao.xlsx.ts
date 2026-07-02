@@ -181,34 +181,25 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   ws.getRow(1).height = 26;
 
   // ============ LINHA 2: título ============
-  ws.mergeCells("A2:D2");
-  ws.mergeCells("E2:F2");
-  ws.mergeCells("G2:H2");
-  ws.mergeCells("I2:J2");
-  ws.mergeCells("K2:M2");
-  ws.getCell("A2").value = "";
-  ws.getCell("A2").fill = fill(COLOR_GRAFITE);
-  const c2t = ws.getCell("E2");
+  ws.mergeCells("A2:F2");
+  ws.mergeCells("G2:I2");
+  ws.mergeCells("J2:M2");
+  const c2t = ws.getCell("A2");
   c2t.value = "BOLETIM DE MEDIÇÃO";
   c2t.font = { name: "Aptos", size: 14, bold: true, color: { argb: COLOR_WHITE } };
   c2t.alignment = { horizontal: "center", vertical: "middle" };
   c2t.fill = fill(COLOR_GRAFITE);
   const c2bm = ws.getCell("G2");
   c2bm.value = `◈ ${bmLabel}`;
-  c2bm.font = { name: "Aptos", size: 11, bold: true, color: { argb: COLOR_DOURADO } };
+  c2bm.font = { name: "Aptos", size: 12, bold: true, color: { argb: COLOR_DOURADO } };
   c2bm.alignment = { horizontal: "center", vertical: "middle" };
   c2bm.fill = fill(COLOR_GRAFITE);
-  const c2sep = ws.getCell("I2");
-  c2sep.value = "— → —";
-  c2sep.font = { name: "Aptos", size: 10, color: { argb: COLOR_DOURADO } };
-  c2sep.alignment = { horizontal: "center", vertical: "middle" };
-  c2sep.fill = fill(COLOR_GRAFITE);
-  const c2em = ws.getCell("K2");
+  const c2em = ws.getCell("J2");
   c2em.value = `EMISSÃO · ${dataMedBR}`;
   c2em.font = { name: "Aptos", size: 10, bold: true, color: { argb: COLOR_WHITE } };
   c2em.alignment = { horizontal: "right", vertical: "middle", indent: 1 };
   c2em.fill = fill(COLOR_GRAFITE);
-  ws.getRow(2).height = 26;
+  ws.getRow(2).height = 30;
 
   // Linha 3 vazia (respiro)
   ws.getRow(3).height = 6;
