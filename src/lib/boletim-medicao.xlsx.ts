@@ -138,7 +138,23 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
       ].filter(Boolean).join("\n")
     : "—";
   const dataMedBR = fmtDateBR(data.medicao.data_medicao);
-  const periodoStr = `${fmtDateBR(data.medicao.periodo_inicio)} a ${fmtDateBR(data.medicao.periodo_fim)}`;
+  // Duração do período (dias) — quanto tempo levou para fechar a medição
+  const parseDay = (s?: string | null): Date | null => {
+    if (!s) return null;
+    const d = new Date(s.length === 10 ? s + "T00:00:00" : s);
+    return isNaN(d.getTime()) ? null : d;
+  };
+  const dIni = parseDay(data.medicao.periodo_inicio);
+  const dFim = parseDay(data.medicao.periodo_fim);
+  let duracaoDias = 0;
+  if (dIni && dFim) {
+    duracaoDias = Math.max(0, Math.round((dFim.getTime() - dIni.getTime()) / (1000 * 60 * 60 * 24)));
+  }
+  const periodoStr =
+    dIni && dFim
+      ? `${fmtDateBR(data.medicao.periodo_inicio)} a ${fmtDateBR(data.medicao.periodo_fim)}`
+      : "—";
+  const duracaoStr = dIni && dFim ? `${duracaoDias} dia${duracaoDias === 1 ? "" : "s"}` : "—";
 
   const ws = wb.addWorksheet("Boletim", {
     views: [{ state: "frozen", ySplit: 11, showGridLines: false }],
@@ -272,7 +288,8 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   ]);
 
   metaRow(7, [
-    ["A7:E7", "PERÍODO DE MEDIÇÃO", periodoStr],
+    ["A7:C7", "PERÍODO DE MEDIÇÃO", periodoStr],
+    ["D7:E7", "DURAÇÃO", duracaoStr],
     ["F7:M7", "OBJETO DO CONTRATO", data.contrato?.objeto ?? "—"],
   ]);
 
@@ -391,7 +408,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
       row.getCell(4).numFmt = "#,##0.00";
       row.getCell(5).value = Number(item.valor_unitario);
       row.getCell(5).numFmt = BRL;
-      row.getCell(6).value = { formula: `ROUND(D${r}*E${r},2)` };
+      row.getCell(6).value = { formula: `D${r}*E${r}` };
       row.getCell(6).numFmt = BRL;
       row.getCell(7).value = Number(item.qtd_acum_anterior);
       row.getCell(7).numFmt = "#,##0.00";
@@ -402,7 +419,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
       row.getCell(9).numFmt = "#,##0.00";
       row.getCell(10).value = Number(item.valor_acum_anterior);
       row.getCell(10).numFmt = BRL;
-      row.getCell(11).value = { formula: `ROUND(H${r}*E${r},2)` };
+      row.getCell(11).value = { formula: `H${r}*E${r}` };
       row.getCell(11).numFmt = BRL;
       row.getCell(12).value = { formula: `J${r}+K${r}` };
       row.getCell(12).numFmt = BRL;

@@ -1290,6 +1290,8 @@ function Dashboard({
       projectName: data.nome,
       measurementNumber: selectedBM ?? currentMeasNumber,
       allRows: data.rows,
+      periodoInicio: resumoBM.periodoInicio ?? null,
+      periodoFim: resumoBM.periodoFim ?? null,
     });
     toast.success("Boletim Excel exportado");
   }}>
