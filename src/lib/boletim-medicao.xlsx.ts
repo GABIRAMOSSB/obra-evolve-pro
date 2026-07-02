@@ -288,7 +288,8 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   ]);
 
   metaRow(7, [
-    ["A7:E7", "PERÍODO DE MEDIÇÃO", periodoStr],
+    ["A7:C7", "PERÍODO DE MEDIÇÃO", periodoStr],
+    ["D7:E7", "DURAÇÃO", duracaoStr],
     ["F7:M7", "OBJETO DO CONTRATO", data.contrato?.objeto ?? "—"],
   ]);
 
