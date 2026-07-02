@@ -125,11 +125,36 @@ export default function DocumentsTab({ obraId }: Props) {
   const onDownload = async (item: DocumentItem) => {
     try {
       const url = await getDocumentUrl(item.path);
-      window.open(url, "_blank", "noopener,noreferrer");
+      // window.open após await é bloqueado por popup-blocker em alguns
+      // navegadores. Um <a download> injetado no DOM contorna o bloqueio.
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = item.name;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     } catch (e) {
       toast.error("Erro", { description: String((e as Error).message) });
     }
   };
+
+  const onView = async (item: DocumentItem) => {
+    try {
+      const url = await getDocumentUrl(item.path);
+      const a = document.createElement("a");
+      a.href = url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (e) {
+      toast.error("Erro", { description: String((e as Error).message) });
+    }
+  };
+
 
   const onDelete = async (item: DocumentItem) => {
     if (!confirm(`Excluir "${item.name}"? Esta ação não pode ser desfeita.`)) return;
