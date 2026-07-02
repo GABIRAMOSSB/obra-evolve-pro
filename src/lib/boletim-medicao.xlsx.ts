@@ -271,10 +271,10 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   ws.getRow(8).height = 58;
 
 
-  // Linha 8 vazia (respiro)
-  ws.getRow(8).height = 4;
+  // Linha 9 vazia (respiro)
+  ws.getRow(9).height = 4;
 
-  // ============ Cabeçalho da grade (linhas 9..10) ============
+  // ============ Cabeçalho da grade (linhas 10..11) ============
   // Estrutura: Item | Descrição | Un. | Qtd. | V. Unit. | Total | EXEC. FÍSICO (3) | EXEC. FINANCEIRO (3) | Executado %
   const header1: Record<string, string> = {
     A: "Item",
@@ -292,12 +292,12 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
     J: "Anterior", K: "Período", L: "Acum.",
   };
 
-  // Merges do header (linha 9 + 10) — colunas simples: A..F e M ocupam duas linhas
+  // Merges do header (linha 10 + 11) — colunas simples: A..F e M ocupam duas linhas
   ["A", "B", "C", "D", "E", "F", "M"].forEach((col) => {
-    ws.mergeCells(`${col}9:${col}10`);
+    ws.mergeCells(`${col}10:${col}11`);
   });
-  ws.mergeCells("G9:I9");
-  ws.mergeCells("J9:L9");
+  ws.mergeCells("G10:I10");
+  ws.mergeCells("J10:L10");
 
   for (const [col, txt] of Object.entries(header1)) {
     const cell = ws.getCell(`${col}9`);
