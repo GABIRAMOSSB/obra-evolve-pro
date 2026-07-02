@@ -429,14 +429,17 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   ws.getCell(`M${totalRow}`).value = N > 0 ? { formula: `IF(F${totalRow}=0,0,L${totalRow}/F${totalRow})` } : 0;
   ws.getCell(`M${totalRow}`).numFmt = PCT;
 
-  for (let c = 6; c <= 13; c++) {
+  for (let c = 1; c <= 13; c++) {
     const cell = ws.getRow(totalRow).getCell(c);
     cell.fill = fill(COLOR_GRAFITE);
-    cell.font = { name: "Aptos", size: 10, bold: true, color: { argb: COLOR_DOURADO } };
-    cell.alignment = { horizontal: "center", vertical: "middle" };
-    cell.border = borderAll;
+    cell.font = { name: "Aptos", size: 10, bold: true, color: { argb: c <= 5 ? COLOR_WHITE : COLOR_DOURADO } };
+    if (c > 5) cell.alignment = { horizontal: "center", vertical: "middle" };
+    cell.border = {
+      top: { style: "medium", color: { argb: COLOR_DOURADO } },
+      bottom: { style: "medium", color: { argb: COLOR_DOURADO } },
+    };
   }
-  ws.getRow(totalRow).height = 24;
+  ws.getRow(totalRow).height = 26;
 
   ws.pageSetup.printTitlesRow = "1:10";
 
