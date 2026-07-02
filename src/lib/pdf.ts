@@ -428,6 +428,13 @@ export function buildMeasurementPdfBlob(
   const navy: [number, number, number] = REPORT_RGB.primaryDark;
   const orange: [number, number, number] = REPORT_RGB.measure;
   const green: [number, number, number] = REPORT_RGB.success;
+  const gold: [number, number, number] = REPORT_RGB.primary;
+  const cardBg = REPORT_RGB.cardBg;
+  const border = REPORT_RGB.border;
+  const labelMuted = REPORT_RGB.labelMuted;
+  const subtitleOnDark = REPORT_RGB.subtitleOnDark;
+  const measureSoft = REPORT_RGB.measureSoft;
+  const successSoft = REPORT_RGB.successSoft;
   // Resumo do cabeçalho — usa SEMPRE allRows (lista completa), nunca a
   // lista filtrada. Garante que os totais do cabeçalho não mudem com filtros.
   const resumo = calcularResumoCabecalhoBM(allRows ?? rows, evolutions, measurementNumber, info);
@@ -438,11 +445,11 @@ export function buildMeasurementPdfBlob(
   // HEADER — banda navy (18mm) + faixa dourada de 2mm; chip do BM à
   // esquerda, título centralizado com subtítulo, chip de data à direita.
   // ─────────────────────────────────────────────────────────────────
-  const gold: [number, number, number] = [177, 151, 119]; // B19777
   doc.setFillColor(navy[0], navy[1], navy[2]);
   doc.rect(0, 0, pageW, 18, "F");
   doc.setFillColor(gold[0], gold[1], gold[2]);
   doc.rect(0, 18, pageW, 1.6, "F");
+
 
   // Chip do BM (arredondado)
   const chipW = 34, chipH = 9;
