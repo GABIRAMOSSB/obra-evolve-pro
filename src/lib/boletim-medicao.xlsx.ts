@@ -370,23 +370,30 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
       row.getCell(13).value = { formula: `IF(D${r}=0,0,I${r}/D${r})` };
       row.getCell(13).numFmt = PCT;
 
+      const zebra = i % 2 === 0;
       for (let c = 1; c <= 13; c++) {
         const cell = row.getCell(c);
-        let bg = COLOR_BEGE_LIGHT;
+        let bg = zebra ? COLOR_BEGE_LIGHT : COLOR_ROW_ALT;
         let bold = false;
         let color = COLOR_TEXT;
-        if (c === 8) { bg = COLOR_BEGE; bold = true; color = COLOR_MUTED; }
+        if (c === 8) { bg = COLOR_BEGE; bold = true; color = COLOR_TEXT; }
         else if (c === 7 || c === 9) { color = COLOR_MUTED; }
-        else if (c === 10 || c === 11 || c === 12) { bg = COLOR_FIN; }
+        else if (c === 10 || c === 11 || c === 12) { bg = zebra ? COLOR_FIN : COLOR_FIN_ALT; }
         cell.fill = fill(bg);
-        cell.font = { name: "Aptos", size: 8, bold, color: { argb: color } };
+        cell.font = { name: "Aptos", size: 8.5, bold, color: { argb: color } };
         cell.alignment = {
           horizontal: c === 2 ? "left" : "center",
           vertical: c <= 2 ? "top" : "middle",
           wrapText: true,
           indent: c === 2 ? 1 : 0,
         };
-        cell.border = borderAll;
+        // Bordas suaves: só divisão inferior + verticais entre grupos
+        cell.border = {
+          bottom: { style: "hair", color: { argb: COLOR_BORDER } },
+          left: c === 7 || c === 10 || c === 13
+            ? { style: "thin", color: { argb: COLOR_DOURADO } }
+            : undefined,
+        };
       }
     }
   }
