@@ -38,21 +38,24 @@ export async function exportOrcamentoFullXLSX(args: Args): Promise<void> {
     pageSetup: { paperSize: 9, orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0, margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 } },
   });
 
-  // Colunas
   const cols: Array<{ w: number }> = [
     { w: 12 }, // item
-    { w: 58 }, // descrição
+    { w: 48 }, // descrição
     { w: 8 },  // und
-    { w: 12 }, // quantidade
-    { w: 16 }, // valor unit
+    { w: 12 }, // qtd contratada
     { w: 16 }, // valor unit c/ BDI
-    { w: 18 }, // total
-    { w: 10 }, // peso %
+    { w: 18 }, // total contratual
+    { w: 14 }, // qtd executada
+    { w: 18 }, // valor executado
+    { w: 18 }, // saldo
+    { w: 10 }, // % exec
   ];
   cols.forEach((c, i) => { ws.getColumn(i + 1).width = c.w; });
+  const COLS = cols.length;
+  const lastColLetter = String.fromCharCode(64 + COLS); // "J"
 
-  // ---- HEADER (linhas 1..7) ----
-  ws.mergeCells("A1:H1");
+  const headerRange = `A1:${lastColLetter}1`;
+  ws.mergeCells(headerRange);
   const t1 = ws.getCell("A1");
   t1.value = "SOLV CONSTRUTORA E SOLUÇÕES";
   t1.font = { name: "Calibri", size: 16, bold: true, color: { argb: WHITE } };
@@ -60,7 +63,7 @@ export async function exportOrcamentoFullXLSX(args: Args): Promise<void> {
   t1.fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY } };
   ws.getRow(1).height = 28;
 
-  ws.mergeCells("A2:H2");
+  ws.mergeCells(`A2:${lastColLetter}2`);
   const t2 = ws.getCell("A2");
   t2.value = "PLANILHA ORÇAMENTÁRIA COMPLETA";
   t2.font = { name: "Calibri", size: 11, bold: true, color: { argb: NAVY } };
@@ -68,7 +71,6 @@ export async function exportOrcamentoFullXLSX(args: Args): Promise<void> {
   t2.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEAE1D2" } };
   ws.getRow(2).height = 20;
 
-  // Metadados obra (linhas 3..6)
   const meta: Array<[string, string]> = [
     ["Obra", args.projectName],
     ["Contratante", args.info.contratante ?? "—"],
@@ -81,7 +83,7 @@ export async function exportOrcamentoFullXLSX(args: Args): Promise<void> {
     ws.getCell(`A${row}`).font = { name: "Calibri", size: 9, bold: true, color: { argb: GOLD } };
     ws.getCell(`A${row}`).alignment = { vertical: "middle", horizontal: "left", indent: 1 };
     ws.getCell(`A${row}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFAF7F1" } };
-    ws.mergeCells(`B${row}:H${row}`);
+    ws.mergeCells(`B${row}:${lastColLetter}${row}`);
     const c = ws.getCell(`B${row}`);
     c.value = val;
     c.font = { name: "Calibri", size: 10, bold: true, color: { argb: TEXT } };
@@ -90,9 +92,12 @@ export async function exportOrcamentoFullXLSX(args: Args): Promise<void> {
     ws.getRow(row).height = 16;
   });
 
-  // Cabeçalho tabela (linha 8)
   const HEAD_ROW = 8;
-  const headers = ["Item", "Descrição", "Und", "Quantidade", "Valor Unit.", "Valor Unit. c/ BDI", "Total (R$)", "Peso %"];
+  const headers = [
+    "Item", "Descrição", "Und",
+    "Qtd. Contratada", "Vlr. Unit. c/ BDI", "Total Contratual (R$)",
+    "Qtd. Executada", "Valor Executado (R$)", "Saldo (R$)", "% Exec.",
+  ];
   headers.forEach((h, i) => {
     const c = ws.getCell(HEAD_ROW, i + 1);
     c.value = h;
@@ -101,36 +106,41 @@ export async function exportOrcamentoFullXLSX(args: Args): Promise<void> {
     c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY } };
     c.border = boxBorder;
   });
-  ws.getRow(HEAD_ROW).height = 24;
+  ws.getRow(HEAD_ROW).height = 28;
 
-  // Corpo
   let rowIdx = HEAD_ROW + 1;
   const dataStart = rowIdx;
   for (const r of args.rows) {
     const isGroup = !!r.isGroup || ((r.quantidade ?? 0) === 0 && (r.valorUnitBDI || r.valorUnit || 0) === 0);
-    const vu = r.valorUnit || 0;
-    const vuBDI = r.valorUnitBDI || vu;
+    const vuBDI = r.valorUnitBDI || r.valorUnit || 0;
     const qtd = Number(r.quantidade ?? 0);
     const total = qtd * vuBDI;
+    const m = !isGroup && args.evolutions ? activityMetrics(r, args.evolutions[r.item]) : null;
+    const qExec = m?.quantExec ?? 0;
+    const vExec = m?.valorExec ?? 0;
+    const saldo = total - vExec;
+    const pct = m?.percent ?? 0;
 
-    const cells = [
+    const cells: (string | number | null)[] = [
       r.item ?? "",
       r.descricao ?? "",
       r.und ?? "",
       isGroup ? null : qtd,
-      isGroup ? null : vu,
       isGroup ? null : vuBDI,
       isGroup ? null : total,
-      isGroup ? null : (r.peso ?? null),
+      isGroup ? null : qExec,
+      isGroup ? null : vExec,
+      isGroup ? null : saldo,
+      isGroup ? null : pct,
     ];
     cells.forEach((v, i) => {
       const c = ws.getCell(rowIdx, i + 1);
       c.value = v;
       c.border = boxBorder;
       c.alignment = { vertical: "middle", horizontal: i === 1 ? "left" : (i === 0 || i === 2 ? "center" : "right"), wrapText: i === 1, indent: i === 1 ? 1 : 0 };
-      if (i === 3) c.numFmt = NUM;
-      else if (i === 4 || i === 5 || i === 6) c.numFmt = BRL;
-      else if (i === 7) c.numFmt = '0.00"%"';
+      if (i === 3 || i === 6) c.numFmt = NUM;
+      else if (i === 4 || i === 5 || i === 7 || i === 8) c.numFmt = BRL;
+      else if (i === 9) c.numFmt = PCT;
 
       if (isGroup) {
         c.font = { name: "Calibri", size: 10, bold: true, color: { argb: NAVY } };
@@ -144,9 +154,9 @@ export async function exportOrcamentoFullXLSX(args: Args): Promise<void> {
     rowIdx++;
   }
 
-  // Totalizador
   const dataEnd = rowIdx - 1;
-  ws.mergeCells(rowIdx, 1, rowIdx, 6);
+  // Total geral: mescla colunas A..E (5), depois total contratual (F), qtd exec vazia (G), valor exec (H), saldo (I), pct (J)
+  ws.mergeCells(rowIdx, 1, rowIdx, 5);
   const totalLabel = ws.getCell(rowIdx, 1);
   totalLabel.value = "TOTAL GERAL DO CONTRATO";
   totalLabel.font = { name: "Calibri", size: 11, bold: true, color: { argb: WHITE } };
@@ -154,21 +164,22 @@ export async function exportOrcamentoFullXLSX(args: Args): Promise<void> {
   totalLabel.fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY } };
   totalLabel.border = boxBorder;
 
-  const totalCell = ws.getCell(rowIdx, 7);
-  totalCell.value = { formula: `SUM(G${dataStart}:G${dataEnd})` };
-  totalCell.numFmt = BRL;
-  totalCell.font = { name: "Calibri", size: 11, bold: true, color: { argb: WHITE } };
-  totalCell.alignment = { vertical: "middle", horizontal: "right", indent: 1 };
-  totalCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY } };
-  totalCell.border = boxBorder;
-
-  const pesoCell = ws.getCell(rowIdx, 8);
-  pesoCell.value = 100;
-  pesoCell.numFmt = '0.00"%"';
-  pesoCell.font = { name: "Calibri", size: 11, bold: true, color: { argb: WHITE } };
-  pesoCell.alignment = { vertical: "middle", horizontal: "right", indent: 1 };
-  pesoCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY } };
-  pesoCell.border = boxBorder;
+  const totalConfig: Array<[number, ExcelJS.CellValue, string]> = [
+    [6, { formula: `SUM(F${dataStart}:F${dataEnd})` }, BRL],
+    [7, null, NUM],
+    [8, { formula: `SUM(H${dataStart}:H${dataEnd})` }, BRL],
+    [9, { formula: `SUM(I${dataStart}:I${dataEnd})` }, BRL],
+    [10, { formula: `IF(F${rowIdx}=0,0,H${rowIdx}/F${rowIdx}*100)` }, PCT],
+  ];
+  totalConfig.forEach(([col, val, fmt]) => {
+    const c = ws.getCell(rowIdx, col);
+    c.value = val;
+    c.numFmt = fmt;
+    c.font = { name: "Calibri", size: 11, bold: true, color: { argb: WHITE } };
+    c.alignment = { vertical: "middle", horizontal: "right", indent: 1 };
+    c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY } };
+    c.border = boxBorder;
+  });
   ws.getRow(rowIdx).height = 24;
 
   const buf = await wb.xlsx.writeBuffer();
