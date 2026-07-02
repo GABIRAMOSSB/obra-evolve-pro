@@ -83,8 +83,9 @@ export function ObraInfoDialog({ nome, info, onSave }: Props) {
               </div>
               {field("cliente", "Licitador")}
               {field("contratante", "Contratante")}
+              {field("cnpjContratante", "CNPJ contratante", "00.000.000/0000-00")}
               {field("empresaExecutora", "Empresa executora")}
-              {field("cnpj", "CNPJ", "00.000.000/0000-00")}
+              {field("cnpj", "CNPJ executora", "00.000.000/0000-00")}
             </div>
           </section>
 
@@ -102,10 +103,21 @@ export function ObraInfoDialog({ nome, info, onSave }: Props) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {field("numeroContrato", "Número do contrato")}
               {field("numeroLicitacao", "Número da licitação")}
+              {field("processoAdministrativo", "Processo administrativo")}
               {field("dataInicioObra", "Data de início da obra", undefined, "date")}
               {field("prazoContratualDias", "Prazo contratual (dias)", "Ex.: 180", "number")}
+              <div className="sm:col-span-2">
+                <Label className="text-xs">Objeto do contrato</Label>
+                <textarea
+                  className="flex min-h-[72px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={data.objetoContrato ?? ""}
+                  onChange={(e) => setData({ ...data, objetoContrato: e.target.value })}
+                  placeholder="Descrição do objeto contratado (obra/serviço)…"
+                />
+              </div>
             </div>
           </section>
+
 
           <section>
             <h4 className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground mb-2">Responsáveis da obra</h4>

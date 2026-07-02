@@ -127,6 +127,7 @@ export interface DiaryEntry {
 export interface ObraInfo {
   cliente?: string;
   contratante?: string;
+  cnpjContratante?: string;
   endereco?: string;
   municipio?: string;
   estado?: string;
@@ -142,6 +143,8 @@ export interface ObraInfo {
   cnpj?: string;
   numeroContrato?: string;
   numeroLicitacao?: string;
+  processoAdministrativo?: string;
+  objetoContrato?: string;
   dataInicioObra?: string; // yyyy-mm-dd
   prazoContratualDias?: number;
 }
