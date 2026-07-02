@@ -133,6 +133,18 @@ export function calcularResumoCabecalhoBM(
     }
   }
 
+  // Regra oficial do período da BM:
+  //  - 1ª BM (sem BM anterior): usa `info.dataInicioObra` como início.
+  //  - Demais BMs: usam a data de fechamento da BM anterior como início.
+  // O fim é sempre a data de fechamento da BM corrente.
+  const periodoOrigemInicio: "inicio_obra" | "bm_anterior" | "indefinido" =
+    !hasMeasurement
+      ? "indefinido"
+      : previous
+        ? "bm_anterior"
+        : info.dataInicioObra
+          ? "inicio_obra"
+          : "indefinido";
   const periodoInicio = hasMeasurement
     ? previous?.date ?? info.dataInicioObra
     : undefined;
@@ -141,6 +153,37 @@ export function calcularResumoCabecalhoBM(
     ? `${formatarDataBR(periodoInicio)} a ${formatarDataBR(periodoFim)}`
     : "";
   const dataMedicao = hasMeasurement ? formatarDataBR(periodoFim) : "";
+
+  // Validações do período
+  const periodoWarnings: string[] = [];
+  if (hasMeasurement) {
+    if (!periodoFim) {
+      periodoWarnings.push(`Data de fechamento da ${codigoBMTemp(effectiveBM)} ausente.`);
+    }
+    if (!periodoInicio) {
+      periodoWarnings.push(
+        previous
+          ? `Data de fechamento da BM anterior (BM-${String(previous.number).padStart(2, "0")}) ausente.`
+          : "Data de início da obra não informada. Preencha em Informações da Obra para gerar a 1ª medição.",
+      );
+    }
+    const pi = parseISODate(periodoInicio);
+    const pf = parseISODate(periodoFim);
+    if (pi && pf && pi.getTime() > pf.getTime()) {
+      periodoWarnings.push(
+        `Período inválido: início (${formatarDataBR(periodoInicio)}) posterior ao fechamento (${formatarDataBR(periodoFim)}).`,
+      );
+    }
+    if (previous && info.dataInicioObra) {
+      const pdi = parseISODate(info.dataInicioObra);
+      if (pdi && pi && pi.getTime() < pdi.getTime()) {
+        periodoWarnings.push(
+          "Fechamento da BM anterior é anterior à data de início da obra. Verifique as datas.",
+        );
+      }
+    }
+  }
+  const periodoValido = hasMeasurement && periodoWarnings.length === 0;
 
   const dataInicio = parseISODate(info.dataInicioObra);
   const refFim = hasMeasurement ? parseISODate(periodoFim) : new Date();
@@ -173,8 +216,16 @@ export function calcularResumoCabecalhoBM(
     saldoRestante,
     diasDecorridos,
     diasRestantes,
+    periodoValido,
+    periodoWarnings,
+    periodoOrigemInicio,
   };
 }
+
+function codigoBMTemp(n: number): string {
+  return `BM-${String(n).padStart(2, "0")}`;
+}
+
 
 export type Status = "Não iniciada" | "Em andamento" | "Concluída";
 
