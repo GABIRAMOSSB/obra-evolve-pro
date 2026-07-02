@@ -322,7 +322,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
     row.getCell(2).value = sanitizeDescricao(item.descricao);
 
     if (isNivel1) {
-      row.height = 22;
+      row.height = 24;
       for (let c = 1; c <= 13; c++) {
         const cell = row.getCell(c);
         cell.fill = fill(COLOR_GRAFITE);
@@ -333,7 +333,10 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
           wrapText: true,
           indent: c === 2 ? 1 : 0,
         };
-        cell.border = borderAll;
+        cell.border = {
+          top: { style: "medium", color: { argb: COLOR_DOURADO } },
+          bottom: { style: "medium", color: { argb: COLOR_DOURADO } },
+        };
       }
     } else if (isSubgrupo) {
       row.height = 20;
@@ -347,7 +350,9 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
           wrapText: true,
           indent: c === 2 ? 1 : 0,
         };
-        cell.border = borderAll;
+        cell.border = {
+          bottom: { style: "thin", color: { argb: COLOR_BORDER } },
+        };
       }
     } else {
       row.height = estimateHeight(sanitizeDescricao(item.descricao));
