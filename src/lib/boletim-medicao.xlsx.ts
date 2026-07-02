@@ -6,7 +6,7 @@
  */
 import ExcelJS from "exceljs";
 import { normalizeUnidade, sanitizeDescricao } from "./boletim-medicao.calc";
-import templateUrl from "@/assets/boletim-template.xlsx?url";
+const templateUrl = "/boletim-template.xlsx";
 
 const BRL = 'R$ #,##0.00';
 const PCT = '0.00%';
