@@ -54,8 +54,9 @@ interface XLSXInput {
     cnpj_cliente?: string | null;
   } | null;
   company: { razao_social?: string | null; nome?: string | null; cnpj?: string | null } | null;
-  responsavelTecnico?: { nome: string; registro: string | null; cargo?: string | null } | null;
+  responsavelTecnico?: { nome: string; registro: string | null; cargo?: string | null; art_rrt?: string | null } | null;
   fiscal?: { nome: string; registro: string | null; cargo?: string | null } | null;
+  licitador?: string | null;
   itens: Array<{
     item_codigo: string;
     descricao: string;
@@ -111,24 +112,36 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   const endereco =
     [data.obra?.endereco, data.obra?.cidade, data.obra?.uf].filter(Boolean).join(", ") || "—";
   const executora = data.company?.razao_social ?? data.company?.nome ?? "SOLV Construtora";
-  const contratante = data.obra?.cliente ?? data.contrato?.orgao_contratante ?? "—";
+  const licitador = data.licitador ?? data.obra?.cliente ?? "—";
+  const contratante = data.contrato?.orgao_contratante ?? data.obra?.cliente ?? "—";
   const cnpjContratante = data.obra?.cnpj_cliente ?? "—";
   const cnpjExecutora = data.company?.cnpj ?? "—";
   const processo = data.contrato?.processo_administrativo ?? "—";
   const licitacao = data.contrato?.numero_licitacao ?? "—";
   const inicioObra = fmtDateBR(data.contrato?.data_inicio);
   const prazoStr = data.contrato?.prazo_dias ? `${data.contrato.prazo_dias} dias` : "—";
-  const rtLinha = data.responsavelTecnico
-    ? `${data.responsavelTecnico.nome}\n${data.responsavelTecnico.registro ?? "—"}`
+  const rt = data.responsavelTecnico;
+  const rtLinha = rt
+    ? [
+        rt.nome,
+        rt.cargo ? `Cargo: ${rt.cargo}` : null,
+        rt.registro ? `CREA/CAU: ${rt.registro}` : null,
+        rt.art_rrt ? `ART/RRT: ${rt.art_rrt}` : null,
+      ].filter(Boolean).join("\n")
     : "—";
-  const fiscalLinha = data.fiscal
-    ? `${data.fiscal.nome}\n${data.fiscal.registro ?? "—"}`
+  const fs = data.fiscal;
+  const fiscalLinha = fs
+    ? [
+        fs.nome,
+        fs.cargo ? `Cargo: ${fs.cargo}` : null,
+        fs.registro ? `CREA/CAU: ${fs.registro}` : null,
+      ].filter(Boolean).join("\n")
     : "—";
   const dataMedBR = fmtDateBR(data.medicao.data_medicao);
   const periodoStr = `${fmtDateBR(data.medicao.periodo_inicio)} a ${fmtDateBR(data.medicao.periodo_fim)}`;
 
   const ws = wb.addWorksheet("Boletim", {
-    views: [{ state: "frozen", ySplit: 13, showGridLines: false }],
+    views: [{ state: "frozen", ySplit: 11, showGridLines: false }],
     pageSetup: {
       paperSize: 9, // A4
       orientation: "landscape",
@@ -225,38 +238,43 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
 
   metaRow(4, [
     ["A4:D4", "OBRA", nomeObra],
-    ["E4:G4", "CLIENTE / CONTRATANTE", contratante],
+    ["E4:G4", "LICITADOR", licitador],
     ["H4:I4", "CNPJ CONTRATANTE", cnpjContratante],
     ["J4:M4", "ENDEREÇO DA OBRA", endereco],
   ]);
 
   metaRow(5, [
-    ["A5:D5", "EMPRESA EXECUTORA", executora],
-    ["E5:G5", "CNPJ EXECUTORA", cnpjExecutora],
-    ["H5:I5", "CONTRATO Nº", data.contrato?.numero ? `nº ${data.contrato.numero}` : "—"],
+    ["A5:D5", "CONTRATANTE", contratante],
+    ["E5:G5", "EMPRESA EXECUTORA", executora],
+    ["H5:I5", "CNPJ EXECUTORA", cnpjExecutora],
     ["J5:M5", "PROCESSO ADMINISTRATIVO", processo],
   ]);
 
   metaRow(6, [
     ["A6:B6", "Nº BOLETIM", bmLabel],
     ["C6:D6", "DATA MEDIÇÃO", dataMedBR],
-    ["E6:G6", "PERÍODO DE MEDIÇÃO", periodoStr],
-    ["H6:I6", "INÍCIO DA OBRA", inicioObra],
-    ["J6:K6", "PRAZO CONTRATUAL", prazoStr],
-    ["L6:M6", "LICITAÇÃO Nº", licitacao],
+    ["E6:F6", "CONTRATO Nº", data.contrato?.numero ? `nº ${data.contrato.numero}` : "—"],
+    ["G6:H6", "LICITAÇÃO Nº", licitacao],
+    ["I6:J6", "INÍCIO DA OBRA", inicioObra],
+    ["K6:M6", "PRAZO CONTRATUAL", prazoStr],
   ]);
 
   metaRow(7, [
-    ["A7:F7", "OBJETO DO CONTRATO", data.contrato?.objeto ?? "—"],
-    ["G7:I7", "RESPONSÁVEL TÉCNICO", rtLinha],
-    ["J7:M7", "FISCAL DA OBRA", fiscalLinha],
+    ["A7:E7", "PERÍODO DE MEDIÇÃO", periodoStr],
+    ["F7:M7", "OBJETO DO CONTRATO", data.contrato?.objeto ?? "—"],
   ]);
-  ws.getRow(7).height = 42;
 
-  // Linha 8 vazia (respiro)
-  ws.getRow(8).height = 4;
+  metaRow(8, [
+    ["A8:F8", "RESPONSÁVEL TÉCNICO", rtLinha],
+    ["G8:M8", "FISCAL DA OBRA", fiscalLinha],
+  ]);
+  ws.getRow(8).height = 58;
 
-  // ============ Cabeçalho da grade (linhas 9..10) ============
+
+  // Linha 9 vazia (respiro)
+  ws.getRow(9).height = 4;
+
+  // ============ Cabeçalho da grade (linhas 10..11) ============
   // Estrutura: Item | Descrição | Un. | Qtd. | V. Unit. | Total | EXEC. FÍSICO (3) | EXEC. FINANCEIRO (3) | Executado %
   const header1: Record<string, string> = {
     A: "Item",
@@ -274,15 +292,15 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
     J: "Anterior", K: "Período", L: "Acum.",
   };
 
-  // Merges do header (linha 9 + 10) — colunas simples: A..F e M ocupam duas linhas
+  // Merges do header (linha 10 + 11) — colunas simples: A..F e M ocupam duas linhas
   ["A", "B", "C", "D", "E", "F", "M"].forEach((col) => {
-    ws.mergeCells(`${col}9:${col}10`);
+    ws.mergeCells(`${col}10:${col}11`);
   });
-  ws.mergeCells("G9:I9");
-  ws.mergeCells("J9:L9");
+  ws.mergeCells("G10:I10");
+  ws.mergeCells("J10:L10");
 
   for (const [col, txt] of Object.entries(header1)) {
-    const cell = ws.getCell(`${col}9`);
+    const cell = ws.getCell(`${col}10`);
     cell.value = txt;
     cell.font = { name: "Aptos", size: 9, bold: true, color: { argb: COLOR_WHITE } };
     cell.fill = fill(COLOR_GRAFITE);
@@ -292,7 +310,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
     };
   }
   for (const [col, txt] of Object.entries(header2)) {
-    const cell = ws.getCell(`${col}10`);
+    const cell = ws.getCell(`${col}11`);
     cell.value = txt;
     cell.font = { name: "Aptos", size: 8, bold: true, color: { argb: COLOR_LABEL } };
     cell.fill = fill(COLOR_BEGE);
@@ -301,11 +319,11 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
       bottom: { style: "thin", color: { argb: COLOR_BORDER } },
     };
   }
-  ws.getRow(9).height = 22;
-  ws.getRow(10).height = 18;
+  ws.getRow(10).height = 22;
+  ws.getRow(11).height = 18;
 
-  // ============ Itens (a partir da linha 11) ============
-  const startRow = 11;
+  // ============ Itens (a partir da linha 12) ============
+  const startRow = 12;
   const N = data.itens.length;
 
   for (let i = 0; i < N; i++) {
@@ -441,7 +459,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   }
   ws.getRow(totalRow).height = 26;
 
-  ws.pageSetup.printTitlesRow = "1:10";
+  ws.pageSetup.printTitlesRow = "1:11";
 
   const out = await wb.xlsx.writeBuffer();
   return new Blob([out], {

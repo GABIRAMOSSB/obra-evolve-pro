@@ -77,11 +77,13 @@ export async function exportBoletimMedicaoInstitucional(args: Args): Promise<voi
       razao_social: args.info.empresaExecutora ?? null,
       cnpj: args.info.cnpj ?? null,
     },
+    licitador: args.info.cliente ?? null,
     responsavelTecnico: args.info.responsavelTecnico
       ? {
           nome: args.info.responsavelTecnico,
-          registro: args.info.crea ?? args.info.artRrt ?? null,
+          registro: args.info.crea ?? null,
           cargo: args.info.cargoResponsavel ?? null,
+          art_rrt: args.info.artRrt ?? null,
         }
       : null,
     fiscal: args.info.fiscal
