@@ -241,7 +241,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
         cell.font = { name: f.name, size: f.size, bold: f.bold, color: { argb: f.color } };
         cell.alignment = {
           horizontal: c === 2 ? undefined : "center",
-          vertical: c <= 2 ? "top" : "center",
+          vertical: c <= 2 ? "top" : "middle",
           wrapText: true,
         };
       }
