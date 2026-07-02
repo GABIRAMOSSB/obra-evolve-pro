@@ -212,22 +212,6 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
     }
     ws.getRow(row).height = 34;
   };
-    for (const [span, label, value] of defs) {
-      ws.mergeCells(span);
-      const [start] = span.split(":");
-      const cell = ws.getCell(start);
-      cell.value = {
-        richText: [
-          { text: `${label}\n`, font: { name: "Aptos", size: 8, bold: true, color: { argb: COLOR_DOURADO } } },
-          { text: value, font: { name: "Aptos", size: 9, bold: false, color: { argb: COLOR_TEXT } } },
-        ],
-      };
-      cell.alignment = { horizontal: "left", vertical: "middle", wrapText: true, indent: 1 };
-      cell.fill = fill(COLOR_BEGE);
-      cell.border = borderAll;
-    }
-    ws.getRow(row).height = 34;
-  };
 
   metaRow(4, [
     ["A4:D4", "OBRA", nomeObra],
