@@ -280,7 +280,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
     ["A8:F8", "RESPONSÁVEL TÉCNICO", rtLinha],
     ["G8:M8", "FISCAL DA OBRA", fiscalLinha],
   ]);
-  ws.getRow(8).height = 58;
+  
 
 
   // Linha 9 vazia (respiro)
