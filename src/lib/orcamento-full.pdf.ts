@@ -64,7 +64,7 @@ export function exportOrcamentoFullPDF({ rows, info, projectName }: Args) {
     ["OBRA", projectName],
     ["CONTRATANTE", info.contratante ?? "—"],
     ["CONTRATO", info.numeroContrato ?? "—"],
-    ["LOCAL", info.local ?? "—"],
+    ["LOCAL", info.endereco ?? "—"],
   ];
   const colW = (pageW - 20) / meta.length;
   meta.forEach(([label, val], i) => {
