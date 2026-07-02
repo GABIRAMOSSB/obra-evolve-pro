@@ -12,15 +12,20 @@ import { normalizeUnidade, sanitizeDescricao } from "./boletim-medicao.calc";
 const BRL = 'R$ #,##0.00';
 const PCT = '0.00%';
 
-// Paleta institucional SOLV
-const COLOR_GRAFITE = "FF141922";       // barra topo/etapa nível 1
-const COLOR_DOURADO = "FFC8A66A";       // detalhe
-const COLOR_BEGE = "FFF6EEDC";          // subgrupos e "Período"
-const COLOR_BEGE_LIGHT = "FFFDF8EE";    // linhas de dados
-const COLOR_FIN = "FFEEF3F8";           // colunas financeiras
-const COLOR_TEXT = "FF202833";
-const COLOR_MUTED = "FF2E3745";
+// Paleta institucional SOLV (refinada — estilo Figma)
+const COLOR_GRAFITE = "FF0F1420";       // barra topo/etapa nível 1 (quase preto)
+const COLOR_DOURADO = "FFC8A66A";       // detalhe dourado
+const COLOR_BEGE = "FFF6EEDC";          // subgrupos
+const COLOR_META_BG = "FFFAF7F1";       // fundo dos meta-cards
+const COLOR_BEGE_LIGHT = "FFFCFAF5";    // linhas de dados (par)
+const COLOR_ROW_ALT = "FFFFFFFF";       // linhas de dados (ímpar)
+const COLOR_FIN = "FFF1F5FA";           // colunas financeiras (par)
+const COLOR_FIN_ALT = "FFF8FBFE";       // colunas financeiras (ímpar)
+const COLOR_TEXT = "FF1B2230";
+const COLOR_MUTED = "FF4A5568";
+const COLOR_LABEL = "FF8A6E3E";         // labels em dourado escuro
 const COLOR_WHITE = "FFFFFFFF";
+const COLOR_BORDER = "FFECE6D6";        // borda suave bege
 
 interface XLSXInput {
   medicao: {
@@ -70,7 +75,7 @@ const fill = (c: string): ExcelJS.FillPattern => ({
   fgColor: { argb: c },
 });
 
-const thin = { style: "thin" as const, color: { argb: "FFD9D9D9" } };
+const thin = { style: "thin" as const, color: { argb: COLOR_BORDER } };
 const borderAll = {
   top: thin,
   left: thin,
