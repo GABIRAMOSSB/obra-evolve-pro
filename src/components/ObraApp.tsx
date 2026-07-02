@@ -1280,24 +1280,32 @@ function Dashboard({
  {saving ? "Sincronizando…" : "Sincronizado"}
  </div>
 
- <div className="flex items-center gap-1">
-  <Button variant="ghost" size="sm" className="h-8 px-2.5" onClick={async () => {
-    const { exportBoletimMedicaoInstitucional } = await import("@/lib/boletim-medicao.xlsx-adapter");
-    await exportBoletimMedicaoInstitucional({
-      rows: filteredRows,
-      evolutions: data.evolutions,
-      info,
-      projectName: data.nome,
-      measurementNumber: selectedBM ?? currentMeasNumber,
-      allRows: data.rows,
-      periodoInicio: resumoBM.periodoInicio ?? null,
-      periodoFim: resumoBM.periodoFim ?? null,
-    });
-    toast.success("Boletim Excel exportado");
-  }}>
-  <FileSpreadsheet className="w-4 h-4 text-success" />
-  <span className="hidden xl:inline ml-1">Excel</span>
-  </Button>
+        <div className="flex items-center gap-1">
+   <Button variant="ghost" size="sm" className="h-8 px-2.5" onClick={async () => {
+     if (!resumoBM.hasMeasurement) {
+       toast.error("Selecione uma BM fechada para exportar.");
+       return;
+     }
+     if (!resumoBM.periodoValido) {
+       toast.error(resumoBM.periodoWarnings[0] ?? "Período da medição inválido.");
+       return;
+     }
+     const { exportBoletimMedicaoInstitucional } = await import("@/lib/boletim-medicao.xlsx-adapter");
+     await exportBoletimMedicaoInstitucional({
+       rows: filteredRows,
+       evolutions: data.evolutions,
+       info,
+       projectName: data.nome,
+       measurementNumber: selectedBM ?? currentMeasNumber,
+       allRows: data.rows,
+       periodoInicio: resumoBM.periodoInicio ?? null,
+       periodoFim: resumoBM.periodoFim ?? null,
+     });
+     toast.success("Boletim Excel exportado");
+   }}>
+   <FileSpreadsheet className="w-4 h-4 text-success" />
+   <span className="hidden xl:inline ml-1">Excel</span>
+   </Button>
  <Button variant="ghost" size="sm" className="h-8 px-2.5" onClick={() => exportRelatorioPdf(filteredRows, data.evolutions, data.fileName)}>
  <FileText className="w-4 h-4 text-destructive" />
  <span className="hidden xl:inline ml-1">PDF</span>
@@ -1307,6 +1315,14 @@ function Dashboard({
  size="sm"
  className="h-8 px-2.5"
  onClick={async () => {
+ if (!resumoBM.hasMeasurement) {
+   toast.error("Selecione uma BM fechada para exportar.");
+   return;
+ }
+ if (!resumoBM.periodoValido) {
+   toast.error(resumoBM.periodoWarnings[0] ?? "Período da medição inválido.");
+   return;
+ }
  const blob = await buildMeasurementPdfBlob(filteredRows, data.evolutions, selectedBM ?? currentMeasNumber, data.nome, new Date(), info, periodoInicio ?? undefined, data.rows);
  const url = URL.createObjectURL(blob);
  const a = document.createElement("a");
@@ -1322,6 +1338,7 @@ function Dashboard({
  <FileText className="w-4 h-4 text-primary" />
  <span className="hidden xl:inline ml-1">Boletim</span>
  </Button>
+
  <MeasurementClosure data={data} setData={setData} companyId={companyId} userId={userId} userEmail={userEmail} isAdmin={isAdmin} variant="inline" />
  </div>
 
