@@ -71,13 +71,12 @@ const fill = (c: string): ExcelJS.FillPattern => ({
 });
 
 const thin = { style: "thin" as const, color: { argb: "FFD9D9D9" } };
-const borderAll: ExcelJS.Borders = {
+const borderAll = {
   top: thin,
   left: thin,
   bottom: thin,
   right: thin,
-  diagonal: { style: "none" },
-} as ExcelJS.Borders;
+} as Partial<ExcelJS.Borders> as ExcelJS.Borders;
 
 function fmtDateBR(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -196,24 +195,23 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   // Linha 3 vazia (respiro)
   ws.getRow(3).height = 6;
 
-  // ============ Bloco de metadados (4..11) ============
-  const meta = (row: number, cols: Array<{ span: string; label: string; value: string; wrap?: boolean }>) => {
-    for (const c of cols) {
-      ws.mergeCells(c.span);
-      const [start] = c.span.split(":");
+  const metaRow = (row: number, defs: Array<[string, string, string]>) => {
+    for (const [span, label, value] of defs) {
+      ws.mergeCells(span);
+      const [start] = span.split(":");
       const cell = ws.getCell(start);
-      cell.value = { richText: [
-        { text: `${c.label}\n`, font: { name: "Aptos", size: 8, bold: true, color: { argb: COLOR_DOURADO } } },
-        { text: c.value, font: { name: "Aptos", size: 9, bold: false, color: { argb: COLOR_TEXT } } },
-      ] };
+      cell.value = {
+        richText: [
+          { text: `${label}\n`, font: { name: "Aptos", size: 8, bold: true, color: { argb: COLOR_DOURADO } } },
+          { text: value, font: { name: "Aptos", size: 9, bold: false, color: { argb: COLOR_TEXT } } },
+        ],
+      };
       cell.alignment = { horizontal: "left", vertical: "middle", wrapText: true, indent: 1 };
       cell.fill = fill(COLOR_BEGE);
       cell.border = borderAll;
     }
-    ws.getRow(row).height = c => c;
+    ws.getRow(row).height = 34;
   };
-
-  const metaRow = (row: number, defs: Array<[string, string, string]>) => {
     for (const [span, label, value] of defs) {
       ws.mergeCells(span);
       const [start] = span.split(":");
