@@ -1321,10 +1321,23 @@ function Dashboard({
     <FileSpreadsheet className="w-4 h-4 text-primary" />
     <span className="hidden xl:inline ml-1">Planilha</span>
     </Button>
- <Button variant="ghost" size="sm" className="h-8 px-2.5" onClick={() => exportRelatorioPdf(filteredRows, data.evolutions, data.fileName)}>
- <FileText className="w-4 h-4 text-destructive" />
- <span className="hidden xl:inline ml-1">PDF</span>
- </Button>
+  <Button variant="ghost" size="sm" className="h-8 px-2.5" onClick={() => exportRelatorioPdf(filteredRows, data.evolutions, data.fileName)}>
+  <FileText className="w-4 h-4 text-destructive" />
+  <span className="hidden xl:inline ml-1">PDF</span>
+  </Button>
+  <Button variant="ghost" size="sm" className="h-8 px-2.5" title="Baixar PDF da planilha orçamentária completa" onClick={async () => {
+    try {
+      const { exportOrcamentoFullPDF } = await import("@/lib/orcamento-full.pdf");
+      exportOrcamentoFullPDF({ rows: data.rows, info, projectName: data.nome });
+      toast.success("PDF da planilha exportado");
+    } catch (e) {
+      console.error(e);
+      toast.error("Falha ao exportar PDF da planilha");
+    }
+  }}>
+  <FileText className="w-4 h-4 text-primary" />
+  <span className="hidden xl:inline ml-1">PDF Planilha</span>
+  </Button>
  <Button
  variant="ghost"
  size="sm"
