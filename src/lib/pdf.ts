@@ -428,6 +428,13 @@ export function buildMeasurementPdfBlob(
   const navy: [number, number, number] = REPORT_RGB.primaryDark;
   const orange: [number, number, number] = REPORT_RGB.measure;
   const green: [number, number, number] = REPORT_RGB.success;
+  const gold: [number, number, number] = REPORT_RGB.primary;
+  const cardBg = REPORT_RGB.cardBg;
+  const border = REPORT_RGB.border;
+  const labelMuted = REPORT_RGB.labelMuted;
+  const subtitleOnDark = REPORT_RGB.subtitleOnDark;
+  const measureSoft = REPORT_RGB.measureSoft;
+  const successSoft = REPORT_RGB.successSoft;
   // Resumo do cabeçalho — usa SEMPRE allRows (lista completa), nunca a
   // lista filtrada. Garante que os totais do cabeçalho não mudem com filtros.
   const resumo = calcularResumoCabecalhoBM(allRows ?? rows, evolutions, measurementNumber, info);
@@ -438,11 +445,11 @@ export function buildMeasurementPdfBlob(
   // HEADER — banda navy (18mm) + faixa dourada de 2mm; chip do BM à
   // esquerda, título centralizado com subtítulo, chip de data à direita.
   // ─────────────────────────────────────────────────────────────────
-  const gold: [number, number, number] = [177, 151, 119]; // B19777
   doc.setFillColor(navy[0], navy[1], navy[2]);
   doc.rect(0, 0, pageW, 18, "F");
   doc.setFillColor(gold[0], gold[1], gold[2]);
   doc.rect(0, 18, pageW, 1.6, "F");
+
 
   // Chip do BM (arredondado)
   const chipW = 34, chipH = 9;
@@ -460,14 +467,14 @@ export function buildMeasurementPdfBlob(
   doc.text("BOLETIM DE MEDIÇÃO", pageW / 2, 9.2, { align: "center" });
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.6);
-  doc.setTextColor(230, 220, 200);
+  doc.setTextColor(subtitleOnDark[0], subtitleOnDark[1], subtitleOnDark[2]);
   doc.text("Snapshot oficial do período fechado", pageW / 2, 13.6, { align: "center" });
 
   // Chip de período à direita
   const rChipW = 74;
   doc.setFillColor(255, 255, 255);
   doc.roundedRect(pageW - MARGIN - rChipW, 4.5, rChipW, chipH, 1.6, 1.6, "F");
-  doc.setTextColor(110, 92, 70);
+  doc.setTextColor(labelMuted[0], labelMuted[1], labelMuted[2]);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(6.2);
   doc.text("PERÍODO DE MEDIÇÃO", pageW - MARGIN - rChipW + 2, 7.4);
@@ -484,19 +491,19 @@ export function buildMeasurementPdfBlob(
   const dy = (lbl: string, val: string, x: number, yy: number, w: number) => {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(6.2);
-    doc.setTextColor(120, 105, 82);
+    doc.setTextColor(labelMuted[0], labelMuted[1], labelMuted[2]);
     doc.text(lbl.toUpperCase(), x, yy);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
-    doc.setTextColor(31, 41, 55);
+    doc.setTextColor(REPORT_RGB.textOnLight[0], REPORT_RGB.textOnLight[1], REPORT_RGB.textOnLight[2]);
     const lines = doc.splitTextToSize(val || "—", w);
     doc.text(lines[0] ?? "—", x, yy + 3.5);
   };
 
   let y = 24;
   const cardH = 34;
-  doc.setFillColor(252, 250, 246);
-  doc.setDrawColor(217, 207, 190);
+  doc.setFillColor(cardBg[0], cardBg[1], cardBg[2]);
+  doc.setDrawColor(border[0], border[1], border[2]);
   doc.roundedRect(MARGIN, y, usableW, cardH, 1.4, 1.4, "FD");
   doc.setFillColor(gold[0], gold[1], gold[2]);
   doc.rect(MARGIN, y, 1.4, cardH, "F");
@@ -534,24 +541,24 @@ export function buildMeasurementPdfBlob(
     const x = MARGIN + idx * col7;
     const w = col7 - 1.2;
     doc.setFillColor(tint[0], tint[1], tint[2]);
-    doc.setDrawColor(220, 213, 200);
+    doc.setDrawColor(border[0], border[1], border[2]);
     doc.roundedRect(x, y, w, kpiH, 1.2, 1.2, "FD");
     doc.setFont("helvetica", "bold");
     doc.setFontSize(6);
-    doc.setTextColor(110, 95, 72);
+    doc.setTextColor(labelMuted[0], labelMuted[1], labelMuted[2]);
     doc.text(lbl.toUpperCase(), x + 2, y + 3.4);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
     doc.setTextColor(valColor[0], valColor[1], valColor[2]);
     doc.text(val, x + 2, y + 9.8);
   };
-  kpi("Nº do BM", resumo.descricaoBM, 0, [245, 239, 229], navy);
-  kpi("Data da Medição", resumo.dataMedicao, 1, [252, 250, 246]);
-  kpi("Valor total do contrato", fmtBRL(resumo.valorTotalObra), 2, [252, 250, 246]);
-  kpi("Valor desta medição", fmtBRL(resumo.valorDestaMedicao), 3, [253, 235, 220], orange);
-  kpi("Valor acumulado", fmtBRL(resumo.valorAcumulado), 4, [220, 252, 231], green);
-  kpi("% Acumulado", `${fmtNum(resumo.percentualAcumulado)}%`, 5, [245, 239, 229], navy);
-  kpi("Saldo restante", fmtBRL(resumo.saldoRestante), 6, [252, 250, 246]);
+  kpi("Nº do BM", resumo.descricaoBM, 0, REPORT_RGB.subGroupBg, navy);
+  kpi("Data da Medição", resumo.dataMedicao, 1, cardBg);
+  kpi("Valor total do contrato", fmtBRL(resumo.valorTotalObra), 2, cardBg);
+  kpi("Valor desta medição", fmtBRL(resumo.valorDestaMedicao), 3, measureSoft, orange);
+  kpi("Valor acumulado", fmtBRL(resumo.valorAcumulado), 4, successSoft, green);
+  kpi("% Acumulado", `${fmtNum(resumo.percentualAcumulado)}%`, 5, REPORT_RGB.subGroupBg, navy);
+  kpi("Saldo restante", fmtBRL(resumo.saldoRestante), 6, cardBg);
   doc.setTextColor(0, 0, 0);
   y += kpiH + 4;
 
@@ -625,11 +632,11 @@ export function buildMeasurementPdfBlob(
       { content: tMat ? fmtBRL(tMat) : "", styles: { halign: "right" } },
       { content: fmtBRL(r.total), styles: { halign: "right", fontStyle: "bold" } },
       { content: fmtNum(qAnt), styles: { halign: "right" } },
-      { content: fmtNum(qPer), styles: { halign: "right", fillColor: [253, 235, 220], textColor: orange, fontStyle: "bold" } },
+      { content: fmtNum(qPer), styles: { halign: "right", fillColor: measureSoft, textColor: orange, fontStyle: "bold" } },
       { content: fmtNum(qAtual), styles: { halign: "right", fontStyle: "bold" } },
       { content: fmtBRL(finAnt), styles: { halign: "right" } },
-      { content: fmtBRL(finPer), styles: { halign: "right", fillColor: [253, 235, 220], textColor: orange, fontStyle: "bold" } },
-      { content: fmtBRL(finAtual), styles: { halign: "right", fillColor: [220, 252, 231], textColor: green, fontStyle: "bold" } },
+      { content: fmtBRL(finPer), styles: { halign: "right", fillColor: measureSoft, textColor: orange, fontStyle: "bold" } },
+      { content: fmtBRL(finAtual), styles: { halign: "right", fillColor: successSoft, textColor: green, fontStyle: "bold" } },
       { content: `${fmtNum(pct)}%`, styles: { halign: "right" } },
       { content: a.status, styles: { halign: "center", fontSize: 6 } },
     ]);
@@ -663,19 +670,19 @@ export function buildMeasurementPdfBlob(
         { content: "MAT.", styles: { fillColor: headerBg, textColor: 20, halign: "center" } },
         { content: "Total", styles: { fillColor: headerBg, textColor: 20, halign: "center" } },
         { content: "Acum. Ant.", styles: { fillColor: headerBg, textColor: 20, halign: "center" } },
-        { content: "Período", styles: { fillColor: [253, 235, 220], textColor: orange, halign: "center", fontStyle: "bold" } },
+        { content: "Período", styles: { fillColor: measureSoft, textColor: orange, halign: "center", fontStyle: "bold" } },
         { content: "Acum. Atual", styles: { fillColor: headerBg, textColor: 20, halign: "center" } },
         { content: "Acum. Ant.", styles: { fillColor: headerBg, textColor: 20, halign: "center" } },
-        { content: "Período", styles: { fillColor: [253, 235, 220], textColor: orange, halign: "center", fontStyle: "bold" } },
-        { content: "Acum. Atual", styles: { fillColor: [220, 252, 231], textColor: green, halign: "center", fontStyle: "bold" } },
+        { content: "Período", styles: { fillColor: measureSoft, textColor: orange, halign: "center", fontStyle: "bold" } },
+        { content: "Acum. Atual", styles: { fillColor: successSoft, textColor: green, halign: "center", fontStyle: "bold" } },
       ],
     ],
     body: body.length ? body : [[{ content: "Sem lançamentos neste período", colSpan: 21, styles: { halign: "center", fontStyle: "italic", textColor: 120 } }]],
     startY: y,
     margin: { left: MARGIN, right: MARGIN, top: 18, bottom: 14 },
     tableWidth: usableW,
-    styles: { fontSize: 5.6, cellPadding: 0.9, lineColor: [200, 207, 219], lineWidth: 0.1, overflow: "linebreak" },
-    headStyles: { fontSize: 6.2, lineColor: [180, 187, 200], lineWidth: 0.15 },
+    styles: { fontSize: 5.6, cellPadding: 0.9, lineColor: REPORT_RGB.tableLine, lineWidth: 0.1, overflow: "linebreak" },
+    headStyles: { fontSize: 6.2, lineColor: REPORT_RGB.tableHeadLine, lineWidth: 0.15 },
     columnStyles: {
       0: { cellWidth: 9 },
       1: { cellWidth: 11 },
@@ -706,11 +713,11 @@ export function buildMeasurementPdfBlob(
       { content: fmtBRL(totalContratoMat), styles: { halign: "right", fontStyle: "bold" } },
       { content: fmtBRL(totalContrato), styles: { halign: "right", fontStyle: "bold" } },
       { content: fmtNum(totalFisicoAnt), styles: { halign: "right", fontStyle: "bold" } },
-      { content: fmtNum(totalFisicoPer), styles: { halign: "right", fontStyle: "bold", fillColor: [253, 235, 220], textColor: orange } },
+      { content: fmtNum(totalFisicoPer), styles: { halign: "right", fontStyle: "bold", fillColor: measureSoft, textColor: orange } },
       { content: fmtNum(totalFisicoAtual), styles: { halign: "right", fontStyle: "bold" } },
       { content: fmtBRL(totalFinAnt), styles: { halign: "right", fontStyle: "bold" } },
-      { content: fmtBRL(totalFinPer), styles: { halign: "right", fontStyle: "bold", fillColor: [253, 235, 220], textColor: orange } },
-      { content: fmtBRL(totalFinAtual), styles: { halign: "right", fontStyle: "bold", fillColor: [220, 252, 231], textColor: green } },
+      { content: fmtBRL(totalFinPer), styles: { halign: "right", fontStyle: "bold", fillColor: measureSoft, textColor: orange } },
+      { content: fmtBRL(totalFinAtual), styles: { halign: "right", fontStyle: "bold", fillColor: successSoft, textColor: green } },
       { content: `${fmtNum(totalPctGeral)}%`, styles: { halign: "right", fontStyle: "bold" } },
       { content: "", styles: {} },
     ]],
@@ -733,12 +740,12 @@ export function buildMeasurementPdfBlob(
         doc.setTextColor(0, 0, 0);
       }
       const pH = doc.internal.pageSize.getHeight();
-      doc.setDrawColor(217, 207, 190);
+      doc.setDrawColor(border[0], border[1], border[2]);
       doc.setLineWidth(0.2);
       doc.line(MARGIN, pH - 8, pageW - MARGIN, pH - 8);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7);
-      doc.setTextColor(140);
+      doc.setTextColor(REPORT_RGB.footerText[0], REPORT_RGB.footerText[1], REPORT_RGB.footerText[2]);
       doc.text(projectName, MARGIN, pH - 4);
       doc.text(`${bm} • Página ${data.pageNumber}`, pageW - MARGIN, pH - 4, { align: "right" });
     },
@@ -766,8 +773,8 @@ export function buildMeasurementPdfBlob(
   const boxH = 42;
   const drawSignBox = (x: number, header: string, name: string, cargo: string, extra: string) => {
     // Cartão
-    doc.setFillColor(252, 250, 246);
-    doc.setDrawColor(217, 207, 190);
+    doc.setFillColor(cardBg[0], cardBg[1], cardBg[2]);
+    doc.setDrawColor(border[0], border[1], border[2]);
     doc.roundedRect(x, endY, boxW, boxH, 1.6, 1.6, "FD");
     // Faixa de topo
     doc.setFillColor(navy[0], navy[1], navy[2]);
@@ -779,17 +786,17 @@ export function buildMeasurementPdfBlob(
     doc.text(header, x + boxW / 2, endY + 4.4, { align: "center" });
     // Linha de assinatura
     const lineY = endY + boxH - 14;
-    doc.setDrawColor(80, 68, 52);
+    doc.setDrawColor(REPORT_RGB.signLine[0], REPORT_RGB.signLine[1], REPORT_RGB.signLine[2]);
     doc.setLineWidth(0.35);
     doc.line(x + 10, lineY, x + boxW - 10, lineY);
     doc.setLineWidth(0.1);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
-    doc.setTextColor(31, 41, 55);
+    doc.setTextColor(REPORT_RGB.textOnLight[0], REPORT_RGB.textOnLight[1], REPORT_RGB.textOnLight[2]);
     doc.text(name || "—", x + boxW / 2, lineY + 4.5, { align: "center" });
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7.6);
-    doc.setTextColor(90, 78, 62);
+    doc.setTextColor(labelMuted[0], labelMuted[1], labelMuted[2]);
     doc.text(cargo || " ", x + boxW / 2, lineY + 8.5, { align: "center" });
     if (extra) {
       doc.setFontSize(7);
@@ -797,7 +804,7 @@ export function buildMeasurementPdfBlob(
     }
     // Rodapé "Assinatura digital ou física" em small caps
     doc.setFontSize(6);
-    doc.setTextColor(150, 138, 118);
+    doc.setTextColor(REPORT_RGB.signFooter[0], REPORT_RGB.signFooter[1], REPORT_RGB.signFooter[2]);
     doc.text("ASSINATURA DIGITAL OU FÍSICA", x + boxW / 2, endY + boxH - 2.5, { align: "center" });
   };
 
