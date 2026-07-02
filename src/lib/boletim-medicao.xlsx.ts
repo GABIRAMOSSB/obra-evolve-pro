@@ -287,15 +287,19 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
     cell.font = { name: "Aptos", size: 9, bold: true, color: { argb: COLOR_WHITE } };
     cell.fill = fill(COLOR_GRAFITE);
     cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-    cell.border = borderAll;
+    cell.border = {
+      bottom: { style: "medium", color: { argb: COLOR_DOURADO } },
+    };
   }
   for (const [col, txt] of Object.entries(header2)) {
     const cell = ws.getCell(`${col}10`);
     cell.value = txt;
-    cell.font = { name: "Aptos", size: 8, bold: true, color: { argb: COLOR_TEXT } };
+    cell.font = { name: "Aptos", size: 8, bold: true, color: { argb: COLOR_LABEL } };
     cell.fill = fill(COLOR_BEGE);
     cell.alignment = { horizontal: "center", vertical: "middle" };
-    cell.border = borderAll;
+    cell.border = {
+      bottom: { style: "thin", color: { argb: COLOR_BORDER } },
+    };
   }
   ws.getRow(9).height = 22;
   ws.getRow(10).height = 18;
