@@ -138,7 +138,23 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
       ].filter(Boolean).join("\n")
     : "—";
   const dataMedBR = fmtDateBR(data.medicao.data_medicao);
-  const periodoStr = `${fmtDateBR(data.medicao.periodo_inicio)} a ${fmtDateBR(data.medicao.periodo_fim)}`;
+  // Duração do período (dias) — quanto tempo levou para fechar a medição
+  const parseDay = (s?: string | null): Date | null => {
+    if (!s) return null;
+    const d = new Date(s.length === 10 ? s + "T00:00:00" : s);
+    return isNaN(d.getTime()) ? null : d;
+  };
+  const dIni = parseDay(data.medicao.periodo_inicio);
+  const dFim = parseDay(data.medicao.periodo_fim);
+  let duracaoDias = 0;
+  if (dIni && dFim) {
+    duracaoDias = Math.max(0, Math.round((dFim.getTime() - dIni.getTime()) / (1000 * 60 * 60 * 24)));
+  }
+  const periodoStr =
+    dIni && dFim
+      ? `${fmtDateBR(data.medicao.periodo_inicio)} a ${fmtDateBR(data.medicao.periodo_fim)}`
+      : "—";
+  const duracaoStr = dIni && dFim ? `${duracaoDias} dia${duracaoDias === 1 ? "" : "s"}` : "—";
 
   const ws = wb.addWorksheet("Boletim", {
     views: [{ state: "frozen", ySplit: 11, showGridLines: false }],
