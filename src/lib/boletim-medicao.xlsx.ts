@@ -141,7 +141,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   const periodoStr = `${fmtDateBR(data.medicao.periodo_inicio)} a ${fmtDateBR(data.medicao.periodo_fim)}`;
 
   const ws = wb.addWorksheet("Boletim", {
-    views: [{ state: "frozen", ySplit: 13, showGridLines: false }],
+    views: [{ state: "frozen", ySplit: 11, showGridLines: false }],
     pageSetup: {
       paperSize: 9, // A4
       orientation: "landscape",
