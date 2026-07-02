@@ -408,7 +408,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
       row.getCell(4).numFmt = "#,##0.00";
       row.getCell(5).value = Number(item.valor_unitario);
       row.getCell(5).numFmt = BRL;
-      row.getCell(6).value = { formula: `ROUND(D${r}*E${r},2)` };
+      row.getCell(6).value = { formula: `D${r}*E${r}` };
       row.getCell(6).numFmt = BRL;
       row.getCell(7).value = Number(item.qtd_acum_anterior);
       row.getCell(7).numFmt = "#,##0.00";
@@ -419,7 +419,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
       row.getCell(9).numFmt = "#,##0.00";
       row.getCell(10).value = Number(item.valor_acum_anterior);
       row.getCell(10).numFmt = BRL;
-      row.getCell(11).value = { formula: `ROUND(H${r}*E${r},2)` };
+      row.getCell(11).value = { formula: `H${r}*E${r}` };
       row.getCell(11).numFmt = BRL;
       row.getCell(12).value = { formula: `J${r}+K${r}` };
       row.getCell(12).numFmt = BRL;
