@@ -7,8 +7,8 @@
  */
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import type { BudgetRow, ObraInfo } from "./types";
-import { fmtBRL, fmtNum } from "./calc";
+import type { BudgetRow, Evolution, ObraInfo } from "./types";
+import { fmtBRL, fmtNum, activityMetrics } from "./calc";
 
 // SOLV tokens (RGB) — idênticos ao Boletim de Medição
 const GRAPHITE: [number, number, number] = [54, 60, 73];
@@ -22,6 +22,7 @@ const MUTED: [number, number, number] = [105, 113, 125];
 
 interface Args {
   rows: BudgetRow[];
+  evolutions?: Record<string, Evolution>;
   info: ObraInfo;
   projectName: string;
 }
@@ -33,7 +34,7 @@ function fmtDate(iso: string | null | undefined): string {
   return d.toLocaleDateString("pt-BR");
 }
 
-export function exportOrcamentoFullPDF({ rows, info, projectName }: Args) {
+export function exportOrcamentoFullPDF({ rows, evolutions, info, projectName }: Args) {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -114,31 +115,32 @@ export function exportOrcamentoFullPDF({ rows, info, projectName }: Args) {
 
   // ===== KPIs =====
   let totalContrato = 0;
-  let totalMO = 0;
-  let totalMaterial = 0;
+  let totalExec = 0;
   let itensCount = 0;
   let etapasCount = 0;
   for (const r of rows) {
     const isGroup = !!r.isGroup || ((r.quantidade ?? 0) === 0 && (r.valorUnitBDI || r.valorUnit || 0) === 0);
-    if (isGroup) {
-      etapasCount++;
-      continue;
-    }
+    if (isGroup) { etapasCount++; continue; }
     itensCount++;
     const vuBDI = r.valorUnitBDI || r.valorUnit || 0;
     const qtd = Number(r.quantidade ?? 0);
-    totalContrato += qtd * vuBDI;
-    totalMO += Number(r.totalMO ?? 0);
-    totalMaterial += Number(r.totalMaterial ?? 0);
+    const totalItem = qtd * vuBDI;
+    totalContrato += totalItem;
+    if (evolutions) {
+      const m = activityMetrics(r, evolutions[r.item]);
+      totalExec += m.valorExec;
+    }
   }
+  const saldoContratual = totalContrato - totalExec;
+  const pctExecTotal = totalContrato > 0 ? (totalExec / totalContrato) * 100 : 0;
 
   const kpiW = (pageW - margin * 2 - 8) / 5;
   const kpis: Array<[string, string]> = [
     ["Valor total do contrato", fmtBRL(totalContrato)],
-    ["Total mão de obra", fmtBRL(totalMO)],
-    ["Total material", fmtBRL(totalMaterial)],
-    ["Itens orçados", String(itensCount)],
-    ["Etapas / grupos", String(etapasCount)],
+    ["Total executado", fmtBRL(totalExec)],
+    ["Saldo contratual", fmtBRL(saldoContratual)],
+    ["% Executado", `${fmtNum(pctExecTotal)}%`],
+    ["Itens / Etapas", `${itensCount} / ${etapasCount}`],
   ];
   kpis.forEach(([label, val], i) => {
     const x = margin + i * (kpiW + 2);
@@ -160,11 +162,13 @@ export function exportOrcamentoFullPDF({ rows, info, projectName }: Args) {
     "Item",
     "Descrição",
     "Un.",
-    "Qtd.",
-    "V. Unit.",
+    "Qtd. Contr.",
     "V. Unit. c/ BDI",
-    "Total",
-    "Peso %",
+    "Total Contratual",
+    "Qtd. Executada",
+    "Valor Executado",
+    "Saldo (R$)",
+    "% Exec.",
   ]];
 
   const body: (string | { content: string; styles?: Record<string, unknown> })[][] = [];
@@ -174,41 +178,45 @@ export function exportOrcamentoFullPDF({ rows, info, projectName }: Args) {
       body.push([
         { content: r.item ?? "", styles: { fontStyle: "bold", fillColor: SILVER } },
         { content: r.descricao ?? "", styles: { fontStyle: "bold", fillColor: SILVER } },
-        { content: "", styles: { fillColor: SILVER } },
-        { content: "", styles: { fillColor: SILVER } },
-        { content: "", styles: { fillColor: SILVER } },
-        { content: "", styles: { fillColor: SILVER } },
-        { content: "", styles: { fillColor: SILVER } },
-        { content: "", styles: { fillColor: SILVER } },
+        ...Array(8).fill({ content: "", styles: { fillColor: SILVER } }),
       ]);
     } else {
-      const vu = r.valorUnit || 0;
-      const vuBDI = r.valorUnitBDI || vu;
+      const vuBDI = r.valorUnitBDI || r.valorUnit || 0;
       const qtd = Number(r.quantidade ?? 0);
-      const total = qtd * vuBDI;
+      const totalItem = qtd * vuBDI;
+      const m = evolutions ? activityMetrics(r, evolutions[r.item]) : null;
+      const qExec = m?.quantExec ?? 0;
+      const vExec = m?.valorExec ?? 0;
+      const saldo = totalItem - vExec;
+      const pct = m?.percent ?? 0;
       body.push([
         r.item ?? "",
         r.descricao ?? "",
         r.und ?? "",
         fmtNum(qtd),
-        fmtBRL(vu),
         fmtBRL(vuBDI),
-        fmtBRL(total),
-        r.peso != null ? `${fmtNum(r.peso)}%` : "",
+        fmtBRL(totalItem),
+        fmtNum(qExec),
+        fmtBRL(vExec),
+        fmtBRL(saldo),
+        `${fmtNum(pct)}%`,
       ]);
     }
   }
 
   // Linha TOTAL GERAL
+  const totalStyle = { fontStyle: "bold", fillColor: GRAPHITE, textColor: [255, 255, 255] as [number, number, number] };
   body.push([
-    { content: "TOTAL GERAL DO CONTRATO", styles: { fontStyle: "bold", fillColor: GRAPHITE, textColor: [255, 255, 255] } },
+    { content: "TOTAL GERAL DO CONTRATO", styles: totalStyle },
     { content: "", styles: { fillColor: GRAPHITE } },
     { content: "", styles: { fillColor: GRAPHITE } },
     { content: "", styles: { fillColor: GRAPHITE } },
     { content: "", styles: { fillColor: GRAPHITE } },
+    { content: fmtBRL(totalContrato), styles: totalStyle },
     { content: "", styles: { fillColor: GRAPHITE } },
-    { content: fmtBRL(totalContrato), styles: { fontStyle: "bold", fillColor: GRAPHITE, textColor: [255, 255, 255] } },
-    { content: "100,00%", styles: { fontStyle: "bold", fillColor: GRAPHITE, textColor: [255, 255, 255] } },
+    { content: fmtBRL(totalExec), styles: totalStyle },
+    { content: fmtBRL(saldoContratual), styles: totalStyle },
+    { content: `${fmtNum(pctExecTotal)}%`, styles: totalStyle },
   ]);
 
   autoTable(doc, {
@@ -236,14 +244,16 @@ export function exportOrcamentoFullPDF({ rows, info, projectName }: Args) {
     },
     alternateRowStyles: { fillColor: ZEBRA },
     columnStyles: {
-      0: { cellWidth: 22, halign: "center" },
+      0: { cellWidth: 18, halign: "center" },
       1: { cellWidth: "auto" },
-      2: { cellWidth: 14, halign: "center" },
-      3: { cellWidth: 22, halign: "right" },
-      4: { cellWidth: 26, halign: "right" },
-      5: { cellWidth: 30, halign: "right" },
-      6: { cellWidth: 32, halign: "right" },
-      7: { cellWidth: 18, halign: "right" },
+      2: { cellWidth: 11, halign: "center" },
+      3: { cellWidth: 18, halign: "right" },
+      4: { cellWidth: 22, halign: "right" },
+      5: { cellWidth: 25, halign: "right" },
+      6: { cellWidth: 20, halign: "right" },
+      7: { cellWidth: 25, halign: "right" },
+      8: { cellWidth: 24, halign: "right" },
+      9: { cellWidth: 15, halign: "right" },
     },
     rowPageBreak: "avoid",
     didDrawPage: (hook) => {
