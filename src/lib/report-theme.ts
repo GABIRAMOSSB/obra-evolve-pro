@@ -30,6 +30,14 @@ export const REPORT_HEX = {
   textOnDark: "FFFFFF",
   textOnLight: "1F2937",
   navyBM: "3E4A5C",
+  cardBg: "FCFAF6",            // creme claro para cartões / KPIs neutros
+  labelMuted: "6E5F48",        // rótulos pequenos (uppercase) sobre creme
+  subtitleOnDark: "E6DCC8",    // subtítulos sobre banda navy
+  tableLine: "C8CFDB",         // linhas finas da tabela
+  tableHeadLine: "B4BBC8",     // linhas do cabeçalho da tabela
+  signLine: "504434",          // linha de assinatura (marrom escuro)
+  signFooter: "968A76",        // texto "assinatura digital ou física"
+  footerText: "8C8C8C",        // rodapé de página (cinza neutro)
 } as const;
 
 /** RGB triplets (para jsPDF / autoTable). */
@@ -49,5 +57,14 @@ export const REPORT_RGB: Record<keyof typeof REPORT_HEX, RGB> = {
   textOnDark: [255, 255, 255],
   textOnLight: [31, 41, 55],
   navyBM: [62, 74, 92],
+  cardBg: [252, 250, 246],
+  labelMuted: [110, 95, 72],
+  subtitleOnDark: [230, 220, 200],
+  tableLine: [200, 207, 219],
+  tableHeadLine: [180, 187, 200],
+  signLine: [80, 68, 52],
+  signFooter: [150, 138, 118],
+  footerText: [140, 140, 140],
 };
+
 
