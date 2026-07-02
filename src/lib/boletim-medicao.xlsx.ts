@@ -204,7 +204,26 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   // Linha 3 vazia (respiro)
   ws.getRow(3).height = 6;
 
+  const colIdx = (letter: string): number =>
+    letter.split("").reduce((acc, ch) => acc * 26 + (ch.charCodeAt(0) - 64), 0);
+  const spanWidthChars = (span: string): number => {
+    const [a, b] = span.split(":");
+    const ca = colIdx(a.replace(/\d+/g, ""));
+    const cb = colIdx(b.replace(/\d+/g, ""));
+    let total = 0;
+    for (let c = ca; c <= cb; c++) total += ws.getColumn(c).width ?? 10;
+    return Math.max(4, total - 3); // desconta indent + padding
+  };
+  const estimateMetaHeight = (value: string, widthChars: number, fontSize = 9.5): number => {
+    const parts = String(value ?? "").split(/\r?\n/);
+    let lines = 0;
+    for (const p of parts) lines += Math.max(1, Math.ceil((p.length || 1) / widthChars));
+    const lineH = fontSize <= 8 ? 12 : 14;
+    return Math.max(32, lines * lineH + 18); // +18 pela linha do label
+  };
+
   const metaRow = (row: number, defs: Array<[string, string, string]>) => {
+    let maxH = 32;
     for (const [span, label, value] of defs) {
       ws.mergeCells(span);
       const [start] = span.split(":");
@@ -223,8 +242,10 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
         left: { style: "thin", color: { argb: COLOR_BORDER } },
         right: { style: "thin", color: { argb: COLOR_BORDER } },
       };
+      const h = estimateMetaHeight(value, spanWidthChars(span));
+      if (h > maxH) maxH = h;
     }
-    ws.getRow(row).height = 36;
+    ws.getRow(row).height = maxH;
   };
 
   metaRow(4, [
@@ -259,7 +280,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
     ["A8:F8", "RESPONSÁVEL TÉCNICO", rtLinha],
     ["G8:M8", "FISCAL DA OBRA", fiscalLinha],
   ]);
-  ws.getRow(8).height = 58;
+  
 
 
   // Linha 9 vazia (respiro)
