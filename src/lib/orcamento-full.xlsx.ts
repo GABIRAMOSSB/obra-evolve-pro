@@ -4,7 +4,8 @@
  * Layout institucional SOLV: navy + dourado, gridlines desativados.
  */
 import ExcelJS from "exceljs";
-import type { BudgetRow, ObraInfo } from "./types";
+import type { BudgetRow, Evolution, ObraInfo } from "./types";
+import { activityMetrics } from "./calc";
 
 const NAVY = "FF3E4A5C";       // sidebar SOLV
 const GOLD = "FFB19777";       // logo SOLV
