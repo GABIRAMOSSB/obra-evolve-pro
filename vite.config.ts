@@ -5,6 +5,7 @@
 //     error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/tanstack/vite";
 // Rebuild trigger: a stale preview build was produced without VITE_SUPABASE_* env vars.
 
 const supabaseUrl =
@@ -24,6 +25,7 @@ export default defineConfig({
   tanstackStart: {
     server: { entry: "server" },
   },
+  plugins: [mcpPlugin()],
   vite: {
     define: {
       "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(supabaseUrl),
