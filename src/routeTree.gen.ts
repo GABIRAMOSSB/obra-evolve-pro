@@ -60,6 +60,7 @@ import { Route as AppInsumosImportarRouteImport } from './routes/_app.insumos.im
 import { Route as AppConfiguracoesZapsignRouteImport } from './routes/_app.configuracoes.zapsign'
 import { Route as AppAssinaturasRelatorioRouteImport } from './routes/_app.assinaturas.relatorio'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as AppConfiguracoesZapsignTestesRouteImport } from './routes/_app.configuracoes.zapsign.testes'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -323,6 +324,11 @@ const Char91DotmcpChar93InvokeToolToolRoute =
     path: '/.mcp/invoke-tool/$tool',
     getParentRoute: () => rootRouteImport,
   } as any)
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppConfiguracoesZapsignTestesRoute =
   AppConfiguracoesZapsignTestesRouteImport.update({
     id: '/testes',
@@ -371,6 +377,7 @@ export interface FileRoutesByFullPath {
   '/reajustes': typeof AppReajustesRoute
   '/realizado': typeof AppRealizadoRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/assinaturas/relatorio': typeof AppAssinaturasRelatorioRoute
   '/configuracoes/zapsign': typeof AppConfiguracoesZapsignRouteWithChildren
@@ -424,6 +431,7 @@ export interface FileRoutesByTo {
   '/realizado': typeof AppRealizadoRoute
   '/invite/$token': typeof InviteTokenRoute
   '/': typeof AppIndexRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/assinaturas/relatorio': typeof AppAssinaturasRelatorioRoute
   '/configuracoes/zapsign': typeof AppConfiguracoesZapsignRouteWithChildren
@@ -479,6 +487,7 @@ export interface FileRoutesById {
   '/_app/realizado': typeof AppRealizadoRoute
   '/invite/$token': typeof InviteTokenRoute
   '/_app/': typeof AppIndexRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_app/assinaturas/relatorio': typeof AppAssinaturasRelatorioRoute
   '/_app/configuracoes/zapsign': typeof AppConfiguracoesZapsignRouteWithChildren
@@ -534,6 +543,7 @@ export interface FileRouteTypes {
     | '/reajustes'
     | '/realizado'
     | '/invite/$token'
+    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/assinaturas/relatorio'
     | '/configuracoes/zapsign'
@@ -587,6 +597,7 @@ export interface FileRouteTypes {
     | '/realizado'
     | '/invite/$token'
     | '/'
+    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/assinaturas/relatorio'
     | '/configuracoes/zapsign'
@@ -641,6 +652,7 @@ export interface FileRouteTypes {
     | '/_app/realizado'
     | '/invite/$token'
     | '/_app/'
+    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/_app/assinaturas/relatorio'
     | '/_app/configuracoes/zapsign'
@@ -663,6 +675,7 @@ export interface RootRouteChildren {
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   InviteTokenRoute: typeof InviteTokenRoute
+  DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiPublicComplianceScheduledRoute: typeof ApiPublicComplianceScheduledRoute
   ApiPublicPncpRadarCronRoute: typeof ApiPublicPncpRadarCronRoute
@@ -1029,6 +1042,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/configuracoes/zapsign/testes': {
       id: '/_app/configuracoes/zapsign/testes'
       path: '/testes'
@@ -1177,6 +1197,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   InviteTokenRoute: InviteTokenRoute,
+  DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiPublicComplianceScheduledRoute: ApiPublicComplianceScheduledRoute,
   ApiPublicPncpRadarCronRoute: ApiPublicPncpRadarCronRoute,
