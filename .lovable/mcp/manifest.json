@@ -1,0 +1,102 @@
+{
+  "version": 1,
+  "sdk_version": "0.20.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://lxpdktwkdcsxhejuylsm.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "solv-gestao-mcp",
+      "version": "0.1.0",
+      "title": "SOLV Gestão"
+    },
+    "tools": [
+      {
+        "name": "list_obras",
+        "title": "Listar obras",
+        "description": "Lista as obras da empresa do usuário autenticado.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "limit": {
+              "description": "Máximo de obras a retornar (padrão 20).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "status": {
+              "description": "Filtro opcional por status (ex: 'em_andamento').",
+              "type": "string"
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_oportunidades",
+        "title": "Listar oportunidades (PNCP)",
+        "description": "Lista oportunidades de licitação coletadas do PNCP para a empresa do usuário.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "limit": {
+              "description": "Máximo a retornar (padrão 20).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "uf": {
+              "description": "Filtro opcional por UF (ex: 'SP').",
+              "type": "string"
+            },
+            "situacao": {
+              "description": "Filtro opcional por situação (ex: 'triagem').",
+              "type": "string"
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_contratos",
+        "title": "Listar contratos",
+        "description": "Lista os contratos da empresa do usuário autenticado.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "limit": {
+              "description": "Máximo a retornar (padrão 20).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}

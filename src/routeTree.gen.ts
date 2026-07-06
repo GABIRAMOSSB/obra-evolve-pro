@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as McpRouteImport } from './routes/mcp'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DiagnosticoRouteImport } from './routes/diagnostico'
 import { Route as AppRouteImport } from './routes/_app'
@@ -47,6 +48,8 @@ import { Route as AppBackupRouteImport } from './routes/_app.backup'
 import { Route as AppAutomacoesRouteImport } from './routes/_app.automacoes'
 import { Route as AppAssinaturasRouteImport } from './routes/_app.assinaturas'
 import { Route as AppAditivosRouteImport } from './routes/_app.aditivos'
+import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as ApiPublicZapsignWebhookRouteImport } from './routes/api.public.zapsign-webhook'
 import { Route as ApiPublicZapsignRemindersRouteImport } from './routes/api.public.zapsign-reminders'
 import { Route as ApiPublicPncpRadarCronRouteImport } from './routes/api.public.pncp-radar-cron'
@@ -56,11 +59,17 @@ import { Route as AppMedicoesIdRouteImport } from './routes/_app.medicoes_.$id'
 import { Route as AppInsumosImportarRouteImport } from './routes/_app.insumos.importar'
 import { Route as AppConfiguracoesZapsignRouteImport } from './routes/_app.configuracoes.zapsign'
 import { Route as AppAssinaturasRelatorioRouteImport } from './routes/_app.assinaturas.relatorio'
+import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as AppConfiguracoesZapsignTestesRouteImport } from './routes/_app.configuracoes.zapsign.testes'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -249,6 +258,18 @@ const AppAditivosRoute = AppAditivosRouteImport.update({
   path: '/aditivos',
   getParentRoute: () => AppRoute,
 } as any)
+const Char91DotwellKnownChar93OauthProtectedResourceRoute =
+  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const Char91DotmcpChar93ListToolsRoute =
+  Char91DotmcpChar93ListToolsRouteImport.update({
+    id: '/.mcp/list-tools',
+    path: '/.mcp/list-tools',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicZapsignWebhookRoute = ApiPublicZapsignWebhookRouteImport.update({
   id: '/api/public/zapsign-webhook',
   path: '/api/public/zapsign-webhook',
@@ -296,6 +317,12 @@ const AppAssinaturasRelatorioRoute = AppAssinaturasRelatorioRouteImport.update({
   path: '/relatorio',
   getParentRoute: () => AppAssinaturasRoute,
 } as any)
+const Char91DotmcpChar93InvokeToolToolRoute =
+  Char91DotmcpChar93InvokeToolToolRouteImport.update({
+    id: '/.mcp/invoke-tool/$tool',
+    path: '/.mcp/invoke-tool/$tool',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AppConfiguracoesZapsignTestesRoute =
   AppConfiguracoesZapsignTestesRouteImport.update({
     id: '/testes',
@@ -307,7 +334,10 @@ export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/diagnostico': typeof DiagnosticoRoute
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/aditivos': typeof AppAditivosRoute
   '/assinaturas': typeof AppAssinaturasRouteWithChildren
   '/automacoes': typeof AppAutomacoesRoute
@@ -341,6 +371,7 @@ export interface FileRoutesByFullPath {
   '/reajustes': typeof AppReajustesRoute
   '/realizado': typeof AppRealizadoRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/assinaturas/relatorio': typeof AppAssinaturasRelatorioRoute
   '/configuracoes/zapsign': typeof AppConfiguracoesZapsignRouteWithChildren
   '/insumos/importar': typeof AppInsumosImportarRoute
@@ -355,7 +386,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/diagnostico': typeof DiagnosticoRoute
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/aditivos': typeof AppAditivosRoute
   '/assinaturas': typeof AppAssinaturasRouteWithChildren
   '/automacoes': typeof AppAutomacoesRoute
@@ -390,6 +424,7 @@ export interface FileRoutesByTo {
   '/realizado': typeof AppRealizadoRoute
   '/invite/$token': typeof InviteTokenRoute
   '/': typeof AppIndexRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/assinaturas/relatorio': typeof AppAssinaturasRelatorioRoute
   '/configuracoes/zapsign': typeof AppConfiguracoesZapsignRouteWithChildren
   '/insumos/importar': typeof AppInsumosImportarRoute
@@ -406,7 +441,10 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/diagnostico': typeof DiagnosticoRoute
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_app/aditivos': typeof AppAditivosRoute
   '/_app/assinaturas': typeof AppAssinaturasRouteWithChildren
   '/_app/automacoes': typeof AppAutomacoesRoute
@@ -441,6 +479,7 @@ export interface FileRoutesById {
   '/_app/realizado': typeof AppRealizadoRoute
   '/invite/$token': typeof InviteTokenRoute
   '/_app/': typeof AppIndexRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_app/assinaturas/relatorio': typeof AppAssinaturasRelatorioRoute
   '/_app/configuracoes/zapsign': typeof AppConfiguracoesZapsignRouteWithChildren
   '/_app/insumos/importar': typeof AppInsumosImportarRoute
@@ -458,7 +497,10 @@ export interface FileRouteTypes {
     | '/'
     | '/diagnostico'
     | '/login'
+    | '/mcp'
     | '/reset-password'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/aditivos'
     | '/assinaturas'
     | '/automacoes'
@@ -492,6 +534,7 @@ export interface FileRouteTypes {
     | '/reajustes'
     | '/realizado'
     | '/invite/$token'
+    | '/.mcp/invoke-tool/$tool'
     | '/assinaturas/relatorio'
     | '/configuracoes/zapsign'
     | '/insumos/importar'
@@ -506,7 +549,10 @@ export interface FileRouteTypes {
   to:
     | '/diagnostico'
     | '/login'
+    | '/mcp'
     | '/reset-password'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/aditivos'
     | '/assinaturas'
     | '/automacoes'
@@ -541,6 +587,7 @@ export interface FileRouteTypes {
     | '/realizado'
     | '/invite/$token'
     | '/'
+    | '/.mcp/invoke-tool/$tool'
     | '/assinaturas/relatorio'
     | '/configuracoes/zapsign'
     | '/insumos/importar'
@@ -556,7 +603,10 @@ export interface FileRouteTypes {
     | '/_app'
     | '/diagnostico'
     | '/login'
+    | '/mcp'
     | '/reset-password'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/_app/aditivos'
     | '/_app/assinaturas'
     | '/_app/automacoes'
@@ -591,6 +641,7 @@ export interface FileRouteTypes {
     | '/_app/realizado'
     | '/invite/$token'
     | '/_app/'
+    | '/.mcp/invoke-tool/$tool'
     | '/_app/assinaturas/relatorio'
     | '/_app/configuracoes/zapsign'
     | '/_app/insumos/importar'
@@ -607,8 +658,12 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   DiagnosticoRoute: typeof DiagnosticoRoute
   LoginRoute: typeof LoginRoute
+  McpRoute: typeof McpRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
+  Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   InviteTokenRoute: typeof InviteTokenRoute
+  Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiPublicComplianceScheduledRoute: typeof ApiPublicComplianceScheduledRoute
   ApiPublicPncpRadarCronRoute: typeof ApiPublicPncpRadarCronRoute
   ApiPublicZapsignRemindersRoute: typeof ApiPublicZapsignRemindersRoute
@@ -622,6 +677,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -883,6 +945,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAditivosRouteImport
       parentRoute: typeof AppRoute
     }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.mcp/list-tools': {
+      id: '/.mcp/list-tools'
+      path: '/.mcp/list-tools'
+      fullPath: '/.mcp/list-tools'
+      preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/zapsign-webhook': {
       id: '/api/public/zapsign-webhook'
       path: '/api/public/zapsign-webhook'
@@ -945,6 +1021,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/assinaturas/relatorio'
       preLoaderRoute: typeof AppAssinaturasRelatorioRouteImport
       parentRoute: typeof AppAssinaturasRoute
+    }
+    '/.mcp/invoke-tool/$tool': {
+      id: '/.mcp/invoke-tool/$tool'
+      path: '/.mcp/invoke-tool/$tool'
+      fullPath: '/.mcp/invoke-tool/$tool'
+      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_app/configuracoes/zapsign/testes': {
       id: '/_app/configuracoes/zapsign/testes'
@@ -1088,8 +1171,13 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   DiagnosticoRoute: DiagnosticoRoute,
   LoginRoute: LoginRoute,
+  McpRoute: McpRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
+  Char91DotwellKnownChar93OauthProtectedResourceRoute:
+    Char91DotwellKnownChar93OauthProtectedResourceRoute,
   InviteTokenRoute: InviteTokenRoute,
+  Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiPublicComplianceScheduledRoute: ApiPublicComplianceScheduledRoute,
   ApiPublicPncpRadarCronRoute: ApiPublicPncpRadarCronRoute,
   ApiPublicZapsignRemindersRoute: ApiPublicZapsignRemindersRoute,
