@@ -39,20 +39,20 @@ export async function exportOrcamentoFullXLSX(args: Args): Promise<void> {
   });
 
   const cols: Array<{ w: number }> = [
-    { w: 12 }, // item
-    { w: 46 }, // descrição
-    { w: 8 },  // und
-    { w: 12 }, // qtd contratada
-    { w: 14 }, // valor unit c/ BDI
-    { w: 16 }, // total contratual
-    { w: 12 }, // qtd anterior
-    { w: 15 }, // valor anterior
-    { w: 12 }, // qtd período
-    { w: 15 }, // valor período
-    { w: 12 }, // qtd acumulada
-    { w: 15 }, // valor acumulado
-    { w: 15 }, // saldo
-    { w: 10 }, // % exec
+    { w: 12 }, // 1 item
+    { w: 46 }, // 2 descrição
+    { w: 8 },  // 3 und
+    { w: 12 }, // 4 qtd contratada
+    { w: 14 }, // 5 valor unit c/ BDI
+    { w: 16 }, // 6 total contratual
+    { w: 12 }, // 7 físico ant
+    { w: 12 }, // 8 físico período
+    { w: 12 }, // 9 físico acum
+    { w: 15 }, // 10 financeiro ant
+    { w: 15 }, // 11 financeiro período
+    { w: 15 }, // 12 financeiro acum
+    { w: 15 }, // 13 saldo
+    { w: 10 }, // 14 % exec
   ];
   cols.forEach((c, i) => { ws.getColumn(i + 1).width = c.w; });
   const COLS = cols.length;
@@ -129,17 +129,18 @@ export async function exportOrcamentoFullXLSX(args: Args): Promise<void> {
     setHead(ws.getCell(HEAD_ROW1, col), txt);
   });
 
-  // Grupos (mescla horizontal na linha 1, dois sub-headers na linha 2)
+  // Grupos: EXECUTADO FÍSICO (7-9) + EXECUTADO FINANCEIRO (10-12)
   const grupos: Array<[number, number, string]> = [
-    [7, 8, "Acumulado até o período anterior"],
-    [9, 10, "Medido no período"],
-    [11, 12, "Acum. inclui o período"],
+    [7, 9, "EXECUTADO FÍSICO"],
+    [10, 12, "EXECUTADO FINANCEIRO (R$)"],
   ];
+  const subHeaders = ["Acum. Ant.", "Período", "Acum. Atual"];
   grupos.forEach(([a, b, txt]) => {
     ws.mergeCells(HEAD_ROW1, a, HEAD_ROW1, b);
     setHead(ws.getCell(HEAD_ROW1, a), txt);
-    setHead(ws.getCell(HEAD_ROW2, a), "Qtd.");
-    setHead(ws.getCell(HEAD_ROW2, b), "Valor (R$)");
+    for (let i = 0; i < 3; i++) {
+      setHead(ws.getCell(HEAD_ROW2, a + i), subHeaders[i]);
+    }
   });
   ws.getRow(HEAD_ROW1).height = 26;
   ws.getRow(HEAD_ROW2).height = 20;
@@ -184,10 +185,10 @@ export async function exportOrcamentoFullXLSX(args: Args): Promise<void> {
       isGroup ? null : vuBDI,
       isGroup ? null : total,
       isGroup ? null : qAnt,
-      isGroup ? null : vAnt,
       isGroup ? null : qPer,
-      isGroup ? null : vPer,
       isGroup ? null : qAcum,
+      isGroup ? null : vAnt,
+      isGroup ? null : vPer,
       isGroup ? null : vAcum,
       isGroup ? null : saldo,
       isGroup ? null : pct,
@@ -197,9 +198,9 @@ export async function exportOrcamentoFullXLSX(args: Args): Promise<void> {
       c.value = v;
       c.border = boxBorder;
       c.alignment = { vertical: "middle", horizontal: i === 1 ? "left" : (i === 0 || i === 2 ? "center" : "right"), wrapText: i === 1, indent: i === 1 ? 1 : 0 };
-      // formatos: 3=qtd contr, 6=qAnt, 8=qPer, 10=qAcum (índices 0-based: 3,6,8,10)
-      if (i === 3 || i === 6 || i === 8 || i === 10) c.numFmt = NUM;
-      else if (i === 4 || i === 5 || i === 7 || i === 9 || i === 11 || i === 12) c.numFmt = BRL;
+      // 3=qtd contr, 6-8=qAnt/qPer/qAcum (físico); 4=vu, 5=total, 9-11=vAnt/vPer/vAcum, 12=saldo; 13=%
+      if (i === 3 || i === 6 || i === 7 || i === 8) c.numFmt = NUM;
+      else if (i === 4 || i === 5 || i === 9 || i === 10 || i === 11 || i === 12) c.numFmt = BRL;
       else if (i === 13) c.numFmt = PCT;
 
       if (isGroup) {
@@ -227,10 +228,10 @@ export async function exportOrcamentoFullXLSX(args: Args): Promise<void> {
   const totalConfig: Array<[number, ExcelJS.CellValue, string]> = [
     [6, { formula: `SUM(F${dataStart}:F${dataEnd})` }, BRL],
     [7, { formula: `SUM(G${dataStart}:G${dataEnd})` }, NUM],
-    [8, { formula: `SUM(H${dataStart}:H${dataEnd})` }, BRL],
+    [8, { formula: `SUM(H${dataStart}:H${dataEnd})` }, NUM],
     [9, { formula: `SUM(I${dataStart}:I${dataEnd})` }, NUM],
     [10, { formula: `SUM(J${dataStart}:J${dataEnd})` }, BRL],
-    [11, { formula: `SUM(K${dataStart}:K${dataEnd})` }, NUM],
+    [11, { formula: `SUM(K${dataStart}:K${dataEnd})` }, BRL],
     [12, { formula: `SUM(L${dataStart}:L${dataEnd})` }, BRL],
     [13, { formula: `SUM(M${dataStart}:M${dataEnd})` }, BRL],
     [14, { formula: `IF(F${rowIdx}=0,0,L${rowIdx}/F${rowIdx}*100)` }, PCT],
