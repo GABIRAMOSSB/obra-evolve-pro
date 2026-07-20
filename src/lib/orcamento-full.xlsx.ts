@@ -39,20 +39,20 @@ export async function exportOrcamentoFullXLSX(args: Args): Promise<void> {
   });
 
   const cols: Array<{ w: number }> = [
-    { w: 12 }, // item
-    { w: 46 }, // descrição
-    { w: 8 },  // und
-    { w: 12 }, // qtd contratada
-    { w: 14 }, // valor unit c/ BDI
-    { w: 16 }, // total contratual
-    { w: 12 }, // qtd anterior
-    { w: 15 }, // valor anterior
-    { w: 12 }, // qtd período
-    { w: 15 }, // valor período
-    { w: 12 }, // qtd acumulada
-    { w: 15 }, // valor acumulado
-    { w: 15 }, // saldo
-    { w: 10 }, // % exec
+    { w: 12 }, // 1 item
+    { w: 46 }, // 2 descrição
+    { w: 8 },  // 3 und
+    { w: 12 }, // 4 qtd contratada
+    { w: 14 }, // 5 valor unit c/ BDI
+    { w: 16 }, // 6 total contratual
+    { w: 12 }, // 7 físico ant
+    { w: 12 }, // 8 físico período
+    { w: 12 }, // 9 físico acum
+    { w: 15 }, // 10 financeiro ant
+    { w: 15 }, // 11 financeiro período
+    { w: 15 }, // 12 financeiro acum
+    { w: 15 }, // 13 saldo
+    { w: 10 }, // 14 % exec
   ];
   cols.forEach((c, i) => { ws.getColumn(i + 1).width = c.w; });
   const COLS = cols.length;
