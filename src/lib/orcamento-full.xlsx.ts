@@ -40,19 +40,23 @@ export async function exportOrcamentoFullXLSX(args: Args): Promise<void> {
 
   const cols: Array<{ w: number }> = [
     { w: 12 }, // item
-    { w: 48 }, // descrição
+    { w: 46 }, // descrição
     { w: 8 },  // und
     { w: 12 }, // qtd contratada
-    { w: 16 }, // valor unit c/ BDI
-    { w: 18 }, // total contratual
-    { w: 14 }, // qtd executada
-    { w: 18 }, // valor executado
-    { w: 18 }, // saldo
+    { w: 14 }, // valor unit c/ BDI
+    { w: 16 }, // total contratual
+    { w: 12 }, // qtd anterior
+    { w: 15 }, // valor anterior
+    { w: 12 }, // qtd período
+    { w: 15 }, // valor período
+    { w: 12 }, // qtd acumulada
+    { w: 15 }, // valor acumulado
+    { w: 15 }, // saldo
     { w: 10 }, // % exec
   ];
   cols.forEach((c, i) => { ws.getColumn(i + 1).width = c.w; });
   const COLS = cols.length;
-  const lastColLetter = String.fromCharCode(64 + COLS); // "J"
+  const lastColLetter = String.fromCharCode(64 + COLS); // "N"
 
   const headerRange = `A1:${lastColLetter}1`;
   ws.mergeCells(headerRange);
@@ -92,34 +96,85 @@ export async function exportOrcamentoFullXLSX(args: Args): Promise<void> {
     ws.getRow(row).height = 16;
   });
 
-  const HEAD_ROW = 8;
-  const headers = [
-    "Item", "Descrição", "Und",
-    "Qtd. Contratada", "Vlr. Unit. c/ BDI", "Total Contratual (R$)",
-    "Qtd. Executada", "Valor Executado (R$)", "Saldo (R$)", "% Exec.",
-  ];
-  headers.forEach((h, i) => {
-    const c = ws.getCell(HEAD_ROW, i + 1);
-    c.value = h;
-    c.font = { name: "Calibri", size: 10, bold: true, color: { argb: WHITE } };
-    c.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
-    c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY } };
-    c.border = boxBorder;
-  });
-  ws.getRow(HEAD_ROW).height = 28;
+  // Cabeçalho em duas linhas (mescla vertical + grupos horizontais)
+  const HEAD_ROW1 = 8;
+  const HEAD_ROW2 = 9;
 
-  let rowIdx = HEAD_ROW + 1;
+  // Descobre o maior número de BM fechada
+  let maxBM = 0;
+  if (args.evolutions) {
+    for (const evo of Object.values(args.evolutions)) {
+      for (const m of evo?.measurements ?? []) {
+        if (m.closed && m.number > maxBM) maxBM = m.number;
+      }
+    }
+  }
+
+  const setHead = (cell: ExcelJS.Cell, text: string) => {
+    cell.value = text;
+    cell.font = { name: "Calibri", size: 10, bold: true, color: { argb: WHITE } };
+    cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY } };
+    cell.border = boxBorder;
+  };
+
+  // Colunas simples (mescla vertical)
+  const simples: Array<[number, string]> = [
+    [1, "Item"], [2, "Descrição"], [3, "Und"],
+    [4, "Qtd. Contratada"], [5, "Vlr. Unit. c/ BDI"], [6, "Total Contratual (R$)"],
+    [13, "Saldo (R$)"], [14, "% Exec."],
+  ];
+  simples.forEach(([col, txt]) => {
+    ws.mergeCells(HEAD_ROW1, col, HEAD_ROW2, col);
+    setHead(ws.getCell(HEAD_ROW1, col), txt);
+  });
+
+  // Grupos (mescla horizontal na linha 1, dois sub-headers na linha 2)
+  const grupos: Array<[number, number, string]> = [
+    [7, 8, "Acumulado até o período anterior"],
+    [9, 10, "Medido no período"],
+    [11, 12, "Acum. inclui o período"],
+  ];
+  grupos.forEach(([a, b, txt]) => {
+    ws.mergeCells(HEAD_ROW1, a, HEAD_ROW1, b);
+    setHead(ws.getCell(HEAD_ROW1, a), txt);
+    setHead(ws.getCell(HEAD_ROW2, a), "Qtd.");
+    setHead(ws.getCell(HEAD_ROW2, b), "Valor (R$)");
+  });
+  ws.getRow(HEAD_ROW1).height = 26;
+  ws.getRow(HEAD_ROW2).height = 20;
+
+  ws.views = [{ showGridLines: false, state: "frozen", ySplit: HEAD_ROW2 }];
+
+  let rowIdx = HEAD_ROW2 + 1;
   const dataStart = rowIdx;
   for (const r of args.rows) {
     const isGroup = !!r.isGroup || ((r.quantidade ?? 0) === 0 && (r.valorUnitBDI || r.valorUnit || 0) === 0);
     const vuBDI = r.valorUnitBDI || r.valorUnit || 0;
     const qtd = Number(r.quantidade ?? 0);
     const total = qtd * vuBDI;
-    const m = !isGroup && args.evolutions ? activityMetrics(r, args.evolutions[r.item]) : null;
-    const qExec = m?.quantExec ?? 0;
-    const vExec = m?.valorExec ?? 0;
-    const saldo = total - vExec;
-    const pct = m?.percent ?? 0;
+
+    // Anterior / Período
+    let qAnt = 0, qPer = 0;
+    if (!isGroup && args.evolutions) {
+      const evo = args.evolutions[r.item];
+      for (const m of evo?.measurements ?? []) {
+        if (!m.closed) continue;
+        if (m.number < maxBM) qAnt += m.quantExec || 0;
+        else if (m.number === maxBM) qPer += m.quantExec || 0;
+      }
+    }
+    let qAcum = qAnt + qPer;
+    if (qtd > 0 && qAcum > qtd) {
+      const excedente = qAcum - qtd;
+      qPer = Math.max(0, qPer - excedente);
+      qAcum = qtd;
+    }
+    const vAnt = qAnt * vuBDI;
+    const vPer = qPer * vuBDI;
+    const vAcum = qAcum * vuBDI;
+    const saldo = total - vAcum;
+    const pct = total > 0 ? (vAcum / total) * 100 : 0;
 
     const cells: (string | number | null)[] = [
       r.item ?? "",
@@ -128,8 +183,12 @@ export async function exportOrcamentoFullXLSX(args: Args): Promise<void> {
       isGroup ? null : qtd,
       isGroup ? null : vuBDI,
       isGroup ? null : total,
-      isGroup ? null : qExec,
-      isGroup ? null : vExec,
+      isGroup ? null : qAnt,
+      isGroup ? null : vAnt,
+      isGroup ? null : qPer,
+      isGroup ? null : vPer,
+      isGroup ? null : qAcum,
+      isGroup ? null : vAcum,
       isGroup ? null : saldo,
       isGroup ? null : pct,
     ];
@@ -138,9 +197,10 @@ export async function exportOrcamentoFullXLSX(args: Args): Promise<void> {
       c.value = v;
       c.border = boxBorder;
       c.alignment = { vertical: "middle", horizontal: i === 1 ? "left" : (i === 0 || i === 2 ? "center" : "right"), wrapText: i === 1, indent: i === 1 ? 1 : 0 };
-      if (i === 3 || i === 6) c.numFmt = NUM;
-      else if (i === 4 || i === 5 || i === 7 || i === 8) c.numFmt = BRL;
-      else if (i === 9) c.numFmt = PCT;
+      // formatos: 3=qtd contr, 6=qAnt, 8=qPer, 10=qAcum (índices 0-based: 3,6,8,10)
+      if (i === 3 || i === 6 || i === 8 || i === 10) c.numFmt = NUM;
+      else if (i === 4 || i === 5 || i === 7 || i === 9 || i === 11 || i === 12) c.numFmt = BRL;
+      else if (i === 13) c.numFmt = PCT;
 
       if (isGroup) {
         c.font = { name: "Calibri", size: 10, bold: true, color: { argb: NAVY } };
@@ -155,7 +215,7 @@ export async function exportOrcamentoFullXLSX(args: Args): Promise<void> {
   }
 
   const dataEnd = rowIdx - 1;
-  // Total geral: mescla colunas A..E (5), depois total contratual (F), qtd exec vazia (G), valor exec (H), saldo (I), pct (J)
+  // Total geral: mescla A..E, depois totais por coluna
   ws.mergeCells(rowIdx, 1, rowIdx, 5);
   const totalLabel = ws.getCell(rowIdx, 1);
   totalLabel.value = "TOTAL GERAL DO CONTRATO";
@@ -166,10 +226,14 @@ export async function exportOrcamentoFullXLSX(args: Args): Promise<void> {
 
   const totalConfig: Array<[number, ExcelJS.CellValue, string]> = [
     [6, { formula: `SUM(F${dataStart}:F${dataEnd})` }, BRL],
-    [7, null, NUM],
+    [7, { formula: `SUM(G${dataStart}:G${dataEnd})` }, NUM],
     [8, { formula: `SUM(H${dataStart}:H${dataEnd})` }, BRL],
-    [9, { formula: `SUM(I${dataStart}:I${dataEnd})` }, BRL],
-    [10, { formula: `IF(F${rowIdx}=0,0,H${rowIdx}/F${rowIdx}*100)` }, PCT],
+    [9, { formula: `SUM(I${dataStart}:I${dataEnd})` }, NUM],
+    [10, { formula: `SUM(J${dataStart}:J${dataEnd})` }, BRL],
+    [11, { formula: `SUM(K${dataStart}:K${dataEnd})` }, NUM],
+    [12, { formula: `SUM(L${dataStart}:L${dataEnd})` }, BRL],
+    [13, { formula: `SUM(M${dataStart}:M${dataEnd})` }, BRL],
+    [14, { formula: `IF(F${rowIdx}=0,0,L${rowIdx}/F${rowIdx}*100)` }, PCT],
   ];
   totalConfig.forEach(([col, val, fmt]) => {
     const c = ws.getCell(rowIdx, col);
