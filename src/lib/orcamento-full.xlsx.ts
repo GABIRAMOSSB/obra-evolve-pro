@@ -185,10 +185,10 @@ export async function exportOrcamentoFullXLSX(args: Args): Promise<void> {
       isGroup ? null : vuBDI,
       isGroup ? null : total,
       isGroup ? null : qAnt,
-      isGroup ? null : vAnt,
       isGroup ? null : qPer,
-      isGroup ? null : vPer,
       isGroup ? null : qAcum,
+      isGroup ? null : vAnt,
+      isGroup ? null : vPer,
       isGroup ? null : vAcum,
       isGroup ? null : saldo,
       isGroup ? null : pct,
@@ -198,9 +198,9 @@ export async function exportOrcamentoFullXLSX(args: Args): Promise<void> {
       c.value = v;
       c.border = boxBorder;
       c.alignment = { vertical: "middle", horizontal: i === 1 ? "left" : (i === 0 || i === 2 ? "center" : "right"), wrapText: i === 1, indent: i === 1 ? 1 : 0 };
-      // formatos: 3=qtd contr, 6=qAnt, 8=qPer, 10=qAcum (índices 0-based: 3,6,8,10)
-      if (i === 3 || i === 6 || i === 8 || i === 10) c.numFmt = NUM;
-      else if (i === 4 || i === 5 || i === 7 || i === 9 || i === 11 || i === 12) c.numFmt = BRL;
+      // 3=qtd contr, 6-8=qAnt/qPer/qAcum (físico); 4=vu, 5=total, 9-11=vAnt/vPer/vAcum, 12=saldo; 13=%
+      if (i === 3 || i === 6 || i === 7 || i === 8) c.numFmt = NUM;
+      else if (i === 4 || i === 5 || i === 9 || i === 10 || i === 11 || i === 12) c.numFmt = BRL;
       else if (i === 13) c.numFmt = PCT;
 
       if (isGroup) {
