@@ -158,50 +158,88 @@ export function exportOrcamentoFullPDF({ rows, evolutions, info, projectName }: 
   y += 15;
 
   // ===== TABELA =====
+  // Descobre o maior número de BM fechada para tratar como "período atual"
+  let maxBM = 0;
+  if (evolutions) {
+    for (const evo of Object.values(evolutions)) {
+      for (const m of evo?.measurements ?? []) {
+        if (m.closed && m.number > maxBM) maxBM = m.number;
+      }
+    }
+  }
+
   const head = [[
-    "Item",
-    "Descrição",
-    "Un.",
-    "Qtd. Contr.",
-    "V. Unit. c/ BDI",
-    "Total Contratual",
-    "Qtd. Executada",
-    "Valor Executado",
-    "Saldo (R$)",
-    "% Exec.",
-  ]];
+    { content: "Item", rowSpan: 2 },
+    { content: "Descrição", rowSpan: 2 },
+    { content: "Un.", rowSpan: 2 },
+    { content: "Qtd. Contr.", rowSpan: 2 },
+    { content: "V. Unit. c/ BDI", rowSpan: 2 },
+    { content: "Total Contratual", rowSpan: 2 },
+    { content: "Acumulado até o período anterior", colSpan: 2, styles: { halign: "center" as const } },
+    { content: "Medido no período", colSpan: 2, styles: { halign: "center" as const } },
+    { content: "Acum. inclui o período", colSpan: 2, styles: { halign: "center" as const } },
+    { content: "Saldo (R$)", rowSpan: 2 },
+    { content: "% Exec.", rowSpan: 2 },
+  ], [
+    "Qtd.", "Valor",
+    "Qtd.", "Valor",
+    "Qtd.", "Valor",
+  ]] as never;
 
   const body: (string | { content: string; styles?: Record<string, unknown> })[][] = [];
+  let totQAnt = 0, totVAnt = 0, totQPer = 0, totVPer = 0, totVAcum = 0;
   for (const r of rows) {
     const isGroup = !!r.isGroup || ((r.quantidade ?? 0) === 0 && (r.valorUnitBDI || r.valorUnit || 0) === 0);
     if (isGroup) {
       body.push([
         { content: r.item ?? "", styles: { fontStyle: "bold", fillColor: SILVER } },
         { content: r.descricao ?? "", styles: { fontStyle: "bold", fillColor: SILVER } },
-        ...Array(8).fill({ content: "", styles: { fillColor: SILVER } }),
+        ...Array(12).fill({ content: "", styles: { fillColor: SILVER } }),
       ]);
-    } else {
-      const vuBDI = r.valorUnitBDI || r.valorUnit || 0;
-      const qtd = Number(r.quantidade ?? 0);
-      const totalItem = qtd * vuBDI;
-      const m = evolutions ? activityMetrics(r, evolutions[r.item]) : null;
-      const qExec = m?.quantExec ?? 0;
-      const vExec = m?.valorExec ?? 0;
-      const saldo = totalItem - vExec;
-      const pct = m?.percent ?? 0;
-      body.push([
-        r.item ?? "",
-        r.descricao ?? "",
-        r.und ?? "",
-        fmtNum(qtd),
-        fmtBRL(vuBDI),
-        fmtBRL(totalItem),
-        fmtNum(qExec),
-        fmtBRL(vExec),
-        fmtBRL(saldo),
-        `${fmtNum(pct)}%`,
-      ]);
+      continue;
     }
+    const vuBDI = r.valorUnitBDI || r.valorUnit || 0;
+    const qtd = Number(r.quantidade ?? 0);
+    const totalItem = qtd * vuBDI;
+    const evo = evolutions ? evolutions[r.item] : undefined;
+    let qAnt = 0, qPer = 0;
+    if (evo?.measurements) {
+      for (const m of evo.measurements) {
+        if (!m.closed) continue;
+        if (m.number < maxBM) qAnt += m.quantExec || 0;
+        else if (m.number === maxBM) qPer += m.quantExec || 0;
+      }
+    }
+    let qAcum = qAnt + qPer;
+    if (qtd > 0 && qAcum > qtd) {
+      const excedente = qAcum - qtd;
+      qPer = Math.max(0, qPer - excedente);
+      qAcum = qtd;
+    }
+    const vAnt = qAnt * vuBDI;
+    const vPer = qPer * vuBDI;
+    const vAcum = qAcum * vuBDI;
+    const saldo = totalItem - vAcum;
+    const pct = totalItem > 0 ? (vAcum / totalItem) * 100 : 0;
+    totQAnt += qAnt; totVAnt += vAnt;
+    totQPer += qPer; totVPer += vPer;
+    totVAcum += vAcum;
+    body.push([
+      r.item ?? "",
+      r.descricao ?? "",
+      r.und ?? "",
+      fmtNum(qtd),
+      fmtBRL(vuBDI),
+      fmtBRL(totalItem),
+      fmtNum(qAnt),
+      fmtBRL(vAnt),
+      fmtNum(qPer),
+      fmtBRL(vPer),
+      fmtNum(qAcum),
+      fmtBRL(vAcum),
+      fmtBRL(saldo),
+      `${fmtNum(pct)}%`,
+    ]);
   }
 
   // Linha TOTAL GERAL
@@ -213,10 +251,14 @@ export function exportOrcamentoFullPDF({ rows, evolutions, info, projectName }: 
     { content: "", styles: { fillColor: GRAPHITE } },
     { content: "", styles: { fillColor: GRAPHITE } },
     { content: fmtBRL(totalContrato), styles: totalStyle },
+    { content: fmtNum(totQAnt), styles: totalStyle },
+    { content: fmtBRL(totVAnt), styles: totalStyle },
+    { content: fmtNum(totQPer), styles: totalStyle },
+    { content: fmtBRL(totVPer), styles: totalStyle },
     { content: "", styles: { fillColor: GRAPHITE } },
-    { content: fmtBRL(totalExec), styles: totalStyle },
-    { content: fmtBRL(saldoContratual), styles: totalStyle },
-    { content: `${fmtNum(pctExecTotal)}%`, styles: totalStyle },
+    { content: fmtBRL(totVAcum), styles: totalStyle },
+    { content: fmtBRL(totalContrato - totVAcum), styles: totalStyle },
+    { content: `${fmtNum(totalContrato > 0 ? (totVAcum / totalContrato) * 100 : 0)}%`, styles: totalStyle },
   ]);
 
   autoTable(doc, {
