@@ -175,15 +175,13 @@ export function exportOrcamentoFullPDF({ rows, evolutions, info, projectName }: 
     { content: "Qtd. Contr.", rowSpan: 2 },
     { content: "V. Unit. c/ BDI", rowSpan: 2 },
     { content: "Total Contratual", rowSpan: 2 },
-    { content: "Acumulado até o período anterior", colSpan: 2, styles: { halign: "center" as const } },
-    { content: "Medido no período", colSpan: 2, styles: { halign: "center" as const } },
-    { content: "Acum. inclui o período", colSpan: 2, styles: { halign: "center" as const } },
+    { content: "EXECUTADO FÍSICO", colSpan: 3, styles: { halign: "center" as const } },
+    { content: "EXECUTADO FINANCEIRO (R$)", colSpan: 3, styles: { halign: "center" as const } },
     { content: "Saldo (R$)", rowSpan: 2 },
     { content: "% Exec.", rowSpan: 2 },
   ], [
-    "Qtd.", "Valor",
-    "Qtd.", "Valor",
-    "Qtd.", "Valor",
+    "Acum. Ant.", "Período", "Acum. Atual",
+    "Acum. Ant.", "Período", "Acum. Atual",
   ]] as never;
 
   const body: (string | { content: string; styles?: Record<string, unknown> })[][] = [];
