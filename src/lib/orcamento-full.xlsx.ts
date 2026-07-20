@@ -228,10 +228,10 @@ export async function exportOrcamentoFullXLSX(args: Args): Promise<void> {
   const totalConfig: Array<[number, ExcelJS.CellValue, string]> = [
     [6, { formula: `SUM(F${dataStart}:F${dataEnd})` }, BRL],
     [7, { formula: `SUM(G${dataStart}:G${dataEnd})` }, NUM],
-    [8, { formula: `SUM(H${dataStart}:H${dataEnd})` }, BRL],
+    [8, { formula: `SUM(H${dataStart}:H${dataEnd})` }, NUM],
     [9, { formula: `SUM(I${dataStart}:I${dataEnd})` }, NUM],
     [10, { formula: `SUM(J${dataStart}:J${dataEnd})` }, BRL],
-    [11, { formula: `SUM(K${dataStart}:K${dataEnd})` }, NUM],
+    [11, { formula: `SUM(K${dataStart}:K${dataEnd})` }, BRL],
     [12, { formula: `SUM(L${dataStart}:L${dataEnd})` }, BRL],
     [13, { formula: `SUM(M${dataStart}:M${dataEnd})` }, BRL],
     [14, { formula: `IF(F${rowIdx}=0,0,L${rowIdx}/F${rowIdx}*100)` }, PCT],
