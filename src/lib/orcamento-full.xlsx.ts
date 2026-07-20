@@ -129,17 +129,18 @@ export async function exportOrcamentoFullXLSX(args: Args): Promise<void> {
     setHead(ws.getCell(HEAD_ROW1, col), txt);
   });
 
-  // Grupos (mescla horizontal na linha 1, dois sub-headers na linha 2)
+  // Grupos: EXECUTADO FÍSICO (7-9) + EXECUTADO FINANCEIRO (10-12)
   const grupos: Array<[number, number, string]> = [
-    [7, 8, "Acumulado até o período anterior"],
-    [9, 10, "Medido no período"],
-    [11, 12, "Acum. inclui o período"],
+    [7, 9, "EXECUTADO FÍSICO"],
+    [10, 12, "EXECUTADO FINANCEIRO (R$)"],
   ];
+  const subHeaders = ["Acum. Ant.", "Período", "Acum. Atual"];
   grupos.forEach(([a, b, txt]) => {
     ws.mergeCells(HEAD_ROW1, a, HEAD_ROW1, b);
     setHead(ws.getCell(HEAD_ROW1, a), txt);
-    setHead(ws.getCell(HEAD_ROW2, a), "Qtd.");
-    setHead(ws.getCell(HEAD_ROW2, b), "Valor (R$)");
+    for (let i = 0; i < 3; i++) {
+      setHead(ws.getCell(HEAD_ROW2, a + i), subHeaders[i]);
+    }
   });
   ws.getRow(HEAD_ROW1).height = 26;
   ws.getRow(HEAD_ROW2).height = 20;
