@@ -279,7 +279,7 @@ export function generateBoletimMedicaoPDF(data: BoletimData): jsPDF {
     startY: y,
     head,
     body,
-    margin: { left: margin, right: margin, top: 28, bottom: 22 },
+    margin: { left: margin, right: margin, top: 14, bottom: 22 },
     theme: "plain",
     styles: {
       font: "helvetica",
@@ -316,20 +316,8 @@ export function generateBoletimMedicaoPDF(data: BoletimData): jsPDF {
     },
     rowPageBreak: "avoid",
     didDrawPage: (hook) => {
-      // Header repetido
-      if (hook.pageNumber > 1) {
-        doc.setFillColor(...GRAPHITE_DARK);
-        doc.rect(0, 0, pageW, 18, "F");
-        doc.setFillColor(...GOLD);
-        doc.rect(0, 18, pageW, 0.6, "F");
-        doc.setTextColor(255, 255, 255);
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
-        doc.text("SOLV CONSTRUTORA — BOLETIM DE MEDIÇÃO", margin, 8);
-        doc.setFontSize(8);
-        doc.text(`${bmLabel} · ${nomeObra}`, margin, 13);
-      }
-      // Footer
+      // Cabeçalho institucional aparece apenas na página 1.
+      // Rodapé em todas as páginas.
       const pageStr = `SOLV Construtora e Soluções Ltda.  |  ${nomeObra}  |  ${bmLabel}  |  Página ${hook.pageNumber}`;
       doc.setDrawColor(...SILVER);
       doc.setLineWidth(0.1);
