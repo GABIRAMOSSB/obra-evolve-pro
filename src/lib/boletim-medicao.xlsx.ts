@@ -479,9 +479,9 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
         };
         // Bordas suaves: só divisão inferior + verticais entre grupos
         cell.border = {
-          bottom: { style: "hair", color: { argb: COLOR_BORDER } },
+          bottom: hair,
           left: c === 7 || c === 10 || c === 13
-            ? { style: "thin", color: { argb: COLOR_DOURADO } }
+            ? { style: "hair", color: { argb: COLOR_DOURADO } }
             : undefined,
         };
       }
