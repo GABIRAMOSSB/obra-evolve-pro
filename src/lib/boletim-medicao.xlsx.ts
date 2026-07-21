@@ -164,7 +164,15 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
       fitToPage: true,
       fitToWidth: 1,
       fitToHeight: 0,
-      margins: { left: 0.3, right: 0.3, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 },
+      margins: { left: 0.3, right: 0.3, top: 0.4, bottom: 0.7, header: 0.2, footer: 0.3 },
+    },
+    headerFooter: {
+      differentFirst: false,
+      oddFooter:
+        '&L&"Aptos,Regular"&8&K4A5568SOLV Construtora  •  Boletim de Medição ' +
+        bmLabel +
+        '&C&"Aptos,Bold"&9&K0F1420Página &P de &N' +
+        '&R&"Aptos,Regular"&8&K4A5568Emitido em ' + dataMedBR,
     },
   });
 
