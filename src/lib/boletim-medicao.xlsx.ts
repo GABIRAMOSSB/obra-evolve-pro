@@ -77,11 +77,12 @@ const fill = (c: string): ExcelJS.FillPattern => ({
 });
 
 const thin = { style: "thin" as const, color: { argb: COLOR_BORDER } };
+const hair = { style: "hair" as const, color: { argb: COLOR_BORDER } };
 const borderAll = {
-  top: thin,
-  left: thin,
-  bottom: thin,
-  right: thin,
+  top: hair,
+  left: hair,
+  bottom: hair,
+  right: hair,
 } as Partial<ExcelJS.Borders> as ExcelJS.Borders;
 
 function fmtDateBR(iso: string | null | undefined): string {
