@@ -262,10 +262,10 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
       cell.alignment = { horizontal: "left", vertical: "middle", wrapText: true, indent: 1 };
       cell.fill = fill(COLOR_META_BG);
       cell.border = {
-        top: { style: "thin", color: { argb: COLOR_BORDER } },
-        bottom: { style: "thin", color: { argb: COLOR_BORDER } },
-        left: { style: "thin", color: { argb: COLOR_BORDER } },
-        right: { style: "thin", color: { argb: COLOR_BORDER } },
+        top: hair,
+        bottom: hair,
+        left: hair,
+        right: hair,
       };
       const h = estimateMetaHeight(value, spanWidthChars(span));
       if (h > maxH) maxH = h;
