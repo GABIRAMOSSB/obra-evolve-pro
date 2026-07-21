@@ -516,8 +516,8 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
     cell.font = { name: "Aptos", size: 10, bold: true, color: { argb: c <= 5 ? COLOR_WHITE : COLOR_DOURADO } };
     if (c > 5) cell.alignment = { horizontal: "center", vertical: "middle" };
     cell.border = {
-      top: { style: "medium", color: { argb: COLOR_DOURADO } },
-      bottom: { style: "medium", color: { argb: COLOR_DOURADO } },
+      top: thin,
+      bottom: thin,
     };
   }
   ws.getRow(totalRow).height = 26;
