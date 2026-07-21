@@ -77,11 +77,12 @@ const fill = (c: string): ExcelJS.FillPattern => ({
 });
 
 const thin = { style: "thin" as const, color: { argb: COLOR_BORDER } };
+const hair = { style: "hair" as const, color: { argb: COLOR_BORDER } };
 const borderAll = {
-  top: thin,
-  left: thin,
-  bottom: thin,
-  right: thin,
+  top: hair,
+  left: hair,
+  bottom: hair,
+  right: hair,
 } as Partial<ExcelJS.Borders> as ExcelJS.Borders;
 
 function fmtDateBR(iso: string | null | undefined): string {
@@ -164,7 +165,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
       fitToPage: true,
       fitToWidth: 1,
       fitToHeight: 0,
-      margins: { left: 0.3, right: 0.3, top: 0.4, bottom: 0.7, header: 0.2, footer: 0.3 },
+      margins: { left: 0.25, right: 0.25, top: 0.35, bottom: 0.6, header: 0.15, footer: 0.25 },
     },
     headerFooter: {
       differentFirst: false,
@@ -261,10 +262,10 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
       cell.alignment = { horizontal: "left", vertical: "middle", wrapText: true, indent: 1 };
       cell.fill = fill(COLOR_META_BG);
       cell.border = {
-        top: { style: "thin", color: { argb: COLOR_BORDER } },
-        bottom: { style: "thin", color: { argb: COLOR_BORDER } },
-        left: { style: "thin", color: { argb: COLOR_BORDER } },
-        right: { style: "thin", color: { argb: COLOR_BORDER } },
+        top: hair,
+        bottom: hair,
+        left: hair,
+        right: hair,
       };
       const h = estimateMetaHeight(value, spanWidthChars(span));
       if (h > maxH) maxH = h;
@@ -368,7 +369,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
     cell.fill = fill(COLOR_GRAFITE);
     cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
     cell.border = {
-      bottom: { style: "medium", color: { argb: COLOR_DOURADO } },
+      bottom: thin,
     };
   }
   for (const [col, txt] of Object.entries(header2)) {
@@ -378,7 +379,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
     cell.fill = fill(COLOR_BEGE);
     cell.alignment = { horizontal: "center", vertical: "middle" };
     cell.border = {
-      bottom: { style: "thin", color: { argb: COLOR_BORDER } },
+      bottom: hair,
     };
   }
   ws.getRow(10).height = 22;
@@ -414,8 +415,8 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
           indent: c === 2 ? 1 : 0,
         };
         cell.border = {
-          top: { style: "medium", color: { argb: COLOR_DOURADO } },
-          bottom: { style: "medium", color: { argb: COLOR_DOURADO } },
+          top: thin,
+          bottom: thin,
         };
       }
     } else if (isSubgrupo) {
@@ -431,7 +432,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
           indent: c === 2 ? 1 : 0,
         };
         cell.border = {
-          bottom: { style: "thin", color: { argb: COLOR_BORDER } },
+          bottom: hair,
         };
       }
     } else {
@@ -478,9 +479,9 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
         };
         // Bordas suaves: só divisão inferior + verticais entre grupos
         cell.border = {
-          bottom: { style: "hair", color: { argb: COLOR_BORDER } },
+          bottom: hair,
           left: c === 7 || c === 10 || c === 13
-            ? { style: "thin", color: { argb: COLOR_DOURADO } }
+            ? { style: "hair", color: { argb: COLOR_DOURADO } }
             : undefined,
         };
       }
@@ -515,8 +516,8 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
     cell.font = { name: "Aptos", size: 10, bold: true, color: { argb: c <= 5 ? COLOR_WHITE : COLOR_DOURADO } };
     if (c > 5) cell.alignment = { horizontal: "center", vertical: "middle" };
     cell.border = {
-      top: { style: "medium", color: { argb: COLOR_DOURADO } },
-      bottom: { style: "medium", color: { argb: COLOR_DOURADO } },
+      top: thin,
+      bottom: thin,
     };
   }
   ws.getRow(totalRow).height = 26;
@@ -546,7 +547,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
     ws.mergeCells(`${colStart}${signLine}:${colEnd}${signLine}`);
     const line = ws.getCell(`${colStart}${signLine}`);
     line.value = "";
-    line.border = { top: { style: "medium", color: { argb: COLOR_GRAFITE } } };
+    line.border = { top: thin };
 
     ws.mergeCells(`${colStart}${nameRow}:${colEnd}${nameRow}`);
     const nc = ws.getCell(`${colStart}${nameRow}`);
