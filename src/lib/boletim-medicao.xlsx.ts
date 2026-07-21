@@ -7,7 +7,7 @@
  * única linha "TOTAL GERAL".
  */
 import ExcelJS from "exceljs";
-import { normalizeUnidade, sanitizeDescricao } from "./boletim-medicao.calc";
+import { normalizeUnidade, sanitizeDescricao, computeTotais, fmtMoneyBR, fmtPctBR } from "./boletim-medicao.calc";
 
 const BRL = 'R$ #,##0.00';
 const PCT = '0.00%';
