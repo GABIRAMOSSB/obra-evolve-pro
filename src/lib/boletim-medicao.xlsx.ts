@@ -301,16 +301,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
 
 
   // ============ LINHA 9: KPIs (BM, Data, Valor total, Medição, Acumulado, %, Saldo) ============
-  const _tot = computeTotais(
-    data.itens.map((it) => ({
-      qtd_contratada: it.qtd_contratada,
-      valor_unitario: it.valor_unitario,
-      qtd_acum_anterior: it.qtd_acum_anterior,
-      valor_acum_anterior: it.valor_acum_anterior,
-      qtd_periodo: it.qtd_periodo,
-      is_etapa: it.is_etapa,
-    })),
-  );
+  const _tot = computeTotais(data.itens);
   const kpiDefs: Array<[string, string, string, string]> = [
     // [span, label, value, accentBg]
     ["A9:B9", "Nº DO BM", bmLabel, "FFF6EEDC"],
