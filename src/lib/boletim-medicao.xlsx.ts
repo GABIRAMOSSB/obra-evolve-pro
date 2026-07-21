@@ -547,7 +547,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
     ws.mergeCells(`${colStart}${signLine}:${colEnd}${signLine}`);
     const line = ws.getCell(`${colStart}${signLine}`);
     line.value = "";
-    line.border = { top: { style: "medium", color: { argb: COLOR_GRAFITE } } };
+    line.border = { top: thin };
 
     ws.mergeCells(`${colStart}${nameRow}:${colEnd}${nameRow}`);
     const nc = ws.getCell(`${colStart}${nameRow}`);
