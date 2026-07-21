@@ -369,7 +369,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
     cell.fill = fill(COLOR_GRAFITE);
     cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
     cell.border = {
-      bottom: { style: "medium", color: { argb: COLOR_DOURADO } },
+      bottom: thin,
     };
   }
   for (const [col, txt] of Object.entries(header2)) {
@@ -379,7 +379,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
     cell.fill = fill(COLOR_BEGE);
     cell.alignment = { horizontal: "center", vertical: "middle" };
     cell.border = {
-      bottom: { style: "thin", color: { argb: COLOR_BORDER } },
+      bottom: hair,
     };
   }
   ws.getRow(10).height = 22;
