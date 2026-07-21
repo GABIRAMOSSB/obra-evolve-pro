@@ -415,8 +415,8 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
           indent: c === 2 ? 1 : 0,
         };
         cell.border = {
-          top: { style: "medium", color: { argb: COLOR_DOURADO } },
-          bottom: { style: "medium", color: { argb: COLOR_DOURADO } },
+          top: thin,
+          bottom: thin,
         };
       }
     } else if (isSubgrupo) {
@@ -432,7 +432,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
           indent: c === 2 ? 1 : 0,
         };
         cell.border = {
-          bottom: { style: "thin", color: { argb: COLOR_BORDER } },
+          bottom: hair,
         };
       }
     } else {
