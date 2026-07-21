@@ -7,7 +7,7 @@
  * única linha "TOTAL GERAL".
  */
 import ExcelJS from "exceljs";
-import { normalizeUnidade, sanitizeDescricao } from "./boletim-medicao.calc";
+import { normalizeUnidade, sanitizeDescricao, computeTotais, fmtMoneyBR, fmtPctBR } from "./boletim-medicao.calc";
 
 const BRL = 'R$ #,##0.00';
 const PCT = '0.00%';
@@ -300,8 +300,33 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   
 
 
-  // Linha 9 vazia (respiro)
-  ws.getRow(9).height = 4;
+  // ============ LINHA 9: KPIs (BM, Data, Valor total, Medição, Acumulado, %, Saldo) ============
+  const _tot = computeTotais(data.itens);
+  const kpiDefs: Array<[string, string, string, string]> = [
+    // [span, label, value, accentBg]
+    ["A9:B9", "Nº DO BM", bmLabel, "FFF6EEDC"],
+    ["C9:D9", "DATA DA MEDIÇÃO", dataMedBR, "FFF6EEDC"],
+    ["E9:F9", "VALOR TOTAL DO CONTRATO", fmtMoneyBR(_tot.valor_total_contrato), "FFEFF3F8"],
+    ["G9:H9", "VALOR DESTA MEDIÇÃO", fmtMoneyBR(_tot.valor_medicao_atual), "FFFBE9E1"],
+    ["I9:J9", "VALOR ACUMULADO", fmtMoneyBR(_tot.valor_acumulado), "FFE5F3EC"],
+    ["K9:L9", "% ACUMULADO", fmtPctBR(_tot.percentual_executado, 2), "FFEFEBFF"],
+    ["M9:M9", "SALDO RESTANTE", fmtMoneyBR(_tot.saldo_contratual), "FFF6EEDC"],
+  ];
+  for (const [span, label, value, bg] of kpiDefs) {
+    ws.mergeCells(span);
+    const [start] = span.split(":");
+    const cell = ws.getCell(start);
+    cell.value = {
+      richText: [
+        { text: `${label}\n`, font: { name: "Aptos", size: 6.5, bold: true, color: { argb: COLOR_LABEL } } },
+        { text: value, font: { name: "Aptos", size: 10, bold: true, color: { argb: COLOR_TEXT } } },
+      ],
+    };
+    cell.alignment = { horizontal: "left", vertical: "middle", wrapText: true, indent: 1 };
+    cell.fill = fill(bg);
+    cell.border = borderAll;
+  }
+  ws.getRow(9).height = 32;
 
   // ============ Cabeçalho da grade (linhas 10..11) ============
   // Estrutura: Item | Descrição | Un. | Qtd. | V. Unit. | Total | EXEC. FÍSICO (3) | EXEC. FINANCEIRO (3) | Executado %
@@ -554,7 +579,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
   ws.getRow(cargoRow).height = 18;
   ws.getRow(regRow).height = 16;
 
-  ws.pageSetup.printTitlesRow = "1:11";
+  ws.pageSetup.printTitlesRow = "10:11";
 
   const out = await wb.xlsx.writeBuffer();
   return new Blob([out], {
