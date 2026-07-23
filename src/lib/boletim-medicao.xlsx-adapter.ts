@@ -23,12 +23,24 @@ export async function exportBoletimMedicaoInstitucional(args: Args): Promise<voi
 
   const itens = bodyRows.map((r, idx) => {
     const list = args.evolutions[r.item]?.measurements ?? [];
-    // Acumulado anterior = tudo que já está fechado
-    const qtdAcumAnterior = list.filter((m) => m.closed).reduce((s, m) => s + (m.quantExec || 0), 0);
-    // Período = medição em aberto (não fechada) OU a da BM selecionada
+    // Acumulado anterior = fechadas ANTES da BM atual (evita dupla contagem)
+    const qtdAcumAnteriorRaw = list
+      .filter((m) => m.closed && m.number < args.measurementNumber)
+      .reduce((s, m) => s + (m.quantExec || 0), 0);
+    // Período = medição em aberto OU a da BM selecionada
     const emAberto = list.find((m) => !m.closed);
     const daBM = list.find((m) => m.number === args.measurementNumber);
-    const qtdPeriodo = (emAberto?.quantExec ?? daBM?.quantExec ?? 0);
+    const qtdPeriodoRaw = (emAberto?.quantExec ?? daBM?.quantExec ?? 0);
+
+    // Cap: acumulado nunca pode exceder a quantidade contratada
+    const qContr = Number(r.quantidade ?? 0);
+    let qtdAcumAnterior = qtdAcumAnteriorRaw;
+    let qtdPeriodo = qtdPeriodoRaw;
+    if (qContr > 0) {
+      if (qtdAcumAnterior > qContr) qtdAcumAnterior = qContr;
+      const saldo = Math.max(0, qContr - qtdAcumAnterior);
+      if (qtdPeriodo > saldo) qtdPeriodo = saldo;
+    }
 
     const valorUnitario = r.valorUnitBDI || r.valorUnit || 0;
     const valorAcumAnterior = qtdAcumAnterior * valorUnitario;
@@ -46,6 +58,7 @@ export async function exportBoletimMedicaoInstitucional(args: Args): Promise<voi
       _ordem: idx,
     };
   });
+
 
   const numeroBM = `BM-${String(args.measurementNumber).padStart(2, "0")}`;
 
