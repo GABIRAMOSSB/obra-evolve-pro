@@ -165,7 +165,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
       fitToPage: true,
       fitToWidth: 1,
       fitToHeight: 0,
-      margins: { left: 0.25, right: 0.25, top: 0.35, bottom: 0.6, header: 0.15, footer: 0.25 },
+      margins: { left: 0.197, right: 0.197, top: 0.354, bottom: 0.591, header: 0.157, footer: 0.236 },
     },
     headerFooter: {
       differentFirst: false,
@@ -535,12 +535,18 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
 
   const spacer1 = totalRow + 1;
   ws.getRow(spacer1).height = 10;
-  const signSpace = totalRow + 2;
-  ws.getRow(signSpace).height = 55; // espaço em branco para assinatura (digital/à punho)
-  const signLine = totalRow + 3;
-  const nameRow = totalRow + 4;
-  const cargoRow = totalRow + 5;
-  const regRow = totalRow + 6;
+  // Quebra de página: assinaturas em nova página
+  ws.getRow(spacer1).addPageBreak();
+  // Empurra assinaturas para o rodapé da página (várias linhas em branco)
+  const blankStart = totalRow + 2;
+  const blankEnd = totalRow + 26;
+  for (let r = blankStart; r <= blankEnd; r++) ws.getRow(r).height = 18;
+  const signSpace = blankEnd + 1;
+  ws.getRow(signSpace).height = 60; // espaço em branco para assinatura (digital/à punho)
+  const signLine = signSpace + 1;
+  const nameRow = signLine + 1;
+  const cargoRow = signLine + 2;
+  const regRow = signLine + 3;
 
   const drawSignBlock = (colStart: string, colEnd: string, header: string, nome: string, cargo: string, registro: string) => {
     // linha da assinatura
