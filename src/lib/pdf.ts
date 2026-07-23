@@ -596,8 +596,13 @@ export function buildMeasurementPdfBlob(
     const list = evo?.measurements ?? [];
     const qAnt = list.filter((m) => m.closed && m.number < measurementNumber).reduce((s, m) => s + (m.quantExec || 0), 0);
     const med = list.find((mm) => mm.number === measurementNumber);
-    const qPer = med?.quantExec ?? 0;
-    const qAtual = qAnt + qPer;
+    let qPer = med?.quantExec ?? 0;
+    let qAtual = qAnt + qPer;
+    const qContr = Number(r.quantidade ?? 0);
+    if (qContr > 0 && qAtual > qContr) {
+      qPer = Math.max(0, qContr - qAnt);
+      qAtual = qContr;
+    }
     const vu = r.valorUnitBDI || r.valorUnit || 0;
     const vuMO = r.valorUnitMO || 0;
     const vuMat = r.valorUnitMaterial || 0;
@@ -606,6 +611,7 @@ export function buildMeasurementPdfBlob(
     const finAnt = qAnt * vu;
     const finPer = qPer * vu;
     const finAtual = qAtual * vu;
+
     totalContrato += r.total || 0;
     totalContratoMO += tMO;
     totalContratoMat += tMat;
