@@ -165,7 +165,7 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
       fitToPage: true,
       fitToWidth: 1,
       fitToHeight: 0,
-      margins: { left: 0.25, right: 0.25, top: 0.35, bottom: 0.6, header: 0.15, footer: 0.25 },
+      margins: { left: 0.197, right: 0.197, top: 0.354, bottom: 0.591, header: 0.157, footer: 0.236 },
     },
     headerFooter: {
       differentFirst: false,
