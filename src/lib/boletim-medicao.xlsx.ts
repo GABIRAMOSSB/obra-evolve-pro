@@ -325,17 +325,23 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
     ws.mergeCells(span);
     const [start] = span.split(":");
     const cell = ws.getCell(start);
+    const isSaldo = start === "M9";
     cell.value = {
       richText: [
         { text: `${label}\n`, font: { name: "Aptos", size: 6.5, bold: true, color: { argb: COLOR_LABEL } } },
-        { text: value, font: { name: "Aptos", size: 10, bold: true, color: { argb: COLOR_TEXT } } },
+        {
+          text: value,
+          font: { name: "Aptos", size: isSaldo ? 8.5 : 10, bold: true, color: { argb: COLOR_TEXT } },
+        },
       ],
     };
-    cell.alignment = { horizontal: "left", vertical: "middle", wrapText: true, indent: 1 };
+    cell.alignment = isSaldo
+      ? { horizontal: "left", vertical: "middle", wrapText: true, indent: 0, shrinkToFit: true }
+      : { horizontal: "left", vertical: "middle", wrapText: true, indent: 1 };
     cell.fill = fill(bg);
     cell.border = borderAll;
   }
-  ws.getRow(9).height = 32;
+  ws.getRow(9).height = 40;
 
   // ============ Cabeçalho da grade (linhas 10..11) ============
   // Estrutura: Item | Descrição | Un. | Qtd. | V. Unit. | Total | EXEC. FÍSICO (3) | EXEC. FINANCEIRO (3) | Executado %
