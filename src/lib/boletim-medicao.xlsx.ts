@@ -335,9 +335,14 @@ export async function generateBoletimMedicaoXLSX(data: XLSXInput): Promise<Blob>
         },
       ],
     };
-    cell.alignment = isSaldo
-      ? { horizontal: "left", vertical: "middle", wrapText: true, indent: 0, shrinkToFit: true }
-      : { horizontal: "left", vertical: "middle", wrapText: true, indent: 1 };
+    cell.alignment = {
+      horizontal: "left",
+      vertical: "middle",
+      wrapText: true,
+      indent: isSaldo ? 0 : 1,
+      shrinkToFit: true,
+    };
+
     cell.fill = fill(bg);
     cell.border = borderAll;
   }
