@@ -54,6 +54,11 @@ import { Route as ApiPublicZapsignWebhookRouteImport } from './routes/api.public
 import { Route as ApiPublicZapsignRemindersRouteImport } from './routes/api.public.zapsign-reminders'
 import { Route as ApiPublicPncpRadarCronRouteImport } from './routes/api.public.pncp-radar-cron'
 import { Route as ApiPublicComplianceScheduledRouteImport } from './routes/api.public.compliance-scheduled'
+import { Route as AppSubempreiteirosPagamentosRouteImport } from './routes/_app.subempreiteiros.pagamentos'
+import { Route as AppSubempreiteirosMedicoesRouteImport } from './routes/_app.subempreiteiros.medicoes'
+import { Route as AppSubempreiteirosEmpresasRouteImport } from './routes/_app.subempreiteiros.empresas'
+import { Route as AppSubempreiteirosDashboardRouteImport } from './routes/_app.subempreiteiros.dashboard'
+import { Route as AppSubempreiteirosContratosRouteImport } from './routes/_app.subempreiteiros.contratos'
 import { Route as AppPropostasIdRouteImport } from './routes/_app.propostas.$id'
 import { Route as AppMedicoesIdRouteImport } from './routes/_app.medicoes_.$id'
 import { Route as AppInsumosImportarRouteImport } from './routes/_app.insumos.importar'
@@ -61,6 +66,7 @@ import { Route as AppConfiguracoesZapsignRouteImport } from './routes/_app.confi
 import { Route as AppAssinaturasRelatorioRouteImport } from './routes/_app.assinaturas.relatorio'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
+import { Route as AppSubempreiteirosMedicoesIdRouteImport } from './routes/_app.subempreiteiros.medicoes_.$id'
 import { Route as AppConfiguracoesZapsignTestesRouteImport } from './routes/_app.configuracoes.zapsign.testes'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -293,6 +299,36 @@ const ApiPublicComplianceScheduledRoute =
     path: '/api/public/compliance-scheduled',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AppSubempreiteirosPagamentosRoute =
+  AppSubempreiteirosPagamentosRouteImport.update({
+    id: '/subempreiteiros/pagamentos',
+    path: '/subempreiteiros/pagamentos',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppSubempreiteirosMedicoesRoute =
+  AppSubempreiteirosMedicoesRouteImport.update({
+    id: '/subempreiteiros/medicoes',
+    path: '/subempreiteiros/medicoes',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppSubempreiteirosEmpresasRoute =
+  AppSubempreiteirosEmpresasRouteImport.update({
+    id: '/subempreiteiros/empresas',
+    path: '/subempreiteiros/empresas',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppSubempreiteirosDashboardRoute =
+  AppSubempreiteirosDashboardRouteImport.update({
+    id: '/subempreiteiros/dashboard',
+    path: '/subempreiteiros/dashboard',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppSubempreiteirosContratosRoute =
+  AppSubempreiteirosContratosRouteImport.update({
+    id: '/subempreiteiros/contratos',
+    path: '/subempreiteiros/contratos',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppPropostasIdRoute = AppPropostasIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -329,6 +365,12 @@ const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   path: '/.lovable/oauth/consent',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppSubempreiteirosMedicoesIdRoute =
+  AppSubempreiteirosMedicoesIdRouteImport.update({
+    id: '/subempreiteiros/medicoes_/$id',
+    path: '/subempreiteiros/medicoes/$id',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppConfiguracoesZapsignTestesRoute =
   AppConfiguracoesZapsignTestesRouteImport.update({
     id: '/testes',
@@ -384,11 +426,17 @@ export interface FileRoutesByFullPath {
   '/insumos/importar': typeof AppInsumosImportarRoute
   '/medicoes/$id': typeof AppMedicoesIdRoute
   '/propostas/$id': typeof AppPropostasIdRoute
+  '/subempreiteiros/contratos': typeof AppSubempreiteirosContratosRoute
+  '/subempreiteiros/dashboard': typeof AppSubempreiteirosDashboardRoute
+  '/subempreiteiros/empresas': typeof AppSubempreiteirosEmpresasRoute
+  '/subempreiteiros/medicoes': typeof AppSubempreiteirosMedicoesRoute
+  '/subempreiteiros/pagamentos': typeof AppSubempreiteirosPagamentosRoute
   '/api/public/compliance-scheduled': typeof ApiPublicComplianceScheduledRoute
   '/api/public/pncp-radar-cron': typeof ApiPublicPncpRadarCronRoute
   '/api/public/zapsign-reminders': typeof ApiPublicZapsignRemindersRoute
   '/api/public/zapsign-webhook': typeof ApiPublicZapsignWebhookRoute
   '/configuracoes/zapsign/testes': typeof AppConfiguracoesZapsignTestesRoute
+  '/subempreiteiros/medicoes/$id': typeof AppSubempreiteirosMedicoesIdRoute
 }
 export interface FileRoutesByTo {
   '/diagnostico': typeof DiagnosticoRoute
@@ -438,11 +486,17 @@ export interface FileRoutesByTo {
   '/insumos/importar': typeof AppInsumosImportarRoute
   '/medicoes/$id': typeof AppMedicoesIdRoute
   '/propostas/$id': typeof AppPropostasIdRoute
+  '/subempreiteiros/contratos': typeof AppSubempreiteirosContratosRoute
+  '/subempreiteiros/dashboard': typeof AppSubempreiteirosDashboardRoute
+  '/subempreiteiros/empresas': typeof AppSubempreiteirosEmpresasRoute
+  '/subempreiteiros/medicoes': typeof AppSubempreiteirosMedicoesRoute
+  '/subempreiteiros/pagamentos': typeof AppSubempreiteirosPagamentosRoute
   '/api/public/compliance-scheduled': typeof ApiPublicComplianceScheduledRoute
   '/api/public/pncp-radar-cron': typeof ApiPublicPncpRadarCronRoute
   '/api/public/zapsign-reminders': typeof ApiPublicZapsignRemindersRoute
   '/api/public/zapsign-webhook': typeof ApiPublicZapsignWebhookRoute
   '/configuracoes/zapsign/testes': typeof AppConfiguracoesZapsignTestesRoute
+  '/subempreiteiros/medicoes/$id': typeof AppSubempreiteirosMedicoesIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -494,11 +548,17 @@ export interface FileRoutesById {
   '/_app/insumos/importar': typeof AppInsumosImportarRoute
   '/_app/medicoes_/$id': typeof AppMedicoesIdRoute
   '/_app/propostas/$id': typeof AppPropostasIdRoute
+  '/_app/subempreiteiros/contratos': typeof AppSubempreiteirosContratosRoute
+  '/_app/subempreiteiros/dashboard': typeof AppSubempreiteirosDashboardRoute
+  '/_app/subempreiteiros/empresas': typeof AppSubempreiteirosEmpresasRoute
+  '/_app/subempreiteiros/medicoes': typeof AppSubempreiteirosMedicoesRoute
+  '/_app/subempreiteiros/pagamentos': typeof AppSubempreiteirosPagamentosRoute
   '/api/public/compliance-scheduled': typeof ApiPublicComplianceScheduledRoute
   '/api/public/pncp-radar-cron': typeof ApiPublicPncpRadarCronRoute
   '/api/public/zapsign-reminders': typeof ApiPublicZapsignRemindersRoute
   '/api/public/zapsign-webhook': typeof ApiPublicZapsignWebhookRoute
   '/_app/configuracoes/zapsign/testes': typeof AppConfiguracoesZapsignTestesRoute
+  '/_app/subempreiteiros/medicoes_/$id': typeof AppSubempreiteirosMedicoesIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -550,11 +610,17 @@ export interface FileRouteTypes {
     | '/insumos/importar'
     | '/medicoes/$id'
     | '/propostas/$id'
+    | '/subempreiteiros/contratos'
+    | '/subempreiteiros/dashboard'
+    | '/subempreiteiros/empresas'
+    | '/subempreiteiros/medicoes'
+    | '/subempreiteiros/pagamentos'
     | '/api/public/compliance-scheduled'
     | '/api/public/pncp-radar-cron'
     | '/api/public/zapsign-reminders'
     | '/api/public/zapsign-webhook'
     | '/configuracoes/zapsign/testes'
+    | '/subempreiteiros/medicoes/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/diagnostico'
@@ -604,11 +670,17 @@ export interface FileRouteTypes {
     | '/insumos/importar'
     | '/medicoes/$id'
     | '/propostas/$id'
+    | '/subempreiteiros/contratos'
+    | '/subempreiteiros/dashboard'
+    | '/subempreiteiros/empresas'
+    | '/subempreiteiros/medicoes'
+    | '/subempreiteiros/pagamentos'
     | '/api/public/compliance-scheduled'
     | '/api/public/pncp-radar-cron'
     | '/api/public/zapsign-reminders'
     | '/api/public/zapsign-webhook'
     | '/configuracoes/zapsign/testes'
+    | '/subempreiteiros/medicoes/$id'
   id:
     | '__root__'
     | '/_app'
@@ -659,11 +731,17 @@ export interface FileRouteTypes {
     | '/_app/insumos/importar'
     | '/_app/medicoes_/$id'
     | '/_app/propostas/$id'
+    | '/_app/subempreiteiros/contratos'
+    | '/_app/subempreiteiros/dashboard'
+    | '/_app/subempreiteiros/empresas'
+    | '/_app/subempreiteiros/medicoes'
+    | '/_app/subempreiteiros/pagamentos'
     | '/api/public/compliance-scheduled'
     | '/api/public/pncp-radar-cron'
     | '/api/public/zapsign-reminders'
     | '/api/public/zapsign-webhook'
     | '/_app/configuracoes/zapsign/testes'
+    | '/_app/subempreiteiros/medicoes_/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1000,6 +1078,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicComplianceScheduledRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/subempreiteiros/pagamentos': {
+      id: '/_app/subempreiteiros/pagamentos'
+      path: '/subempreiteiros/pagamentos'
+      fullPath: '/subempreiteiros/pagamentos'
+      preLoaderRoute: typeof AppSubempreiteirosPagamentosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/subempreiteiros/medicoes': {
+      id: '/_app/subempreiteiros/medicoes'
+      path: '/subempreiteiros/medicoes'
+      fullPath: '/subempreiteiros/medicoes'
+      preLoaderRoute: typeof AppSubempreiteirosMedicoesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/subempreiteiros/empresas': {
+      id: '/_app/subempreiteiros/empresas'
+      path: '/subempreiteiros/empresas'
+      fullPath: '/subempreiteiros/empresas'
+      preLoaderRoute: typeof AppSubempreiteirosEmpresasRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/subempreiteiros/dashboard': {
+      id: '/_app/subempreiteiros/dashboard'
+      path: '/subempreiteiros/dashboard'
+      fullPath: '/subempreiteiros/dashboard'
+      preLoaderRoute: typeof AppSubempreiteirosDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/subempreiteiros/contratos': {
+      id: '/_app/subempreiteiros/contratos'
+      path: '/subempreiteiros/contratos'
+      fullPath: '/subempreiteiros/contratos'
+      preLoaderRoute: typeof AppSubempreiteirosContratosRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/propostas/$id': {
       id: '/_app/propostas/$id'
       path: '/$id'
@@ -1048,6 +1161,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/.lovable/oauth/consent'
       preLoaderRoute: typeof DotlovableOauthConsentRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_app/subempreiteiros/medicoes_/$id': {
+      id: '/_app/subempreiteiros/medicoes_/$id'
+      path: '/subempreiteiros/medicoes/$id'
+      fullPath: '/subempreiteiros/medicoes/$id'
+      preLoaderRoute: typeof AppSubempreiteirosMedicoesIdRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/configuracoes/zapsign/testes': {
       id: '/_app/configuracoes/zapsign/testes'
@@ -1145,6 +1265,12 @@ interface AppRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
   AppConfiguracoesZapsignRoute: typeof AppConfiguracoesZapsignRouteWithChildren
   AppMedicoesIdRoute: typeof AppMedicoesIdRoute
+  AppSubempreiteirosContratosRoute: typeof AppSubempreiteirosContratosRoute
+  AppSubempreiteirosDashboardRoute: typeof AppSubempreiteirosDashboardRoute
+  AppSubempreiteirosEmpresasRoute: typeof AppSubempreiteirosEmpresasRoute
+  AppSubempreiteirosMedicoesRoute: typeof AppSubempreiteirosMedicoesRoute
+  AppSubempreiteirosPagamentosRoute: typeof AppSubempreiteirosPagamentosRoute
+  AppSubempreiteirosMedicoesIdRoute: typeof AppSubempreiteirosMedicoesIdRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -1183,6 +1309,12 @@ const AppRouteChildren: AppRouteChildren = {
   AppIndexRoute: AppIndexRoute,
   AppConfiguracoesZapsignRoute: AppConfiguracoesZapsignRouteWithChildren,
   AppMedicoesIdRoute: AppMedicoesIdRoute,
+  AppSubempreiteirosContratosRoute: AppSubempreiteirosContratosRoute,
+  AppSubempreiteirosDashboardRoute: AppSubempreiteirosDashboardRoute,
+  AppSubempreiteirosEmpresasRoute: AppSubempreiteirosEmpresasRoute,
+  AppSubempreiteirosMedicoesRoute: AppSubempreiteirosMedicoesRoute,
+  AppSubempreiteirosPagamentosRoute: AppSubempreiteirosPagamentosRoute,
+  AppSubempreiteirosMedicoesIdRoute: AppSubempreiteirosMedicoesIdRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
