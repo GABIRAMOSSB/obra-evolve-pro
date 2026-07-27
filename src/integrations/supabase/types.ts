@@ -6260,6 +6260,521 @@ export type Database = {
         }
         Relationships: []
       }
+      sub_contrato_servicos: {
+        Row: {
+          codigo: string | null
+          company_id: string
+          contrato_id: string
+          created_at: string
+          descricao: string
+          id: string
+          ordem: number
+          origem_orcamento_item_id: string | null
+          preco_unitario: number
+          preco_venda_cliente: number | null
+          qtd_contratada: number
+          qtd_executada: number
+          unidade: string | null
+          updated_at: string
+        }
+        Insert: {
+          codigo?: string | null
+          company_id: string
+          contrato_id: string
+          created_at?: string
+          descricao: string
+          id?: string
+          ordem?: number
+          origem_orcamento_item_id?: string | null
+          preco_unitario?: number
+          preco_venda_cliente?: number | null
+          qtd_contratada?: number
+          qtd_executada?: number
+          unidade?: string | null
+          updated_at?: string
+        }
+        Update: {
+          codigo?: string | null
+          company_id?: string
+          contrato_id?: string
+          created_at?: string
+          descricao?: string
+          id?: string
+          ordem?: number
+          origem_orcamento_item_id?: string | null
+          preco_unitario?: number
+          preco_venda_cliente?: number | null
+          qtd_contratada?: number
+          qtd_executada?: number
+          unidade?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sub_contrato_servicos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sub_contrato_servicos_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "sub_contratos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sub_contrato_servicos_origem_orcamento_item_id_fkey"
+            columns: ["origem_orcamento_item_id"]
+            isOneToOne: false
+            referencedRelation: "orcamento_itens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sub_contratos: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          data_fim: string | null
+          data_inicio: string | null
+          id: string
+          numero: string
+          objeto: string | null
+          obra_id: string
+          observacoes: string | null
+          pdf_storage_path: string | null
+          responsavel: string | null
+          status: Database["public"]["Enums"]["sub_contrato_status"]
+          subempreiteiro_id: string
+          updated_at: string
+          valor_maximo: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          data_fim?: string | null
+          data_inicio?: string | null
+          id?: string
+          numero: string
+          objeto?: string | null
+          obra_id: string
+          observacoes?: string | null
+          pdf_storage_path?: string | null
+          responsavel?: string | null
+          status?: Database["public"]["Enums"]["sub_contrato_status"]
+          subempreiteiro_id: string
+          updated_at?: string
+          valor_maximo?: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          data_fim?: string | null
+          data_inicio?: string | null
+          id?: string
+          numero?: string
+          objeto?: string | null
+          obra_id?: string
+          observacoes?: string | null
+          pdf_storage_path?: string | null
+          responsavel?: string | null
+          status?: Database["public"]["Enums"]["sub_contrato_status"]
+          subempreiteiro_id?: string
+          updated_at?: string
+          valor_maximo?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sub_contratos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sub_contratos_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sub_contratos_subempreiteiro_id_fkey"
+            columns: ["subempreiteiro_id"]
+            isOneToOne: false
+            referencedRelation: "subempreiteiros"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sub_medicao_itens: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          medicao_id: string
+          ordem: number
+          preco_unitario: number
+          qtd_anterior: number
+          qtd_periodo: number
+          servico_id: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          medicao_id: string
+          ordem?: number
+          preco_unitario?: number
+          qtd_anterior?: number
+          qtd_periodo?: number
+          servico_id: string
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          medicao_id?: string
+          ordem?: number
+          preco_unitario?: number
+          qtd_anterior?: number
+          qtd_periodo?: number
+          servico_id?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sub_medicao_itens_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sub_medicao_itens_medicao_id_fkey"
+            columns: ["medicao_id"]
+            isOneToOne: false
+            referencedRelation: "sub_medicoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sub_medicao_itens_servico_id_fkey"
+            columns: ["servico_id"]
+            isOneToOne: false
+            referencedRelation: "sub_contrato_servicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sub_medicoes: {
+        Row: {
+          assinatura_base64: string | null
+          assinatura_nome: string | null
+          company_id: string
+          competencia: string | null
+          contrato_id: string
+          created_at: string
+          created_by: string | null
+          data_medicao: string
+          id: string
+          locked_at: string | null
+          numero: number
+          observacoes: string | null
+          recibo_pdf_path: string | null
+          recibo_token: string
+          responsavel_conferencia: string | null
+          ret_inss: number
+          ret_irrf: number
+          ret_iss: number
+          ret_outras: number
+          signed_at: string | null
+          signed_by: string | null
+          signed_ip: string | null
+          status: Database["public"]["Enums"]["sub_medicao_status"]
+          updated_at: string
+          valor_bruto: number
+          valor_liquido: number
+        }
+        Insert: {
+          assinatura_base64?: string | null
+          assinatura_nome?: string | null
+          company_id: string
+          competencia?: string | null
+          contrato_id: string
+          created_at?: string
+          created_by?: string | null
+          data_medicao?: string
+          id?: string
+          locked_at?: string | null
+          numero: number
+          observacoes?: string | null
+          recibo_pdf_path?: string | null
+          recibo_token?: string
+          responsavel_conferencia?: string | null
+          ret_inss?: number
+          ret_irrf?: number
+          ret_iss?: number
+          ret_outras?: number
+          signed_at?: string | null
+          signed_by?: string | null
+          signed_ip?: string | null
+          status?: Database["public"]["Enums"]["sub_medicao_status"]
+          updated_at?: string
+          valor_bruto?: number
+          valor_liquido?: number
+        }
+        Update: {
+          assinatura_base64?: string | null
+          assinatura_nome?: string | null
+          company_id?: string
+          competencia?: string | null
+          contrato_id?: string
+          created_at?: string
+          created_by?: string | null
+          data_medicao?: string
+          id?: string
+          locked_at?: string | null
+          numero?: number
+          observacoes?: string | null
+          recibo_pdf_path?: string | null
+          recibo_token?: string
+          responsavel_conferencia?: string | null
+          ret_inss?: number
+          ret_irrf?: number
+          ret_iss?: number
+          ret_outras?: number
+          signed_at?: string | null
+          signed_by?: string | null
+          signed_ip?: string | null
+          status?: Database["public"]["Enums"]["sub_medicao_status"]
+          updated_at?: string
+          valor_bruto?: number
+          valor_liquido?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sub_medicoes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sub_medicoes_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "sub_contratos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sub_pagamentos: {
+        Row: {
+          company_id: string
+          comprovante_storage_path: string | null
+          conta_bancaria: string | null
+          created_at: string
+          created_by: string | null
+          data_pagamento: string
+          forma: Database["public"]["Enums"]["sub_pagamento_forma"]
+          id: string
+          medicao_id: string
+          numero_comprovante: string | null
+          observacoes: string | null
+          updated_at: string
+          valor_pago: number
+        }
+        Insert: {
+          company_id: string
+          comprovante_storage_path?: string | null
+          conta_bancaria?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_pagamento?: string
+          forma: Database["public"]["Enums"]["sub_pagamento_forma"]
+          id?: string
+          medicao_id: string
+          numero_comprovante?: string | null
+          observacoes?: string | null
+          updated_at?: string
+          valor_pago: number
+        }
+        Update: {
+          company_id?: string
+          comprovante_storage_path?: string | null
+          conta_bancaria?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_pagamento?: string
+          forma?: Database["public"]["Enums"]["sub_pagamento_forma"]
+          id?: string
+          medicao_id?: string
+          numero_comprovante?: string | null
+          observacoes?: string | null
+          updated_at?: string
+          valor_pago?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sub_pagamentos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sub_pagamentos_medicao_id_fkey"
+            columns: ["medicao_id"]
+            isOneToOne: false
+            referencedRelation: "sub_medicoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subempreiteiro_documentos: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          mime_type: string | null
+          nome: string
+          storage_path: string
+          subempreiteiro_id: string
+          tamanho_bytes: number | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mime_type?: string | null
+          nome: string
+          storage_path: string
+          subempreiteiro_id: string
+          tamanho_bytes?: number | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mime_type?: string | null
+          nome?: string
+          storage_path?: string
+          subempreiteiro_id?: string
+          tamanho_bytes?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subempreiteiro_documentos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subempreiteiro_documentos_subempreiteiro_id_fkey"
+            columns: ["subempreiteiro_id"]
+            isOneToOne: false
+            referencedRelation: "subempreiteiros"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subempreiteiros: {
+        Row: {
+          agencia: string | null
+          ativo: boolean
+          banco: string | null
+          cep: string | null
+          cidade: string | null
+          cnpj: string | null
+          company_id: string
+          conta: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          endereco: string | null
+          id: string
+          nome_fantasia: string | null
+          observacoes: string | null
+          pix: string | null
+          razao_social: string
+          responsavel: string | null
+          telefone: string | null
+          uf: string | null
+          updated_at: string
+        }
+        Insert: {
+          agencia?: string | null
+          ativo?: boolean
+          banco?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
+          company_id: string
+          conta?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          nome_fantasia?: string | null
+          observacoes?: string | null
+          pix?: string | null
+          razao_social: string
+          responsavel?: string | null
+          telefone?: string | null
+          uf?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agencia?: string | null
+          ativo?: boolean
+          banco?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
+          company_id?: string
+          conta?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          nome_fantasia?: string | null
+          observacoes?: string | null
+          pix?: string | null
+          razao_social?: string
+          responsavel?: string | null
+          telefone?: string | null
+          uf?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subempreiteiros_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       unidades_medida: {
         Row: {
           company_id: string
@@ -6472,6 +6987,25 @@ export type Database = {
         | "indiretos"
         | "outros"
       company_role: "admin" | "member" | "editor"
+      sub_contrato_status:
+        | "em_andamento"
+        | "suspenso"
+        | "finalizado"
+        | "cancelado"
+      sub_medicao_status:
+        | "rascunho"
+        | "em_conferencia"
+        | "aguardando_assinatura"
+        | "assinada"
+        | "liberada_pagamento"
+        | "paga"
+      sub_pagamento_forma:
+        | "pix"
+        | "ted"
+        | "doc"
+        | "transferencia"
+        | "cheque"
+        | "dinheiro"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -6617,6 +7151,28 @@ export const Constants = {
         "outros",
       ],
       company_role: ["admin", "member", "editor"],
+      sub_contrato_status: [
+        "em_andamento",
+        "suspenso",
+        "finalizado",
+        "cancelado",
+      ],
+      sub_medicao_status: [
+        "rascunho",
+        "em_conferencia",
+        "aguardando_assinatura",
+        "assinada",
+        "liberada_pagamento",
+        "paga",
+      ],
+      sub_pagamento_forma: [
+        "pix",
+        "ted",
+        "doc",
+        "transferencia",
+        "cheque",
+        "dinheiro",
+      ],
     },
   },
 } as const
