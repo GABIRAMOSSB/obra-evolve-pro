@@ -48,6 +48,16 @@ const SECTIONS: NavSection[] = [
     ],
   },
   {
+    id: "subempreiteiros", label: "Subempreiteiros", icon: HardHat,
+    items: [
+      { to: "/subempreiteiros/dashboard", icon: BarChart3, label: "Dashboard (Lucro)" },
+      { to: "/subempreiteiros/empresas", icon: Building2, label: "Empresas" },
+      { to: "/subempreiteiros/contratos", icon: FileSignature, label: "Contratos" },
+      { to: "/subempreiteiros/medicoes", icon: ClipboardList, label: "Medições" },
+      { to: "/subempreiteiros/pagamentos", icon: Wallet, label: "Pagamentos" },
+    ],
+  },
+  {
     id: "financeiro", label: "Financeiro", icon: Landmark,
     items: [
       { to: "/financeiro", icon: Wallet, label: "Financeiro de Obra" },
