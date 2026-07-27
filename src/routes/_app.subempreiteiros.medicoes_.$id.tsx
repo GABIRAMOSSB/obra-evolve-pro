@@ -161,7 +161,7 @@ function Page() {
         </div>
       </Card>
 
-      {med?.assinatura_base64 && (
+      {Boolean(med?.assinatura_base64) && (
         <Card className="p-4">
           <div className="text-sm font-semibold mb-2">Assinatura registrada — {String(med.assinatura_nome ?? "")}</div>
           <img src={String(med.assinatura_base64)} alt="assinatura" className="max-h-32 border rounded bg-white" />
