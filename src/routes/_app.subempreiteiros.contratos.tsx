@@ -14,6 +14,7 @@ import { FileSignature, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   listSubContratos, saveSubContrato, deleteSubContrato, listSubempreiteiros,
+  importarServicosDoOrcamento,
 } from "@/lib/subempreiteiros/api.functions";
 
 export const Route = createFileRoute("/_app/subempreiteiros/contratos")({
@@ -31,6 +32,7 @@ function Page() {
   const saveFn = useServerFn(saveSubContrato);
   const delFn = useServerFn(deleteSubContrato);
   const listSubs = useServerFn(listSubempreiteiros);
+  const importarFn = useServerFn(importarServicosDoOrcamento);
 
   const { data = [] } = useQuery({ queryKey: ["sub-contratos"], queryFn: () => listFn({ data: {} }) });
   const { data: subs = [] } = useQuery({ queryKey: ["subempresas"], queryFn: () => listSubs() });
@@ -50,8 +52,21 @@ function Page() {
 
   const save = async () => {
     try {
-      await saveFn({ data: { ...form, valor_maximo: Number(form.valor_maximo ?? 0) } as never });
+      const isNew = !form.id;
+      const res = await saveFn({ data: { ...form, valor_maximo: Number(form.valor_maximo ?? 0) } as never });
       toast.success("Contrato salvo");
+      // Ao criar um novo contrato, tenta importar automaticamente os
+      // serviços a partir do orçamento vigente da obra.
+      if (isNew && res?.id) {
+        try {
+          const imp = await importarFn({ data: { contrato_id: res.id } });
+          toast.success(`${imp.imported} serviços importados do orçamento da obra.`);
+        } catch (e) {
+          toast.message("Contrato criado sem importação automática", {
+            description: (e as Error).message,
+          });
+        }
+      }
       setOpen(false);
       qc.invalidateQueries({ queryKey: ["sub-contratos"] });
     } catch (e) { toast.error((e as Error).message); }

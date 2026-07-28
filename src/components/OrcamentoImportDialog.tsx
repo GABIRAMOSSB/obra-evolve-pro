@@ -39,12 +39,16 @@ const COLUMN_LABELS: Record<ColumnKey, string> = {
   item_codigo: "Código do item *",
   descricao: "Descrição *",
   unidade: "Unidade",
-  qtd_contratada: "Quantidade *",
-  valor_unitario: "Valor unitário *",
+  qtd_contratada: "Quantidade",
+  valor_unitario: "Valor unitário",
+  total: "Total (opcional)",
+  bdi: "BDI % (opcional)",
   sinapi_codigo: "Código SINAPI",
 };
 
-const REQUIRED: ColumnKey[] = ["item_codigo", "descricao", "qtd_contratada", "valor_unitario"];
+// Só código e descrição são realmente obrigatórios — os demais podem ser
+// derivados (Total = Qtd × V.Unit × (1+BDI/100), ou V.Unit = Total / Qtd).
+const REQUIRED: ColumnKey[] = ["item_codigo", "descricao"];
 
 function formatBRL(cents: number) {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
