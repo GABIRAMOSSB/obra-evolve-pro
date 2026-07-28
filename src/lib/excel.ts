@@ -19,7 +19,10 @@ function toNumber(v: unknown): number {
   return isNaN(n) ? 0 : n;
 }
 
-const REQUIRED_HEADERS = ["item", "banco", "descricao", "und", "quantidade", "total"];
+// Somente item + descrição são realmente obrigatórios. Und/quantidade/total
+// são recuperados quando presentes (com variações e sinônimos), mas sua
+// ausência não impede a leitura da planilha.
+const REQUIRED_HEADERS = ["item", "descricao"];
 
 export interface SkippedRow {
   rowIndex: number; // 1-based as in Excel
@@ -158,7 +161,8 @@ export async function parseExcel(file: File, forced: ForcedModel = "auto"): Prom
 
   if (headerRow < 0) {
     throw new Error(
-      "Não foi possível localizar os cabeçalhos da planilha (Item, Descrição, Und, Total).",
+      "Encontramos possíveis colunas, mas não conseguimos identificar o cabeçalho automaticamente. " +
+        "Use o importador de orçamentos (menu Orçamento → Importar) para mapear as colunas manualmente.",
     );
   }
 
