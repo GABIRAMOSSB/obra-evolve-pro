@@ -161,8 +161,9 @@ export async function parseExcel(file: File, forced: ForcedModel = "auto"): Prom
 
   if (headerRow < 0) {
     throw new Error(
-      "Encontramos possíveis colunas, mas não conseguimos identificar o cabeçalho automaticamente. " +
-        "Use o importador de orçamentos (menu Orçamento → Importar) para mapear as colunas manualmente.",
+      "Não conseguimos identificar o cabeçalho automaticamente. " +
+        "Abra Medições → a medição desejada e use o botão \"Importar orçamento\" no topo da tela " +
+        "para mapear as colunas manualmente.",
     );
   }
 
